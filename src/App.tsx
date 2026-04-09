@@ -31,6 +31,16 @@ type ParseErrorResponse = {
   details?: string;
 };
 
+type ModelStatus = {
+  ok: boolean;
+  configured: boolean;
+  model: string;
+  checkedAt: string | null;
+  stage: string;
+  message: string;
+  details: string;
+};
+
 const STAR_FIELDS: Array<keyof Omit<ScoreRecord, "note">> = [
   "kitchen",
   "balcony",
@@ -68,6 +78,7 @@ function App() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
 
   const [form, setForm] = useState<PartialApartment>({ addr: "" });
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
@@ -109,6 +120,28 @@ function App() {
     };
 
     void load();
+  }, []);
+
+  useEffect(() => {
+    const loadModelStatus = async () => {
+      try {
+        const response = await fetch("/api/model-status");
+        const payload = (await response.json()) as ModelStatus;
+        setModelStatus(payload);
+      } catch {
+        setModelStatus({
+          ok: false,
+          configured: false,
+          model: "",
+          checkedAt: null,
+          stage: "client",
+          message: "Could not load model status.",
+          details: "Check local API process or deployment connectivity."
+        });
+      }
+    };
+
+    void loadModelStatus();
   }, []);
 
   const minRent = useMemo(() => {
@@ -296,6 +329,29 @@ function App() {
 
   return (
     <div className="shell">
+      {modelStatus && !modelStatus.ok ? (
+        <section className="card status-banner error-banner">
+          <p>
+            <strong>Model validation failed:</strong> {modelStatus.message}
+          </p>
+          <details className="diagnostics">
+            <summary>Model status details</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  stage: modelStatus.stage,
+                  model: modelStatus.model,
+                  checkedAt: modelStatus.checkedAt,
+                  details: modelStatus.details
+                },
+                null,
+                2
+              )}
+            </pre>
+          </details>
+        </section>
+      ) : null}
+
       <header className="topbar">
         <div className="tabs" role="tablist" aria-label="Views">
           <button

@@ -69,6 +69,15 @@ button:disabled {
   background: #fff;
 }
 
+.status-banner {
+  margin-bottom: 0.9rem;
+}
+
+.error-banner {
+  border-color: #f3b3b3;
+  background: #fff6f6;
+}
+
 .lock-card {
   width: min(460px, 100%);
 }
