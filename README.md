@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/brlauuu/flatpare/actions/workflows/ci.yml/badge.svg)](https://github.com/brlauuu/flatpare/actions/workflows/ci.yml)
 [![Tests](https://github.com/brlauuu/flatpare/actions/workflows/tests.yml/badge.svg)](https://github.com/brlauuu/flatpare/actions/workflows/tests.yml)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-%3E%3D10-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/)
 [![License: O'SAASY](https://img.shields.io/badge/license-O'SAASY-blue)](./LICENSE)
 
@@ -19,7 +19,7 @@ Apartment Tracker for collaborative apartment hunting in Basel.
 
 ## Requirements
 
-- Node.js `>=22`
+- Node.js `>=20`
 - npm `>=10`
 - A Vercel account
 - A Fireworks AI account
