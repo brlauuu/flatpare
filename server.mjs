@@ -37,6 +37,61 @@ Rules:
 - Return only JSON. No markdown.
 `;
 
+function extractJsonObject(text) {
+  const start = text.indexOf("{");
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "{") {
+      depth += 1;
+    } else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function parseModelJson(content) {
+  try {
+    return { parsed: JSON.parse(content), recovered: false };
+  } catch {
+    const extracted = extractJsonObject(content);
+    if (!extracted) {
+      throw new Error("Model response did not contain a valid JSON object.");
+    }
+
+    return { parsed: JSON.parse(extracted), recovered: true };
+  }
+}
+
 function safeEquals(input, expected) {
   const inputBuffer = Buffer.from(input);
   const expectedBuffer = Buffer.from(expected);
@@ -242,7 +297,13 @@ app.post("/api/parse-pdf", async (req, res) => {
       });
     }
 
-    const normalized = normalizeParsedApartment(JSON.parse(content));
+    const { parsed, recovered } = parseModelJson(content);
+    const normalized = normalizeParsedApartment(parsed);
+    if (recovered) {
+      normalized.warnings.push(
+        "Recovered JSON from extra model output. Consider using a more JSON-strict model."
+      );
+    }
     return res.status(200).json(normalized);
   } catch (error) {
     return res.status(500).json({
