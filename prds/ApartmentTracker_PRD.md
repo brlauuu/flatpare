@@ -1,6 +1,6 @@
 # Apartment Tracker — Product Requirements Document
 
-**Version:** v1.2  
+**Version:** v1.3  
 **Date:** April 2026
 
 ---
@@ -22,6 +22,7 @@ When two people search for an apartment together, ratings and impressions are ty
 - Display a unified comparison table showing both users' ratings side by side
 - Require a shared app password on first visit before loading apartment data
 - Provide clear setup and deployment instructions for Vercel and Fireworks AI usage
+- Provide full Dockerized deployment/runtime path with documentation
 
 ### 1.3 Non-goals
 
@@ -152,6 +153,7 @@ For true cross-device sync, replace `localStorage` with a lightweight backend. S
 - **State:** `useState` + `useReducer` — no external state library needed at this scale
 - **Storage:** `localStorage` adapter (swappable for Supabase/PocketBase later)
 - **Deployment:** Vercel (primary target)
+- **Containerization:** Docker multi-stage image + Docker Compose
 - **Build:** `npm run build` for frontend bundle
 - **Server routes:** Vercel Functions for password verification and Fireworks PDF parsing
 - **Env vars:** `APP_PASSWORD`, `FIREWORKS_API_KEY`, `FIREWORKS_MODEL`
@@ -182,6 +184,16 @@ Recommended Vercel deployment flow:
 5. Ensure serverless routes are deployed with the frontend
 6. Every push to `main` deploys automatically
 
+### 5.6 Dockerized deployment and runtime
+
+The app must support a full containerized runtime path:
+
+1. Multi-stage `Dockerfile` builds frontend and ships minimal runtime image
+2. Runtime container serves built frontend and API endpoints from one process
+3. `docker-compose.yml` is included for local container run
+4. Container requires the same env vars as Vercel (`APP_PASSWORD`, `FIREWORKS_API_KEY`, `FIREWORKS_MODEL`)
+5. Documentation must include both `docker compose` and plain `docker run` instructions
+
 ### 5.4 Developer setup and operations documentation
 
 The repository must include a complete operator/developer guide in `README.md` (and linked docs pages when needed) covering:
@@ -208,6 +220,7 @@ The MVP delivery must include:
 - Automated test suite with all tests passing in CI before merge
 - `README.md` and docs kept up to date with any behavior/setup changes
 - GitHub Actions workflow(s) for at least: install, lint, test, and build
+- GitHub Actions must also validate Docker image build
 - README badges for: CI status, test status, and key tool/runtime versions used in the project
 - Contributor credit in README including AI-assisted contribution acknowledgment for Codex
 - License file and README license section using O'SAASY license text and attribution placeholders completed for this project

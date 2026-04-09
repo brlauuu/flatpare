@@ -1,14 +1,14 @@
 # Multi-User System Design
 ## Apartment Tracker — Technical Specification
 
-**Version:** v1.2  
+**Version:** v1.3  
 **Date:** April 2026
 
 ---
 
 ## 1. Purpose
 
-This document describes the multi-user data model, storage design, and UI patterns for the Apartment Tracker app. It focuses specifically on how two users can independently rate and annotate the same set of apartments, and how those ratings are stored, migrated, and displayed. It also defines MVP access protection and PDF parsing via Fireworks AI API on Vercel.
+This document describes the multi-user data model, storage design, and UI patterns for the Apartment Tracker app. It focuses specifically on how two users can independently rate and annotate the same set of apartments, and how those ratings are stored, migrated, and displayed. It also defines MVP access protection, PDF parsing via Fireworks AI API on Vercel, and a fully Dockerized runtime path.
 
 ---
 
@@ -270,9 +270,33 @@ Repository docs must include:
 
 ---
 
-## 10. CI/CD, testing, and documentation standards
+## 10. Docker deployment
 
-### 10.1 GitHub Actions
+### 10.1 Runtime model
+
+Dockerized mode runs the entire app from one container:
+
+- Serves built frontend assets (`dist/`)
+- Exposes API endpoints (`/api/verify-password`, `/api/parse-pdf`)
+- Uses same environment variables as Vercel
+
+### 10.2 Required files
+
+- `Dockerfile` (multi-stage: build + runtime)
+- `docker-compose.yml` (local orchestration)
+- `.dockerignore`
+
+### 10.3 Verification requirements
+
+- `docker build` must succeed in CI
+- `docker compose up --build` must run app locally with env vars provided
+- First-load password gate and PDF parsing routes must work in containerized mode
+
+---
+
+## 11. CI/CD, testing, and documentation standards
+
+### 11.1 GitHub Actions
 
 Configure GitHub Actions workflows to run on pull requests and pushes to `main`:
 
@@ -280,16 +304,18 @@ Configure GitHub Actions workflows to run on pull requests and pushes to `main`:
 2. Lint
 3. Unit/integration tests
 4. Production build
+5. Docker image build
 
 Merges are expected only when checks are green.
 
-### 10.2 README and docs quality
+### 11.2 README and docs quality
 
 - Keep `README.md` and supporting docs synchronized with code behavior
 - Document setup, run, test, build, and deploy commands
 - Include architecture summary and env var reference table
+- Include Docker run/deploy instructions and required env vars
 
-### 10.3 README badges and metadata
+### 11.3 README badges and metadata
 
 README should include badges for:
 
@@ -297,8 +323,9 @@ README should include badges for:
 - Test status
 - Key runtime/tool versions used by the app (for example Node and package manager)
 - Deployment status (Vercel) when available
+- Docker support status
 
-### 10.4 Contributor credit and license
+### 11.4 Contributor credit and license
 
 - README must include contributor credits, including AI-assisted contribution acknowledgment for Codex
 - Project license is O'SAASY (https://osaasy.dev/)
@@ -307,7 +334,7 @@ README should include badges for:
 
 ---
 
-## 11. Implementation checklist
+## 12. Implementation checklist
 
 | # | Task | Priority |
 |---|------|----------|
@@ -326,8 +353,10 @@ README should include badges for:
 | 13 | Update README/docs + add status/version badges | P0 |
 | 14 | Add contributor credit and O'SAASY `LICENSE` file | P0 |
 | 15 | Deploy to Vercel with required env vars | P0 |
-| 16 | Make compare table columns sortable | P1 |
-| 17 | Add sticky first column on compare table | P1 |
-| 18 | Replace `localStorage` with Supabase adapter | P2 |
-| 19 | Make user list configurable | P2 |
-| 20 | SBB transit time via open data API | P3 |
+| 16 | Add Dockerfile, docker-compose, and container runtime server | P0 |
+| 17 | Add Docker build validation in CI | P0 |
+| 18 | Make compare table columns sortable | P1 |
+| 19 | Add sticky first column on compare table | P1 |
+| 20 | Replace `localStorage` with Supabase adapter | P2 |
+| 21 | Make user list configurable | P2 |
+| 22 | SBB transit time via open data API | P3 |

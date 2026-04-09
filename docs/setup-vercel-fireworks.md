@@ -36,7 +36,43 @@ Required env vars:
 4. Apply each variable to Production, Preview, and Development as needed.
 5. Redeploy after updating secrets.
 
-## 4. Post-deploy verification
+## 4. Docker deployment (fully dockerized runtime)
+
+This repository includes:
+
+- `Dockerfile` (multi-stage build)
+- `docker-compose.yml`
+- `server.mjs` (serves frontend + API endpoints in container)
+
+### Docker prerequisites
+
+- Docker Engine with Compose support
+- Same required env vars:
+  - `APP_PASSWORD`
+  - `FIREWORKS_API_KEY`
+  - `FIREWORKS_MODEL`
+
+### Run with Compose
+
+1. Export env vars in shell or create `.env` file (not committed).
+2. Run:
+   ```bash
+   docker compose up --build
+   ```
+3. Open `http://localhost:3000`.
+
+### Run with Docker CLI
+
+```bash
+docker build -t flatpare:local .
+docker run --rm -p 3000:3000 \
+  -e APP_PASSWORD=change-me \
+  -e FIREWORKS_API_KEY=your-key \
+  -e FIREWORKS_MODEL=accounts/fireworks/models/llama-v3p1-8b-instruct \
+  flatpare:local
+```
+
+## 5. Post-deploy verification
 
 1. Open the deployed app in a fresh browser/private window.
 2. Confirm password gate appears.
@@ -44,7 +80,7 @@ Required env vars:
 4. Upload a supported listing PDF and confirm parser returns structured values.
 5. Confirm manual add still works if parsing fails.
 
-## 5. Troubleshooting
+## 6. Troubleshooting
 
 - `401` or `403` from parser route:
   - Verify `FIREWORKS_API_KEY` is valid and active.
@@ -54,3 +90,5 @@ Required env vars:
   - Verify `APP_PASSWORD` in Vercel env vars and local `.env.local`.
 - Works locally but not on Vercel:
   - Confirm env vars are set for the target Vercel environment.
+- Container starts but parser fails:
+  - Confirm container env vars were provided (`docker compose config` can help inspect).

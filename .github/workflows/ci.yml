@@ -41,6 +41,10 @@ jobs:
         if: steps.has_pkg.outputs.present == 'true'
         run: npm run build --if-present
 
+      - name: Build Docker image
+        if: steps.has_pkg.outputs.present == 'true'
+        run: docker build -t flatpare:ci .
+
       - name: No app code yet
         if: steps.has_pkg.outputs.present != 'true'
         run: echo "No package.json found; CI checks will enforce once app scaffold is added."
