@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/brlauuu/flatpare/actions/workflows/ci.yml/badge.svg)](https://github.com/brlauuu/flatpare/actions/workflows/ci.yml)
 [![Tests](https://github.com/brlauuu/flatpare/actions/workflows/tests.yml/badge.svg)](https://github.com/brlauuu/flatpare/actions/workflows/tests.yml)
+[![Version](https://img.shields.io/github/package-json/v/brlauuu/flatpare)](./package.json)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-%3E%3D10-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/)
 [![Dockerized](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](./Dockerfile)
@@ -111,8 +112,14 @@ GitHub Actions workflows are included:
 
 - `CI`: lint/build pipeline (`.github/workflows/ci.yml`)
 - `Tests`: test pipeline (`.github/workflows/tests.yml`)
+- `Version Bump`: auto minor bump on every push to `main` (`.github/workflows/version-bump.yml`)
 
 Target policy: merge only when checks are green.
+
+## Versioning policy
+
+- Every push to `main` triggers an automatic **minor** version bump.
+- Major version bumps are intentional and must be done manually on explicit instruction.
 
 ## License
 

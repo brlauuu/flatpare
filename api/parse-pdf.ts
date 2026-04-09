@@ -69,12 +69,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const model = process.env.FIREWORKS_MODEL;
 
   if (!apiKey || !model) {
-    return res.status(500).json({ error: "FIREWORKS_API_KEY or FIREWORKS_MODEL missing" });
+    return res.status(500).json({
+      error: "FIREWORKS_API_KEY or FIREWORKS_MODEL missing",
+      stage: "config",
+      details: "Set FIREWORKS_API_KEY and FIREWORKS_MODEL in environment."
+    });
   }
 
   const body = (req.body ?? {}) as ParsePdfBody;
   if (!body.fileBase64) {
-    return res.status(400).json({ error: "fileBase64 is required" });
+    return res.status(400).json({
+      error: "fileBase64 is required",
+      stage: "validation",
+      details: "Frontend request body did not include fileBase64."
+    });
   }
 
   try {
@@ -103,7 +111,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!response.ok) {
       const message = await response.text();
-      return res.status(502).json({ error: "Fireworks request failed", details: message });
+      return res.status(502).json({
+        error: "Fireworks request failed",
+        stage: "upstream",
+        details: message
+      });
     }
 
     const payload = (await response.json()) as {
@@ -112,16 +124,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const content = payload.choices?.[0]?.message?.content;
     if (!content) {
-      return res.status(502).json({ error: "Fireworks returned empty content" });
+      return res.status(502).json({
+        error: "Fireworks returned empty content",
+        stage: "upstream",
+        details: "No `choices[0].message.content` in Fireworks response."
+      });
     }
 
     const parsed = JSON.parse(content) as ParsedApartment;
     const normalized = normalize(parsed);
 
     return res.status(200).json(normalized);
-  } catch {
-    return res
-      .status(500)
-      .json({ error: "Failed to parse PDF. Fill form manually and retry." });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to parse PDF. Fill form manually and retry.",
+      stage: "server",
+      details: error instanceof Error ? error.message : "Unknown server error"
+    });
   }
 }

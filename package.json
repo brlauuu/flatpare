@@ -8,7 +8,9 @@
     "npm": ">=10"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n web,api -c blue,green \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:web": "vite",
+    "dev:api": "node --env-file=.env.local server.mjs --api-only --port=3001",
     "build": "tsc -b && vite build",
     "start": "node server.mjs",
     "preview": "vite preview",
@@ -31,6 +33,7 @@
     "@types/react-dom": "^18.3.7",
     "@vercel/node": "^5.1.15",
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
     "eslint": "^9.24.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

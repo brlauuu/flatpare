@@ -25,6 +25,12 @@ type ParseResult = {
   warnings: string[];
 };
 
+type ParseErrorResponse = {
+  error?: string;
+  stage?: string;
+  details?: string;
+};
+
 const STAR_FIELDS: Array<keyof Omit<ScoreRecord, "note">> = [
   "kitchen",
   "balcony",
@@ -66,6 +72,7 @@ function App() {
   const [form, setForm] = useState<PartialApartment>({ addr: "" });
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [parseDiagnostics, setParseDiagnostics] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
 
   const currentApartment = apartments[currentIndex];
@@ -195,6 +202,7 @@ function App() {
     setView("entry");
     setForm({ addr: "" });
     setParseWarnings([]);
+    setParseDiagnostics(null);
 
     await Promise.all([
       storage.set(STORAGE_KEYS.apartments, appended.apartments),
@@ -208,6 +216,7 @@ function App() {
   const parsePdfFile = async (file: File) => {
     setIsParsing(true);
     setParseError(null);
+    setParseDiagnostics(null);
 
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -221,15 +230,41 @@ function App() {
         body: JSON.stringify({ fileBase64, fileName: file.name })
       });
 
+      const payload = (await response.json()) as ParseResult & ParseErrorResponse;
       if (!response.ok) {
-        throw new Error("Parser request failed");
+        const errorMessage = payload.error ?? "Parser request failed";
+        setParseError(errorMessage);
+        setParseDiagnostics(
+          JSON.stringify(
+            {
+              status: response.status,
+              stage: payload.stage ?? "unknown",
+              details: payload.details ?? "No additional details",
+              fileName: file.name
+            },
+            null,
+            2
+          )
+        );
+        return;
       }
 
-      const payload = (await response.json()) as ParseResult;
       setForm((current) => ({ ...current, ...payload.apartment }));
       setParseWarnings(payload.warnings);
     } catch {
       setParseError("Parsing failed. You can still fill the apartment form manually.");
+      setParseDiagnostics(
+        JSON.stringify(
+          {
+            stage: "client",
+            details:
+              "Could not reach parse endpoint. In local dev, ensure `npm run dev` is running both web and api processes.",
+            fileName: file.name
+          },
+          null,
+          2
+        )
+      );
     } finally {
       setIsParsing(false);
     }
@@ -474,6 +509,12 @@ function App() {
           </label>
           {isParsing ? <p>Parsing PDF...</p> : null}
           {parseError ? <p className="error">{parseError}</p> : null}
+          {parseDiagnostics ? (
+            <details className="diagnostics">
+              <summary>Parser diagnostics</summary>
+              <pre>{parseDiagnostics}</pre>
+            </details>
+          ) : null}
           {parseWarnings.map((warning) => (
             <p className="warning" key={warning}>
               {warning}

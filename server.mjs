@@ -8,6 +8,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, "dist");
 const app = express();
+const args = process.argv.slice(2);
+const isApiOnly = args.includes("--api-only");
+const portArg = args.find((arg) => arg.startsWith("--port="));
+const portFromArg = portArg ? Number(portArg.split("=")[1]) : Number.NaN;
 
 const parsePrompt = `
 Extract apartment listing data from the provided PDF text.
@@ -61,7 +65,9 @@ function normalizeParsedApartment(parsed) {
 }
 
 app.use(express.json({ limit: "25mb" }));
-app.use(express.static(distPath));
+if (!isApiOnly) {
+  app.use(express.static(distPath));
+}
 
 app.post("/api/verify-password", (req, res) => {
   const configuredPassword = process.env.APP_PASSWORD;
@@ -82,13 +88,21 @@ app.post("/api/parse-pdf", async (req, res) => {
   const model = process.env.FIREWORKS_MODEL;
 
   if (!apiKey || !model) {
-    return res.status(500).json({ error: "FIREWORKS_API_KEY or FIREWORKS_MODEL missing" });
+    return res.status(500).json({
+      error: "FIREWORKS_API_KEY or FIREWORKS_MODEL missing",
+      stage: "config",
+      details: "Set FIREWORKS_API_KEY and FIREWORKS_MODEL in environment."
+    });
   }
 
   const fileBase64 = req.body?.fileBase64;
   const fileName = String(req.body?.fileName ?? "listing.pdf");
   if (!fileBase64) {
-    return res.status(400).json({ error: "fileBase64 is required" });
+    return res.status(400).json({
+      error: "fileBase64 is required",
+      stage: "validation",
+      details: "Frontend request body did not include fileBase64."
+    });
   }
 
   try {
@@ -114,29 +128,42 @@ app.post("/api/parse-pdf", async (req, res) => {
 
     if (!response.ok) {
       const details = await response.text();
-      return res.status(502).json({ error: "Fireworks request failed", details });
+      return res.status(502).json({
+        error: "Fireworks request failed",
+        stage: "upstream",
+        details
+      });
     }
 
     const payload = await response.json();
     const content = payload?.choices?.[0]?.message?.content;
     if (!content) {
-      return res.status(502).json({ error: "Fireworks returned empty content" });
+      return res.status(502).json({
+        error: "Fireworks returned empty content",
+        stage: "upstream",
+        details: "No `choices[0].message.content` in Fireworks response."
+      });
     }
 
     const normalized = normalizeParsedApartment(JSON.parse(content));
     return res.status(200).json(normalized);
-  } catch {
-    return res
-      .status(500)
-      .json({ error: "Failed to parse PDF. Fill form manually and retry." });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to parse PDF. Fill form manually and retry.",
+      stage: "server",
+      details: error instanceof Error ? error.message : "Unknown server error"
+    });
   }
 });
 
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(distPath, "index.html"));
-});
+if (!isApiOnly) {
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number.isFinite(portFromArg) ? portFromArg : Number(process.env.PORT ?? 3000);
 app.listen(port, () => {
-  console.log(`flatpare listening on http://0.0.0.0:${port}`);
+  const mode = isApiOnly ? "API-only" : "full";
+  console.log(`flatpare (${mode}) listening on http://0.0.0.0:${port}`);
 });

@@ -1,6 +1,6 @@
 # Apartment Tracker — Product Requirements Document
 
-**Version:** v1.3  
+**Version:** v1.4  
 **Date:** April 2026
 
 ---
@@ -23,6 +23,8 @@ When two people search for an apartment together, ratings and impressions are ty
 - Require a shared app password on first visit before loading apartment data
 - Provide clear setup and deployment instructions for Vercel and Fireworks AI usage
 - Provide full Dockerized deployment/runtime path with documentation
+- Provide transparent parser diagnostics in-app to speed up issue debugging
+- Apply automated semantic versioning policy: minor bump on every push to `main`
 
 ### 1.3 Non-goals
 
@@ -107,6 +109,7 @@ Parsing is implemented in the app as an explicit feature (not manual assistant-o
 - Model returns structured JSON for apartment fields (`addr`, `rent`, `rooms`, `baths`, `bal`, `wash`, `url`, `info`)
 - Server validates/normalizes values and returns final parsed payload
 - User reviews parsed values before saving apartment
+- Parser failures expose structured diagnostics (`stage`, `details`, status) to the UI
 
 Fireworks model choice should be configurable via environment variable so model can be swapped without code changes.
 
@@ -212,6 +215,7 @@ The repository must include a complete operator/developer guide in `README.md` (
 4. Troubleshooting:
    - Common errors for missing/invalid env vars
    - PDF parse failure fallback to manual apartment entry
+   - Parser diagnostics interpretation in UI
 
 ### 5.5 Quality gates, CI, and project metadata
 
@@ -221,6 +225,7 @@ The MVP delivery must include:
 - `README.md` and docs kept up to date with any behavior/setup changes
 - GitHub Actions workflow(s) for at least: install, lint, test, and build
 - GitHub Actions must also validate Docker image build
+- GitHub Actions workflow for automatic minor version bumps on pushes to `main`
 - README badges for: CI status, test status, and key tool/runtime versions used in the project
 - Contributor credit in README including AI-assisted contribution acknowledgment for Codex
 - License file and README license section using O'SAASY license text and attribution placeholders completed for this project

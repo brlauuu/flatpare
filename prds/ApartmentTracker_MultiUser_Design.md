@@ -1,7 +1,7 @@
 # Multi-User System Design
 ## Apartment Tracker — Technical Specification
 
-**Version:** v1.3  
+**Version:** v1.4  
 **Date:** April 2026
 
 ---
@@ -208,6 +208,8 @@ Secrets and key management:
 
 - If parsing fails, keep user in manual Add flow with prefilled fields where available
 - Show clear parser error and allow retry
+- Return structured diagnostics from API (`error`, `stage`, `details`)
+- Render diagnostics in UI inside a collapsible panel in Add view
 - Never block manual apartment creation if parser is unavailable
 
 ---
@@ -305,6 +307,7 @@ Configure GitHub Actions workflows to run on pull requests and pushes to `main`:
 3. Unit/integration tests
 4. Production build
 5. Docker image build
+6. Minor version bump workflow on push to `main`
 
 Merges are expected only when checks are green.
 
@@ -314,6 +317,7 @@ Merges are expected only when checks are green.
 - Document setup, run, test, build, and deploy commands
 - Include architecture summary and env var reference table
 - Include Docker run/deploy instructions and required env vars
+- Document versioning policy (auto minor on `main`, manual major only)
 
 ### 11.3 README badges and metadata
 
@@ -355,8 +359,10 @@ README should include badges for:
 | 15 | Deploy to Vercel with required env vars | P0 |
 | 16 | Add Dockerfile, docker-compose, and container runtime server | P0 |
 | 17 | Add Docker build validation in CI | P0 |
-| 18 | Make compare table columns sortable | P1 |
-| 19 | Add sticky first column on compare table | P1 |
-| 20 | Replace `localStorage` with Supabase adapter | P2 |
-| 21 | Make user list configurable | P2 |
-| 22 | SBB transit time via open data API | P3 |
+| 18 | Add parser diagnostics payload + collapsible UI diagnostics panel | P0 |
+| 19 | Add automatic minor version bump workflow on pushes to `main` | P0 |
+| 20 | Make compare table columns sortable | P1 |
+| 21 | Add sticky first column on compare table | P1 |
+| 22 | Replace `localStorage` with Supabase adapter | P2 |
+| 23 | Make user list configurable | P2 |
+| 24 | SBB transit time via open data API | P3 |

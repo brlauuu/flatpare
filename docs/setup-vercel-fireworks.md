@@ -25,6 +25,11 @@ Required env vars:
    - `FIREWORKS_MODEL`
 3. Never commit `.env.local`.
 
+Important local behavior:
+
+- `npm run dev` starts both Vite (`web`) and a local API process (`api`) that reads `.env.local`.
+- The web process proxies `/api/*` calls to the local API process, so password and parsing should behave like production.
+
 ## 3. Vercel deployment secrets
 
 1. Open your Vercel project.
