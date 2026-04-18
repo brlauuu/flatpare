@@ -1,242 +1,192 @@
-# Apartment Tracker — Product Requirements Document
+# Flatpare - Product Requirements Document
 
-**Version:** v1.4  
+**Version:** v2.0
 **Date:** April 2026
 
 ---
 
 ## 1. Overview
 
-Apartment Tracker is a collaborative web application that lets two users — Đorđe and Lara — independently rate, annotate, and compare rental apartment listings in Basel, Switzerland. The app is designed for active apartment hunting: listings are added manually or parsed from PDF exports of real estate portals, and each user maintains their own set of personal scores and notes per apartment.
+Flatpare is a collaborative apartment comparison tool for a small group (2-3 people) searching for rental apartments in the Basel, Switzerland area. Users upload PDF printouts from apartment listing websites, the app extracts structured data using AI, and all participants can independently rate and compare apartments in a unified comparison grid.
 
-### 1.1 Problem statement
+### 1.1 Problem Statement
 
-When two people search for an apartment together, ratings and impressions are typically exchanged verbally or via scattered messages. There is no shared artefact that tracks both perspectives, preserves the original listing data, and allows side-by-side comparison. This app solves that.
+When multiple people search for an apartment together, tracking and comparing listings is scattered across messaging apps, spreadsheets, and verbal discussions. There is no shared tool that preserves listing data, captures each person's subjective ratings, and enables structured side-by-side comparison.
 
 ### 1.2 Goals
 
-- Allow both users to rate apartments independently across five subjective dimensions
-- Persist all data across sessions without requiring user accounts or a backend
-- Parse listing details from PDF exports of Homegate and Comparis listings
-- Support adding new apartments at any time
-- Display a unified comparison table showing both users' ratings side by side
-- Require a shared app password on first visit before loading apartment data
-- Provide clear setup and deployment instructions for Vercel and Fireworks AI usage
-- Provide full Dockerized deployment/runtime path with documentation
-- Provide transparent parser diagnostics in-app to speed up issue debugging
-- Apply automated semantic versioning policy: minor bump on every push to `main`
+- Upload apartment listing PDFs and auto-extract structured data (size, rent, rooms, address, etc.)
+- Auto-calculate travel distance to Basel SBB by bike and public transit
+- Allow each user to independently rate apartments across five subjective categories
+- Provide a full comparison grid showing all apartments with metrics and ratings
+- Modern, minimal design optimized for mobile and desktop
+- Simple shared-password access gate (no user account overhead)
+- Deploy on Vercel with minimal operational complexity
 
-### 1.3 Non-goals
+### 1.3 Non-Goals
 
-- Real-time collaboration or live sync between devices
-- Automated scraping of real estate portals (blocked by 403)
-- Full user authentication, account management, or role-based access control
-- Mobile-native app — responsive web is sufficient
-- Hidden or undocumented deployment/security setup steps
+- Real-time collaboration / live sync (acceptable for 2-3 users)
+- Full authentication system with user accounts
+- Automated scraping of listing websites
+- Native mobile app (responsive web is sufficient)
+- Docker / self-hosted deployment (Vercel only)
 
 ---
 
 ## 2. Users
 
-There are exactly two named users: Đorđe and Lara. The app does not require personal user accounts. The active user is selected via a toggle in the top bar. Each user's data is stored separately. Future iterations may support additional users via a configurable user list.
+The app supports 2-3 simultaneous users identified by display name. There are no user accounts. After passing the shared password gate, each person enters a display name which is stored in a cookie. Ratings are attributed to the display name.
 
-### 2.1 Access gate (MVP)
+### 2.1 Access Gate
 
-Before a visitor can use the app, they must pass a shared password gate. This is a simple app-level access check (not full authentication):
-
-- On first visit per device/browser, show a password screen
-- If password is correct, store an unlocked flag locally and continue into app
-- If password is wrong, stay on lock screen and show an error
-- Add a "Lock app" action that clears the unlocked flag for the current browser
+- Single shared password for all users (set via `APP_PASSWORD` env var)
+- On first visit, show password input screen
+- On success, prompt for display name, store auth state in HTTP-only cookie
+- No "remember me" / no password reset / no RBAC
 
 ---
 
-## 3. Features
+## 3. Core Features
 
-### 3.1 Apartment list
+### 3.1 Apartment Data Model
 
-The app maintains a list of apartments. Each apartment has the following fields:
+Each apartment record contains:
 
-| Field | Type | Source | Notes |
-|-------|------|--------|-------|
-| `name` | string | Derived | First two words of address if not set |
-| `addr` | string | Manual / parsed | Full street address including postcode |
-| `url` | string | Manual / parsed | Link to original listing |
-| `rent` | number | Parsed | Total monthly rent in CHF |
-| `rooms` | number | Parsed | Swiss room count (e.g. 3.5) |
-| `baths` | number | Parsed | Bathroom count |
-| `bal` | number / string | Parsed | Number of balconies or `"?"` |
-| `dist` | string | Estimated | Estimated travel time to Basel SBB |
-| `wash` | string | Parsed | `"yes"`, `"no"`, or `"?"` |
-| `info` | string | Manual / parsed | Short descriptor line shown in the card |
+| Field | Type | Source |
+|-------|------|--------|
+| `name` | string | Extracted from listing title |
+| `address` | string | Extracted from PDF |
+| `size_m2` | number | Extracted (square meters) |
+| `num_rooms` | number | Extracted (Swiss room count, e.g. 3.5) |
+| `num_bathrooms` | number | Extracted |
+| `num_balconies` | number | Extracted |
+| `rent_chf` | number | Extracted (monthly rent in CHF) |
+| `distance_bike_min` | number | Auto-calculated or manual |
+| `distance_transit_min` | number | Auto-calculated or manual |
+| `pdf_url` | string | Vercel Blob URL of uploaded PDF |
+| `raw_extracted_data` | JSON | Full AI extraction for reference |
 
-### 3.2 Per-user data
+### 3.2 Rating System
 
-Each user has the following data stored per apartment:
+Each user rates each apartment on five categories (1-5 stars):
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `kitchen` | integer 0–5 | Star rating for kitchen quality |
-| `balcony` | integer 0–5 | Star rating for balcony quality |
-| `floorplan` | integer 0–5 | Star rating for floor plan layout |
-| `light` | integer 0–5 | Star rating for amount of natural light |
-| `feel` | integer 0–5 | Overall feeling / vibe rating |
-| `note` | string | Free-text notes and impressions |
+| Category | Description |
+|----------|-------------|
+| Kitchen | Quality/size of kitchen |
+| Balconies | Quality/size of balcony/terrace |
+| Location | Overall location quality |
+| Floorplan | Layout and flow of rooms |
+| Overall feeling | General vibe and impression |
 
-### 3.3 Entry view
+Plus a free-text comment field per apartment per user.
 
-The entry view shows one apartment at a time. Navigation between apartments is done via prev/next buttons. The active user is shown via a badge next to the score and notes sections. All listing fields are shown read-only; only scores and notes are editable. An "Open listing" button links directly to the original URL.
+### 3.3 PDF Upload & Parsing
 
-### 3.4 Compare view
+1. User uploads a PDF via drag-and-drop or file picker
+2. PDF is stored in Vercel Blob
+3. PDF pages are sent to a vision-capable AI model via Vercel AI SDK
+4. AI extracts structured apartment data (handles German and English listings)
+5. Extracted data is shown in an editable form for user review/correction
+6. User confirms and saves the apartment record
 
-The compare view renders a horizontally scrollable table with one row per apartment. Columns are: address, listing link, rent (lowest highlighted), rooms, distance to Basel SBB, washing machine, and then five score columns per user (kitchen, balcony, floor plan, light, feel) and a notes column per user. User scores are visually distinguished by colour — purple dots for Đorđe, pink for Lara.
+### 3.4 Distance Calculation
 
-### 3.5 Add apartment
+- Reference point: Basel SBB (hardcoded, coordinates: 47.5476, 7.5897)
+- Auto-calculate bike and public transit travel time via Google Maps Distance Matrix API
+- If API fails or address is unclear, fall back to manual input
+- Users can always manually override calculated distances
 
-A form allows adding a new apartment manually. Required field: address. All other fields are optional. On submit, the new apartment is appended to the list and both users get an empty score record for it. The app navigates to the new apartment in the entry view after saving.
+### 3.5 Comparison View
 
-### 3.6 PDF parsing
-
-When a user uploads a PDF export from Homegate or Comparis, the app extracts structured listing fields and pre-populates the apartment record. Fields that are missing from the PDF are left as `"?"`. The distance to Basel SBB is estimated based on neighbourhood knowledge of Basel's transit network and is flagged as an estimate.
-
-### 3.7 PDF parsing via Fireworks AI API (MVP)
-
-Parsing is implemented in the app as an explicit feature (not manual assistant-only flow):
-
-- User uploads PDF in the app (drag/drop or file picker)
-- Frontend sends the PDF to a Vercel serverless route
-- The serverless route calls Fireworks AI API with a document-capable model
-- Model returns structured JSON for apartment fields (`addr`, `rent`, `rooms`, `baths`, `bal`, `wash`, `url`, `info`)
-- Server validates/normalizes values and returns final parsed payload
-- User reviews parsed values before saving apartment
-- Parser failures expose structured diagnostics (`stage`, `details`, status) to the UI
-
-Fireworks model choice should be configurable via environment variable so model can be swapped without code changes.
-
-API key source and storage requirements:
-
-- Fireworks API key is created in the Fireworks AI account dashboard (`fireworks.ai` -> API Keys)
-- Production key must be stored only in Vercel Project Environment Variables as `FIREWORKS_API_KEY`
-- Local development key is stored in `.env.local` and must never be committed
+- Shows ALL apartments by default in a horizontally scrollable grid
+- Columns = apartments, rows = metrics and ratings
+- Each column has a "Hide" button to temporarily remove it from view (does not delete from DB)
+- Hidden state resets on page refresh (stored in component state only)
+- Visual indicators (color coding) for best/worst values in each metric row
+- Rows include: all extracted metrics + each user's ratings + average ratings
 
 ---
 
-## 4. Data storage
+## 4. Pages & Navigation
 
-### 4.1 Current implementation (Claude.ai widget)
+### 4.1 Password Gate (`/`)
+- Centered card with password input
+- On success, prompt for display name
+- Redirect to apartment list
 
-The widget version uses the Claude.ai persistent storage API (`window.storage`), a key-value store scoped to the artifact. Keys used:
+### 4.2 Apartment List (`/apartments`)
+- Grid of apartment cards: name, address, size, rent, average rating
+- "Upload New" button
+- Sort by: rent, size, average rating, date added
+- Filter by: min/max rooms, min/max size
 
-- `apts-v1` — JSON array of apartment objects
-- `scores-djordje-v1` — JSON array of per-apartment score objects for Đorđe
-- `scores-lara-v1` — JSON array of per-apartment score objects for Lara
+### 4.3 Upload & Parse (`/apartments/new`)
+- Drag-and-drop PDF upload area
+- Progress indicator: uploading -> parsing -> extracting distances
+- Editable form showing extracted data
+- Save button creates apartment record
 
-On first load, if `scores-djordje-v1` is empty, the app checks `localStorage` for `apt-scores-v4` (the previous single-user version) and migrates the data automatically.
+### 4.4 Apartment Detail (`/apartments/[id]`)
+- Full extracted data display
+- Link to view/download PDF
+- All users' ratings with per-category averages
+- Current user's rating form (star selector + comment)
+- Edit button for extracted data corrections
 
-### 4.2 Standalone app implementation
-
-Replace `window.storage` with `localStorage`. Use the same key names. The migration logic from `apt-scores-v4` should be preserved. Storage calls are async in the widget; in `localStorage` they are synchronous — simplify accordingly.
-
-Additional local keys for MVP access gate:
-
-- `app-unlocked-v1` — `"true"` when password gate was passed on this browser
-
-### 4.3 Future: backend storage
-
-For true cross-device sync, replace `localStorage` with a lightweight backend. Suggested options: Supabase (free tier, Postgres, REST API), PocketBase (self-hosted), or a simple JSON file on a VPS. The storage interface should be abstracted behind a thin adapter so the swap is localised.
-
----
-
-## 5. Technical architecture
-
-### 5.1 Recommended stack
-
-- **Framework:** React 18 with Vite
-- **Styling:** CSS Modules or Tailwind CSS
-- **State:** `useState` + `useReducer` — no external state library needed at this scale
-- **Storage:** `localStorage` adapter (swappable for Supabase/PocketBase later)
-- **Deployment:** Vercel (primary target)
-- **Containerization:** Docker multi-stage image + Docker Compose
-- **Build:** `npm run build` for frontend bundle
-- **Server routes:** Vercel Functions for password verification and Fireworks PDF parsing
-- **Env vars:** `APP_PASSWORD`, `FIREWORKS_API_KEY`, `FIREWORKS_MODEL`
-
-### 5.2 Component structure
-
-- `App` — root, loads data, manages `activeUser` and `currentApt` index
-- `AccessGate` — password screen shown before app content
-- `TopBar` — tab navigation + user toggle
-- `EntryView` — single apartment card + score editor + notes
-- `ApartmentCard` — read-only listing details
-- `ScoreEditor` — five star-rating fields, user-aware colouring
-- `CompareView` — scrollable table, both users side by side
-- `AddForm` — form for manually adding a new apartment
-- `PdfImport` — upload UI + review parsed apartment fields
-- `storage.js` — localStorage adapter (swap this for backend later)
-- `api/verify-password` — validates password server-side
-- `api/parse-pdf` — Fireworks parsing proxy + normalization
-
-### 5.3 Deployment
-
-Recommended Vercel deployment flow:
-
-1. Push code to a GitHub repository
-2. Import repository into Vercel
-3. Set build command: `npm run build`
-4. Configure environment variables: `APP_PASSWORD`, `FIREWORKS_API_KEY`, `FIREWORKS_MODEL`
-5. Ensure serverless routes are deployed with the frontend
-6. Every push to `main` deploys automatically
-
-### 5.6 Dockerized deployment and runtime
-
-The app must support a full containerized runtime path:
-
-1. Multi-stage `Dockerfile` builds frontend and ships minimal runtime image
-2. Runtime container serves built frontend and API endpoints from one process
-3. `docker-compose.yml` is included for local container run
-4. Container requires the same env vars as Vercel (`APP_PASSWORD`, `FIREWORKS_API_KEY`, `FIREWORKS_MODEL`)
-5. Documentation must include both `docker compose` and plain `docker run` instructions
-
-### 5.4 Developer setup and operations documentation
-
-The repository must include a complete operator/developer guide in `README.md` (and linked docs pages when needed) covering:
-
-1. Vercel setup:
-   - Create/import project on Vercel
-   - Where to set Environment Variables (Project Settings -> Environment Variables)
-   - Which environments require each variable (Production/Preview/Development)
-2. Fireworks setup:
-   - Where to create API keys in Fireworks dashboard
-   - Required model id format for `FIREWORKS_MODEL`
-   - How to rotate/revoke keys
-3. Local development:
-   - Required `.env.local` values
-   - `.env.example` template that lists required variables without secrets
-4. Troubleshooting:
-   - Common errors for missing/invalid env vars
-   - PDF parse failure fallback to manual apartment entry
-   - Parser diagnostics interpretation in UI
-
-### 5.5 Quality gates, CI, and project metadata
-
-The MVP delivery must include:
-
-- Automated test suite with all tests passing in CI before merge
-- `README.md` and docs kept up to date with any behavior/setup changes
-- GitHub Actions workflow(s) for at least: install, lint, test, and build
-- GitHub Actions must also validate Docker image build
-- GitHub Actions workflow for automatic minor version bumps on pushes to `main`
-- README badges for: CI status, test status, and key tool/runtime versions used in the project
-- Contributor credit in README including AI-assisted contribution acknowledgment for Codex
-- License file and README license section using O'SAASY license text and attribution placeholders completed for this project
+### 4.5 Comparison (`/compare`)
+- Full-width horizontally scrollable grid
+- All apartments shown by default
+- Hide/show individual apartments
+- Best/worst highlighting per row
 
 ---
 
-## 6. Known limitations and future work
+## 5. Technical Architecture
 
-- **No real-time sync** — if both users open the app simultaneously on different devices, writes will overwrite each other. Acceptable for this use case; fix with a backend if needed.
-- **Simple password gate only** — this is shared-password protection and not full auth; it is sufficient for MVP but not for strong security requirements.
-- **LLM extraction variance** — PDF parsing quality depends on PDF quality and chosen Fireworks model; user review before save remains required.
-- **Fixed user list** — users are hardcoded as Đorđe and Lara. To support configurable users, move the user list to a settings object in storage and render the toggle dynamically.
-- **No sorting or filtering** — the compare table is not sortable. Add sort-by-column and filter-by-score as a next iteration.
-- **Distance estimates** — transit distances to Basel SBB were hand-estimated. Integrate the SBB open data API or Google Maps Distance Matrix for accurate times.
+### 5.1 Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Database | SQLite via Turso |
+| ORM | Drizzle ORM |
+| Styling | Tailwind CSS + shadcn/ui |
+| File Storage | Vercel Blob |
+| PDF Parsing | Vercel AI SDK (vision model) |
+| Distance API | Google Maps Distance Matrix |
+| Deployment | Vercel |
+
+### 5.2 Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `APP_PASSWORD` | Shared access password |
+| `TURSO_DATABASE_URL` | Turso database connection URL |
+| `TURSO_AUTH_TOKEN` | Turso authentication token |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob access token |
+| `GOOGLE_MAPS_API_KEY` | Google Maps Distance Matrix API |
+| AI provider key (e.g. `GOOGLE_GENERATIVE_AI_API_KEY` or `OPENAI_API_KEY`) | For PDF parsing |
+
+### 5.3 Database
+
+SQLite via Turso with Drizzle ORM. Two tables: `apartments` and `ratings`. See Technical Specification for schema details.
+
+---
+
+## 6. Design Principles
+
+- **Minimal**: Clean, uncluttered UI with generous whitespace
+- **Mobile-first**: All views usable on phone screens; comparison view uses horizontal scroll
+- **Fast**: Optimistic UI updates, loading skeletons, no unnecessary page reloads
+- **Forgiving**: AI extraction errors are easily correctable via editable forms
+
+---
+
+## 7. Future Work
+
+- Sortable/filterable comparison columns
+- Photo gallery from PDF images
+- SBB open data API for more accurate transit times
+- Export comparison as PDF/spreadsheet
+- Configurable reference points (not just Basel SBB)
