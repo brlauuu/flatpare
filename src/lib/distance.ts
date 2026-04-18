@@ -1,3 +1,6 @@
+import { db } from "@/lib/db";
+import { apiUsage } from "@/lib/db/schema";
+
 const BASEL_SBB = "Basel SBB, Switzerland";
 
 interface DistanceResult {
@@ -23,6 +26,16 @@ export async function calculateDistance(
 
     results.bikeMinutes = bikeRes;
     results.transitMinutes = transitRes;
+
+    // Log usage (2 API calls: bike + transit)
+    try {
+      await db.insert(apiUsage).values({
+        service: "google_maps",
+        operation: "calculate_distance",
+      });
+    } catch {
+      // Don't fail distance calc if logging fails
+    }
   } catch {
     // Return nulls on failure — user can fill in manually
   }
