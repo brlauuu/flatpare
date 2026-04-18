@@ -8,6 +8,7 @@ const navItems = [
   { href: "/apartments", label: "Apartments" },
   { href: "/apartments/new", label: "Upload" },
   { href: "/compare", label: "Compare" },
+  { href: "/costs", label: "Costs" },
 ];
 
 export function NavBar({ userName }: { userName: string }) {

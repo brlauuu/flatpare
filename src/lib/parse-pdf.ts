@@ -1,6 +1,8 @@
 import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { db } from "@/lib/db";
+import { apiUsage } from "@/lib/db/schema";
 
 export const apartmentExtractionSchema = z.object({
   name: z.string().describe("Listing title or apartment name"),
@@ -32,7 +34,7 @@ export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
 export async function extractApartmentData(
   pdfBase64Pages: string[]
 ): Promise<ApartmentExtraction> {
-  const { output } = await generateText({
+  const result = await generateText({
     model: google("gemini-2.5-flash-preview-05-20"),
     output: Output.object({
       schema: apartmentExtractionSchema,
@@ -61,9 +63,21 @@ Return null for any field you cannot determine from the document.`,
     ],
   });
 
-  if (!output) {
+  // Log token usage
+  try {
+    await db.insert(apiUsage).values({
+      service: "gemini",
+      operation: "parse_pdf",
+      inputTokens: result.usage?.inputTokens ?? null,
+      outputTokens: result.usage?.outputTokens ?? null,
+    });
+  } catch {
+    // Don't fail the parse if logging fails
+  }
+
+  if (!result.output) {
     throw new Error("Failed to extract apartment data from PDF");
   }
 
-  return output;
+  return result.output;
 }
