@@ -4,33 +4,41 @@ Collaborative apartment comparison tool for small groups hunting for rentals tog
 
 ## Features
 
-- **PDF Upload & AI Parsing** — Upload apartment listing PDFs; Gemini extracts structured data (rent, size, rooms, address, etc.)
-- **Auto Distance Calculation** — Bike and transit travel time from Basel SBB via Google Maps
+- **PDF Upload & AI Parsing** — Upload apartment listing PDFs; AI extracts structured data (rent, size, rooms, address, etc.)
+- **Auto Distance Calculation** — Bike and transit travel time from Basel SBB
 - **Star Ratings** — Each user rates apartments on 5 categories (kitchen, balconies, location, floorplan, overall feeling)
 - **Comparison Grid** — All apartments in a horizontally scrollable table with best-value highlighting
 - **Simple Auth** — Shared password gate + display name (no accounts needed)
 - **Mobile-Friendly** — Responsive design with bottom nav on mobile
+- **Cloud or Local** — Deploy to Vercel or run fully self-hosted with free alternatives
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Database | SQLite via [Turso](https://turso.tech) |
-| ORM | [Drizzle ORM](https://orm.drizzle.team) |
-| Styling | Tailwind CSS + [shadcn/ui](https://ui.shadcn.com) |
-| File Storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) |
-| PDF Parsing | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini |
-| Distance API | Google Maps Distance Matrix |
-| Deployment | [Vercel](https://vercel.com) |
+| Layer | Cloud (Vercel) | Local/Self-hosted |
+|-------|---------------|-------------------|
+| Framework | Next.js 16 (App Router) | Same |
+| Database | SQLite via [Turso](https://turso.tech) | Local SQLite file |
+| ORM | [Drizzle ORM](https://orm.drizzle.team) | Same |
+| Styling | Tailwind CSS + [shadcn/ui](https://ui.shadcn.com) | Same |
+| File Storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) | Local filesystem |
+| PDF Parsing | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini | Ollama (local LLM) or manual entry |
+| Distance API | Google Maps Distance Matrix | [OpenRouteService](https://openrouteservice.org) (free) or manual entry |
+| Deployment | [Vercel](https://vercel.com) | Any Node.js host |
 
 ## Prerequisites
 
+### Cloud mode (Vercel)
+
 - Node.js 20+
-- npm
 - A [Turso](https://turso.tech) account (free tier)
 - A [Google AI Studio](https://aistudio.google.com) API key
 - (Optional) A [Google Maps Platform](https://console.cloud.google.com) API key
+
+### Local/self-hosted mode
+
+- Node.js 20+
+- (Optional) [Ollama](https://ollama.com) with a vision model (e.g. `llava`) for PDF parsing
+- (Optional) A free [OpenRouteService](https://openrouteservice.org/dev/#/signup) API key for distance calculation
 
 ## Setup
 
@@ -113,6 +121,73 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Local/Self-Hosted Setup (No Cloud Services)
+
+Run Flatpare entirely on your machine with zero cloud dependencies. The only required env var is `APP_PASSWORD`.
+
+### 1. Clone and install
+
+```bash
+git clone <repo-url>
+cd flatpare
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` — only `APP_PASSWORD` is required:
+
+```env
+APP_PASSWORD=<choose a shared password>
+```
+
+All cloud variables (`TURSO_DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, etc.) can be omitted. The app auto-detects local mode when they're absent.
+
+### 3. (Optional) Set up Ollama for AI-powered PDF parsing
+
+Without an AI provider, PDF upload still works but all fields must be filled in manually.
+
+```bash
+# Install Ollama: https://ollama.com/download
+ollama pull llava
+ollama serve  # starts on port 11434
+```
+
+Add to `.env.local`:
+
+```env
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llava
+```
+
+### 4. (Optional) Set up OpenRouteService for distance calculation
+
+Without a distance API, users can enter bike/transit times manually.
+
+1. Sign up at [openrouteservice.org/dev](https://openrouteservice.org/dev/#/signup) (free, no credit card)
+2. Create an API key
+
+Add to `.env.local`:
+
+```env
+OPENROUTESERVICE_API_KEY=<your key>
+```
+
+Note: OpenRouteService supports bike routing but not public transit. Transit times will need to be entered manually.
+
+### 5. Push database schema and run
+
+```bash
+npx drizzle-kit push   # creates ./data/flatpare.db
+npm run dev
+```
+
+Data is stored in `./data/flatpare.db` (SQLite) and uploaded PDFs go to `./uploads/`. Both directories are gitignored.
+
 ## Deploy to Vercel
 
 The app is configured for automatic deployment on push to `main`.
@@ -166,8 +241,9 @@ src/
     db/schema.ts                # Drizzle database schema
     db/index.ts                 # Database client
     auth.ts                     # Cookie/session helpers
-    parse-pdf.ts                # AI extraction logic
-    distance.ts                 # Google Maps API wrapper
+    parse-pdf.ts                # AI extraction logic (Gemini / Ollama)
+    distance.ts                 # Distance calculation (Google Maps / OpenRouteService)
+    storage.ts                  # File storage (Vercel Blob / local filesystem)
   proxy.ts                      # Auth proxy (Next.js 16)
 ```
 
