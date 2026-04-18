@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { uploadFile } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 
 export async function POST(request: Request) {
@@ -13,21 +13,40 @@ export async function POST(request: Request) {
     );
   }
 
-  // Upload PDF to Vercel Blob
-  const blob = await put(`apartments/${Date.now()}-${file.name}`, file, {
-    access: "public",
-  });
+  const filename = `${Date.now()}-${file.name}`;
 
-  // Convert PDF to base64 for AI processing
-  // For now, send the entire PDF as a single document URL
-  // Gemini can handle PDF files directly via URL
+  // Upload PDF (Vercel Blob in cloud, local filesystem otherwise)
+  const pdfUrl = await uploadFile(filename, file);
+
+  // Try AI extraction — if no AI provider is configured, return empty extraction
+  const hasAI =
+    !!process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    !!process.env.OLLAMA_BASE_URL;
+
+  if (!hasAI) {
+    return NextResponse.json({
+      pdfUrl,
+      extracted: {
+        name: file.name.replace(/\.pdf$/i, ""),
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        rentChf: null,
+      },
+      aiAvailable: false,
+    });
+  }
+
   const arrayBuffer = await file.arrayBuffer();
   const base64 = Buffer.from(arrayBuffer).toString("base64");
 
   const extracted = await extractApartmentData([base64]);
 
   return NextResponse.json({
-    pdfUrl: blob.url,
+    pdfUrl,
     extracted,
+    aiAvailable: true,
   });
 }
