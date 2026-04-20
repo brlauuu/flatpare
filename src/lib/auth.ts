@@ -12,7 +12,7 @@ export async function setAuthenticated(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE, "true", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && !process.env.DISABLE_SECURE_COOKIES,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
@@ -27,7 +27,7 @@ export async function setDisplayName(name: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(NAME_COOKIE, name, {
     httpOnly: false, // readable by client JS
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && !process.env.DISABLE_SECURE_COOKIES,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 30,
   });

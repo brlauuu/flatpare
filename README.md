@@ -188,6 +188,44 @@ npm run dev
 
 Data is stored in `./data/flatpare.db` (SQLite) and uploaded PDFs go to `./uploads/`. Both directories are gitignored.
 
+## Docker
+
+The simplest way to run Flatpare locally or on a server.
+
+### Quick start
+
+```bash
+cp .env.example .env.local
+# Edit .env.local — at minimum set APP_PASSWORD
+
+docker compose up -d
+```
+
+The app is available at `http://localhost:3000`. To use a different port:
+
+```bash
+PORT=8080 docker compose up -d
+```
+
+Data (SQLite database and uploaded PDFs) is persisted in Docker volumes.
+
+### With Ollama (AI-powered PDF parsing)
+
+If you're running Ollama on the host machine, add to `.env.local`:
+
+```env
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=llava
+```
+
+### Rebuild after updates
+
+```bash
+git pull
+docker compose build
+docker compose up -d
+```
+
 ## Deploy to Vercel
 
 The app is configured for automatic deployment on push to `main`.
