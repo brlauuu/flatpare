@@ -20,6 +20,7 @@ type ApartmentForm = {
   distanceBikeMin: string;
   distanceTransitMin: string;
   pdfUrl: string;
+  listingUrl: string;
   rawExtractedData: Record<string, unknown> | null;
 };
 
@@ -34,6 +35,7 @@ const emptyForm: ApartmentForm = {
   distanceBikeMin: "",
   distanceTransitMin: "",
   pdfUrl: "",
+  listingUrl: "",
   rawExtractedData: null,
 };
 
@@ -65,6 +67,7 @@ function formFromExtracted(
     distanceBikeMin: "",
     distanceTransitMin: "",
     pdfUrl,
+    listingUrl: (extracted.listingUrl as string) || "",
     rawExtractedData: extracted,
   };
 }
@@ -85,6 +88,7 @@ function formToPayload(form: ApartmentForm) {
       ? parseInt(form.distanceTransitMin)
       : null,
     pdfUrl: form.pdfUrl || null,
+    listingUrl: form.listingUrl || null,
     rawExtractedData: form.rawExtractedData,
   };
 }
@@ -649,6 +653,14 @@ function ApartmentFormFields({
             onChange={(e) => onChange("numBalconies", e.target.value)}
           />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Listing URL</Label>
+        <Input
+          value={form.listingUrl}
+          onChange={(e) => onChange("listingUrl", e.target.value)}
+          placeholder="https://..."
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

@@ -13,6 +13,7 @@ export const apartments = sqliteTable("apartments", {
   distanceBikeMin: integer("distance_bike_min"),
   distanceTransitMin: integer("distance_transit_min"),
   pdfUrl: text("pdf_url"),
+  listingUrl: text("listing_url"),
   rawExtractedData: text("raw_extracted_data"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`

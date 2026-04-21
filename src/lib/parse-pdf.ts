@@ -28,6 +28,10 @@ export const apartmentExtractionSchema = z.object({
     .number()
     .nullable()
     .describe("Monthly rent in CHF (gross/brutto if available)"),
+  listingUrl: z
+    .string()
+    .nullable()
+    .describe("Original listing URL from the document (e.g. immobilienscout24, wg-gesucht, homegate, etc.)"),
 });
 
 export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;

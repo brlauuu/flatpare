@@ -33,6 +33,7 @@ interface ApartmentDetail {
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
   pdfUrl: string | null;
+  listingUrl: string | null;
   ratings: Rating[];
 }
 
@@ -125,16 +126,32 @@ export default function ApartmentDetailPage() {
             <p className="text-muted-foreground">{apartment.address}</p>
           )}
         </div>
-        {apartment.pdfUrl && (
-          <a
-            href={apartment.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            View PDF
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          {apartment.pdfUrl && (
+            <a
+              href={apartment.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              View PDF
+            </a>
+          )}
+          {apartment.listingUrl ? (
+            <a
+              href={apartment.listingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Original Listing
+            </a>
+          ) : (
+            <Badge variant="secondary" className="text-muted-foreground">
+              URL missing
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Apartment metrics */}
