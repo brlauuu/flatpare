@@ -87,7 +87,7 @@ export function NavBar({ userName }: { userName: string }) {
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
               <DropdownMenuLabel>Switch user</DropdownMenuLabel>
               {otherUsers.map((name) => (
-                <DropdownMenuItem key={name} onSelect={() => switchUser(name)}>
+                <DropdownMenuItem key={name} onClick={() => switchUser(name)}>
                   {name}
                 </DropdownMenuItem>
               ))}
@@ -97,7 +97,7 @@ export function NavBar({ userName }: { userName: string }) {
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push("/")}>
+              <DropdownMenuItem onClick={() => router.push("/")}>
                 <Plus className="h-3.5 w-3.5" />
                 Add new user
               </DropdownMenuItem>
