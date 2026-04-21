@@ -22,5 +22,5 @@ export async function uploadFile(
   const buffer = Buffer.from(await file.arrayBuffer());
   const filePath = path.join(UPLOADS_DIR, filename);
   await writeFile(filePath, buffer);
-  return `/api/uploads/${filename}`;
+  return `/api/uploads/${encodeURIComponent(filename)}`;
 }

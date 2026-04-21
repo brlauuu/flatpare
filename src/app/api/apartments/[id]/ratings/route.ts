@@ -8,29 +8,48 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const apartmentId = parseInt(id);
-  const userName = await getDisplayName();
+  try {
+    const { id } = await params;
+    const apartmentId = parseInt(id);
+    const userName = await getDisplayName();
 
-  if (!userName) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+    if (!userName) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
-  const body = await request.json();
+    const body = await request.json();
 
-  // Upsert: update if exists, insert if not
-  const existing = await db
-    .select()
-    .from(ratings)
-    .where(
-      and(eq(ratings.apartmentId, apartmentId), eq(ratings.userName, userName))
-    )
-    .limit(1);
+    // Upsert: update if exists, insert if not
+    const existing = await db
+      .select()
+      .from(ratings)
+      .where(
+        and(eq(ratings.apartmentId, apartmentId), eq(ratings.userName, userName))
+      )
+      .limit(1);
 
-  if (existing.length > 0) {
+    if (existing.length > 0) {
+      const result = await db
+        .update(ratings)
+        .set({
+          kitchen: body.kitchen,
+          balconies: body.balconies,
+          location: body.location,
+          floorplan: body.floorplan,
+          overallFeeling: body.overallFeeling,
+          comment: body.comment,
+        })
+        .where(eq(ratings.id, existing[0].id))
+        .returning();
+
+      return NextResponse.json(result[0]);
+    }
+
     const result = await db
-      .update(ratings)
-      .set({
+      .insert(ratings)
+      .values({
+        apartmentId,
+        userName,
         kitchen: body.kitchen,
         balconies: body.balconies,
         location: body.location,
@@ -38,25 +57,14 @@ export async function POST(
         overallFeeling: body.overallFeeling,
         comment: body.comment,
       })
-      .where(eq(ratings.id, existing[0].id))
       .returning();
 
-    return NextResponse.json(result[0]);
+    return NextResponse.json(result[0], { status: 201 });
+  } catch (error) {
+    console.error("[ratings:POST] Error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to save rating" },
+      { status: 500 }
+    );
   }
-
-  const result = await db
-    .insert(ratings)
-    .values({
-      apartmentId,
-      userName,
-      kitchen: body.kitchen,
-      balconies: body.balconies,
-      location: body.location,
-      floorplan: body.floorplan,
-      overallFeeling: body.overallFeeling,
-      comment: body.comment,
-    })
-    .returning();
-
-  return NextResponse.json(result[0], { status: 201 });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,8 +52,10 @@ function getCookieValue(name: string): string | null {
 
 export default function ApartmentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [apartment, setApartment] = useState<ApartmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [myRating, setMyRating] = useState({
     kitchen: 0,
     balconies: 0,
@@ -93,6 +95,13 @@ export default function ApartmentDetailPage() {
   useEffect(() => {
     loadApartment();
   }, [loadApartment]);
+
+  async function handleDelete() {
+    if (!confirm("Delete this apartment? This cannot be undone.")) return;
+    setDeleting(true);
+    await fetch(`/api/apartments/${params.id}`, { method: "DELETE" });
+    router.push("/apartments");
+  }
 
   async function handleSaveRating() {
     setSaving(true);
@@ -151,6 +160,14 @@ export default function ApartmentDetailPage() {
               URL missing
             </Badge>
           )}
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={deleting}
+            onClick={handleDelete}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
         </div>
       </div>
 

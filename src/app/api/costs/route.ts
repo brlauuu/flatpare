@@ -10,6 +10,7 @@ const GEMINI_FLASH_OUTPUT_PER_TOKEN = 0.0000006; // $0.60 per 1M output tokens
 const MAPS_COST_PER_CALL = (5 / 1000) * 2;
 
 export async function GET() {
+  try {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // All-time stats
@@ -82,4 +83,11 @@ export async function GET() {
     totalEstimatedCost30d:
       Math.round((geminiCost30d + mapsCost30d) * 10000) / 10000,
   });
+  } catch (error) {
+    console.error("[costs:GET] Error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch costs" },
+      { status: 500 }
+    );
+  }
 }
