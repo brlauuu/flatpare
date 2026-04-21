@@ -1,9 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ChevronDown, Plus, User } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { href: "/apartments", label: "Apartments" },
@@ -15,6 +25,26 @@ const navItems = [
 
 export function NavBar({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [users, setUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/auth/users")
+      .then((res) => res.json())
+      .then((data: string[]) => setUsers(data))
+      .catch(() => {});
+  }, []);
+
+  async function switchUser(name: string) {
+    await fetch("/api/auth/name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: name }),
+    });
+    router.refresh();
+  }
+
+  const otherUsers = users.filter((u) => u !== userName);
 
   return (
     <header className="border-b bg-background">
@@ -40,7 +70,31 @@ export function NavBar({ userName }: { userName: string }) {
         </nav>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <span className="text-sm text-muted-foreground">{userName}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <User className="h-3.5 w-3.5" />
+              <span>{userName}</span>
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
+              <DropdownMenuLabel>Switch user</DropdownMenuLabel>
+              {otherUsers.map((name) => (
+                <DropdownMenuItem key={name} onSelect={() => switchUser(name)}>
+                  {name}
+                </DropdownMenuItem>
+              ))}
+              {otherUsers.length === 0 && (
+                <DropdownMenuItem disabled>
+                  <span className="text-muted-foreground">No other users</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => router.push("/")}>
+                <Plus className="h-3.5 w-3.5" />
+                Add new user
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       {/* Mobile bottom nav */}
