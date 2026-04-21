@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,22 @@ export default function LoginPage() {
   const [step, setStep] = useState<"password" | "name">("password");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [existingUsers, setExistingUsers] = useState<string[]>([]);
+  const [showNewUserInput, setShowNewUserInput] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (step === "name") {
+      fetch("/api/auth/users")
+        .then((res) => res.json())
+        .then((users: string[]) => {
+          setExistingUsers(users);
+          if (users.length === 0) setShowNewUserInput(true);
+        })
+        .catch(() => setShowNewUserInput(true));
+    }
+  }, [step]);
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -36,24 +50,28 @@ export default function LoginPage() {
     setStep("name");
   }
 
-  async function handleName(e: React.FormEvent) {
-    e.preventDefault();
+  async function selectUser(name: string) {
     setError("");
     setLoading(true);
 
     const res = await fetch("/api/auth/name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName }),
+      body: JSON.stringify({ displayName: name }),
     });
 
     if (!res.ok) {
-      setError("Please enter a name");
+      setError("Failed to set name");
       setLoading(false);
       return;
     }
 
     router.push("/apartments");
+  }
+
+  async function handleNewName(e: React.FormEvent) {
+    e.preventDefault();
+    await selectUser(displayName.trim());
   }
 
   return (
@@ -64,7 +82,7 @@ export default function LoginPage() {
           <p className="text-center text-sm text-muted-foreground">
             {step === "password"
               ? "Enter the password to continue"
-              : "What's your name?"}
+              : "Who are you?"}
           </p>
         </CardHeader>
         <CardContent>
@@ -89,25 +107,80 @@ export default function LoginPage() {
               </Button>
             </form>
           ) : (
-            <form onSubmit={handleName} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Display name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Lara"
-                  autoFocus
-                />
-              </div>
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
+            <div className="space-y-3">
+              {existingUsers.length > 0 && !showNewUserInput && (
+                <>
+                  <div className="space-y-2">
+                    {existingUsers.map((name) => (
+                      <Button
+                        key={name}
+                        variant="outline"
+                        className="w-full justify-start"
+                        disabled={loading}
+                        onClick={() => selectUser(name)}
+                      >
+                        {name}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="relative my-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">or</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => setShowNewUserInput(true)}
+                  >
+                    Add new user
+                  </Button>
+                </>
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Saving..." : "Enter"}
-              </Button>
-            </form>
+              {showNewUserInput && (
+                <form onSubmit={handleNewName} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Display name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="e.g. Lara"
+                      autoFocus
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                  )}
+                  <div className="flex gap-2">
+                    {existingUsers.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setShowNewUserInput(false);
+                          setDisplayName("");
+                        }}
+                      >
+                        Back
+                      </Button>
+                    )}
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={loading || !displayName.trim()}
+                    >
+                      {loading ? "Saving..." : "Enter"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
