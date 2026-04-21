@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -49,8 +50,15 @@ export function NavBar({ userName }: { userName: string }) {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/apartments" className="text-lg font-semibold">
-          Flatpare
+        <Link href="/apartments" className="flex items-center">
+          <Image
+            src="/flatpare_logo.svg"
+            alt="Flatpare"
+            width={120}
+            height={37}
+            className="h-8 w-auto dark:invert"
+            priority
+          />
         </Link>
         <nav className="hidden items-center gap-1 sm:flex">
           {navItems.map((item) => (

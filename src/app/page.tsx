@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -77,8 +78,15 @@ export default function LoginPage() {
   return (
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">Flatpare</CardTitle>
+        <CardHeader className="items-center">
+          <Image
+            src="/flatpare_logo.svg"
+            alt="Flatpare"
+            width={180}
+            height={56}
+            className="h-12 w-auto dark:invert mb-2"
+            priority
+          />
           <p className="text-center text-sm text-muted-foreground">
             {step === "password"
               ? "Enter the password to continue"
