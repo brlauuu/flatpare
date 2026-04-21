@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/apartments", label: "Apartments" },
@@ -37,7 +38,10 @@ export function NavBar({ userName }: { userName: string }) {
             </Link>
           ))}
         </nav>
-        <span className="text-sm text-muted-foreground">{userName}</span>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <span className="text-sm text-muted-foreground">{userName}</span>
+        </div>
       </div>
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-background sm:hidden">
