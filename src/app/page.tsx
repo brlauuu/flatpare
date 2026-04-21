@@ -78,16 +78,19 @@ export default function LoginPage() {
   return (
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="items-center">
+        <CardHeader className="items-center space-y-3">
           <Image
             src="/flatpare_logo.svg"
             alt="Flatpare"
             width={180}
             height={56}
-            className="h-12 w-auto dark:invert mb-2"
+            className="h-12 w-auto dark:invert"
             priority
           />
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
+            Compare apartments together
+          </p>
+          <p className="text-center text-sm text-muted-foreground pt-2">
             {step === "password"
               ? "Enter the password to continue"
               : "Who are you?"}
