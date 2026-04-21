@@ -53,6 +53,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: 1,
       numBalconies: 1,
       rentChf: 1800,
+      listingUrl: "https://www.immobilienscout24.ch/listing/123",
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result).toEqual(data);
@@ -67,6 +68,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       rentChf: null,
+      listingUrl: null,
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result).toEqual(data);

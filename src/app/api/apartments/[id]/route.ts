@@ -51,6 +51,7 @@ export async function PATCH(
       rentChf: body.rentChf,
       distanceBikeMin: body.distanceBikeMin,
       distanceTransitMin: body.distanceTransitMin,
+      listingUrl: body.listingUrl,
     })
     .where(eq(apartments.id, apartmentId))
     .returning();

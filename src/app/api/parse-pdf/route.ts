@@ -34,6 +34,7 @@ export async function POST(request: Request) {
         numBathrooms: null,
         numBalconies: null,
         rentChf: null,
+        listingUrl: null,
       },
       aiAvailable: false,
     });

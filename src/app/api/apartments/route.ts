@@ -17,6 +17,7 @@ export async function GET() {
       distanceBikeMin: apartments.distanceBikeMin,
       distanceTransitMin: apartments.distanceTransitMin,
       pdfUrl: apartments.pdfUrl,
+      listingUrl: apartments.listingUrl,
       createdAt: apartments.createdAt,
       avgKitchen: avg(ratings.kitchen),
       avgBalconies: avg(ratings.balconies),
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
       distanceBikeMin: body.distanceBikeMin,
       distanceTransitMin: body.distanceTransitMin,
       pdfUrl: body.pdfUrl,
+      listingUrl: body.listingUrl || null,
       rawExtractedData: body.rawExtractedData
         ? JSON.stringify(body.rawExtractedData)
         : null,
