@@ -128,3 +128,50 @@
     @apply font-sans;
   }
 }
+
+/* Prose styles for the in-app guide */
+.guide-prose {
+  line-height: 1.75;
+}
+.guide-prose h1 {
+  @apply text-3xl font-bold mt-0 mb-4;
+}
+.guide-prose h2 {
+  @apply text-2xl font-semibold mt-10 mb-4 border-b pb-2;
+}
+.guide-prose h3 {
+  @apply text-xl font-semibold mt-8 mb-3;
+}
+.guide-prose p {
+  @apply my-4;
+}
+.guide-prose ul, .guide-prose ol {
+  @apply my-4 pl-6;
+}
+.guide-prose ul {
+  list-style-type: disc;
+}
+.guide-prose ol {
+  list-style-type: decimal;
+}
+.guide-prose li {
+  @apply my-1;
+}
+.guide-prose strong {
+  @apply font-semibold;
+}
+.guide-prose code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+}
+.guide-prose hr {
+  @apply my-8 border-border;
+}
+.guide-prose table {
+  @apply my-4 w-full text-sm;
+}
+.guide-prose th {
+  @apply text-left font-semibold border-b p-2;
+}
+.guide-prose td {
+  @apply border-b p-2;
+}

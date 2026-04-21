@@ -266,15 +266,23 @@ src/
       [id]/page.tsx             # Apartment detail & ratings
     compare/
       page.tsx                  # Comparison grid
+    costs/
+      page.tsx                  # API cost dashboard
+    guide/
+      page.tsx                  # In-app user guide (rendered from markdown)
     api/
       auth/route.ts             # Password verification
       auth/name/route.ts        # Set display name
+      auth/users/route.ts       # List users who have rated
       apartments/route.ts       # List & create apartments
       apartments/[id]/route.ts  # Get, update, delete apartment
       apartments/[id]/ratings/  # Upsert rating
       parse-pdf/route.ts        # PDF upload & AI extraction
-      distance/route.ts         # Google Maps distance lookup
-  components/                   # UI components
+      distance/route.ts         # Distance calculation
+      costs/route.ts            # API usage cost estimates
+  components/                   # UI components (shadcn/ui + custom)
+  content/
+    guide.md                    # User guide markdown source
   lib/
     db/schema.ts                # Drizzle database schema
     db/index.ts                 # Database client
@@ -284,6 +292,92 @@ src/
     storage.ts                  # File storage (Vercel Blob / local filesystem)
   proxy.ts                      # Auth proxy (Next.js 16)
 ```
+
+## Architecture
+
+### How It Works
+
+1. **Authentication:** A simple shared password gate using HTTP-only cookies. No user accounts — just enter the password and pick a display name. The auth proxy (`proxy.ts`) redirects unauthenticated requests to the login page.
+
+2. **PDF Upload Flow:**
+   ```
+   User uploads PDF → uploadFile() stores it → extractApartmentData() sends to AI → structured data returned → user reviews & saves
+   ```
+   The AI provider is selected automatically: Google Gemini if `GOOGLE_GENERATIVE_AI_API_KEY` is set, Ollama if `OLLAMA_BASE_URL` is set, or manual entry if neither.
+
+3. **Distance Calculation:**
+   ```
+   Apartment address → calculateDistance() → Google Maps (preferred) or OpenRouteService (fallback) → bike & transit minutes
+   ```
+
+4. **Rating System:** Each user can rate each apartment once (upsert). Ratings are tied to the display name. Average ratings are computed per apartment for the comparison grid.
+
+5. **Data Storage:** SQLite via Drizzle ORM. In cloud mode, the database lives on Turso; locally, it's a file at `./data/flatpare.db`. File uploads go to Vercel Blob (cloud) or `./uploads/` (local).
+
+### Database Schema
+
+Three tables:
+
+- **apartments** — Core listing data (name, address, size, rent, distances, PDF URL)
+- **ratings** — Per-user ratings across 5 categories, with unique constraint on (apartmentId, userName)
+- **api_usage** — Tracks API calls to Gemini and Google Maps for the cost dashboard
+
+### API Routes
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth` | Verify password, set auth cookie |
+| `POST` | `/api/auth/name` | Set display name cookie |
+| `GET` | `/api/auth/users` | List distinct users who have rated |
+| `GET` | `/api/apartments` | List all apartments with average ratings |
+| `POST` | `/api/apartments` | Create a new apartment |
+| `GET` | `/api/apartments/[id]` | Get apartment with all ratings |
+| `PATCH` | `/api/apartments/[id]` | Update apartment fields |
+| `DELETE` | `/api/apartments/[id]` | Delete apartment and cascade ratings |
+| `POST` | `/api/apartments/[id]/ratings` | Upsert a rating for the current user |
+| `POST` | `/api/parse-pdf` | Upload PDF, store file, run AI extraction |
+| `POST` | `/api/distance` | Calculate bike/transit distance for an address |
+| `GET` | `/api/costs` | Get API usage stats and estimated costs |
+
+### Environment Variables
+
+| Variable | Required | Mode | Description |
+|----------|----------|------|-------------|
+| `APP_PASSWORD` | Yes | All | Shared access password |
+| `TURSO_DATABASE_URL` | No | Cloud | Turso database URL |
+| `TURSO_AUTH_TOKEN` | No | Cloud | Turso auth token |
+| `BLOB_READ_WRITE_TOKEN` | No | Cloud | Vercel Blob token (auto-set on Vercel) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | No | Cloud | Google Gemini API key for PDF parsing |
+| `GOOGLE_MAPS_API_KEY` | No | Cloud | Google Maps for distance calculation |
+| `OLLAMA_BASE_URL` | No | Local | Ollama server URL (e.g. `http://localhost:11434`) |
+| `OLLAMA_MODEL` | No | Local | Ollama model name (default: `llava`) |
+| `OPENROUTESERVICE_API_KEY` | No | Local | Free distance calculation alternative |
+| `DISABLE_SECURE_COOKIES` | No | Local | Set to bypass secure cookie flag in dev |
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev/) with React Testing Library.
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+```
+
+Test files live alongside their source in `__tests__/` directories:
+- `src/lib/__tests__/` — Unit tests for auth, distance, parse-pdf, storage, utils
+- `src/app/api/__tests__/` — API route handler tests
+- `src/components/__tests__/` — Component rendering and interaction tests
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes
+3. Run `npm test` to ensure all tests pass
+4. Run `npm run lint` to check for lint errors
+5. Submit a pull request
 
 ## License
 
