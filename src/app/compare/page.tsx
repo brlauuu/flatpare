@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { cn } from "@/lib/utils";
+import { BarChart3 } from "lucide-react";
 
 interface ApartmentWithRatings {
   id: number;
@@ -82,8 +84,19 @@ export default function ComparePage() {
 
   if (apartments.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">No apartments to compare yet</p>
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="rounded-full bg-muted p-4">
+          <BarChart3 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="text-center">
+          <p className="font-medium">No apartments to compare yet</p>
+          <p className="text-sm text-muted-foreground">
+            Upload at least two listings to start comparing
+          </p>
+        </div>
+        <Link href="/apartments/new" className={buttonVariants()}>
+          Upload a listing
+        </Link>
       </div>
     );
   }

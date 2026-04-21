@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
+import { Building2 } from "lucide-react";
 
 interface ApartmentSummary {
   id: number;
@@ -42,7 +43,15 @@ export default function ApartmentsPage() {
   if (apartments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <p className="text-muted-foreground">No apartments yet</p>
+        <div className="rounded-full bg-muted p-4">
+          <Building2 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="text-center">
+          <p className="font-medium">No apartments yet</p>
+          <p className="text-sm text-muted-foreground">
+            Upload a PDF listing to get started
+          </p>
+        </div>
         <Link href="/apartments/new" className={buttonVariants()}>
           Upload your first listing
         </Link>
