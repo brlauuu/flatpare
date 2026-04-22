@@ -40,7 +40,7 @@ function getModel() {
   // Cloud mode: Google Gemini
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return {
-      model: google("gemini-2.5-flash-preview-05-20"),
+      model: google("gemini-2.5-flash"),
       service: "gemini" as const,
     };
   }
