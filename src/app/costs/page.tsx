@@ -90,8 +90,8 @@ export default function CostsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Google Gemini (PDF Parsing)</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Model: gemini-2.5-flash-preview &middot; Pricing: $0.15/1M input,
-            $0.60/1M output tokens
+            Model: gemini-2.5-flash &middot; Pricing: $0.15/1M input, $0.60/1M
+            output tokens
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
