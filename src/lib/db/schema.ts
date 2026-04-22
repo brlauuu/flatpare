@@ -52,6 +52,13 @@ export const ratings = sqliteTable(
   ]
 );
 
+export const users = sqliteTable("users", {
+  name: text("name").primaryKey().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
 export const apiUsage = sqliteTable("api_usage", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   service: text("service").notNull(), // "gemini" | "google_maps"
@@ -67,4 +74,6 @@ export type Apartment = typeof apartments.$inferSelect;
 export type NewApartment = typeof apartments.$inferInsert;
 export type Rating = typeof ratings.$inferSelect;
 export type NewRating = typeof ratings.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type ApiUsage = typeof apiUsage.$inferSelect;

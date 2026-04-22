@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ChevronDown, Plus, User } from "lucide-react";
+import { ChevronDown, Plus, User, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,6 +38,7 @@ export function NavBar({ userName }: { userName: string }) {
   }, []);
 
   async function switchUser(name: string) {
+    if (name === userName) return;
     await fetch("/api/auth/name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,7 +47,19 @@ export function NavBar({ userName }: { userName: string }) {
     router.refresh();
   }
 
-  const otherUsers = users.filter((u) => u !== userName);
+  async function deleteUser(name: string) {
+    const res = await fetch(
+      `/api/auth/users/${encodeURIComponent(name)}`,
+      { method: "DELETE" }
+    );
+    if (!res.ok) return;
+    const data = (await res.json()) as { switchedTo?: string | null };
+    if (data.switchedTo === null) {
+      router.push("/");
+    } else {
+      router.refresh();
+    }
+  }
 
   return (
     <header className="border-b bg-background">
@@ -87,20 +100,42 @@ export function NavBar({ userName }: { userName: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Switch user</DropdownMenuLabel>
-                {otherUsers.map((name) => (
+                <DropdownMenuLabel>Users</DropdownMenuLabel>
+                {users.map((name) => (
                   <DropdownMenuItem
                     key={name}
                     onClick={() => switchUser(name)}
+                    className="flex items-center justify-between gap-2"
                   >
-                    {name}
+                    <span
+                      className={cn(
+                        "flex-1",
+                        name === userName && "font-medium"
+                      )}
+                    >
+                      {name}
+                      {name === userName && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          (you)
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${name}`}
+                      className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteUser(name);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </DropdownMenuItem>
                 ))}
-                {otherUsers.length === 0 && (
+                {users.length === 0 && (
                   <DropdownMenuItem disabled>
-                    <span className="text-muted-foreground">
-                      No other users
-                    </span>
+                    <span className="text-muted-foreground">No users</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuGroup>
