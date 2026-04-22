@@ -1,14 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, act, waitFor } from "@testing-library/react";
 
+const push = vi.fn();
+const refresh = vi.fn();
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/apartments",
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push, refresh }),
 }));
 
 import { NavBar } from "../nav-bar";
 
 beforeEach(() => {
+  push.mockReset();
+  refresh.mockReset();
   vi.spyOn(global, "fetch").mockImplementation(((input: RequestInfo) => {
     const url = typeof input === "string" ? input : (input as Request).url;
     if (url.endsWith("/api/auth/users")) {
@@ -70,5 +75,23 @@ describe("NavBar users dropdown", () => {
     });
 
     expect(screen.getByText("No other users")).toBeInTheDocument();
+  });
+
+  it("navigates to /add-user when 'Add new user' is clicked", async () => {
+    await act(async () => {
+      render(<NavBar userName="Alice" />);
+    });
+
+    const trigger = screen.getByRole("button", { name: /Alice/i });
+    await act(async () => {
+      trigger.click();
+    });
+
+    const addItem = await screen.findByText("Add new user");
+    await act(async () => {
+      addItem.click();
+    });
+
+    expect(push).toHaveBeenCalledWith("/add-user");
   });
 });

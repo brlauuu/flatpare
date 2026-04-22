@@ -105,7 +105,7 @@ export function NavBar({ userName }: { userName: string }) {
                 )}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/")}>
+              <DropdownMenuItem onClick={() => router.push("/add-user")}>
                 <Plus className="h-3.5 w-3.5" />
                 Add new user
               </DropdownMenuItem>
