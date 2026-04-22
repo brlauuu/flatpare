@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -92,7 +92,27 @@ export default function ApartmentDetailPage() {
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const loadApartment = useCallback(async () => {
+  // Shared applier so both the initial effect and event-driven reloads
+  // converge on the same state updates.
+  function applyApartmentData(data: ApartmentDetail) {
+    setApartment(data);
+    setError(null);
+    const name = getCookieValue("flatpare-name") ?? "";
+    setUserName(name);
+    const existing = data.ratings?.find((r) => r.userName === name);
+    if (existing) {
+      setMyRating({
+        kitchen: existing.kitchen,
+        balconies: existing.balconies,
+        location: existing.location,
+        floorplan: existing.floorplan,
+        overallFeeling: existing.overallFeeling,
+        comment: existing.comment || "",
+      });
+    }
+  }
+
+  async function reloadApartment() {
     const url = `/api/apartments/${params.id}`;
     try {
       const res = await fetch(url);
@@ -101,43 +121,49 @@ export default function ApartmentDetailPage() {
           headline: "Couldn't load apartment",
           details: await fetchErrorFromResponse(res, url),
         });
-        setLoading(false);
         return;
       }
-      const data = await res.json();
-      setApartment(data);
-      setError(null);
-
-      const name = getCookieValue("flatpare-name") ?? "";
-      setUserName(name);
-
-      const existing = data.ratings?.find(
-        (r: Rating) => r.userName === name
-      );
-      if (existing) {
-        setMyRating({
-          kitchen: existing.kitchen,
-          balconies: existing.balconies,
-          location: existing.location,
-          floorplan: existing.floorplan,
-          overallFeeling: existing.overallFeeling,
-          comment: existing.comment || "",
-        });
-      }
-
-      setLoading(false);
+      applyApartmentData(await res.json());
     } catch (err) {
       setError({
         headline: "Couldn't load apartment",
         details: fetchErrorFromException(err, url),
       });
-      setLoading(false);
     }
-  }, [params.id]);
+  }
 
   useEffect(() => {
-    loadApartment();
-  }, [loadApartment]);
+    let cancelled = false;
+    const url = `/api/apartments/${params.id}`;
+    void (async () => {
+      try {
+        const res = await fetch(url);
+        if (cancelled) return;
+        if (!res.ok) {
+          setError({
+            headline: "Couldn't load apartment",
+            details: await fetchErrorFromResponse(res, url),
+          });
+          setLoading(false);
+          return;
+        }
+        const data = (await res.json()) as ApartmentDetail;
+        if (cancelled) return;
+        applyApartmentData(data);
+        setLoading(false);
+      } catch (err) {
+        if (cancelled) return;
+        setError({
+          headline: "Couldn't load apartment",
+          details: fetchErrorFromException(err, url),
+        });
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   async function handleDelete() {
     if (!confirm("Delete this apartment? This cannot be undone.")) return;
@@ -197,7 +223,7 @@ export default function ApartmentDetailPage() {
         setSavingEdit(false);
         return;
       }
-      await loadApartment();
+      await reloadApartment();
       setEditing(false);
       setEditForm(null);
       setSavingEdit(false);
@@ -227,7 +253,7 @@ export default function ApartmentDetailPage() {
         setSaving(false);
         return;
       }
-      await loadApartment();
+      await reloadApartment();
       setSaving(false);
     } catch (err) {
       setError({

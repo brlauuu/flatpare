@@ -6,7 +6,7 @@ vi.mock("next/headers", () => {
   return {
     cookies: vi.fn(async () => ({
       get: (name: string) => cookieStore.get(name),
-      set: (name: string, value: string, _options?: Record<string, unknown>) => {
+      set: (name: string, value: string) => {
         cookieStore.set(name, { value });
       },
       _store: cookieStore,
