@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/star-rating";
+import { ShortCode } from "@/components/short-code";
 import { WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
@@ -53,6 +54,7 @@ interface ApartmentDetail {
   distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
+  shortCode: string | null;
   ratings: Rating[];
 }
 
@@ -263,8 +265,9 @@ export default function ApartmentDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold">{apartment.name}</h1>
+          <ShortCode code={apartment.shortCode} />
           {apartment.address && (
             <p className="text-muted-foreground">{apartment.address}</p>
           )}

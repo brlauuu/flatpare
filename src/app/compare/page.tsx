@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
+import { ShortCode } from "@/components/short-code";
 import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
@@ -30,6 +31,7 @@ interface ApartmentWithRatings {
   rentChf: number | null;
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
+  shortCode: string | null;
   ratings: {
     userName: string;
     kitchen: number;
@@ -188,8 +190,9 @@ export default function ComparePage() {
                   className="min-w-[160px] px-4 py-3 text-left font-medium"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="space-y-1">
                       <div className="font-semibold">{apt.name}</div>
+                      <ShortCode code={apt.shortCode} />
                       {apt.address && (
                         <div className="text-xs font-normal text-muted-foreground">
                           {apt.address}

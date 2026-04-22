@@ -76,11 +76,85 @@ async function reconcileHasWashingMachine(client: Client): Promise<void> {
   });
 }
 
+async function backfillShortCodes(client: Client): Promise<void> {
+  // After 0003 adds short_code as nullable, any pre-existing rows need a
+  // code. New inserts generate one at POST time; this handles the gap.
+  // Idempotent: only rows with NULL short_code are processed.
+  const tables = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='apartments'",
+    args: [],
+  });
+  if (tables.rows.length === 0) return;
+
+  const cols = await client.execute({
+    sql: "PRAGMA table_info(apartments)",
+    args: [],
+  });
+  const colNames = new Set(cols.rows.map((r) => String(r.name)));
+  const required = [
+    "short_code",
+    "num_rooms",
+    "num_bathrooms",
+    "has_washing_machine",
+    "address",
+  ];
+  if (required.some((c) => !colNames.has(c))) return;
+
+  const pending = await client.execute({
+    sql: `SELECT id, num_rooms, num_bathrooms, has_washing_machine, address
+          FROM apartments WHERE short_code IS NULL`,
+    args: [],
+  });
+  if (pending.rows.length === 0) return;
+
+  const { computeShortCodeParts, buildShortCode, pickLetters } = await import(
+    "@/lib/short-code"
+  );
+
+  for (const row of pending.rows) {
+    const input = {
+      numRooms:
+        row.num_rooms != null ? Number(row.num_rooms) : null,
+      numBathrooms:
+        row.num_bathrooms != null ? Number(row.num_bathrooms) : null,
+      hasWashingMachine:
+        row.has_washing_machine == null
+          ? null
+          : Number(row.has_washing_machine) === 1,
+      address:
+        typeof row.address === "string" && row.address.length > 0
+          ? row.address
+          : null,
+    };
+    const parts = await computeShortCodeParts(input);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = buildShortCode(parts, pickLetters());
+      try {
+        await client.execute({
+          sql: "UPDATE apartments SET short_code = ? WHERE id = ?",
+          args: [code, row.id as number],
+        });
+        break;
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          /unique/i.test(err.message) &&
+          attempt < 4
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+}
+
 export async function applyMigrations(client: Client): Promise<void> {
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  await backfillShortCodes(client);
 }
 
 function createDefaultClient(): Client {
