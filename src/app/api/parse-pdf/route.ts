@@ -34,6 +34,7 @@ export async function POST(request: Request) {
           numRooms: null,
           numBathrooms: null,
           numBalconies: null,
+          hasWashingMachine: null,
           rentChf: null,
           listingUrl: null,
         },

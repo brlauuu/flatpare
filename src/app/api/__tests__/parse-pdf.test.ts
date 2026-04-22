@@ -12,6 +12,7 @@ vi.mock("@/lib/parse-pdf", () => ({
     numRooms: 3,
     numBathrooms: 1,
     numBalconies: 1,
+    hasWashingMachine: true,
     rentChf: 1800,
   })),
 }));

@@ -52,6 +52,7 @@ describe("apartmentExtractionSchema", () => {
       numRooms: 3.5,
       numBathrooms: 1,
       numBalconies: 1,
+      hasWashingMachine: true,
       rentChf: 1800,
       listingUrl: "https://www.immobilienscout24.ch/listing/123",
     };
@@ -67,11 +68,44 @@ describe("apartmentExtractionSchema", () => {
       numRooms: null,
       numBathrooms: null,
       numBalconies: null,
+      hasWashingMachine: null,
       rentChf: null,
       listingUrl: null,
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result).toEqual(data);
+  });
+
+  it("accepts hasWashingMachine=false (no / shared laundry)", () => {
+    const data = {
+      name: "Shared Laundry Apt",
+      address: null,
+      sizeM2: null,
+      numRooms: null,
+      numBathrooms: null,
+      numBalconies: null,
+      hasWashingMachine: false,
+      rentChf: null,
+      listingUrl: null,
+    };
+    const result = apartmentExtractionSchema.parse(data);
+    expect(result.hasWashingMachine).toBe(false);
+  });
+
+  it("rejects a non-boolean, non-null hasWashingMachine", () => {
+    expect(() =>
+      apartmentExtractionSchema.parse({
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: "yes",
+        rentChf: null,
+        listingUrl: null,
+      })
+    ).toThrow();
   });
 
   it("rejects missing name", () => {
@@ -92,6 +126,7 @@ describe("extractApartmentData", () => {
       numRooms: 2,
       numBathrooms: 1,
       numBalconies: 0,
+      hasWashingMachine: true,
       rentChf: 1500,
     };
 
@@ -116,6 +151,7 @@ describe("extractApartmentData", () => {
         numRooms: null,
         numBathrooms: null,
         numBalconies: null,
+        hasWashingMachine: null,
         rentChf: null,
       },
       usage: { inputTokens: 1, outputTokens: 1 },
@@ -147,6 +183,7 @@ describe("extractApartmentData", () => {
         numRooms: null,
         numBathrooms: null,
         numBalconies: null,
+        hasWashingMachine: null,
         rentChf: null,
       },
       usage: { inputTokens: 50, outputTokens: 25 },

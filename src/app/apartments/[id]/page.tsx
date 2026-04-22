@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/star-rating";
+import { WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   type ErrorDetails,
@@ -40,6 +41,7 @@ interface ApartmentDetail {
   numRooms: number | null;
   numBathrooms: number | null;
   numBalconies: number | null;
+  hasWashingMachine: boolean | null;
   rentChf: number | null;
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
@@ -272,6 +274,24 @@ export default function ApartmentDetailPage() {
             {apartment.numBalconies} balcon{apartment.numBalconies !== 1 ? "ies" : "y"}
           </Badge>
         )}
+        <Badge
+          variant="secondary"
+          title={
+            apartment.hasWashingMachine === true
+              ? "Washing machine: yes"
+              : apartment.hasWashingMachine === false
+                ? "Washing machine: no (or shared)"
+                : "Washing machine: unknown"
+          }
+          className="gap-1"
+        >
+          <WashingMachine className="h-3 w-3" />
+          {apartment.hasWashingMachine === true
+            ? "Yes"
+            : apartment.hasWashingMachine === false
+              ? "No"
+              : "?"}
+        </Badge>
         {apartment.distanceBikeMin && (
           <Badge variant="outline">{apartment.distanceBikeMin} min bike</Badge>
         )}

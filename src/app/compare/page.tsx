@@ -26,6 +26,7 @@ interface ApartmentWithRatings {
   numRooms: number | null;
   numBathrooms: number | null;
   numBalconies: number | null;
+  hasWashingMachine: boolean | null;
   rentChf: number | null;
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
@@ -239,6 +240,35 @@ export default function ComparePage() {
                 </tr>
               );
             })}
+
+            {/* Washing machine row */}
+            <tr className="border-b">
+              <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
+                Washing machine
+              </td>
+              {visible.map((apt) => (
+                <td
+                  key={apt.id}
+                  className={cn(
+                    "px-4 py-2",
+                    apt.hasWashingMachine === true && "font-semibold text-green-600"
+                  )}
+                  title={
+                    apt.hasWashingMachine === true
+                      ? "Yes"
+                      : apt.hasWashingMachine === false
+                        ? "No (or shared)"
+                        : "Unknown"
+                  }
+                >
+                  {apt.hasWashingMachine === true
+                    ? "✓"
+                    : apt.hasWashingMachine === false
+                      ? "✕"
+                      : "—"}
+                </td>
+              ))}
+            </tr>
 
             {/* Rating rows per user */}
             {allUsers.map((user) => (

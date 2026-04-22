@@ -27,6 +27,7 @@ type ApartmentForm = {
   numRooms: string;
   numBathrooms: string;
   numBalconies: string;
+  hasWashingMachine: boolean | null;
   rentChf: string;
   distanceBikeMin: string;
   distanceTransitMin: string;
@@ -42,6 +43,7 @@ const emptyForm: ApartmentForm = {
   numRooms: "",
   numBathrooms: "",
   numBalconies: "",
+  hasWashingMachine: null,
   rentChf: "",
   distanceBikeMin: "",
   distanceTransitMin: "",
@@ -74,6 +76,10 @@ function formFromExtracted(
       extracted.numBathrooms != null ? String(extracted.numBathrooms) : "",
     numBalconies:
       extracted.numBalconies != null ? String(extracted.numBalconies) : "",
+    hasWashingMachine:
+      typeof extracted.hasWashingMachine === "boolean"
+        ? extracted.hasWashingMachine
+        : null,
     rentChf: extracted.rentChf != null ? String(extracted.rentChf) : "",
     distanceBikeMin: "",
     distanceTransitMin: "",
@@ -91,6 +97,7 @@ function formToPayload(form: ApartmentForm) {
     numRooms: form.numRooms ? parseFloat(form.numRooms) : null,
     numBathrooms: form.numBathrooms ? parseInt(form.numBathrooms) : null,
     numBalconies: form.numBalconies ? parseInt(form.numBalconies) : null,
+    hasWashingMachine: form.hasWashingMachine,
     rentChf: form.rentChf ? parseFloat(form.rentChf) : null,
     distanceBikeMin: form.distanceBikeMin
       ? parseInt(form.distanceBikeMin)
@@ -555,6 +562,15 @@ export default function UploadPage() {
                       onChange={(field, value) =>
                         updateItemForm(item.id, field, value)
                       }
+                      onWashingMachineChange={(v) =>
+                        setItems((prev) =>
+                          prev.map((it) =>
+                            it.id === item.id
+                              ? { ...it, form: { ...it.form, hasWashingMachine: v } }
+                              : it
+                          )
+                        )
+                      }
                     />
                   </CardContent>
                 )}
@@ -582,6 +598,9 @@ export default function UploadPage() {
               form={singleForm}
               onChange={(field, value) =>
                 setSingleForm((prev) => ({ ...prev, [field]: value }))
+              }
+              onWashingMachineChange={(v) =>
+                setSingleForm((prev) => ({ ...prev, hasWashingMachine: v }))
               }
             />
 
@@ -616,9 +635,11 @@ export default function UploadPage() {
 function ApartmentFormFields({
   form,
   onChange,
+  onWashingMachineChange,
 }: {
   form: ApartmentForm;
   onChange: (field: keyof ApartmentForm, value: string) => void;
+  onWashingMachineChange: (value: boolean | null) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -684,6 +705,13 @@ function ApartmentFormFields({
         </div>
       </div>
       <div className="space-y-2">
+        <Label>Washing machine</Label>
+        <WashingMachineToggle
+          value={form.hasWashingMachine}
+          onChange={onWashingMachineChange}
+        />
+      </div>
+      <div className="space-y-2">
         <Label>Listing URL</Label>
         <Input
           value={form.listingUrl}
@@ -709,6 +737,44 @@ function ApartmentFormFields({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function WashingMachineToggle({
+  value,
+  onChange,
+}: {
+  value: boolean | null;
+  onChange: (v: boolean | null) => void;
+}) {
+  const options: Array<{ key: "yes" | "no" | "unknown"; label: string; v: boolean | null }> = [
+    { key: "yes", label: "Yes", v: true },
+    { key: "no", label: "No", v: false },
+    { key: "unknown", label: "Unknown", v: null },
+  ];
+  return (
+    <div className="inline-flex rounded-md border">
+      {options.map((opt, i) => {
+        const selected = value === opt.v;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.v)}
+            className={cn(
+              "px-3 py-1.5 text-sm transition-colors",
+              i > 0 && "border-l",
+              selected
+                ? "bg-primary text-primary-foreground"
+                : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+            aria-pressed={selected}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -56,6 +56,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "has_washing_machine": {
+          "name": "has_washing_machine",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "rent_chf": {
           "name": "rent_chf",
           "type": "real",

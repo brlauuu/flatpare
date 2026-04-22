@@ -57,6 +57,7 @@ export async function PATCH(
         numRooms: body.numRooms,
         numBathrooms: body.numBathrooms,
         numBalconies: body.numBalconies,
+        hasWashingMachine: body.hasWashingMachine ?? null,
         rentChf: body.rentChf,
         distanceBikeMin: body.distanceBikeMin,
         distanceTransitMin: body.distanceTransitMin,

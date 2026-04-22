@@ -9,6 +9,7 @@ export const apartments = sqliteTable("apartments", {
   numRooms: real("num_rooms"),
   numBathrooms: integer("num_bathrooms"),
   numBalconies: integer("num_balconies"),
+  hasWashingMachine: integer("has_washing_machine", { mode: "boolean" }),
   rentChf: real("rent_chf"),
   distanceBikeMin: integer("distance_bike_min"),
   distanceTransitMin: integer("distance_transit_min"),
