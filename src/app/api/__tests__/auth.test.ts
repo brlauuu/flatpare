@@ -7,20 +7,37 @@ vi.mock("@/lib/auth", () => ({
   setDisplayName: vi.fn(async () => {}),
 }));
 
-// Mock db for users route
+// Mock db
+const usersSelectRows: { name: string }[] = [];
+let lastInsertValues: Record<string, unknown> | null = null;
+
 vi.mock("@/lib/db", () => ({
   db: {
-    selectDistinct: vi.fn(() => ({
-      from: vi.fn().mockResolvedValue([
-        { userName: "Alice" },
-        { userName: "Bob" },
-      ]),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        orderBy: vi.fn().mockResolvedValue(usersSelectRows),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn((v: Record<string, unknown>) => {
+        lastInsertValues = v;
+        return { onConflictDoNothing: vi.fn().mockResolvedValue(undefined) };
+      }),
     })),
   },
 }));
 
 vi.mock("@/lib/db/schema", () => ({
+  users: { name: "name", createdAt: "created_at" },
   ratings: { userName: "user_name" },
+}));
+
+vi.mock("drizzle-orm", () => ({
+  asc: vi.fn((c) => c),
+  desc: vi.fn((c) => c),
+  eq: vi.fn(),
+  ne: vi.fn(),
+  avg: vi.fn(),
 }));
 
 import { POST as authPost } from "../../api/auth/route";
@@ -32,6 +49,8 @@ const mockedVerifyPassword = vi.mocked(verifyPassword);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  usersSelectRows.length = 0;
+  lastInsertValues = null;
 });
 
 afterEach(() => {
@@ -69,7 +88,7 @@ describe("POST /api/auth", () => {
 });
 
 describe("POST /api/auth/name", () => {
-  it("returns success for valid display name", async () => {
+  it("returns success and upserts the user", async () => {
     const req = new Request("http://localhost/api/auth/name", {
       method: "POST",
       body: JSON.stringify({ displayName: "Alice" }),
@@ -79,6 +98,18 @@ describe("POST /api/auth/name", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.success).toBe(true);
+    expect(lastInsertValues).toEqual({ name: "Alice" });
+  });
+
+  it("trims whitespace before inserting", async () => {
+    const req = new Request("http://localhost/api/auth/name", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "  Bob  " }),
+    });
+
+    const res = await namePost(req);
+    expect(res.status).toBe(200);
+    expect(lastInsertValues).toEqual({ name: "Bob" });
   });
 
   it("returns 400 for empty display name", async () => {
@@ -103,7 +134,8 @@ describe("POST /api/auth/name", () => {
 });
 
 describe("GET /api/auth/users", () => {
-  it("returns sorted list of users", async () => {
+  it("returns list of users from the users table", async () => {
+    usersSelectRows.push({ name: "Alice" }, { name: "Bob" });
     const res = await usersGet();
     const data = await res.json();
     expect(data).toEqual(["Alice", "Bob"]);
