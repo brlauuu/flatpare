@@ -15,6 +15,13 @@
       "when": 1776840392526,
       "tag": "0001_users_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776849182678,
+      "tag": "0002_has_washing_machine",
+      "breakpoints": true
     }
   ]
 }

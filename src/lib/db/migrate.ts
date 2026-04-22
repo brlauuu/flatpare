@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
@@ -31,8 +32,53 @@ async function ensureListingUrlColumn(client: Client): Promise<void> {
   });
 }
 
+async function reconcileHasWashingMachine(client: Client): Promise<void> {
+  // PR #42 amended drizzle/0000_initial_schema.sql to include
+  // has_washing_machine, so DBs that ran that amended 0000 already have the
+  // column but no migration marker for 0002. Without this reconcile, 0002's
+  // ALTER TABLE ADD COLUMN would fail with "duplicate column name."
+  const apartmentsRes = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='apartments'",
+    args: [],
+  });
+  if (apartmentsRes.rows.length === 0) return;
+
+  const migrationsTableRes = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
+    args: [],
+  });
+  if (migrationsTableRes.rows.length === 0) return;
+
+  const cols = await client.execute({
+    sql: "PRAGMA table_info(apartments)",
+    args: [],
+  });
+  const hasColumn = cols.rows.some((r) => r.name === "has_washing_machine");
+  if (!hasColumn) return;
+
+  const journalPath = path.join(MIGRATIONS_FOLDER, "meta", "_journal.json");
+  const journal = JSON.parse(fs.readFileSync(journalPath, "utf8")) as {
+    entries: Array<{ tag: string; when: number }>;
+  };
+  const entry = journal.entries.find((e) => e.tag === "0002_has_washing_machine");
+  if (!entry) return;
+
+  const lastRes = await client.execute({
+    sql: "SELECT MAX(created_at) as ts FROM __drizzle_migrations",
+    args: [],
+  });
+  const lastTs = Number(lastRes.rows[0]?.ts ?? 0);
+  if (lastTs >= entry.when) return;
+
+  await client.execute({
+    sql: "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+    args: ["repair-has-washing-machine", entry.when],
+  });
+}
+
 export async function applyMigrations(client: Client): Promise<void> {
   await ensureListingUrlColumn(client);
+  await reconcileHasWashingMachine(client);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
 }

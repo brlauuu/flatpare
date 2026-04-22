@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1a6848e0-731a-4f91-9395-2275713a1699",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "6ed342f7-6d32-4031-af43-d337f17fb3ec",
+  "prevId": "b2d95bb9-97c3-471c-a5a6-58c800f95f39",
   "tables": {
     "apartments": {
       "name": "apartments",
@@ -51,6 +51,13 @@
         },
         "num_balconies": {
           "name": "num_balconies",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "has_washing_machine": {
+          "name": "has_washing_machine",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -288,6 +295,31 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
