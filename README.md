@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="public/flatpare_logo.svg" alt="Flatpare" width="160" />
+  <img src="public/flatpare_logo.svg" alt="Flatpare" width="420" />
 </p>
-
-<h1 align="center">Flatpare</h1>
 
 <p align="center">
   Collaborative apartment comparison tool for small groups hunting for rentals together.<br/>
