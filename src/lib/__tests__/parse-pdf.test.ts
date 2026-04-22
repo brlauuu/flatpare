@@ -24,10 +24,6 @@ vi.mock("@ai-sdk/google", () => ({
   google: vi.fn(() => "gemini-model"),
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: vi.fn(() => vi.fn(() => "ollama-model")),
-}));
-
 import { extractApartmentData, apartmentExtractionSchema } from "../parse-pdf";
 import { generateText } from "ai";
 
@@ -35,8 +31,6 @@ const mockedGenerateText = vi.mocked(generateText);
 
 beforeEach(() => {
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  delete process.env.OLLAMA_BASE_URL;
-  delete process.env.OLLAMA_MODEL;
 });
 
 afterEach(() => {
@@ -170,27 +164,6 @@ describe("extractApartmentData", () => {
       data: "base64pdf",
       mediaType: "application/pdf",
     });
-  });
-
-  it("uses Ollama when OLLAMA_BASE_URL is set", async () => {
-    process.env.OLLAMA_BASE_URL = "http://localhost:11434";
-
-    mockedGenerateText.mockResolvedValue({
-      output: {
-        name: "Ollama Apt",
-        address: null,
-        sizeM2: null,
-        numRooms: null,
-        numBathrooms: null,
-        numBalconies: null,
-        hasWashingMachine: null,
-        rentChf: null,
-      },
-      usage: { inputTokens: 50, outputTokens: 25 },
-    } as never);
-
-    const result = await extractApartmentData("base64pdf");
-    expect(result.name).toBe("Ollama Apt");
   });
 
   it("throws when no AI provider is configured", async () => {

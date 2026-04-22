@@ -123,18 +123,6 @@ npm run dev
 
 Data lives in `./data/flatpare.db`; uploaded PDFs go to `./uploads/`. Both are gitignored.
 
-**Optional — Ollama for PDF parsing**
-
-```bash
-ollama pull llava
-ollama serve
-```
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llava
-```
-
 **Optional — OpenRouteService for bike distance**
 
 Sign up at [openrouteservice.org/dev](https://openrouteservice.org/dev/#/signup) (free, no credit card). Transit is not supported — enter manually.
@@ -154,13 +142,6 @@ Use a different host port:
 
 ```bash
 PORT=8080 docker compose up -d
-```
-
-With host-installed Ollama for PDF parsing:
-
-```env
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=llava
 ```
 
 Rebuild after updates:
@@ -183,7 +164,7 @@ docker compose up -d
 | ORM | [Drizzle ORM](https://orm.drizzle.team) | Same |
 | Styling | Tailwind CSS + [shadcn/ui](https://ui.shadcn.com) | Same |
 | File Storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) | Local filesystem |
-| PDF Parsing | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini | Ollama (local LLM) or manual entry |
+| PDF Parsing | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini | Google Gemini or manual entry |
 | Distance API | Google Maps Distance Matrix | [OpenRouteService](https://openrouteservice.org) (free) or manual entry |
 | Deployment | [Vercel](https://vercel.com) | Any Node.js host |
 
@@ -214,7 +195,7 @@ src/
   lib/
     db/                         # Drizzle schema + client
     auth.ts                     # Cookie/session helpers
-    parse-pdf.ts                # AI extraction (Gemini / Ollama)
+    parse-pdf.ts                # AI extraction (Gemini)
     distance.ts                 # Distance (Google Maps / OpenRouteService)
     storage.ts                  # File storage (Blob / filesystem)
   proxy.ts                      # Auth proxy (Next.js 16)
@@ -226,7 +207,7 @@ src/
 <summary><strong>Architecture</strong></summary>
 
 - **Authentication:** shared password gate with HTTP-only cookies; no accounts. The auth proxy (`proxy.ts`) redirects unauthenticated requests.
-- **PDF flow:** upload → store → AI extraction → structured data → user reviews & saves. Provider auto-selects between Gemini, Ollama, and manual entry.
+- **PDF flow:** upload → store → AI extraction → structured data → user reviews & saves. Uses Google Gemini when configured; falls back to manual entry.
 - **Distance:** Google Maps preferred, OpenRouteService fallback. Returns bike and transit minutes.
 - **Ratings:** one upsert per user per apartment across 5 categories; averages drive the comparison grid.
 - **Storage:** Turso or local SQLite for data; Vercel Blob or `./uploads/` for files.
@@ -266,8 +247,6 @@ src/
 | `BLOB_READ_WRITE_TOKEN` | No | Cloud | Vercel Blob token (auto-set on Vercel) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | No | Cloud | Google Gemini API key for PDF parsing |
 | `GOOGLE_MAPS_API_KEY` | No | Cloud | Google Maps for distance calculation |
-| `OLLAMA_BASE_URL` | No | Local | Ollama server URL (e.g. `http://localhost:11434`) |
-| `OLLAMA_MODEL` | No | Local | Ollama model name (default: `llava`) |
 | `OPENROUTESERVICE_API_KEY` | No | Local | Free distance calculation alternative |
 | `DISABLE_SECURE_COOKIES` | No | Local | Set to bypass secure cookie flag in dev |
 

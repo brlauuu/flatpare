@@ -55,7 +55,7 @@ Scroll horizontally to see all apartments if there are more than fit on screen.
 
 - Supports single or bulk PDF upload
 - Files are stored locally (self-hosted) or in Vercel Blob (cloud)
-- AI extraction uses Google Gemini or a local Ollama model
+- AI extraction uses Google Gemini
 
 ### Distance Calculation
 
@@ -82,5 +82,4 @@ This helps you track spending if you're using paid APIs.
 
 - **Bulk upload:** You can select multiple PDFs at once on the Upload page
 - **Re-rate anytime:** Your ratings are saved per user; just go back to the apartment and change them
-- **Works offline:** In self-hosted mode with Ollama, everything runs locally with no external API calls
 - **Mobile-friendly:** Use the bottom navigation bar on your phone

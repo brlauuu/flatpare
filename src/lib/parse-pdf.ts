@@ -1,6 +1,5 @@
 import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
@@ -46,24 +45,10 @@ export const apartmentExtractionSchema = z.object({
 export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
 
 function getModel() {
-  // Cloud mode: Google Gemini
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return {
       model: google("gemini-2.5-flash"),
       service: "gemini" as const,
-    };
-  }
-
-  // Local mode: Ollama via OpenAI-compatible API
-  if (process.env.OLLAMA_BASE_URL) {
-    const ollama = createOpenAI({
-      baseURL: `${process.env.OLLAMA_BASE_URL}/v1`,
-      apiKey: "ollama", // Ollama doesn't need a real key
-    });
-    const modelName = process.env.OLLAMA_MODEL || "llava";
-    return {
-      model: ollama(modelName),
-      service: "ollama" as const,
     };
   }
 
