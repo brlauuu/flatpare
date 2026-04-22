@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
@@ -32,7 +33,7 @@ export function NavBar({ userName }: { userName: string }) {
   useEffect(() => {
     fetch("/api/auth/users")
       .then((res) => res.json())
-      .then((data: string[]) => setUsers(data))
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
 
@@ -85,17 +86,24 @@ export function NavBar({ userName }: { userName: string }) {
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
-              <DropdownMenuLabel>Switch user</DropdownMenuLabel>
-              {otherUsers.map((name) => (
-                <DropdownMenuItem key={name} onClick={() => switchUser(name)}>
-                  {name}
-                </DropdownMenuItem>
-              ))}
-              {otherUsers.length === 0 && (
-                <DropdownMenuItem disabled>
-                  <span className="text-muted-foreground">No other users</span>
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Switch user</DropdownMenuLabel>
+                {otherUsers.map((name) => (
+                  <DropdownMenuItem
+                    key={name}
+                    onClick={() => switchUser(name)}
+                  >
+                    {name}
+                  </DropdownMenuItem>
+                ))}
+                {otherUsers.length === 0 && (
+                  <DropdownMenuItem disabled>
+                    <span className="text-muted-foreground">
+                      No other users
+                    </span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/")}>
                 <Plus className="h-3.5 w-3.5" />
