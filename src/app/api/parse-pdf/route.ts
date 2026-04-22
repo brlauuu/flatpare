@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-    const extracted = await extractApartmentData([base64]);
+    const extracted = await extractApartmentData(base64);
 
     return NextResponse.json({
       pdfUrl,

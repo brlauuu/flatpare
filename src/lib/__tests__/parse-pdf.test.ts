@@ -100,9 +100,40 @@ describe("extractApartmentData", () => {
       usage: { inputTokens: 100, outputTokens: 50 },
     } as never);
 
-    const result = await extractApartmentData(["base64pdf"]);
+    const result = await extractApartmentData("base64pdf");
     expect(result).toEqual(mockOutput);
     expect(mockedGenerateText).toHaveBeenCalledOnce();
+  });
+
+  it("sends the PDF as a file part with application/pdf mediaType", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        rentChf: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    await extractApartmentData("base64pdf");
+
+    const call = mockedGenerateText.mock.calls[0][0] as {
+      messages: Array<{ content: Array<Record<string, unknown>> }>;
+    };
+    const filePart = call.messages[0].content.find(
+      (p) => p.type === "file"
+    );
+    expect(filePart).toEqual({
+      type: "file",
+      data: "base64pdf",
+      mediaType: "application/pdf",
+    });
   });
 
   it("uses Ollama when OLLAMA_BASE_URL is set", async () => {
@@ -121,12 +152,12 @@ describe("extractApartmentData", () => {
       usage: { inputTokens: 50, outputTokens: 25 },
     } as never);
 
-    const result = await extractApartmentData(["base64pdf"]);
+    const result = await extractApartmentData("base64pdf");
     expect(result.name).toBe("Ollama Apt");
   });
 
   it("throws when no AI provider is configured", async () => {
-    await expect(extractApartmentData(["base64pdf"])).rejects.toThrow(
+    await expect(extractApartmentData("base64pdf")).rejects.toThrow(
       "No AI provider configured"
     );
   });
@@ -139,7 +170,7 @@ describe("extractApartmentData", () => {
       usage: { inputTokens: 100, outputTokens: 0 },
     } as never);
 
-    await expect(extractApartmentData(["base64pdf"])).rejects.toThrow(
+    await expect(extractApartmentData("base64pdf")).rejects.toThrow(
       "Failed to extract apartment data from PDF"
     );
   });
