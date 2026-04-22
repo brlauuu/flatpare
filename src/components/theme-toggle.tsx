@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +11,20 @@ const themes = [
   { value: "system", icon: Monitor, label: "System" },
 ] as const;
 
+// Returns false during SSR and the first client render, true thereafter.
+// Using useSyncExternalStore avoids the setState-in-effect anti-pattern
+// of the older `useEffect(() => setMounted(true), [])` idiom.
+function useIsClient(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   if (!mounted) {
     return <div className="h-8 w-20" />;
