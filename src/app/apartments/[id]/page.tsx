@@ -9,6 +9,17 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/star-rating";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 interface Rating {
   id: number;
@@ -66,30 +77,49 @@ export default function ApartmentDetailPage() {
   });
   const [saving, setSaving] = useState(false);
   const [userName, setUserName] = useState("");
+  const [error, setError] = useState<ErrorState | null>(null);
 
   const loadApartment = useCallback(async () => {
-    const res = await fetch(`/api/apartments/${params.id}`);
-    const data = await res.json();
-    setApartment(data);
+    const url = `/api/apartments/${params.id}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        setError({
+          headline: "Couldn't load apartment",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setApartment(data);
+      setError(null);
 
-    const name = getCookieValue("flatpare-name") ?? "";
-    setUserName(name);
+      const name = getCookieValue("flatpare-name") ?? "";
+      setUserName(name);
 
-    const existing = data.ratings?.find(
-      (r: Rating) => r.userName === name
-    );
-    if (existing) {
-      setMyRating({
-        kitchen: existing.kitchen,
-        balconies: existing.balconies,
-        location: existing.location,
-        floorplan: existing.floorplan,
-        overallFeeling: existing.overallFeeling,
-        comment: existing.comment || "",
+      const existing = data.ratings?.find(
+        (r: Rating) => r.userName === name
+      );
+      if (existing) {
+        setMyRating({
+          kitchen: existing.kitchen,
+          balconies: existing.balconies,
+          location: existing.location,
+          floorplan: existing.floorplan,
+          overallFeeling: existing.overallFeeling,
+          comment: existing.comment || "",
+        });
+      }
+
+      setLoading(false);
+    } catch (err) {
+      setError({
+        headline: "Couldn't load apartment",
+        details: fetchErrorFromException(err, url),
       });
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [params.id]);
 
   useEffect(() => {
@@ -99,27 +129,73 @@ export default function ApartmentDetailPage() {
   async function handleDelete() {
     if (!confirm("Delete this apartment? This cannot be undone.")) return;
     setDeleting(true);
-    await fetch(`/api/apartments/${params.id}`, { method: "DELETE" });
-    router.push("/apartments");
+    const url = `/api/apartments/${params.id}`;
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      if (!res.ok) {
+        setError({
+          headline: "Couldn't delete apartment",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setDeleting(false);
+        return;
+      }
+      router.push("/apartments");
+    } catch (err) {
+      setError({
+        headline: "Couldn't delete apartment",
+        details: fetchErrorFromException(err, url),
+      });
+      setDeleting(false);
+    }
   }
 
   async function handleSaveRating() {
     setSaving(true);
-    await fetch(`/api/apartments/${params.id}/ratings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(myRating),
-    });
-    await loadApartment();
-    setSaving(false);
+    const url = `/api/apartments/${params.id}/ratings`;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(myRating),
+      });
+      if (!res.ok) {
+        setError({
+          headline: "Couldn't save rating",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setSaving(false);
+        return;
+      }
+      await loadApartment();
+      setSaving(false);
+    } catch (err) {
+      setError({
+        headline: "Couldn't save rating",
+        details: fetchErrorFromException(err, url),
+      });
+      setSaving(false);
+    }
   }
 
-  if (loading || !apartment) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
+  }
+
+  if (error && !apartment) {
+    return (
+      <div className="py-8">
+        <ErrorDisplay headline={error.headline} details={error.details} />
+      </div>
+    );
+  }
+
+  if (!apartment) {
+    return null;
   }
 
   const otherRatings = apartment.ratings.filter(
@@ -170,6 +246,10 @@ export default function ApartmentDetailPage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <ErrorDisplay headline={error.headline} details={error.details} />
+      )}
 
       {/* Apartment metrics */}
       <div className="flex flex-wrap gap-2">

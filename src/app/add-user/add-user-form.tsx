@@ -7,32 +7,55 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 export function AddUserForm() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorState | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/auth/name", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: displayName.trim() }),
-    });
+    const url = "/api/auth/name";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: displayName.trim() }),
+      });
 
-    if (!res.ok) {
-      setError("Failed to set name");
+      if (!res.ok) {
+        setError({
+          headline: "Failed to set name",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setLoading(false);
+        return;
+      }
+
+      router.push("/apartments");
+      router.refresh();
+    } catch (err) {
+      setError({
+        headline: "Couldn't reach the server",
+        details: fetchErrorFromException(err, url),
+      });
       setLoading(false);
-      return;
     }
-
-    router.push("/apartments");
-    router.refresh();
   }
 
   return (
@@ -64,7 +87,9 @@ export function AddUserForm() {
                 autoFocus
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <ErrorDisplay headline={error.headline} details={error.details} />
+            )}
             <div className="flex gap-2">
               <Button
                 type="button"

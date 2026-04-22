@@ -6,6 +6,17 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 interface ApartmentWithRatings {
   id: number;
@@ -52,22 +63,47 @@ export default function ComparePage() {
   const [apartments, setApartments] = useState<ApartmentWithRatings[]>([]);
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/apartments");
-      const list = await res.json();
+      const listUrl = "/api/apartments";
+      try {
+        const res = await fetch(listUrl);
+        if (!res.ok) {
+          setError({
+            headline: "Couldn't load comparison data",
+            details: await fetchErrorFromResponse(res, listUrl),
+          });
+          setLoading(false);
+          return;
+        }
+        const list = (await res.json()) as { id: number }[];
 
-      // Fetch full details for each apartment
-      const details = await Promise.all(
-        list.map(async (apt: { id: number }) => {
-          const r = await fetch(`/api/apartments/${apt.id}`);
-          return r.json();
-        })
-      );
+        const details: ApartmentWithRatings[] = [];
+        for (const apt of list) {
+          const detailUrl = `/api/apartments/${apt.id}`;
+          const r = await fetch(detailUrl);
+          if (!r.ok) {
+            setError({
+              headline: "Couldn't load comparison data",
+              details: await fetchErrorFromResponse(r, detailUrl),
+            });
+            setLoading(false);
+            return;
+          }
+          details.push(await r.json());
+        }
 
-      setApartments(details);
-      setLoading(false);
+        setApartments(details);
+        setLoading(false);
+      } catch (err) {
+        setError({
+          headline: "Couldn't load comparison data",
+          details: fetchErrorFromException(err, listUrl),
+        });
+        setLoading(false);
+      }
     }
     load();
   }, []);
@@ -76,6 +112,14 @@ export default function ComparePage() {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading comparison...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8">
+        <ErrorDisplay headline={error.headline} details={error.details} />
       </div>
     );
   }

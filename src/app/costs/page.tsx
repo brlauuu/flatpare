@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 interface CostsData {
   gemini: {
@@ -35,14 +46,32 @@ function formatUsd(n: number): string {
 export default function CostsPage() {
   const [data, setData] = useState<CostsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   useEffect(() => {
-    fetch("/api/costs")
-      .then((r) => r.json())
-      .then((d) => {
+    const url = "/api/costs";
+    (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          setError({
+            headline: "Couldn't load cost data",
+            details: await fetchErrorFromResponse(res, url),
+          });
+          setLoading(false);
+          return;
+        }
+        const d = (await res.json()) as CostsData;
         setData(d);
         setLoading(false);
-      });
+      } catch (err) {
+        setError({
+          headline: "Couldn't load cost data",
+          details: fetchErrorFromException(err, url),
+        });
+        setLoading(false);
+      }
+    })();
   }, []);
 
   if (loading) {
@@ -53,10 +82,13 @@ export default function CostsPage() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Failed to load cost data</p>
+      <div className="py-8">
+        <ErrorDisplay
+          headline={error?.headline ?? "Couldn't load cost data"}
+          details={error?.details}
+        />
       </div>
     );
   }

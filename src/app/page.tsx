@@ -7,6 +7,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +26,7 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState("");
   const [existingUsers, setExistingUsers] = useState<string[]>([]);
   const [showNewUserInput, setShowNewUserInput] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorState | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,42 +43,66 @@ export default function LoginPage() {
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    const url = "/api/auth";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    if (!res.ok) {
-      setError("Wrong password");
+      if (!res.ok) {
+        setError({
+          headline: "Wrong password",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      return;
+      setStep("name");
+    } catch (err) {
+      setError({
+        headline: "Couldn't reach the server",
+        details: fetchErrorFromException(err, url),
+      });
+      setLoading(false);
     }
-
-    setLoading(false);
-    setStep("name");
   }
 
   async function selectUser(name: string) {
-    setError("");
+    setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/auth/name", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: name }),
-    });
+    const url = "/api/auth/name";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: name }),
+      });
 
-    if (!res.ok) {
-      setError("Failed to set name");
+      if (!res.ok) {
+        setError({
+          headline: "Failed to set name",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setLoading(false);
+        return;
+      }
+
+      router.push("/apartments");
+    } catch (err) {
+      setError({
+        headline: "Couldn't reach the server",
+        details: fetchErrorFromException(err, url),
+      });
       setLoading(false);
-      return;
     }
-
-    router.push("/apartments");
   }
 
   async function handleNewName(e: React.FormEvent) {
@@ -111,7 +146,7 @@ export default function LoginPage() {
                 />
               </div>
               {error && (
-                <p className="text-sm text-destructive">{error}</p>
+                <ErrorDisplay headline={error.headline} details={error.details} />
               )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Checking..." : "Continue"}
@@ -165,7 +200,7 @@ export default function LoginPage() {
                     />
                   </div>
                   {error && (
-                    <p className="text-sm text-destructive">{error}</p>
+                    <ErrorDisplay headline={error.headline} details={error.details} />
                   )}
                   <div className="flex gap-2">
                     {existingUsers.length > 0 && (

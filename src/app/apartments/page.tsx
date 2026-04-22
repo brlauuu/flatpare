@@ -7,6 +7,17 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { Building2 } from "lucide-react";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 interface ApartmentSummary {
   id: number;
@@ -22,20 +33,46 @@ interface ApartmentSummary {
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   useEffect(() => {
-    fetch("/api/apartments")
-      .then((res) => res.json())
-      .then((data) => {
+    const url = "/api/apartments";
+    (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          setError({
+            headline: "Couldn't load apartments",
+            details: await fetchErrorFromResponse(res, url),
+          });
+          setLoading(false);
+          return;
+        }
+        const data = (await res.json()) as ApartmentSummary[];
         setApartments(data);
         setLoading(false);
-      });
+      } catch (err) {
+        setError({
+          headline: "Couldn't load apartments",
+          details: fetchErrorFromException(err, url),
+        });
+        setLoading(false);
+      }
+    })();
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading apartments...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8">
+        <ErrorDisplay headline={error.headline} details={error.details} />
       </div>
     );
   }
