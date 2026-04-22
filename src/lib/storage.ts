@@ -11,13 +11,14 @@ export async function uploadFile(
   file: File
 ): Promise<string> {
   if (isCloud) {
+    // Private blobs — served back through the auth-gated /api/pdf proxy.
     const blob = await put(`apartments/${filename}`, file, {
-      access: "public",
+      access: "private",
     });
-    return blob.url;
+    return `/api/pdf/${blob.pathname}`;
   }
 
-  // Local mode: write to ./uploads/
+  // Local mode: write to ./uploads/, served back through /api/uploads.
   await mkdir(UPLOADS_DIR, { recursive: true });
   const buffer = Buffer.from(await file.arrayBuffer());
   const filePath = path.join(UPLOADS_DIR, filename);
