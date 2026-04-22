@@ -1,0 +1,1 @@
+ALTER TABLE `apartments` ADD `has_washing_machine` integer;
