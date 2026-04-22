@@ -15,11 +15,12 @@ function createMockFile(name: string): File {
 }
 
 describe("uploadFile", () => {
-  it("uses Vercel Blob in cloud mode", async () => {
+  it("uploads to Vercel Blob with access: 'private' and returns an /api/pdf path", async () => {
     process.env.BLOB_READ_WRITE_TOKEN = "test-token";
 
     const mockPut = vi.fn(async () => ({
-      url: "https://blob.vercel-storage.com/apartments/test.pdf",
+      pathname: "apartments/test.pdf",
+      url: "ignored-private-url",
     }));
 
     vi.doMock("@vercel/blob", () => ({ put: mockPut }));
@@ -32,8 +33,12 @@ describe("uploadFile", () => {
     const file = createMockFile("test.pdf");
     const url = await uploadFile("test.pdf", file);
 
-    expect(url).toBe("https://blob.vercel-storage.com/apartments/test.pdf");
-    expect(mockPut).toHaveBeenCalled();
+    expect(url).toBe("/api/pdf/apartments/test.pdf");
+    expect(mockPut).toHaveBeenCalledWith(
+      "apartments/test.pdf",
+      file,
+      { access: "private" }
+    );
 
     delete process.env.BLOB_READ_WRITE_TOKEN;
   });
