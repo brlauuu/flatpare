@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ErrorDisplay } from "@/components/error-display";
+import {
+  type ErrorDetails,
+  fetchErrorFromResponse,
+  fetchErrorFromException,
+} from "@/lib/fetch-error";
+
+interface ErrorState {
+  headline: string;
+  details?: ErrorDetails;
+}
 
 type ApartmentForm = {
   name: string;
@@ -102,7 +113,7 @@ export default function UploadPage() {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [singleForm, setSingleForm] = useState<ApartmentForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const processingRef = useRef(false);
 
@@ -125,7 +136,7 @@ export default function UploadPage() {
   const processFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.type === "application/pdf");
     if (pdfFiles.length === 0) {
-      setError("No PDF files selected");
+      setError({ headline: "No PDF files selected" });
       return;
     }
 
@@ -141,7 +152,7 @@ export default function UploadPage() {
 
     setItems(newItems);
     setStep("processing");
-    setError("");
+    setError(null);
     processingRef.current = true;
 
     // Process sequentially to avoid overwhelming the API
@@ -263,12 +274,12 @@ export default function UploadPage() {
     );
 
     if (toSave.length === 0) {
-      setError("No apartments to save");
+      setError({ headline: "No apartments to save" });
       return;
     }
 
     setSaving(true);
-    setError("");
+    setError(null);
 
     for (const item of toSave) {
       try {
@@ -308,27 +319,39 @@ export default function UploadPage() {
   async function handleSaveSingle(e: React.FormEvent) {
     e.preventDefault();
     if (!singleForm.name.trim()) {
-      setError("Name is required");
+      setError({ headline: "Name is required" });
       return;
     }
 
     setSaving(true);
-    setError("");
+    setError(null);
 
-    const res = await fetch("/api/apartments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formToPayload(singleForm)),
-    });
+    const url = "/api/apartments";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formToPayload(singleForm)),
+      });
 
-    if (!res.ok) {
-      setError("Failed to save apartment");
+      if (!res.ok) {
+        setError({
+          headline: "Failed to save apartment",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setSaving(false);
+        return;
+      }
+
+      const apartment = await res.json();
+      router.push(`/apartments/${apartment.id}`);
+    } catch (err) {
+      setError({
+        headline: "Failed to save apartment",
+        details: fetchErrorFromException(err, url),
+      });
       setSaving(false);
-      return;
     }
-
-    const apartment = await res.json();
-    router.push(`/apartments/${apartment.id}`);
   }
 
   // --- Upload step ---
@@ -375,7 +398,9 @@ export default function UploadPage() {
           </Button>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <ErrorDisplay headline={error.headline} details={error.details} />
+        )}
 
         <div className="text-center">
           <Button
@@ -457,7 +482,9 @@ export default function UploadPage() {
           </p>
         )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <ErrorDisplay headline={error.headline} details={error.details} />
+        )}
 
         <div className="space-y-3">
           {items.map((item) => {
@@ -558,7 +585,9 @@ export default function UploadPage() {
               }
             />
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+          <ErrorDisplay headline={error.headline} details={error.details} />
+        )}
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={saving}>
