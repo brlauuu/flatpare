@@ -45,3 +45,6 @@ next-env.d.ts
 # local mode data
 /data/
 /uploads/
+
+# git worktrees (local isolated workspaces)
+/.worktrees/
