@@ -119,7 +119,7 @@ npx drizzle-kit push
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3002](http://localhost:3002).
 
 ## Local/Self-Hosted Setup (No Cloud Services)
 
@@ -201,7 +201,7 @@ cp .env.example .env.local
 docker compose up -d
 ```
 
-The app is available at `http://localhost:3000`. To use a different port:
+The app is available at `http://localhost:3002`. To use a different port:
 
 ```bash
 PORT=8080 docker compose up -d
