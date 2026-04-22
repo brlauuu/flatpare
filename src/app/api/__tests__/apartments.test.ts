@@ -23,6 +23,7 @@ vi.mock("@/lib/db/schema", () => ({
     numRooms: "num_rooms",
     numBathrooms: "num_bathrooms",
     numBalconies: "num_balconies",
+    hasWashingMachine: "has_washing_machine",
     rentChf: "rent_chf",
     distanceBikeMin: "distance_bike_min",
     distanceTransitMin: "distance_transit_min",

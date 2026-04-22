@@ -24,6 +24,15 @@ export const apartmentExtractionSchema = z.object({
     .number()
     .nullable()
     .describe("Number of balconies or terraces"),
+  hasWashingMachine: z
+    .boolean()
+    .nullable()
+    .describe(
+      "Whether the apartment has its own washing machine. " +
+        "true if explicitly mentioned as in-unit / private (e.g. 'Waschmaschine in der Wohnung', 'eigene Waschmaschine', 'Waschturm', 'own washing machine'). " +
+        "false if the listing explicitly says there is none, or only a shared/communal laundry room (e.g. 'Waschküche', 'Gemeinschaftswaschküche', 'shared laundry'). " +
+        "null if not mentioned."
+    ),
   rentChf: z
     .number()
     .nullable()
@@ -81,6 +90,7 @@ export async function extractApartmentData(
 The listing may be in German or English. Extract all available information.
 For rent, prefer the gross/brutto rent (Bruttomiete) if both net and gross are shown.
 For rooms, use the Swiss convention (e.g. 3.5 Zimmer = 3.5 rooms).
+For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "own washing machine"). false if only a shared laundry room is mentioned ("Waschküche", "Gemeinschaftswaschküche", "shared laundry") or if explicitly none. null if not mentioned.
 Return null for any field you cannot determine from the document.`,
           },
           {

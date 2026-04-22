@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `apartments` (
 	`num_rooms` real,
 	`num_bathrooms` integer,
 	`num_balconies` integer,
+	`has_washing_machine` integer,
 	`rent_chf` real,
 	`distance_bike_min` integer,
 	`distance_transit_min` integer,
