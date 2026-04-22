@@ -3,12 +3,17 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ErrorDisplay } from "@/components/error-display";
+import {
+  ApartmentFormFields,
+  emptyApartmentForm,
+  formFromExtracted,
+  formToPayload,
+  type ApartmentForm,
+} from "@/components/apartment-form-fields";
 import {
   type ErrorDetails,
   fetchErrorFromResponse,
@@ -19,38 +24,6 @@ interface ErrorState {
   headline: string;
   details?: ErrorDetails;
 }
-
-type ApartmentForm = {
-  name: string;
-  address: string;
-  sizeM2: string;
-  numRooms: string;
-  numBathrooms: string;
-  numBalconies: string;
-  hasWashingMachine: boolean | null;
-  rentChf: string;
-  distanceBikeMin: string;
-  distanceTransitMin: string;
-  pdfUrl: string;
-  listingUrl: string;
-  rawExtractedData: Record<string, unknown> | null;
-};
-
-const emptyForm: ApartmentForm = {
-  name: "",
-  address: "",
-  sizeM2: "",
-  numRooms: "",
-  numBathrooms: "",
-  numBalconies: "",
-  hasWashingMachine: null,
-  rentChf: "",
-  distanceBikeMin: "",
-  distanceTransitMin: "",
-  pdfUrl: "",
-  listingUrl: "",
-  rawExtractedData: null,
-};
 
 type UploadItem = {
   id: string;
@@ -63,54 +36,6 @@ type UploadItem = {
   discarded: boolean;
 };
 
-function formFromExtracted(
-  extracted: Record<string, unknown>,
-  pdfUrl: string
-): ApartmentForm {
-  return {
-    name: (extracted.name as string) || "",
-    address: (extracted.address as string) || "",
-    sizeM2: extracted.sizeM2 != null ? String(extracted.sizeM2) : "",
-    numRooms: extracted.numRooms != null ? String(extracted.numRooms) : "",
-    numBathrooms:
-      extracted.numBathrooms != null ? String(extracted.numBathrooms) : "",
-    numBalconies:
-      extracted.numBalconies != null ? String(extracted.numBalconies) : "",
-    hasWashingMachine:
-      typeof extracted.hasWashingMachine === "boolean"
-        ? extracted.hasWashingMachine
-        : null,
-    rentChf: extracted.rentChf != null ? String(extracted.rentChf) : "",
-    distanceBikeMin: "",
-    distanceTransitMin: "",
-    pdfUrl,
-    listingUrl: (extracted.listingUrl as string) || "",
-    rawExtractedData: extracted,
-  };
-}
-
-function formToPayload(form: ApartmentForm) {
-  return {
-    name: form.name,
-    address: form.address || null,
-    sizeM2: form.sizeM2 ? parseFloat(form.sizeM2) : null,
-    numRooms: form.numRooms ? parseFloat(form.numRooms) : null,
-    numBathrooms: form.numBathrooms ? parseInt(form.numBathrooms) : null,
-    numBalconies: form.numBalconies ? parseInt(form.numBalconies) : null,
-    hasWashingMachine: form.hasWashingMachine,
-    rentChf: form.rentChf ? parseFloat(form.rentChf) : null,
-    distanceBikeMin: form.distanceBikeMin
-      ? parseInt(form.distanceBikeMin)
-      : null,
-    distanceTransitMin: form.distanceTransitMin
-      ? parseInt(form.distanceTransitMin)
-      : null,
-    pdfUrl: form.pdfUrl || null,
-    listingUrl: form.listingUrl || null,
-    rawExtractedData: form.rawExtractedData,
-  };
-}
-
 export default function UploadPage() {
   const router = useRouter();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
@@ -118,7 +43,7 @@ export default function UploadPage() {
     "upload" | "processing" | "review" | "single"
   >("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
-  const [singleForm, setSingleForm] = useState<ApartmentForm>(emptyForm);
+  const [singleForm, setSingleForm] = useState<ApartmentForm>(emptyApartmentForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -151,7 +76,7 @@ export default function UploadPage() {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       fileName: file.name,
       status: "queued" as const,
-      form: emptyForm,
+      form: emptyApartmentForm,
       expanded: false,
       saved: false,
       discarded: false,
@@ -413,7 +338,7 @@ export default function UploadPage() {
           <Button
             variant="link"
             onClick={() => {
-              setSingleForm(emptyForm);
+              setSingleForm(emptyApartmentForm);
               setStep("single");
             }}
           >
@@ -616,7 +541,7 @@ export default function UploadPage() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setSingleForm(emptyForm);
+                  setSingleForm(emptyApartmentForm);
                   setStep("upload");
                 }}
               >
@@ -626,155 +551,6 @@ export default function UploadPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// --- Shared form fields component ---
-
-function ApartmentFormFields({
-  form,
-  onChange,
-  onWashingMachineChange,
-}: {
-  form: ApartmentForm;
-  onChange: (field: keyof ApartmentForm, value: string) => void;
-  onWashingMachineChange: (value: boolean | null) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Name *</Label>
-        <Input
-          value={form.name}
-          onChange={(e) => onChange("name", e.target.value)}
-          placeholder="Apartment name"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Address</Label>
-        <Input
-          value={form.address}
-          onChange={(e) => onChange("address", e.target.value)}
-          placeholder="Street, postcode, city"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Rent (CHF/mo)</Label>
-          <Input
-            type="number"
-            value={form.rentChf}
-            onChange={(e) => onChange("rentChf", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Size (m²)</Label>
-          <Input
-            type="number"
-            value={form.sizeM2}
-            onChange={(e) => onChange("sizeM2", e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label>Rooms</Label>
-          <Input
-            type="number"
-            step="0.5"
-            value={form.numRooms}
-            onChange={(e) => onChange("numRooms", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Baths</Label>
-          <Input
-            type="number"
-            value={form.numBathrooms}
-            onChange={(e) => onChange("numBathrooms", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Balconies</Label>
-          <Input
-            type="number"
-            value={form.numBalconies}
-            onChange={(e) => onChange("numBalconies", e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Washing machine</Label>
-        <WashingMachineToggle
-          value={form.hasWashingMachine}
-          onChange={onWashingMachineChange}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Listing URL</Label>
-        <Input
-          value={form.listingUrl}
-          onChange={(e) => onChange("listingUrl", e.target.value)}
-          placeholder="https://..."
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Bike to SBB (min)</Label>
-          <Input
-            type="number"
-            value={form.distanceBikeMin}
-            onChange={(e) => onChange("distanceBikeMin", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Transit to SBB (min)</Label>
-          <Input
-            type="number"
-            value={form.distanceTransitMin}
-            onChange={(e) => onChange("distanceTransitMin", e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WashingMachineToggle({
-  value,
-  onChange,
-}: {
-  value: boolean | null;
-  onChange: (v: boolean | null) => void;
-}) {
-  const options: Array<{ key: "yes" | "no" | "unknown"; label: string; v: boolean | null }> = [
-    { key: "yes", label: "Yes", v: true },
-    { key: "no", label: "No", v: false },
-    { key: "unknown", label: "Unknown", v: null },
-  ];
-  return (
-    <div className="inline-flex rounded-md border">
-      {options.map((opt, i) => {
-        const selected = value === opt.v;
-        return (
-          <button
-            key={opt.key}
-            type="button"
-            onClick={() => onChange(opt.v)}
-            className={cn(
-              "px-3 py-1.5 text-sm transition-colors",
-              i > 0 && "border-l",
-              selected
-                ? "bg-primary text-primary-foreground"
-                : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-            aria-pressed={selected}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
     </div>
   );
 }

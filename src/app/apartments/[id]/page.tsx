@@ -12,6 +12,12 @@ import { StarRating } from "@/components/star-rating";
 import { WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
+  ApartmentFormFields,
+  formFromApartment,
+  formToPayload,
+  type ApartmentForm,
+} from "@/components/apartment-form-fields";
+import {
   type ErrorDetails,
   fetchErrorFromResponse,
   fetchErrorFromException,
@@ -80,6 +86,9 @@ export default function ApartmentDetailPage() {
   const [saving, setSaving] = useState(false);
   const [userName, setUserName] = useState("");
   const [error, setError] = useState<ErrorState | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const loadApartment = useCallback(async () => {
     const url = `/api/apartments/${params.id}`;
@@ -149,6 +158,53 @@ export default function ApartmentDetailPage() {
         details: fetchErrorFromException(err, url),
       });
       setDeleting(false);
+    }
+  }
+
+  function startEdit() {
+    if (!apartment) return;
+    setEditForm(formFromApartment(apartment));
+    setEditing(true);
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+    setEditForm(null);
+  }
+
+  async function handleSaveEdit() {
+    if (!editForm) return;
+    if (!editForm.name.trim()) {
+      setError({ headline: "Name is required" });
+      return;
+    }
+    setSavingEdit(true);
+    const url = `/api/apartments/${params.id}`;
+    try {
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formToPayload(editForm)),
+      });
+      if (!res.ok) {
+        setError({
+          headline: "Couldn't save changes",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setSavingEdit(false);
+        return;
+      }
+      await loadApartment();
+      setEditing(false);
+      setEditForm(null);
+      setSavingEdit(false);
+    } catch (err) {
+      setError({
+        headline: "Couldn't save changes",
+        details: fetchErrorFromException(err, url),
+      });
+      setSavingEdit(false);
     }
   }
 
@@ -238,10 +294,19 @@ export default function ApartmentDetailPage() {
               URL missing
             </Badge>
           )}
+          {!editing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startEdit}
+            >
+              Edit
+            </Button>
+          )}
           <Button
             variant="destructive"
             size="sm"
-            disabled={deleting}
+            disabled={deleting || editing}
             onClick={handleDelete}
           >
             {deleting ? "Deleting..." : "Delete"}
@@ -253,54 +318,89 @@ export default function ApartmentDetailPage() {
         <ErrorDisplay headline={error.headline} details={error.details} />
       )}
 
-      {/* Apartment metrics */}
-      <div className="flex flex-wrap gap-2">
-        {apartment.rentChf && (
-          <Badge variant="secondary">
-            CHF {apartment.rentChf.toLocaleString()}/mo
-          </Badge>
-        )}
-        {apartment.sizeM2 && (
-          <Badge variant="secondary">{apartment.sizeM2} m²</Badge>
-        )}
-        {apartment.numRooms && (
-          <Badge variant="secondary">{apartment.numRooms} rooms</Badge>
-        )}
-        {apartment.numBathrooms != null && (
-          <Badge variant="secondary">{apartment.numBathrooms} bath</Badge>
-        )}
-        {apartment.numBalconies != null && (
-          <Badge variant="secondary">
-            {apartment.numBalconies} balcon{apartment.numBalconies !== 1 ? "ies" : "y"}
-          </Badge>
-        )}
-        <Badge
-          variant="secondary"
-          title={
-            apartment.hasWashingMachine === true
-              ? "Washing machine: yes"
+      {/* Apartment metrics or edit form */}
+      {editing && editForm ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Edit apartment</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ApartmentFormFields
+              form={editForm}
+              onChange={(field, value) =>
+                setEditForm((prev) =>
+                  prev ? { ...prev, [field]: value } : prev
+                )
+              }
+              onWashingMachineChange={(v) =>
+                setEditForm((prev) =>
+                  prev ? { ...prev, hasWashingMachine: v } : prev
+                )
+              }
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleSaveEdit} disabled={savingEdit}>
+                {savingEdit ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={cancelEdit}
+                disabled={savingEdit}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {apartment.rentChf && (
+            <Badge variant="secondary">
+              CHF {apartment.rentChf.toLocaleString()}/mo
+            </Badge>
+          )}
+          {apartment.sizeM2 && (
+            <Badge variant="secondary">{apartment.sizeM2} m²</Badge>
+          )}
+          {apartment.numRooms && (
+            <Badge variant="secondary">{apartment.numRooms} rooms</Badge>
+          )}
+          {apartment.numBathrooms != null && (
+            <Badge variant="secondary">{apartment.numBathrooms} bath</Badge>
+          )}
+          {apartment.numBalconies != null && (
+            <Badge variant="secondary">
+              {apartment.numBalconies} balcon{apartment.numBalconies !== 1 ? "ies" : "y"}
+            </Badge>
+          )}
+          <Badge
+            variant="secondary"
+            title={
+              apartment.hasWashingMachine === true
+                ? "Washing machine: yes"
+                : apartment.hasWashingMachine === false
+                  ? "Washing machine: no (or shared)"
+                  : "Washing machine: unknown"
+            }
+            className="gap-1"
+          >
+            <WashingMachine className="h-3 w-3" />
+            {apartment.hasWashingMachine === true
+              ? "Yes"
               : apartment.hasWashingMachine === false
-                ? "Washing machine: no (or shared)"
-                : "Washing machine: unknown"
-          }
-          className="gap-1"
-        >
-          <WashingMachine className="h-3 w-3" />
-          {apartment.hasWashingMachine === true
-            ? "Yes"
-            : apartment.hasWashingMachine === false
-              ? "No"
-              : "?"}
-        </Badge>
-        {apartment.distanceBikeMin && (
-          <Badge variant="outline">{apartment.distanceBikeMin} min bike</Badge>
-        )}
-        {apartment.distanceTransitMin && (
-          <Badge variant="outline">
-            {apartment.distanceTransitMin} min transit
+                ? "No"
+                : "?"}
           </Badge>
-        )}
-      </div>
+          {apartment.distanceBikeMin && (
+            <Badge variant="outline">{apartment.distanceBikeMin} min bike</Badge>
+          )}
+          {apartment.distanceTransitMin && (
+            <Badge variant="outline">
+              {apartment.distanceTransitMin} min transit
+            </Badge>
+          )}
+        </div>
+      )}
 
       <Separator />
 
