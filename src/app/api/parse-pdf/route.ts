@@ -20,9 +20,7 @@ export async function POST(request: Request) {
     const pdfUrl = await uploadFile(filename, file);
 
     // Try AI extraction — if no AI provider is configured, return empty extraction
-    const hasAI =
-      !!process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-      !!process.env.OLLAMA_BASE_URL;
+    const hasAI = !!process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     if (!hasAI) {
       return NextResponse.json({

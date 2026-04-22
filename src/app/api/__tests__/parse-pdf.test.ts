@@ -22,7 +22,6 @@ import { POST } from "../../api/parse-pdf/route";
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  delete process.env.OLLAMA_BASE_URL;
 });
 
 afterEach(() => {
