@@ -62,7 +62,7 @@ function getModel() {
 }
 
 export async function extractApartmentData(
-  pdfBase64Pages: string[]
+  pdfBase64: string
 ): Promise<ApartmentExtraction> {
   const { model, service } = getModel();
 
@@ -83,13 +83,11 @@ For rent, prefer the gross/brutto rent (Bruttomiete) if both net and gross are s
 For rooms, use the Swiss convention (e.g. 3.5 Zimmer = 3.5 rooms).
 Return null for any field you cannot determine from the document.`,
           },
-          ...pdfBase64Pages.map(
-            (page) =>
-              ({
-                type: "image" as const,
-                image: page,
-              })
-          ),
+          {
+            type: "file",
+            data: pdfBase64,
+            mediaType: "application/pdf",
+          },
         ],
       },
     ],
