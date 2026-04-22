@@ -33,10 +33,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Copy drizzle config and schema for schema push on startup
-COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/src/lib/db/schema.ts ./src/lib/db/schema.ts
-COPY --from=builder /app/node_modules ./node_modules
+# Migrations are applied at startup via src/instrumentation.ts
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/docker-entrypoint.sh ./
 
 # Create data and uploads directories for local mode
