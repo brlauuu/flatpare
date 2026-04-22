@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
+import { ShortCode } from "@/components/short-code";
 import { Building2 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
@@ -26,6 +27,7 @@ interface ApartmentSummary {
   sizeM2: number | null;
   numRooms: number | null;
   rentChf: number | null;
+  shortCode: string | null;
   avgOverall: string | null;
   createdAt: string | null;
 }
@@ -119,6 +121,7 @@ export default function ApartmentsPage() {
                     />
                   )}
                 </div>
+                <ShortCode code={apt.shortCode} />
                 {apt.address && (
                   <p className="text-sm text-muted-foreground">{apt.address}</p>
                 )}

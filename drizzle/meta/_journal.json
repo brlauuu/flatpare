@@ -22,6 +22,13 @@
       "when": 1776849182678,
       "tag": "0002_has_washing_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776851029322,
+      "tag": "0003_short_code",
+      "breakpoints": true
     }
   ]
 }
