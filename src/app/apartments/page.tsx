@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
+import { AddressLink } from "@/components/address-link";
 import { Building2 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
@@ -123,7 +124,10 @@ export default function ApartmentsPage() {
                 </div>
                 <ShortCode code={apt.shortCode} />
                 {apt.address && (
-                  <p className="text-sm text-muted-foreground">{apt.address}</p>
+                  <AddressLink
+                    address={apt.address}
+                    className="text-sm text-muted-foreground"
+                  />
                 )}
                 <div className="flex flex-wrap gap-2">
                   {apt.rentChf && (

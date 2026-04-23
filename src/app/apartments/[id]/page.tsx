@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
+import { AddressLink } from "@/components/address-link";
 import { WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
@@ -312,7 +313,10 @@ export default function ApartmentDetailPage() {
           <h1 className="text-2xl font-semibold">{apartment.name}</h1>
           <ShortCode code={apartment.shortCode} />
           {apartment.address && (
-            <p className="text-muted-foreground">{apartment.address}</p>
+            <AddressLink
+              address={apartment.address}
+              className="text-muted-foreground"
+            />
           )}
         </div>
         <div className="flex items-center gap-2">
