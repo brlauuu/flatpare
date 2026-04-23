@@ -112,6 +112,7 @@ export default function ApartmentsPage() {
           <Link key={apt.id} href={`/apartments/${apt.id}`}>
             <Card className="transition-shadow hover:shadow-md">
               <CardContent className="space-y-2 p-4">
+                <ShortCode code={apt.shortCode} size="md" />
                 <div className="flex items-start justify-between">
                   <h3 className="font-medium leading-tight">{apt.name}</h3>
                   {apt.avgOverall && (
@@ -122,7 +123,6 @@ export default function ApartmentsPage() {
                     />
                   )}
                 </div>
-                <ShortCode code={apt.shortCode} />
                 {apt.address && (
                   <AddressLink
                     address={apt.address}
