@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
+import { ApartmentMap } from "@/components/apartment-map";
 import { WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
@@ -56,6 +57,7 @@ interface ApartmentDetail {
   pdfUrl: string | null;
   listingUrl: string | null;
   shortCode: string | null;
+  mapEmbedUrl: string | null;
   ratings: Rating[];
 }
 
@@ -451,6 +453,8 @@ export default function ApartmentDetailPage() {
           )}
         </div>
       )}
+
+      <ApartmentMap embedUrl={apartment.mapEmbedUrl} title={apartment.name} />
 
       <Separator />
 
