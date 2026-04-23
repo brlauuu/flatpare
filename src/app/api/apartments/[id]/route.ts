@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { apartments, ratings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { buildMapEmbedUrl } from "@/lib/map-embed";
 
 export async function GET(
   _request: Request,
@@ -29,6 +30,7 @@ export async function GET(
     return NextResponse.json({
       ...apartment[0],
       ratings: apartmentRatings,
+      mapEmbedUrl: buildMapEmbedUrl(apartment[0].address),
     });
   } catch (error) {
     console.error("[apartments/id:GET] Error:", error);
