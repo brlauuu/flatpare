@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
+import { AddressLink } from "@/components/address-link";
 import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
@@ -194,9 +195,10 @@ export default function ComparePage() {
                       <div className="font-semibold">{apt.name}</div>
                       <ShortCode code={apt.shortCode} />
                       {apt.address && (
-                        <div className="text-xs font-normal text-muted-foreground">
-                          {apt.address}
-                        </div>
+                        <AddressLink
+                          address={apt.address}
+                          className="text-xs font-normal text-muted-foreground"
+                        />
                       )}
                     </div>
                     <Button
