@@ -310,8 +310,8 @@ export default function ApartmentDetailPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="space-y-1">
+          <ShortCode code={apartment.shortCode} size="lg" />
           <h1 className="text-2xl font-semibold">{apartment.name}</h1>
-          <ShortCode code={apartment.shortCode} />
           {apartment.address && (
             <AddressLink
               address={apartment.address}
