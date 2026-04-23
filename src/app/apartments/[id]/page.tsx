@@ -77,14 +77,16 @@ export default function ApartmentDetailPage() {
   const [apartment, setApartment] = useState<ApartmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [myRating, setMyRating] = useState({
+  const EMPTY_RATING = {
     kitchen: 0,
     balconies: 0,
     location: 0,
     floorplan: 0,
     overallFeeling: 0,
     comment: "",
-  });
+  };
+  const [myRating, setMyRating] = useState(EMPTY_RATING);
+  const [cleanRating, setCleanRating] = useState(EMPTY_RATING);
   const [saving, setSaving] = useState(false);
   const [userName, setUserName] = useState("");
   const [error, setError] = useState<ErrorState | null>(null);
@@ -100,16 +102,18 @@ export default function ApartmentDetailPage() {
     const name = getCookieValue("flatpare-name") ?? "";
     setUserName(name);
     const existing = data.ratings?.find((r) => r.userName === name);
-    if (existing) {
-      setMyRating({
-        kitchen: existing.kitchen,
-        balconies: existing.balconies,
-        location: existing.location,
-        floorplan: existing.floorplan,
-        overallFeeling: existing.overallFeeling,
-        comment: existing.comment || "",
-      });
-    }
+    const snapshot = existing
+      ? {
+          kitchen: existing.kitchen,
+          balconies: existing.balconies,
+          location: existing.location,
+          floorplan: existing.floorplan,
+          overallFeeling: existing.overallFeeling,
+          comment: existing.comment || "",
+        }
+      : EMPTY_RATING;
+    setMyRating(snapshot);
+    setCleanRating(snapshot);
   }
 
   async function reloadApartment() {
@@ -163,6 +167,7 @@ export default function ApartmentDetailPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   async function handleDelete() {
@@ -235,6 +240,18 @@ export default function ApartmentDetailPage() {
       setSavingEdit(false);
     }
   }
+
+  function handleCancelRating() {
+    setMyRating(cleanRating);
+  }
+
+  const isRatingDirty =
+    myRating.kitchen !== cleanRating.kitchen ||
+    myRating.balconies !== cleanRating.balconies ||
+    myRating.location !== cleanRating.location ||
+    myRating.floorplan !== cleanRating.floorplan ||
+    myRating.overallFeeling !== cleanRating.overallFeeling ||
+    myRating.comment !== cleanRating.comment;
 
   async function handleSaveRating() {
     setSaving(true);
@@ -461,9 +478,21 @@ export default function ApartmentDetailPage() {
               rows={3}
             />
           </div>
-          <Button onClick={handleSaveRating} disabled={saving}>
-            {saving ? "Saving..." : "Save Rating"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSaveRating}
+              disabled={saving || !isRatingDirty}
+            >
+              {saving ? "Saving..." : "Save Rating"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCancelRating}
+              disabled={saving || !isRatingDirty}
+            >
+              Cancel
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
