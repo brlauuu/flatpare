@@ -142,7 +142,13 @@ describe("Apartment detail edit flow", () => {
     await user.clear(nameInput);
     await user.type(nameInput, "Something else");
 
-    await user.click(screen.getByRole("button", { name: /^Cancel$/ }));
+    // Two Cancel buttons exist on the page (rating form + edit form);
+    // click the enabled one (edit form).
+    const cancels = screen.getAllByRole("button", { name: /^Cancel$/ });
+    const editCancel = cancels.find(
+      (b) => !(b as HTMLButtonElement).disabled
+    )!;
+    await user.click(editCancel);
 
     // No PATCH was made.
     expect(
@@ -169,7 +175,11 @@ describe("Apartment detail edit flow", () => {
     await user.click(screen.getByRole("button", { name: /^Edit$/ }));
     expect(screen.getByRole("button", { name: /Delete/i })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: /^Cancel$/ }));
+    const cancels = screen.getAllByRole("button", { name: /^Cancel$/ });
+    const editCancel = cancels.find(
+      (b) => !(b as HTMLButtonElement).disabled
+    )!;
+    await user.click(editCancel);
     expect(screen.getByRole("button", { name: /Delete/i })).not.toBeDisabled();
 
     // "within" import just to keep the import list stable.
