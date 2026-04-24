@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { uploadFile } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
+import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 
 export async function POST(request: Request) {
   try {
@@ -52,9 +53,14 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[parse-pdf] Error:", error);
+    const classified = classifyParsePdfError(error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to process PDF" },
-      { status: 500 }
+      {
+        error: classified.message,
+        reason: classified.reason,
+        retryAfterSeconds: classified.retryAfterSeconds,
+      },
+      { status: classified.status }
     );
   }
 }
