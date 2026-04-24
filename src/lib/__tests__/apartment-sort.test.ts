@@ -108,4 +108,11 @@ describe("compareApartments", () => {
     // Both null → tie-break → b (newer createdAt) before a.
     expect(compareApartments(a, b, "rentChf", "asc")).toBeGreaterThan(0);
   });
+
+  it("puts null createdAt after non-null createdAt regardless of direction", () => {
+    const withDate = apt({ id: 1, createdAt: "2026-01-01T00:00:00Z" });
+    const nullDate = apt({ id: 2, createdAt: null });
+    expect(compareApartments(withDate, nullDate, "createdAt", "asc")).toBeLessThan(0);
+    expect(compareApartments(withDate, nullDate, "createdAt", "desc")).toBeLessThan(0);
+  });
 });

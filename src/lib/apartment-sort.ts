@@ -64,20 +64,21 @@ export function compareApartments(
   direction: SortDirection
 ): number {
   const extract = EXTRACTORS[field];
-  const primary = compareValues(extract(a), extract(b));
+  const va = extract(a);
+  const vb = extract(b);
+  const primary = compareValues(va, vb);
   if (primary !== 0) {
     // Direction only flips the primary comparison. If one side is null, the
     // non-null side already won above — that win is direction-independent.
-    const aNull = extract(a) === null;
-    const bNull = extract(b) === null;
-    if (aNull || bNull) return primary;
+    if (va === null || vb === null) return primary;
     return direction === "asc" ? primary : -primary;
   }
 
   // Tie-break: createdAt desc (newer first), then id ascending.
-  const aCreated = a.createdAt === null ? null : Date.parse(a.createdAt);
-  const bCreated = b.createdAt === null ? null : Date.parse(b.createdAt);
-  const createdCmp = compareValues(aCreated, bCreated);
+  const createdCmp = compareValues(
+    EXTRACTORS.createdAt(a),
+    EXTRACTORS.createdAt(b)
+  );
   if (createdCmp !== 0) {
     // Desc by default — newer first.
     return -createdCmp;
