@@ -12,7 +12,7 @@ const APARTMENTS = [
   {
     id: 1,
     name: "Sonnenweg 3",
-    address: null,
+    address: "Sonnenweg 3, 8001 Zürich",
     sizeM2: 60,
     numRooms: 2.5,
     rentChf: 2200,
@@ -24,7 +24,7 @@ const APARTMENTS = [
   {
     id: 2,
     name: "Bergstrasse 12",
-    address: null,
+    address: "Bergstrasse 12, 8032 Zürich",
     sizeM2: 45,
     numRooms: 2,
     rentChf: 1800,
@@ -225,5 +225,184 @@ describe("Apartments page — sort", () => {
       "Avg rating",
       "Short code",
     ]);
+  });
+});
+
+describe("Apartments page — search", () => {
+  it("renders an empty search input on mount and shows all apartments", async () => {
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    const input = screen.getByRole("textbox", { name: /Search apartments/i });
+    expect((input as HTMLInputElement).value).toBe("");
+    expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+  });
+
+  it("filters by name substring, case-insensitive", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "berg"
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
+    expect(screen.queryByText("Seeblick 7")).toBeNull();
+  });
+
+  it("filters by short code, case-insensitive", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "GHI"
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
+    expect(screen.queryByText("Bergstrasse 12")).toBeNull();
+  });
+
+  it("filters by address", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "zürich"
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    expect(screen.queryByText("Seeblick 7")).toBeNull();
+  });
+
+  it("treats null address as empty — 'null' query matches nothing", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "null"
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/No apartments match "null"/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
+    expect(screen.queryByText("Bergstrasse 12")).toBeNull();
+    expect(screen.queryByText("Seeblick 7")).toBeNull();
+  });
+
+  it("renders empty-result state when the query matches no apartments", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "xyz"
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/No apartments match "xyz"/i)).toBeInTheDocument();
+    });
+  });
+
+  it("'Show all apartments' button in the empty-result state resets the query", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "xyz"
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/No apartments match "xyz"/i)).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole("button", { name: /Show all apartments/i })
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+    const input = screen.getByRole("textbox", { name: /Search apartments/i });
+    expect((input as HTMLInputElement).value).toBe("");
+  });
+
+  it("inline Clear (X) button in the input resets the query", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "berg"
+    );
+    await waitFor(() => {
+      expect(screen.queryByText("Sonnenweg 3")).toBeNull();
+    });
+    await user.click(screen.getByRole("button", { name: /Clear search/i }));
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+  });
+
+  it("whitespace-only query behaves as empty", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "  "
+    );
+    expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+    expect(screen.queryByText(/No apartments match/i)).toBeNull();
+  });
+
+  it("composes with sort: search narrows first, sort applies after", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
+    localStorage.setItem("flatpare-apartments-sort-direction", "asc");
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: /Search apartments/i }),
+      "berg"
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
+    expect(screen.queryByText("Seeblick 7")).toBeNull();
   });
 });
