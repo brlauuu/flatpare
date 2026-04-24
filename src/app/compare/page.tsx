@@ -1,19 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { cn } from "@/lib/utils";
-import { BarChart3 } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   type ErrorDetails,
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
+import {
+  compareApartments,
+  COMPARE_SORT_CHANGE_EVENT,
+  COMPARE_SORT_DIRECTION_STORAGE_KEY,
+  COMPARE_SORT_FIELD_IDS,
+  COMPARE_SORT_FIELD_LABELS,
+  COMPARE_SORT_FIELD_STORAGE_KEY,
+  isSortDirection,
+  isSortField,
+  type SortDirection,
+  type SortField,
+} from "@/lib/apartment-sort";
+import { usePersistedEnum } from "@/lib/use-persisted-enum";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ErrorState {
   headline: string;
@@ -33,6 +53,8 @@ interface ApartmentWithRatings {
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
   shortCode: string | null;
+  createdAt: string | null;
+  avgOverall: string | null;
   ratings: {
     userName: string;
     kitchen: number;
@@ -68,6 +90,18 @@ export default function ComparePage() {
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
+  const [sortField, setSortField] = usePersistedEnum<SortField>(
+    COMPARE_SORT_FIELD_STORAGE_KEY,
+    COMPARE_SORT_CHANGE_EVENT,
+    "rentChf",
+    isSortField
+  );
+  const [sortDirection, setSortDirection] = usePersistedEnum<SortDirection>(
+    COMPARE_SORT_DIRECTION_STORAGE_KEY,
+    COMPARE_SORT_CHANGE_EVENT,
+    "asc",
+    isSortDirection
+  );
 
   useEffect(() => {
     async function load() {
@@ -112,6 +146,13 @@ export default function ComparePage() {
     load();
   }, []);
 
+  const visible = apartments.filter((a) => !hiddenIds.has(a.id));
+  const sortedVisible = useMemo(() => {
+    return [...visible].sort((a, b) =>
+      compareApartments(a, b, sortField, sortDirection)
+    );
+  }, [visible, sortField, sortDirection]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -127,8 +168,6 @@ export default function ComparePage() {
       </div>
     );
   }
-
-  const visible = apartments.filter((a) => !hiddenIds.has(a.id));
 
   if (apartments.length === 0) {
     return (
@@ -165,17 +204,50 @@ export default function ComparePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Compare</h1>
-        {hiddenIds.size > 0 && (
+        <div className="flex items-center gap-2">
+          <Select
+            value={sortField}
+            onValueChange={(value) => setSortField(value as SortField)}
+          >
+            <SelectTrigger aria-label="Sort by" className="h-8 w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COMPARE_SORT_FIELD_IDS.map((id) => (
+                <SelectItem key={id} value={id}>
+                  {COMPARE_SORT_FIELD_LABELS[id]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            onClick={() => setHiddenIds(new Set())}
+            aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
+            onClick={() =>
+              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+            }
+            className="h-8 w-8 p-0"
           >
-            Show all ({hiddenIds.size} hidden)
+            {sortDirection === "asc" ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
           </Button>
-        )}
+          {hiddenIds.size > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHiddenIds(new Set())}
+            >
+              Show all ({hiddenIds.size} hidden)
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">
@@ -185,7 +257,7 @@ export default function ComparePage() {
               <th className="sticky left-0 z-10 bg-muted/50 px-4 py-3 text-left font-medium">
                 &nbsp;
               </th>
-              {visible.map((apt) => (
+              {sortedVisible.map((apt) => (
                 <th
                   key={apt.id}
                   className="min-w-[160px] px-4 py-3 text-left font-medium"
@@ -204,6 +276,7 @@ export default function ComparePage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label={`Hide ${apt.name}`}
                       className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:text-destructive"
                       onClick={() =>
                         setHiddenIds((prev) => new Set([...prev, apt.id]))
@@ -225,7 +298,7 @@ export default function ComparePage() {
                   <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
                     {metric.label}
                   </td>
-                  {visible.map((apt) => {
+                  {sortedVisible.map((apt) => {
                     const val = (apt as unknown as Record<string, unknown>)[
                       metric.key
                     ] as number | null;
@@ -251,7 +324,7 @@ export default function ComparePage() {
               <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
                 Washing machine
               </td>
-              {visible.map((apt) => (
+              {sortedVisible.map((apt) => (
                 <td
                   key={apt.id}
                   className={cn(
@@ -291,7 +364,7 @@ export default function ComparePage() {
                     <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
                       {ratingLabels[rKey]}
                     </td>
-                    {visible.map((apt) => {
+                    {sortedVisible.map((apt) => {
                       const rating = apt.ratings.find(
                         (r) => r.userName === user
                       );
@@ -316,7 +389,7 @@ export default function ComparePage() {
                   <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
                     Comment
                   </td>
-                  {visible.map((apt) => {
+                  {sortedVisible.map((apt) => {
                     const rating = apt.ratings.find(
                       (r) => r.userName === user
                     );
@@ -347,7 +420,7 @@ export default function ComparePage() {
                 <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 font-medium">
                   {ratingLabels[rKey]}
                 </td>
-                {visible.map((apt) => {
+                {sortedVisible.map((apt) => {
                   const vals = apt.ratings
                     .map((r) => r[rKey])
                     .filter((v) => v > 0);

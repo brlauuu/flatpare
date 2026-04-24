@@ -10,6 +10,10 @@ function apt(overrides: Partial<SortableApartment>): SortableApartment {
     rentChf: null,
     sizeM2: null,
     numRooms: null,
+    numBathrooms: null,
+    numBalconies: null,
+    distanceBikeMin: null,
+    distanceTransitMin: null,
     avgOverall: null,
     shortCode: null,
     createdAt: null,
@@ -114,5 +118,47 @@ describe("compareApartments", () => {
     const nullDate = apt({ id: 2, createdAt: null });
     expect(compareApartments(withDate, nullDate, "createdAt", "asc")).toBeLessThan(0);
     expect(compareApartments(withDate, nullDate, "createdAt", "desc")).toBeLessThan(0);
+  });
+
+  it("sorts by numBathrooms ascending", () => {
+    const a = apt({ id: 1, numBathrooms: 2 });
+    const b = apt({ id: 2, numBathrooms: 1 });
+    expect(compareApartments(a, b, "numBathrooms", "asc")).toBeGreaterThan(0);
+    expect(compareApartments(b, a, "numBathrooms", "asc")).toBeLessThan(0);
+  });
+
+  it("sorts by numBalconies descending", () => {
+    const a = apt({ id: 1, numBalconies: 0 });
+    const b = apt({ id: 2, numBalconies: 2 });
+    expect(compareApartments(a, b, "numBalconies", "desc")).toBeGreaterThan(0);
+    expect(compareApartments(b, a, "numBalconies", "desc")).toBeLessThan(0);
+  });
+
+  it("puts null distanceBikeMin after non-null regardless of direction", () => {
+    const withBike = apt({ id: 1, distanceBikeMin: 10 });
+    const nullBike = apt({ id: 2, distanceBikeMin: null });
+    expect(
+      compareApartments(withBike, nullBike, "distanceBikeMin", "asc")
+    ).toBeLessThan(0);
+    expect(
+      compareApartments(withBike, nullBike, "distanceBikeMin", "desc")
+    ).toBeLessThan(0);
+  });
+
+  it("tie-breaks on distanceTransitMin via createdAt desc", () => {
+    const earlier = apt({
+      id: 1,
+      distanceTransitMin: 25,
+      createdAt: "2026-01-01T00:00:00Z",
+    });
+    const later = apt({
+      id: 2,
+      distanceTransitMin: 25,
+      createdAt: "2026-04-01T00:00:00Z",
+    });
+    // Same transit time → tie-break on createdAt desc → later comes first.
+    expect(
+      compareApartments(earlier, later, "distanceTransitMin", "asc")
+    ).toBeGreaterThan(0);
   });
 });

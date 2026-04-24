@@ -3,6 +3,10 @@ export type SortField =
   | "rentChf"
   | "sizeM2"
   | "numRooms"
+  | "numBathrooms"
+  | "numBalconies"
+  | "distanceBikeMin"
+  | "distanceTransitMin"
   | "avgOverall"
   | "shortCode";
 
@@ -13,6 +17,10 @@ export interface SortableApartment {
   rentChf: number | null;
   sizeM2: number | null;
   numRooms: number | null;
+  numBathrooms: number | null;
+  numBalconies: number | null;
+  distanceBikeMin: number | null;
+  distanceTransitMin: number | null;
   avgOverall: string | null;
   shortCode: string | null;
   createdAt: string | null;
@@ -24,16 +32,33 @@ const EXTRACTORS: Record<SortField, Extractor> = {
   rentChf: (a) => a.rentChf,
   sizeM2: (a) => a.sizeM2,
   numRooms: (a) => a.numRooms,
+  numBathrooms: (a) => a.numBathrooms,
+  numBalconies: (a) => a.numBalconies,
+  distanceBikeMin: (a) => a.distanceBikeMin,
+  distanceTransitMin: (a) => a.distanceTransitMin,
   avgOverall: (a) => (a.avgOverall === null ? null : parseFloat(a.avgOverall)),
   createdAt: (a) => (a.createdAt === null ? null : Date.parse(a.createdAt)),
   shortCode: (a) => a.shortCode,
 };
 
-export const SORT_FIELD_LABELS: Record<SortField, string> = {
+export const SORT_FIELD_LABELS: Partial<Record<SortField, string>> = {
   createdAt: "Date added",
   rentChf: "Price",
   sizeM2: "Size",
   numRooms: "Rooms",
+  avgOverall: "Avg rating",
+  shortCode: "Short code",
+};
+
+export const COMPARE_SORT_FIELD_LABELS: Record<SortField, string> = {
+  createdAt: "Date added",
+  rentChf: "Price",
+  sizeM2: "Size",
+  numRooms: "Rooms",
+  numBathrooms: "Bathrooms",
+  numBalconies: "Balconies",
+  distanceBikeMin: "Bike to SBB",
+  distanceTransitMin: "Transit to SBB",
   avgOverall: "Avg rating",
   shortCode: "Short code",
 };
@@ -92,10 +117,22 @@ export const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
 
 export const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
 
+export const COMPARE_SORT_FIELD_IDS = Object.keys(
+  COMPARE_SORT_FIELD_LABELS
+) as SortField[];
+
+// COMPARE_SORT_FIELD_IDS is the superset of all SortField values. Any new
+// SortField member must be added to COMPARE_SORT_FIELD_LABELS or this guard
+// will silently reject stored values and break persistence.
 export function isSortField(v: string): v is SortField {
-  return (SORT_FIELD_IDS as string[]).includes(v);
+  return (COMPARE_SORT_FIELD_IDS as string[]).includes(v);
 }
 
 export function isSortDirection(v: string): v is SortDirection {
   return v === "asc" || v === "desc";
 }
+
+export const COMPARE_SORT_FIELD_STORAGE_KEY = "flatpare-compare-sort-field";
+export const COMPARE_SORT_DIRECTION_STORAGE_KEY =
+  "flatpare-compare-sort-direction";
+export const COMPARE_SORT_CHANGE_EVENT = "flatpare-compare-sort-change";

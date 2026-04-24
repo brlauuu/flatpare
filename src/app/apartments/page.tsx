@@ -56,7 +56,11 @@ interface ApartmentSummary {
   address: string | null;
   sizeM2: number | null;
   numRooms: number | null;
+  numBathrooms: number | null;
+  numBalconies: number | null;
   rentChf: number | null;
+  distanceBikeMin: number | null;
+  distanceTransitMin: number | null;
   shortCode: string | null;
   avgOverall: string | null;
   myRating: number | null;

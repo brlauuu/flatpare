@@ -206,4 +206,24 @@ describe("Apartments page — sort", () => {
 
     expect(localStorage.getItem("flatpare-apartments-sort-direction")).toBe("asc");
   });
+
+  it("renders exactly 6 sort field options in the list-page Select", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(6);
+    const labels = options.map((o) => o.textContent);
+    expect(labels).toEqual([
+      "Date added",
+      "Price",
+      "Size",
+      "Rooms",
+      "Avg rating",
+      "Short code",
+    ]);
+  });
 });
