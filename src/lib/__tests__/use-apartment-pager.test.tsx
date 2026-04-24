@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useApartmentPager } from "@/lib/use-apartment-pager";
 
 const LIST = [
@@ -148,6 +148,13 @@ describe("useApartmentPager", () => {
     expect(result.current.nextId).toBeNull();
   });
 
-  // Silence unused-import warning without removing act.
-  void act;
+  it("surfaces an error when fetch itself throws (network failure)", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValue(new Error("network down"));
+
+    const { result } = renderHook(() => useApartmentPager(2));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.total).toBe(0);
+    expect(result.current.position).toBeNull();
+  });
 });

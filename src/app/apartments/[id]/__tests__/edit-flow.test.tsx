@@ -52,6 +52,12 @@ beforeEach(() => {
     fetchCalls.push({ url, init: init ?? {} });
     const method = init?.method ?? "GET";
 
+    if (url === "/api/apartments" && method === "GET") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    }
     if (url.endsWith("/api/apartments/42") && method === "GET") {
       getCount += 1;
       return Promise.resolve({

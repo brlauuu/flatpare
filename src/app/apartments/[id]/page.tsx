@@ -12,7 +12,7 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { ApartmentMap } from "@/components/apartment-map";
-import { WashingMachine } from "lucide-react";
+import { ArrowLeft, ArrowRight, WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   ApartmentFormFields,
@@ -25,6 +25,7 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
+import { useApartmentPager } from "@/lib/use-apartment-pager";
 
 interface ErrorState {
   headline: string;
@@ -77,6 +78,7 @@ function getCookieValue(name: string): string | null {
 export default function ApartmentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const pager = useApartmentPager(Number(params.id));
   const [apartment, setApartment] = useState<ApartmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -309,6 +311,37 @@ export default function ApartmentDetailPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pager.prevId === null}
+          onClick={() => {
+            if (pager.prevId !== null) router.push(`/apartments/${pager.prevId}`);
+          }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        {pager.position !== null && pager.total > 0 && (
+          <span className="text-sm text-muted-foreground">
+            {pager.position} of {pager.total}
+          </span>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pager.nextId === null}
+          onClick={() => {
+            if (pager.nextId !== null) router.push(`/apartments/${pager.nextId}`);
+          }}
+        >
+          Next
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <ShortCode code={apartment.shortCode} size="lg" />
