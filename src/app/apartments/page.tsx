@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -23,6 +23,12 @@ import {
   fetchErrorFromException,
 } from "@/lib/fetch-error";
 import { usePersistedEnum } from "@/lib/use-persisted-enum";
+import {
+  compareApartments,
+  SORT_FIELD_LABELS,
+  type SortDirection,
+  type SortField,
+} from "@/lib/apartment-sort";
 
 interface ErrorState {
   headline: string;
@@ -50,6 +56,20 @@ function isViewMode(v: string): v is ViewMode {
   return v === "grid" || v === "list";
 }
 
+const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";
+const SORT_DIRECTION_STORAGE_KEY = "flatpare-apartments-sort-direction";
+const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
+
+const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
+
+function isSortField(v: string): v is SortField {
+  return (SORT_FIELD_IDS as string[]).includes(v);
+}
+
+function isSortDirection(v: string): v is SortDirection {
+  return v === "asc" || v === "desc";
+}
+
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +80,28 @@ export default function ApartmentsPage() {
     "grid",
     isViewMode
   );
+
+  const [sortField, setSortField] = usePersistedEnum<SortField>(
+    SORT_FIELD_STORAGE_KEY,
+    SORT_CHANGE_EVENT,
+    "createdAt",
+    isSortField
+  );
+  const [sortDirection, setSortDirection] = usePersistedEnum<SortDirection>(
+    SORT_DIRECTION_STORAGE_KEY,
+    SORT_CHANGE_EVENT,
+    "desc",
+    isSortDirection
+  );
+
+  void setSortField;
+  void setSortDirection;
+
+  const sortedApartments = useMemo(() => {
+    return [...apartments].sort((a, b) =>
+      compareApartments(a, b, sortField, sortDirection)
+    );
+  }, [apartments, sortField, sortDirection]);
 
   useEffect(() => {
     const url = "/api/apartments";
@@ -172,7 +214,7 @@ export default function ApartmentsPage() {
           data-view="grid"
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {apartments.map((apt) => (
+          {sortedApartments.map((apt) => (
             <Link key={apt.id} href={`/apartments/${apt.id}`}>
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="space-y-2 p-4">
@@ -219,7 +261,7 @@ export default function ApartmentsPage() {
           data-view="list"
           className="divide-y overflow-hidden rounded-lg border"
         >
-          {apartments.map((apt) => (
+          {sortedApartments.map((apt) => (
             <Link
               key={apt.id}
               href={`/apartments/${apt.id}`}
