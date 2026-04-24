@@ -26,6 +26,7 @@ import {
   fetchErrorFromException,
 } from "@/lib/fetch-error";
 import { useApartmentPager } from "@/lib/use-apartment-pager";
+import { setUnsavedRating } from "@/lib/unsaved-changes";
 
 interface ErrorState {
   headline: string;
@@ -174,6 +175,29 @@ export default function ApartmentDetailPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
+
+  useEffect(() => {
+    const dirty =
+      myRating.kitchen !== cleanRating.kitchen ||
+      myRating.balconies !== cleanRating.balconies ||
+      myRating.location !== cleanRating.location ||
+      myRating.floorplan !== cleanRating.floorplan ||
+      myRating.overallFeeling !== cleanRating.overallFeeling ||
+      myRating.comment !== cleanRating.comment;
+    setUnsavedRating(dirty);
+    return () => setUnsavedRating(false);
+  }, [myRating, cleanRating]);
+
+  useEffect(() => {
+    function handler() {
+      reloadApartment();
+    }
+    window.addEventListener("flatpare-user-changed", handler);
+    return () => window.removeEventListener("flatpare-user-changed", handler);
+    // reloadApartment is defined in this component scope; keeping deps empty is
+    // intentional (inline closure picks up the latest definition per render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleDelete() {
     if (!confirm("Delete this apartment? This cannot be undone.")) return;
@@ -508,8 +532,9 @@ export default function ApartmentDetailPage() {
             </div>
           ))}
           <div className="space-y-2">
-            <Label>Comment</Label>
+            <Label htmlFor="rating-comment">Comment</Label>
             <Textarea
+              id="rating-comment"
               value={myRating.comment}
               onChange={(e) =>
                 setMyRating((prev) => ({ ...prev, comment: e.target.value }))

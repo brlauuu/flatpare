@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChevronDown, Plus, User, X } from "lucide-react";
 import {
@@ -39,21 +40,37 @@ export function NavBar({ userName }: { userName: string }) {
 
   async function switchUser(name: string) {
     if (name === userName) return;
+    if (getUnsavedRating()) {
+      const ok = window.confirm(
+        "You have unsaved rating changes. Switch user anyway? Your input will be discarded."
+      );
+      if (!ok) return;
+    }
     await fetch("/api/auth/name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ displayName: name }),
     });
+    window.dispatchEvent(new Event("flatpare-user-changed"));
     router.refresh();
   }
 
   async function deleteUser(name: string) {
+    if (name === userName && getUnsavedRating()) {
+      const ok = window.confirm(
+        "You have unsaved rating changes. Delete yourself anyway? Your input will be discarded."
+      );
+      if (!ok) return;
+    }
     const res = await fetch(
       `/api/auth/users/${encodeURIComponent(name)}`,
       { method: "DELETE" }
     );
     if (!res.ok) return;
     const data = (await res.json()) as { switchedTo?: string | null };
+    if (data.switchedTo !== undefined) {
+      window.dispatchEvent(new Event("flatpare-user-changed"));
+    }
     if (data.switchedTo === null) {
       router.push("/");
     } else {
