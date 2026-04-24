@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { Building2, CheckCircle2, Circle } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  Circle,
+  LayoutGrid,
+  List as ListIcon,
+} from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
+import { cn } from "@/lib/utils";
 import {
   type ErrorDetails,
   fetchErrorFromResponse,
@@ -34,10 +41,39 @@ interface ApartmentSummary {
   createdAt: string | null;
 }
 
+type ViewMode = "grid" | "list";
+const VIEW_STORAGE_KEY = "flatpare-apartments-view";
+const VIEW_CHANGE_EVENT = "flatpare-apartments-view-change";
+
+function subscribeView(callback: () => void): () => void {
+  // localStorage's 'storage' event only fires in *other* tabs, so we also
+  // dispatch a custom event on same-tab writes to trigger re-subscribers.
+  window.addEventListener("storage", callback);
+  window.addEventListener(VIEW_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(VIEW_CHANGE_EVENT, callback);
+  };
+}
+
+function getViewSnapshot(): ViewMode {
+  const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
+  return v === "list" ? "list" : "grid";
+}
+
+function getViewServerSnapshot(): ViewMode {
+  return "grid";
+}
+
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
+  const view = useSyncExternalStore(
+    subscribeView,
+    getViewSnapshot,
+    getViewServerSnapshot
+  );
 
   useEffect(() => {
     const url = "/api/apartments";
@@ -64,6 +100,11 @@ export default function ApartmentsPage() {
       }
     })();
   }, []);
+
+  function changeView(v: ViewMode) {
+    window.localStorage.setItem(VIEW_STORAGE_KEY, v);
+    window.dispatchEvent(new Event(VIEW_CHANGE_EVENT));
+  }
 
   if (loading) {
     return (
@@ -102,71 +143,164 @@ export default function ApartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Apartments</h1>
-        <Link href="/apartments/new" className={buttonVariants()}>
-          Upload New
-        </Link>
+        <div className="flex items-center gap-2">
+          <div
+            role="group"
+            aria-label="View"
+            className="inline-flex rounded-md border bg-muted p-0.5"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="Grid view"
+              aria-pressed={view === "grid"}
+              onClick={() => changeView("grid")}
+              className={cn(
+                "h-7 gap-1 px-2",
+                view === "grid" && "bg-background shadow-sm"
+              )}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="List view"
+              aria-pressed={view === "list"}
+              onClick={() => changeView("list")}
+              className={cn(
+                "h-7 gap-1 px-2",
+                view === "list" && "bg-background shadow-sm"
+              )}
+            >
+              <ListIcon className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <Link href="/apartments/new" className={buttonVariants()}>
+            Upload New
+          </Link>
+        </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {apartments.map((apt) => (
-          <Link key={apt.id} href={`/apartments/${apt.id}`}>
-            <Card className="transition-shadow hover:shadow-md">
-              <CardContent className="space-y-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <ShortCode code={apt.shortCode} size="md" />
-                  {apt.myRating !== null ? (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
-                    >
-                      <CheckCircle2 className="h-3 w-3" />
-                      Rated
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-muted-foreground"
-                    >
-                      <Circle className="h-3 w-3" />
-                      Not yet rated
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-start justify-between">
-                  <h3 className="font-medium leading-tight">{apt.name}</h3>
-                  {apt.avgOverall && (
-                    <StarRating
-                      value={Math.round(parseFloat(apt.avgOverall))}
-                      readonly
-                      size="sm"
+
+      {view === "grid" ? (
+        <div
+          data-view="grid"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {apartments.map((apt) => (
+            <Link key={apt.id} href={`/apartments/${apt.id}`}>
+              <Card className="transition-shadow hover:shadow-md">
+                <CardContent className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <ShortCode code={apt.shortCode} size="md" />
+                    <RatedBadge myRating={apt.myRating} />
+                  </div>
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-medium leading-tight">{apt.name}</h3>
+                    {apt.avgOverall && (
+                      <StarRating
+                        value={Math.round(parseFloat(apt.avgOverall))}
+                        readonly
+                        size="sm"
+                      />
+                    )}
+                  </div>
+                  {apt.address && (
+                    <AddressLink
+                      address={apt.address}
+                      className="text-sm text-muted-foreground"
                     />
                   )}
+                  <div className="flex flex-wrap gap-2">
+                    {apt.rentChf && (
+                      <Badge variant="secondary">
+                        CHF {apt.rentChf.toLocaleString()}
+                      </Badge>
+                    )}
+                    {apt.sizeM2 && (
+                      <Badge variant="secondary">{apt.sizeM2} m²</Badge>
+                    )}
+                    {apt.numRooms && (
+                      <Badge variant="secondary">{apt.numRooms} rooms</Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div
+          data-view="list"
+          className="divide-y overflow-hidden rounded-lg border"
+        >
+          {apartments.map((apt) => (
+            <Link
+              key={apt.id}
+              href={`/apartments/${apt.id}`}
+              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <ShortCode code={apt.shortCode} size="sm" />
+                  <h3 className="truncate font-medium leading-tight">
+                    {apt.name}
+                  </h3>
                 </div>
                 {apt.address && (
-                  <AddressLink
-                    address={apt.address}
-                    className="text-sm text-muted-foreground"
-                  />
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {apt.address}
+                  </p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {apt.rentChf && (
-                    <Badge variant="secondary">
-                      CHF {apt.rentChf.toLocaleString()}
-                    </Badge>
-                  )}
-                  {apt.sizeM2 && (
-                    <Badge variant="secondary">{apt.sizeM2} m²</Badge>
-                  )}
-                  {apt.numRooms && (
-                    <Badge variant="secondary">{apt.numRooms} rooms</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+              </div>
+              <div className="hidden flex-wrap items-center gap-2 sm:flex">
+                {apt.rentChf && (
+                  <Badge variant="secondary">
+                    CHF {apt.rentChf.toLocaleString()}
+                  </Badge>
+                )}
+                {apt.numRooms && (
+                  <Badge variant="secondary">{apt.numRooms} rm</Badge>
+                )}
+              </div>
+              <div className="shrink-0">
+                <RatedBadge myRating={apt.myRating} />
+              </div>
+              {apt.avgOverall && (
+                <StarRating
+                  value={Math.round(parseFloat(apt.avgOverall))}
+                  readonly
+                  size="sm"
+                />
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+function RatedBadge({ myRating }: { myRating: number | null }) {
+  if (myRating !== null) {
+    return (
+      <Badge
+        variant="secondary"
+        className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
+      >
+        <CheckCircle2 className="h-3 w-3" />
+        Rated
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="gap-1 text-muted-foreground">
+      <Circle className="h-3 w-3" />
+      Not yet rated
+    </Badge>
   );
 }
