@@ -61,6 +61,12 @@ beforeEach(() => {
     const url = typeof input === "string" ? input : (input as Request).url;
     fetchCalls.push({ url, init: init ?? {} });
     const method = init?.method ?? "GET";
+    if (url === "/api/apartments" && method === "GET") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    }
     if (url.endsWith("/api/apartments/42") && method === "GET") {
       return Promise.resolve({
         ok: true,

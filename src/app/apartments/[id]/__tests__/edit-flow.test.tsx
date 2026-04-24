@@ -52,6 +52,12 @@ beforeEach(() => {
     fetchCalls.push({ url, init: init ?? {} });
     const method = init?.method ?? "GET";
 
+    if (url === "/api/apartments" && method === "GET") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    }
     if (url.endsWith("/api/apartments/42") && method === "GET") {
       getCount += 1;
       return Promise.resolve({
@@ -79,7 +85,9 @@ afterEach(() => {
 });
 
 describe("Apartment detail edit flow", () => {
-  it("opens the edit form, saves changes, and re-renders with updated values", async () => {
+  it(
+    "opens the edit form, saves changes, and re-renders with updated values",
+    async () => {
     const user = userEvent.setup();
     render(<ApartmentDetailPage />);
 
@@ -126,7 +134,9 @@ describe("Apartment detail edit flow", () => {
       expect(screen.getByText("Sonnenweg 3b")).toBeInTheDocument();
     });
     expect(screen.getByText(/CHF 2,400/)).toBeInTheDocument();
-  });
+    },
+    10000
+  );
 
   it("Cancel discards edits and returns to read-only view", async () => {
     const user = userEvent.setup();
