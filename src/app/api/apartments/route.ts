@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { apartments, ratings } from "@/lib/db/schema";
 import { desc, avg, eq } from "drizzle-orm";
+import { getDisplayName } from "@/lib/auth";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -47,7 +48,29 @@ export async function GET() {
       .groupBy(apartments.id)
       .orderBy(desc(apartments.createdAt));
 
-    return NextResponse.json(allApartments);
+    // Decorate with the current user's own rating (or null if not rated yet)
+    // so the list card can show a "Rated"/"Not yet rated" indicator.
+    const currentUser = await getDisplayName();
+    const myRatingByApt = new Map<number, number>();
+    if (currentUser) {
+      const myRows = await db
+        .select({
+          apartmentId: ratings.apartmentId,
+          overallFeeling: ratings.overallFeeling,
+        })
+        .from(ratings)
+        .where(eq(ratings.userName, currentUser));
+      for (const r of myRows) {
+        myRatingByApt.set(r.apartmentId, r.overallFeeling ?? 0);
+      }
+    }
+
+    const withMyRating = allApartments.map((a) => ({
+      ...a,
+      myRating: myRatingByApt.has(a.id) ? myRatingByApt.get(a.id)! : null,
+    }));
+
+    return NextResponse.json(withMyRating);
   } catch (error) {
     console.error("[apartments:GET] Error:", error);
     return NextResponse.json(
