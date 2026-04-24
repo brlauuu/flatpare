@@ -121,6 +121,9 @@ export const COMPARE_SORT_FIELD_IDS = Object.keys(
   COMPARE_SORT_FIELD_LABELS
 ) as SortField[];
 
+// COMPARE_SORT_FIELD_IDS is the superset of all SortField values. Any new
+// SortField member must be added to COMPARE_SORT_FIELD_LABELS or this guard
+// will silently reject stored values and break persistence.
 export function isSortField(v: string): v is SortField {
   return (COMPARE_SORT_FIELD_IDS as string[]).includes(v);
 }
