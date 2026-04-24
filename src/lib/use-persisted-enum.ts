@@ -2,6 +2,10 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+/**
+ * Hook to manage persisted enum state with localStorage and cross-tab sync.
+ * @param isValid Must be a stable reference (module-level function or memoised callback) to avoid unnecessary re-subscriptions.
+ */
 export function usePersistedEnum<T extends string>(
   storageKey: string,
   eventName: string,
