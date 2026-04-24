@@ -41,9 +41,12 @@ const BASE_APARTMENT = {
   ],
 };
 
+let fetchCalls: { url: string; init: RequestInit }[] = [];
+
 beforeEach(() => {
   push.mockReset();
   refresh.mockReset();
+  fetchCalls = [];
   // Current user is Alice (via cookie)
   Object.defineProperty(document, "cookie", {
     configurable: true,
@@ -56,6 +59,7 @@ beforeEach(() => {
     init?: RequestInit
   ) => {
     const url = typeof input === "string" ? input : (input as Request).url;
+    fetchCalls.push({ url, init: init ?? {} });
     const method = init?.method ?? "GET";
     if (url.endsWith("/api/apartments/42") && method === "GET") {
       return Promise.resolve({
@@ -117,5 +121,33 @@ describe("Rating cancel", () => {
       screen.getByRole("button", { name: /Save Rating/ })
     ).toBeDisabled();
     expect(screen.getByRole("button", { name: /^Cancel$/ })).toBeDisabled();
+  });
+
+  it("Save Rating POSTs to the ratings endpoint and redirects to /apartments", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Your Rating \(Alice\)/)).toBeInTheDocument();
+    });
+
+    const comment = screen.getByPlaceholderText(
+      /Notes about this apartment/i
+    ) as HTMLTextAreaElement;
+    await user.clear(comment);
+    await user.type(comment, "new note");
+
+    await user.click(screen.getByRole("button", { name: /Save Rating/ }));
+
+    await waitFor(() => {
+      const postCall = fetchCalls.find(
+        (c) =>
+          c.url.endsWith("/api/apartments/42/ratings") &&
+          c.init.method === "POST"
+      );
+      expect(postCall).toBeDefined();
+      const body = JSON.parse((postCall!.init.body as string) ?? "{}");
+      expect(body.comment).toBe("new note");
+    });
+    expect(push).toHaveBeenCalledWith("/apartments");
   });
 });
