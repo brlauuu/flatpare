@@ -23,6 +23,8 @@ const DETAILS = [
     distanceTransitMin: 25,
     shortCode: "ABC-2.5B-WY-4057",
     createdAt: "2026-01-15T10:00:00Z",
+    pdfUrl: "https://example.com/sonnenweg.pdf",
+    listingUrl: null,
     ratings: [],
   },
   {
@@ -39,6 +41,8 @@ const DETAILS = [
     distanceTransitMin: 15,
     shortCode: "DEF-2B-W-4058",
     createdAt: "2026-03-20T10:00:00Z",
+    pdfUrl: null,
+    listingUrl: "https://example.com/bergstrasse-listing",
     ratings: [],
   },
   {
@@ -55,6 +59,8 @@ const DETAILS = [
     distanceTransitMin: 30,
     shortCode: "GHI-3.5B-WY-4059",
     createdAt: "2026-02-10T10:00:00Z",
+    pdfUrl: null,
+    listingUrl: null,
     ratings: [],
   },
 ];
@@ -188,5 +194,68 @@ describe("Compare page — sort", () => {
     await waitFor(() => {
       expect(columnOrder()).toEqual(["Sonnenweg 3", "Seeblick 7"]);
     });
+  });
+});
+
+describe("Compare page — column header links", () => {
+  it("renders the apartment name as a link to its detail page in a new tab", async () => {
+    render(<ComparePage />);
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    const link = screen.getByRole("link", { name: "Sonnenweg 3" });
+    expect(link).toHaveAttribute("href", "/apartments/1");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("renders a PDF icon link when pdfUrl is present", async () => {
+    render(<ComparePage />);
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    const pdfLink = screen.getByRole("link", {
+      name: /View PDF for Sonnenweg 3/i,
+    });
+    expect(pdfLink).toHaveAttribute(
+      "href",
+      "https://example.com/sonnenweg.pdf"
+    );
+    expect(pdfLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("hides the PDF icon link when pdfUrl is null", async () => {
+    render(<ComparePage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("link", { name: /View PDF for Bergstrasse 12/i })
+    ).toBeNull();
+  });
+
+  it("renders an Original listing icon link when listingUrl is present", async () => {
+    render(<ComparePage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+    const listingLink = screen.getByRole("link", {
+      name: /Original listing for Bergstrasse 12/i,
+    });
+    expect(listingLink).toHaveAttribute(
+      "href",
+      "https://example.com/bergstrasse-listing"
+    );
+    expect(listingLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("hides the Original listing icon link when listingUrl is null", async () => {
+    render(<ComparePage />);
+    await waitFor(() => {
+      expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("link", { name: /Original listing for Seeblick 7/i })
+    ).toBeNull();
   });
 });

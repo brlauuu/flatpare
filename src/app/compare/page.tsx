@@ -7,7 +7,13 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { cn } from "@/lib/utils";
-import { ArrowDown, ArrowUp, BarChart3 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  BarChart3,
+  ExternalLink,
+  FileText,
+} from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   type ErrorDetails,
@@ -52,6 +58,8 @@ interface ApartmentWithRatings {
   rentChf: number | null;
   distanceBikeMin: number | null;
   distanceTransitMin: number | null;
+  pdfUrl: string | null;
+  listingUrl: string | null;
   shortCode: string | null;
   createdAt: string | null;
   avgOverall: string | null;
@@ -264,7 +272,38 @@ export default function ComparePage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
-                      <div className="font-semibold">{apt.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`/apartments/${apt.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold hover:underline"
+                        >
+                          {apt.name}
+                        </a>
+                        {apt.pdfUrl && (
+                          <a
+                            href={apt.pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`View PDF for ${apt.name}`}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                        {apt.listingUrl && (
+                          <a
+                            href={apt.listingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Original listing for ${apt.name}`}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                       <ShortCode code={apt.shortCode} />
                       {apt.address && (
                         <AddressLink
