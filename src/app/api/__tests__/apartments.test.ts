@@ -47,6 +47,22 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn(),
 }));
 
+const mockGetDisplayName = vi.fn();
+vi.mock("@/lib/auth", () => ({
+  getDisplayName: () => mockGetDisplayName(),
+}));
+
+vi.mock("@/lib/short-code", () => ({
+  computeShortCodeParts: vi.fn(async () => ({
+    rooms: "?",
+    baths: "?",
+    wash: "?",
+    postcode: "?",
+  })),
+  buildShortCode: vi.fn(() => "ABC-?B-?b-W?-?"),
+  pickLetters: vi.fn(() => "ABC"),
+}));
+
 import { GET, POST } from "../../api/apartments/route";
 import { GET as getById, PATCH, DELETE } from "../../api/apartments/[id]/route";
 
@@ -59,11 +75,12 @@ afterEach(() => {
 });
 
 describe("GET /api/apartments", () => {
-  it("returns list of apartments", async () => {
+  it("returns list of apartments with myRating=null when no user cookie", async () => {
     const apartments = [
       { id: 1, name: "Apt 1", avgOverall: "4.5" },
       { id: 2, name: "Apt 2", avgOverall: null },
     ];
+    mockGetDisplayName.mockResolvedValue(null);
 
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -78,7 +95,52 @@ describe("GET /api/apartments", () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data).toEqual(apartments);
+    expect(data).toEqual([
+      { id: 1, name: "Apt 1", avgOverall: "4.5", myRating: null },
+      { id: 2, name: "Apt 2", avgOverall: null, myRating: null },
+    ]);
+  });
+
+  it("populates myRating per apartment when the user has rated some of them", async () => {
+    const apartments = [
+      { id: 1, name: "Apt 1", avgOverall: "4.5" },
+      { id: 2, name: "Apt 2", avgOverall: null },
+      { id: 3, name: "Apt 3", avgOverall: "3.0" },
+    ];
+    mockGetDisplayName.mockResolvedValue("Alice");
+
+    // First select call: apartments with avgs
+    mockSelect
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue(apartments),
+            }),
+          }),
+        }),
+      })
+      // Second select call: Alice's ratings — she rated apartments 1 and 3.
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            { apartmentId: 1, overallFeeling: 4 },
+            { apartmentId: 3, overallFeeling: 2 },
+          ]),
+        }),
+      });
+
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.map((a: { id: number; myRating: number | null }) => ({
+      id: a.id,
+      myRating: a.myRating,
+    }))).toEqual([
+      { id: 1, myRating: 4 },
+      { id: 2, myRating: null },
+      { id: 3, myRating: 2 },
+    ]);
   });
 });
 

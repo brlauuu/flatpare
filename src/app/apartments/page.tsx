@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { Building2 } from "lucide-react";
+import { Building2, CheckCircle2, Circle } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   type ErrorDetails,
@@ -30,6 +30,7 @@ interface ApartmentSummary {
   rentChf: number | null;
   shortCode: string | null;
   avgOverall: string | null;
+  myRating: number | null;
   createdAt: string | null;
 }
 
@@ -112,7 +113,26 @@ export default function ApartmentsPage() {
           <Link key={apt.id} href={`/apartments/${apt.id}`}>
             <Card className="transition-shadow hover:shadow-md">
               <CardContent className="space-y-2 p-4">
-                <ShortCode code={apt.shortCode} size="md" />
+                <div className="flex items-start justify-between gap-2">
+                  <ShortCode code={apt.shortCode} size="md" />
+                  {apt.myRating !== null ? (
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      Rated
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-muted-foreground"
+                    >
+                      <Circle className="h-3 w-3" />
+                      Not yet rated
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-start justify-between">
                   <h3 className="font-medium leading-tight">{apt.name}</h3>
                   {apt.avgOverall && (
