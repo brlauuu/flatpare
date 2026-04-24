@@ -30,6 +30,8 @@ type UploadItem = {
   fileName: string;
   status: "queued" | "uploading" | "parsing_distance" | "done" | "error";
   error?: string;
+  errorReason?: "quota" | "invalid_pdf" | "unknown";
+  errorRetryAfterSeconds?: number;
   form: ApartmentForm;
   expanded: boolean;
   saved: boolean;
@@ -48,6 +50,7 @@ export default function UploadPage() {
   const [error, setError] = useState<ErrorState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const processingRef = useRef(false);
+  const fileMapRef = useRef<Map<string, File>>(new Map());
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
     setItems((prev) =>
@@ -63,6 +66,143 @@ export default function UploadPage() {
           : item
       )
     );
+  }
+
+  async function parseOne(itemId: string, file: File) {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, status: "uploading" } : item
+      )
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/parse-pdf", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as {
+          error?: string;
+          reason?: "quota" | "invalid_pdf" | "unknown";
+          retryAfterSeconds?: number;
+        };
+        setItems((prev) =>
+          prev.map((i) =>
+            i.id === itemId
+              ? {
+                  ...i,
+                  status: "error",
+                  error: data.error ?? "Parsing failed",
+                  errorReason: data.reason ?? "unknown",
+                  errorRetryAfterSeconds: data.retryAfterSeconds,
+                }
+              : i
+          )
+        );
+        return;
+      }
+
+      const { pdfUrl, extracted } = await res.json();
+      const form = formFromExtracted(extracted, pdfUrl);
+
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? { ...item, status: "parsing_distance", form }
+            : item
+        )
+      );
+
+      if (extracted.address) {
+        try {
+          const distRes = await fetch("/api/distance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: extracted.address }),
+          });
+          const dist = await distRes.json();
+          setItems((prev) =>
+            prev.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    status: "done",
+                    form: {
+                      ...item.form,
+                      distanceBikeMin:
+                        dist.bikeMinutes?.toString() || "",
+                      distanceTransitMin:
+                        dist.transitMinutes?.toString() || "",
+                    },
+                  }
+                : item
+            )
+          );
+        } catch {
+          setItems((prev) =>
+            prev.map((item) =>
+              item.id === itemId ? { ...item, status: "done" } : item
+            )
+          );
+        }
+      } else {
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId ? { ...item, status: "done" } : item
+          )
+        );
+      }
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: "error",
+                error: err instanceof Error ? err.message : "Failed",
+                errorReason: "unknown",
+              }
+            : item
+        )
+      );
+    }
+  }
+
+  async function retryItem(itemId: string) {
+    const file = fileMapRef.current.get(itemId);
+    if (!file) {
+      setItems((prev) =>
+        prev.map((i) =>
+          i.id === itemId
+            ? {
+                ...i,
+                status: "error",
+                error: "File reference lost — please re-upload",
+                errorReason: "unknown",
+                errorRetryAfterSeconds: undefined,
+              }
+            : i
+        )
+      );
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? {
+              ...i,
+              error: undefined,
+              errorReason: undefined,
+              errorRetryAfterSeconds: undefined,
+            }
+          : i
+      )
+    );
+    await parseOne(itemId, file);
   }
 
   const processFiles = useCallback(async (files: File[]) => {
@@ -82,6 +222,10 @@ export default function UploadPage() {
       discarded: false,
     }));
 
+    pdfFiles.forEach((file, i) => {
+      fileMapRef.current.set(newItems[i].id, file);
+    });
+
     setItems(newItems);
     setStep("processing");
     setError(null);
@@ -90,94 +234,9 @@ export default function UploadPage() {
     // Process sequentially to avoid overwhelming the API
     for (let i = 0; i < pdfFiles.length; i++) {
       if (!processingRef.current) break;
-
       const file = pdfFiles[i];
       const itemId = newItems[i].id;
-
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, status: "uploading" } : item
-        )
-      );
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/parse-pdf", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Upload failed");
-        }
-
-        const { pdfUrl, extracted } = await res.json();
-        const form = formFromExtracted(extracted, pdfUrl);
-
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? { ...item, status: "parsing_distance", form }
-              : item
-          )
-        );
-
-        // Try distance calculation in background
-        if (extracted.address) {
-          try {
-            const distRes = await fetch("/api/distance", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ address: extracted.address }),
-            });
-            const dist = await distRes.json();
-            setItems((prev) =>
-              prev.map((item) =>
-                item.id === itemId
-                  ? {
-                      ...item,
-                      status: "done",
-                      form: {
-                        ...item.form,
-                        distanceBikeMin:
-                          dist.bikeMinutes?.toString() || "",
-                        distanceTransitMin:
-                          dist.transitMinutes?.toString() || "",
-                      },
-                    }
-                  : item
-              )
-            );
-          } catch {
-            setItems((prev) =>
-              prev.map((item) =>
-                item.id === itemId ? { ...item, status: "done" } : item
-              )
-            );
-          }
-        } else {
-          setItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId ? { ...item, status: "done" } : item
-            )
-          );
-        }
-      } catch (err) {
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  status: "error",
-                  error: err instanceof Error ? err.message : "Failed",
-                }
-              : item
-          )
-        );
-      }
+      await parseOne(itemId, file);
     }
 
     setStep("review");
@@ -222,6 +281,7 @@ export default function UploadPage() {
         });
 
         if (res.ok) {
+          fileMapRef.current.delete(item.id);
           updateItem(item.id, { saved: true });
         } else {
           updateItem(item.id, {
@@ -313,17 +373,20 @@ export default function UploadPage() {
           <p className="text-muted-foreground">
             Drag and drop one or more PDFs here, or
           </p>
+          <input
+            type="file"
+            accept=".pdf"
+            multiple
+            className="hidden"
+            id="pdf-file-input"
+            onChange={(e) => {
+              if (e.target.files) handleFiles(e.target.files);
+            }}
+          />
           <Button
             variant="outline"
             onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = ".pdf";
-              input.multiple = true;
-              input.onchange = () => {
-                if (input.files) handleFiles(input.files);
-              };
-              input.click();
+              document.getElementById("pdf-file-input")?.click();
             }}
           >
             Choose files
@@ -470,6 +533,7 @@ export default function UploadPage() {
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
+                            fileMapRef.current.delete(item.id);
                             updateItem(item.id, { discarded: true });
                           }}
                         >
@@ -480,7 +544,22 @@ export default function UploadPage() {
                   </div>
                 </CardHeader>
 
-                {item.expanded && !item.saved && (
+                {item.status === "error" && item.error && (
+                  <CardContent>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-destructive">{item.error}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => retryItem(item.id)}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  </CardContent>
+                )}
+
+                {item.expanded && !item.saved && item.status !== "error" && (
                   <CardContent>
                     <ApartmentFormFields
                       form={item.form}
