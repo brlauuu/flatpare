@@ -48,7 +48,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("Apartments view toggle", () => {
+describe("Apartments page — view toggle", () => {
   it("defaults to grid view when no preference is stored", async () => {
     render(<ApartmentsPage />);
     await waitFor(() => {

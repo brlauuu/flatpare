@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
+import { usePersistedEnum } from "@/lib/use-persisted-enum";
 
 interface ErrorState {
   headline: string;
@@ -45,34 +46,19 @@ type ViewMode = "grid" | "list";
 const VIEW_STORAGE_KEY = "flatpare-apartments-view";
 const VIEW_CHANGE_EVENT = "flatpare-apartments-view-change";
 
-function subscribeView(callback: () => void): () => void {
-  // localStorage's 'storage' event only fires in *other* tabs, so we also
-  // dispatch a custom event on same-tab writes to trigger re-subscribers.
-  window.addEventListener("storage", callback);
-  window.addEventListener(VIEW_CHANGE_EVENT, callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(VIEW_CHANGE_EVENT, callback);
-  };
-}
-
-function getViewSnapshot(): ViewMode {
-  const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
-  return v === "list" ? "list" : "grid";
-}
-
-function getViewServerSnapshot(): ViewMode {
-  return "grid";
+function isViewMode(v: string): v is ViewMode {
+  return v === "grid" || v === "list";
 }
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
-  const view = useSyncExternalStore(
-    subscribeView,
-    getViewSnapshot,
-    getViewServerSnapshot
+  const [view, setView] = usePersistedEnum<ViewMode>(
+    VIEW_STORAGE_KEY,
+    VIEW_CHANGE_EVENT,
+    "grid",
+    isViewMode
   );
 
   useEffect(() => {
@@ -100,11 +86,6 @@ export default function ApartmentsPage() {
       }
     })();
   }, []);
-
-  function changeView(v: ViewMode) {
-    window.localStorage.setItem(VIEW_STORAGE_KEY, v);
-    window.dispatchEvent(new Event(VIEW_CHANGE_EVENT));
-  }
 
   if (loading) {
     return (
@@ -157,7 +138,7 @@ export default function ApartmentsPage() {
               size="sm"
               aria-label="Grid view"
               aria-pressed={view === "grid"}
-              onClick={() => changeView("grid")}
+              onClick={() => setView("grid")}
               className={cn(
                 "h-7 gap-1 px-2",
                 view === "grid" && "bg-background shadow-sm"
@@ -171,7 +152,7 @@ export default function ApartmentsPage() {
               size="sm"
               aria-label="List view"
               aria-pressed={view === "list"}
-              onClick={() => changeView("list")}
+              onClick={() => setView("list")}
               className={cn(
                 "h-7 gap-1 px-2",
                 view === "list" && "bg-background shadow-sm"
