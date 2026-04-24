@@ -273,8 +273,7 @@ export default function ApartmentDetailPage() {
         setSaving(false);
         return;
       }
-      await reloadApartment();
-      setSaving(false);
+      router.push("/apartments");
     } catch (err) {
       setError({
         headline: "Couldn't save rating",
