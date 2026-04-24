@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -9,12 +9,21 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import {
+  ArrowDown,
+  ArrowUp,
   Building2,
   CheckCircle2,
   Circle,
   LayoutGrid,
   List as ListIcon,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ErrorDisplay } from "@/components/error-display";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +31,13 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
+import { usePersistedEnum } from "@/lib/use-persisted-enum";
+import {
+  compareApartments,
+  SORT_FIELD_LABELS,
+  type SortDirection,
+  type SortField,
+} from "@/lib/apartment-sort";
 
 interface ErrorState {
   headline: string;
@@ -45,35 +61,53 @@ type ViewMode = "grid" | "list";
 const VIEW_STORAGE_KEY = "flatpare-apartments-view";
 const VIEW_CHANGE_EVENT = "flatpare-apartments-view-change";
 
-function subscribeView(callback: () => void): () => void {
-  // localStorage's 'storage' event only fires in *other* tabs, so we also
-  // dispatch a custom event on same-tab writes to trigger re-subscribers.
-  window.addEventListener("storage", callback);
-  window.addEventListener(VIEW_CHANGE_EVENT, callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(VIEW_CHANGE_EVENT, callback);
-  };
+function isViewMode(v: string): v is ViewMode {
+  return v === "grid" || v === "list";
 }
 
-function getViewSnapshot(): ViewMode {
-  const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
-  return v === "list" ? "list" : "grid";
+const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";
+const SORT_DIRECTION_STORAGE_KEY = "flatpare-apartments-sort-direction";
+const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
+
+const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
+
+function isSortField(v: string): v is SortField {
+  return (SORT_FIELD_IDS as string[]).includes(v);
 }
 
-function getViewServerSnapshot(): ViewMode {
-  return "grid";
+function isSortDirection(v: string): v is SortDirection {
+  return v === "asc" || v === "desc";
 }
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
-  const view = useSyncExternalStore(
-    subscribeView,
-    getViewSnapshot,
-    getViewServerSnapshot
+  const [view, setView] = usePersistedEnum<ViewMode>(
+    VIEW_STORAGE_KEY,
+    VIEW_CHANGE_EVENT,
+    "grid",
+    isViewMode
   );
+
+  const [sortField, setSortField] = usePersistedEnum<SortField>(
+    SORT_FIELD_STORAGE_KEY,
+    SORT_CHANGE_EVENT,
+    "createdAt",
+    isSortField
+  );
+  const [sortDirection, setSortDirection] = usePersistedEnum<SortDirection>(
+    SORT_DIRECTION_STORAGE_KEY,
+    SORT_CHANGE_EVENT,
+    "desc",
+    isSortDirection
+  );
+
+  const sortedApartments = useMemo(() => {
+    return [...apartments].sort((a, b) =>
+      compareApartments(a, b, sortField, sortDirection)
+    );
+  }, [apartments, sortField, sortDirection]);
 
   useEffect(() => {
     const url = "/api/apartments";
@@ -100,11 +134,6 @@ export default function ApartmentsPage() {
       }
     })();
   }, []);
-
-  function changeView(v: ViewMode) {
-    window.localStorage.setItem(VIEW_STORAGE_KEY, v);
-    window.dispatchEvent(new Event(VIEW_CHANGE_EVENT));
-  }
 
   if (loading) {
     return (
@@ -146,6 +175,37 @@ export default function ApartmentsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Apartments</h1>
         <div className="flex items-center gap-2">
+          <Select
+            value={sortField}
+            onValueChange={(value) => setSortField(value as SortField)}
+          >
+            <SelectTrigger aria-label="Sort by" className="h-8 w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_FIELD_IDS.map((id) => (
+                <SelectItem key={id} value={id}>
+                  {SORT_FIELD_LABELS[id]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
+            onClick={() =>
+              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+            }
+            className="h-8 w-8 p-0"
+          >
+            {sortDirection === "asc" ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+          </Button>
           <div
             role="group"
             aria-label="View"
@@ -157,7 +217,7 @@ export default function ApartmentsPage() {
               size="sm"
               aria-label="Grid view"
               aria-pressed={view === "grid"}
-              onClick={() => changeView("grid")}
+              onClick={() => setView("grid")}
               className={cn(
                 "h-7 gap-1 px-2",
                 view === "grid" && "bg-background shadow-sm"
@@ -171,7 +231,7 @@ export default function ApartmentsPage() {
               size="sm"
               aria-label="List view"
               aria-pressed={view === "list"}
-              onClick={() => changeView("list")}
+              onClick={() => setView("list")}
               className={cn(
                 "h-7 gap-1 px-2",
                 view === "list" && "bg-background shadow-sm"
@@ -191,7 +251,7 @@ export default function ApartmentsPage() {
           data-view="grid"
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {apartments.map((apt) => (
+          {sortedApartments.map((apt) => (
             <Link key={apt.id} href={`/apartments/${apt.id}`}>
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="space-y-2 p-4">
@@ -238,7 +298,7 @@ export default function ApartmentsPage() {
           data-view="list"
           className="divide-y overflow-hidden rounded-lg border"
         >
-          {apartments.map((apt) => (
+          {sortedApartments.map((apt) => (
             <Link
               key={apt.id}
               href={`/apartments/${apt.id}`}
