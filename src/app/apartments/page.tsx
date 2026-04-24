@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
@@ -16,6 +17,8 @@ import {
   Circle,
   LayoutGrid,
   List as ListIcon,
+  Search,
+  X,
 } from "lucide-react";
 import {
   Select,
@@ -100,11 +103,24 @@ export default function ApartmentsPage() {
     isSortDirection
   );
 
+  const [query, setQuery] = useState("");
+
+  const filteredApartments = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q === "") return apartments;
+    return apartments.filter((apt) => {
+      const name = apt.name?.toLowerCase() ?? "";
+      const code = apt.shortCode?.toLowerCase() ?? "";
+      const addr = apt.address?.toLowerCase() ?? "";
+      return name.includes(q) || code.includes(q) || addr.includes(q);
+    });
+  }, [apartments, query]);
+
   const sortedApartments = useMemo(() => {
-    return [...apartments].sort((a, b) =>
+    return [...filteredApartments].sort((a, b) =>
       compareApartments(a, b, sortField, sortDirection)
     );
-  }, [apartments, sortField, sortDirection]);
+  }, [filteredApartments, sortField, sortDirection]);
 
   useEffect(() => {
     const url = "/api/apartments";
@@ -169,6 +185,29 @@ export default function ApartmentsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="relative w-full max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          type="text"
+          aria-label="Search apartments"
+          placeholder="Search by name, code, or address..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="h-9 pl-9 pr-9"
+        />
+        {query.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Clear search"
+            onClick={() => setQuery("")}
+            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Apartments</h1>
         <div className="flex items-center gap-2">
@@ -243,7 +282,21 @@ export default function ApartmentsPage() {
         </div>
       </div>
 
-      {view === "grid" ? (
+      {sortedApartments.length === 0 && query.trim() !== "" ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-20">
+          <div className="rounded-full bg-muted p-4">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="text-center">
+            <p className="font-medium">
+              No apartments match &quot;{query.trim()}&quot;
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setQuery("")}>
+            Show all apartments
+          </Button>
+        </div>
+      ) : view === "grid" ? (
         <div
           data-view="grid"
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
