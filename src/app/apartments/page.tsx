@@ -35,6 +35,12 @@ import { usePersistedEnum } from "@/lib/use-persisted-enum";
 import {
   compareApartments,
   SORT_FIELD_LABELS,
+  SORT_FIELD_STORAGE_KEY,
+  SORT_DIRECTION_STORAGE_KEY,
+  SORT_CHANGE_EVENT,
+  SORT_FIELD_IDS,
+  isSortField,
+  isSortDirection,
   type SortDirection,
   type SortField,
 } from "@/lib/apartment-sort";
@@ -65,19 +71,6 @@ function isViewMode(v: string): v is ViewMode {
   return v === "grid" || v === "list";
 }
 
-const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";
-const SORT_DIRECTION_STORAGE_KEY = "flatpare-apartments-sort-direction";
-const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
-
-const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
-
-function isSortField(v: string): v is SortField {
-  return (SORT_FIELD_IDS as string[]).includes(v);
-}
-
-function isSortDirection(v: string): v is SortDirection {
-  return v === "asc" || v === "desc";
-}
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);

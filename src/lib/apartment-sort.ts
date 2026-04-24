@@ -85,3 +85,17 @@ export function compareApartments(
   }
   return a.id - b.id;
 }
+
+export const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";
+export const SORT_DIRECTION_STORAGE_KEY = "flatpare-apartments-sort-direction";
+export const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
+
+export const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
+
+export function isSortField(v: string): v is SortField {
+  return (SORT_FIELD_IDS as string[]).includes(v);
+}
+
+export function isSortDirection(v: string): v is SortDirection {
+  return v === "asc" || v === "desc";
+}
