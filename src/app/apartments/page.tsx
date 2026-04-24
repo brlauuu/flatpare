@@ -9,12 +9,21 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import {
+  ArrowDown,
+  ArrowUp,
   Building2,
   CheckCircle2,
   Circle,
   LayoutGrid,
   List as ListIcon,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ErrorDisplay } from "@/components/error-display";
 import { cn } from "@/lib/utils";
 import {
@@ -94,9 +103,6 @@ export default function ApartmentsPage() {
     isSortDirection
   );
 
-  void setSortField;
-  void setSortDirection;
-
   const sortedApartments = useMemo(() => {
     return [...apartments].sort((a, b) =>
       compareApartments(a, b, sortField, sortDirection)
@@ -169,6 +175,37 @@ export default function ApartmentsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Apartments</h1>
         <div className="flex items-center gap-2">
+          <Select
+            value={sortField}
+            onValueChange={(value) => setSortField(value as SortField)}
+          >
+            <SelectTrigger aria-label="Sort by" className="h-8 w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_FIELD_IDS.map((id) => (
+                <SelectItem key={id} value={id}>
+                  {SORT_FIELD_LABELS[id]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
+            onClick={() =>
+              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+            }
+            className="h-8 w-8 p-0"
+          >
+            {sortDirection === "asc" ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+          </Button>
           <div
             role="group"
             aria-label="View"

@@ -153,4 +153,57 @@ describe("Apartments page — sort", () => {
     );
     expect(order).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
   });
+
+  it("changing the sort field re-orders the list and persists to localStorage", async () => {
+    const user = userEvent.setup();
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+
+    // Open the field selector and pick "Price".
+    await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
+    await user.click(screen.getByRole("option", { name: "Price" }));
+
+    // Default direction is desc → highest price first: Sonnenweg (2200),
+    // Bergstrasse (1800), Seeblick (null last).
+    await waitFor(() => {
+      const order = Array.from(document.querySelectorAll("h3")).map(
+        (el) => el.textContent
+      );
+      expect(order).toEqual(["Sonnenweg 3", "Bergstrasse 12", "Seeblick 7"]);
+    });
+
+    expect(localStorage.getItem("flatpare-apartments-sort-field")).toBe("rentChf");
+  });
+
+  it("clicking the direction toggle flips the order and persists", async () => {
+    const user = userEvent.setup();
+    // Start with rentChf desc so the toggle has something to flip.
+    localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
+    localStorage.setItem("flatpare-apartments-sort-direction", "desc");
+
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
+    });
+
+    // desc: Sonnenweg (2200), Bergstrasse (1800), Seeblick (null)
+    let order = Array.from(document.querySelectorAll("h3")).map(
+      (el) => el.textContent
+    );
+    expect(order).toEqual(["Sonnenweg 3", "Bergstrasse 12", "Seeblick 7"]);
+
+    await user.click(screen.getByRole("button", { name: /Descending/i }));
+
+    // asc: Bergstrasse (1800), Sonnenweg (2200), Seeblick (null last)
+    await waitFor(() => {
+      order = Array.from(document.querySelectorAll("h3")).map(
+        (el) => el.textContent
+      );
+      expect(order).toEqual(["Bergstrasse 12", "Sonnenweg 3", "Seeblick 7"]);
+    });
+
+    expect(localStorage.getItem("flatpare-apartments-sort-direction")).toBe("asc");
+  });
 });
