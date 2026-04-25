@@ -1,0 +1,1 @@
+ALTER TABLE `apartments` ADD `available_from` text;

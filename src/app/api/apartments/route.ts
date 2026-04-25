@@ -8,6 +8,7 @@ import {
   computeShortCodeParts,
   pickLetters,
 } from "@/lib/short-code";
+import { isIsoDate } from "@/lib/iso-date";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
 
@@ -35,6 +36,7 @@ export async function GET() {
         distanceTransitMin: apartments.distanceTransitMin,
         pdfUrl: apartments.pdfUrl,
         listingUrl: apartments.listingUrl,
+        availableFrom: apartments.availableFrom,
         shortCode: apartments.shortCode,
         createdAt: apartments.createdAt,
         avgKitchen: avg(ratings.kitchen),
@@ -84,6 +86,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    const availableFrom: string | null =
+      typeof body.availableFrom === "string" && isIsoDate(body.availableFrom)
+        ? body.availableFrom
+        : null;
+
     // Compute derived parts once (postcode extraction can hit an API);
     // only the random letters change on unique-constraint retries.
     const parts = await computeShortCodeParts({
@@ -111,6 +118,7 @@ export async function POST(request: Request) {
             distanceTransitMin: body.distanceTransitMin,
             pdfUrl: body.pdfUrl,
             listingUrl: body.listingUrl || null,
+            availableFrom,
             shortCode,
             rawExtractedData: body.rawExtractedData
               ? JSON.stringify(body.rawExtractedData)

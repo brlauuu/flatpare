@@ -49,6 +49,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: true,
       rentChf: 1800,
       listingUrl: "https://www.immobilienscout24.ch/listing/123",
+      availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result).toEqual(data);
@@ -65,6 +66,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: null,
       rentChf: null,
       listingUrl: null,
+      availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result).toEqual(data);
@@ -81,6 +83,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: false,
       rentChf: null,
       listingUrl: null,
+      availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
     expect(result.hasWashingMachine).toBe(false);
@@ -105,6 +108,55 @@ describe("apartmentExtractionSchema", () => {
   it("rejects missing name", () => {
     expect(() =>
       apartmentExtractionSchema.parse({ address: null })
+    ).toThrow();
+  });
+
+  it("accepts a valid ISO availableFrom", () => {
+    const result = apartmentExtractionSchema.parse({
+      name: "X",
+      address: null,
+      sizeM2: null,
+      numRooms: null,
+      numBathrooms: null,
+      numBalconies: null,
+      hasWashingMachine: null,
+      rentChf: null,
+      listingUrl: null,
+      availableFrom: "2026-05-01",
+    });
+    expect(result.availableFrom).toBe("2026-05-01");
+  });
+
+  it("accepts null availableFrom", () => {
+    const result = apartmentExtractionSchema.parse({
+      name: "X",
+      address: null,
+      sizeM2: null,
+      numRooms: null,
+      numBathrooms: null,
+      numBalconies: null,
+      hasWashingMachine: null,
+      rentChf: null,
+      listingUrl: null,
+      availableFrom: null,
+    });
+    expect(result.availableFrom).toBeNull();
+  });
+
+  it("rejects a non-string availableFrom", () => {
+    expect(() =>
+      apartmentExtractionSchema.parse({
+        name: "X",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: 12345,
+      })
     ).toThrow();
   });
 });
@@ -305,5 +357,55 @@ describe("extractApartmentData — laundry evidence override", () => {
     const result = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(true);
     expect("laundryEvidence" in result).toBe(false);
+  });
+});
+
+describe("extractApartmentData — availableFrom passthrough", () => {
+  it("returns availableFrom from the AI output", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: "2026-05-01",
+        laundryEvidence: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.availableFrom).toBe("2026-05-01");
+  });
+
+  it("returns null availableFrom from the AI output", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: null,
+        laundryEvidence: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.availableFrom).toBeNull();
   });
 });

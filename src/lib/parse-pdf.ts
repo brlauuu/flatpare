@@ -42,6 +42,14 @@ export const apartmentExtractionSchema = z.object({
     .describe(
       "Original listing URL from the document (e.g. immobilienscout24, wg-gesucht, homegate, etc.)"
     ),
+  availableFrom: z
+    .string()
+    .nullable()
+    .describe(
+      "Move-in / availability date in ISO format YYYY-MM-DD if a specific date is given " +
+        "(e.g. 'Bezugstermin: 01.05.2026' → '2026-05-01', '1. Mai 2026' → '2026-05-01'). " +
+        "null if not mentioned, or if the listing says 'ab sofort' / 'per sofort' / 'immediately'."
+    ),
 });
 
 export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
@@ -105,6 +113,7 @@ For rent, prefer the gross/brutto rent (Bruttomiete) if both net and gross are s
 For rooms, use the Swiss convention (e.g. 3.5 Zimmer = 3.5 rooms).
 For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "shared laundry", or "communal laundry". null if not mentioned.
 Always populate laundryEvidence with the exact short snippet (max ~120 characters) you used to decide, or null if no laundry information was found.
+For availableFrom: parse Swiss / German / English availability phrases like "Bezugstermin: 01.05.2026", "verfügbar ab 1. Mai 2026", "available from May 1, 2026" into ISO format YYYY-MM-DD. If the listing says "ab sofort", "per sofort", "immediately", or similar (meaning available now without a specific date), return null. If no availability info is mentioned, return null.
 Return null for any field you cannot determine from the document.`,
           },
           {

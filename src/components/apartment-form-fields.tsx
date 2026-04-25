@@ -17,6 +17,7 @@ export type ApartmentForm = {
   distanceTransitMin: string;
   pdfUrl: string;
   listingUrl: string;
+  availableFrom: string;
   rawExtractedData: Record<string, unknown> | null;
 };
 
@@ -33,6 +34,7 @@ export const emptyApartmentForm: ApartmentForm = {
   distanceTransitMin: "",
   pdfUrl: "",
   listingUrl: "",
+  availableFrom: "",
   rawExtractedData: null,
 };
 
@@ -58,6 +60,8 @@ export function formFromExtracted(
     distanceTransitMin: "",
     pdfUrl,
     listingUrl: (extracted.listingUrl as string) || "",
+    availableFrom:
+      typeof extracted.availableFrom === "string" ? extracted.availableFrom : "",
     rawExtractedData: extracted,
   };
 }
@@ -75,6 +79,7 @@ export type ApartmentLike = {
   distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
+  availableFrom: string | null;
 };
 
 export function formFromApartment(apt: ApartmentLike): ApartmentForm {
@@ -93,6 +98,7 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
     distanceTransitMin: numOrEmpty(apt.distanceTransitMin),
     pdfUrl: apt.pdfUrl ?? "",
     listingUrl: apt.listingUrl ?? "",
+    availableFrom: apt.availableFrom ?? "",
     rawExtractedData: null,
   };
 }
@@ -115,6 +121,7 @@ export function formToPayload(form: ApartmentForm) {
       : null,
     pdfUrl: form.pdfUrl || null,
     listingUrl: form.listingUrl || null,
+    availableFrom: form.availableFrom || null,
     rawExtractedData: form.rawExtractedData,
   };
 }
@@ -170,6 +177,15 @@ export function ApartmentFormFields({
             onChange={(e) => onChange("sizeM2", e.target.value)}
           />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`${idPrefix}-availableFrom`}>Available from</Label>
+        <Input
+          id={`${idPrefix}-availableFrom`}
+          type="date"
+          value={form.availableFrom}
+          onChange={(e) => onChange("availableFrom", e.target.value)}
+        />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
