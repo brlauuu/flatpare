@@ -25,6 +25,7 @@ const APARTMENT_V1 = {
   distanceTransitMin: 25,
   pdfUrl: null,
   listingUrl: null,
+  summary: "Quiet 2.5-room flat in a leafy district near transit.",
   availableFrom: "2026-05-01",
   ratings: [],
 };
@@ -34,6 +35,7 @@ const APARTMENT_V2 = {
   name: "Sonnenweg 3b",
   rentChf: 2400,
   hasWashingMachine: true,
+  summary: "Updated description after edit.",
   availableFrom: "2026-07-15",
 };
 
@@ -205,6 +207,49 @@ describe("Apartment detail edit flow", () => {
     });
     expect(screen.getByText(/01\.05\.2026/)).toBeInTheDocument();
   });
+
+  it("displays the AI summary in a card on the read-only view", async () => {
+    render(<ApartmentDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(/Quiet 2.5-room flat in a leafy district near transit/i)
+    ).toBeInTheDocument();
+  });
+
+  it(
+    "round-trips the summary through the edit form",
+    async () => {
+      const user = userEvent.setup();
+      render(<ApartmentDetailPage />);
+      await waitFor(() => {
+        expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: /^Edit$/ }));
+
+      const summaryField = screen.getByLabelText(/Summary/i) as HTMLTextAreaElement;
+      expect(summaryField.value).toBe(
+        "Quiet 2.5-room flat in a leafy district near transit."
+      );
+
+      await user.clear(summaryField);
+      await user.type(summaryField, "Updated description after edit.");
+
+      await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
+      await waitFor(() => {
+        const patchCall = fetchCalls.find(
+          (c) => c.url.endsWith("/api/apartments/42") && c.init.method === "PATCH"
+        );
+        expect(patchCall).toBeDefined();
+        const body = JSON.parse((patchCall!.init.body as string) ?? "{}");
+        expect(body.summary).toBe("Updated description after edit.");
+      });
+    },
+    10000
+  );
 
   it(
     "round-trips the availableFrom date through the edit form",
