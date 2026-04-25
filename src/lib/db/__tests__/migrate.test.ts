@@ -34,7 +34,7 @@ describe("applyMigrations", () => {
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(4);
+    expect(migrations.rows).toHaveLength(5);
   });
 
   it("adds listing_url to a legacy database missing the column", async () => {
@@ -66,7 +66,7 @@ describe("applyMigrations", () => {
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(4);
+    expect(migrations.rows).toHaveLength(5);
   });
 
   it("reconciles a DB that already has has_washing_machine but no 0002 marker", async () => {
@@ -129,13 +129,13 @@ describe("applyMigrations", () => {
     // try to re-add has_washing_machine).
     await applyMigrations(client);
 
-    // 0002 recorded via reconcile + 0003 run normally = 4 total
-    // (0000/0001 were seeded, 0002 stamped by reconcile, 0003 by migrator).
+    // 0002 recorded via reconcile + 0003 and 0004 run normally = 5 total
+    // (0000/0001 were seeded, 0002 stamped by reconcile, 0003+0004 by migrator).
     const rows = await client.execute({
       sql: "SELECT COUNT(*) as n FROM __drizzle_migrations",
       args: [],
     });
-    expect(Number(rows.rows[0].n)).toBe(4);
+    expect(Number(rows.rows[0].n)).toBe(5);
   });
 
   it("backfills the users table from distinct rating user_names", async () => {
