@@ -13,6 +13,10 @@ vi.mock("@/lib/db/schema", () => ({
   apiUsage: {},
 }));
 
+vi.mock("@/lib/app-settings", () => ({
+  getStationAddress: vi.fn().mockResolvedValue("Basel SBB, Switzerland"),
+}));
+
 import { calculateDistance } from "../distance";
 
 beforeEach(() => {
@@ -75,7 +79,13 @@ describe("calculateDistance", () => {
 
     const mockFetch = vi
       .fn()
-      // geocode call
+      // geocode station call
+      .mockResolvedValueOnce({
+        json: async () => ({
+          features: [{ geometry: { coordinates: [7.5897, 47.5476] } }],
+        }),
+      })
+      // geocode address call
       .mockResolvedValueOnce({
         json: async () => ({
           features: [{ geometry: { coordinates: [7.58, 47.55] } }],

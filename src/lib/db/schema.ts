@@ -73,6 +73,14 @@ export const apiUsage = sqliteTable("api_usage", {
   ),
 });
 
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
 export type Apartment = typeof apartments.$inferSelect;
 export type NewApartment = typeof apartments.$inferInsert;
 export type Rating = typeof ratings.$inferSelect;
@@ -80,3 +88,4 @@ export type NewRating = typeof ratings.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type ApiUsage = typeof apiUsage.$inferSelect;
+export type AppSettings = typeof appSettings.$inferSelect;
