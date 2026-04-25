@@ -27,6 +27,7 @@ import {
 } from "@/lib/fetch-error";
 import { useApartmentPager } from "@/lib/use-apartment-pager";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
+import { formatSwissDate } from "@/lib/iso-date";
 
 interface ErrorState {
   headline: string;
@@ -58,6 +59,7 @@ interface ApartmentDetail {
   distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
+  availableFrom: string | null;
   shortCode: string | null;
   mapEmbedUrl: string | null;
   ratings: Rating[];
@@ -507,6 +509,12 @@ export default function ApartmentDetailPage() {
               {apartment.distanceTransitMin} min transit
             </Badge>
           )}
+        </div>
+      )}
+
+      {apartment.availableFrom && (
+        <div className="text-sm text-muted-foreground">
+          Available from: {formatSwissDate(apartment.availableFrom)}
         </div>
       )}
 

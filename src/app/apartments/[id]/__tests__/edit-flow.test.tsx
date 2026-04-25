@@ -25,6 +25,7 @@ const APARTMENT_V1 = {
   distanceTransitMin: 25,
   pdfUrl: null,
   listingUrl: null,
+  availableFrom: "2026-05-01",
   ratings: [],
 };
 
@@ -33,6 +34,7 @@ const APARTMENT_V2 = {
   name: "Sonnenweg 3b",
   rentChf: 2400,
   hasWashingMachine: true,
+  availableFrom: "2026-07-15",
 };
 
 type FetchCall = { url: string; init: RequestInit };
@@ -195,4 +197,43 @@ describe("Apartment detail edit flow", () => {
     // "within" import just to keep the import list stable.
     void within;
   });
+
+  it("displays availableFrom in Swiss format on the read-only view", async () => {
+    render(<ApartmentDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/01\.05\.2026/)).toBeInTheDocument();
+  });
+
+  it(
+    "round-trips the availableFrom date through the edit form",
+    async () => {
+      const user = userEvent.setup();
+      render(<ApartmentDetailPage />);
+      await waitFor(() => {
+        expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: /^Edit$/ }));
+
+      const dateInput = screen.getByLabelText(/Available from/i) as HTMLInputElement;
+      expect(dateInput.value).toBe("2026-05-01");
+
+      await user.clear(dateInput);
+      await user.type(dateInput, "2026-07-15");
+
+      await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
+      await waitFor(() => {
+        const patchCall = fetchCalls.find(
+          (c) => c.url.endsWith("/api/apartments/42") && c.init.method === "PATCH"
+        );
+        expect(patchCall).toBeDefined();
+        const body = JSON.parse((patchCall!.init.body as string) ?? "{}");
+        expect(body.availableFrom).toBe("2026-07-15");
+      });
+    },
+    10000
+  );
 });
