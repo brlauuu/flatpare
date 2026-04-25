@@ -17,6 +17,7 @@ export const apartments = sqliteTable("apartments", {
   listingUrl: text("listing_url"),
   shortCode: text("short_code").unique(),
   rawExtractedData: text("raw_extracted_data"),
+  summary: text("summary"),
   availableFrom: text("available_from"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`

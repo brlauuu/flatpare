@@ -59,6 +59,7 @@ interface ApartmentDetail {
   distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
+  summary: string | null;
   availableFrom: string | null;
   shortCode: string | null;
   mapEmbedUrl: string | null;
@@ -423,6 +424,14 @@ export default function ApartmentDetailPage() {
           </Button>
         </div>
       </div>
+
+      {apartment.summary && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm leading-relaxed">{apartment.summary}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <ErrorDisplay headline={error.headline} details={error.details} />

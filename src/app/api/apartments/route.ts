@@ -36,6 +36,7 @@ export async function GET() {
         distanceTransitMin: apartments.distanceTransitMin,
         pdfUrl: apartments.pdfUrl,
         listingUrl: apartments.listingUrl,
+        summary: apartments.summary,
         availableFrom: apartments.availableFrom,
         shortCode: apartments.shortCode,
         createdAt: apartments.createdAt,
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
             distanceTransitMin: body.distanceTransitMin,
             pdfUrl: body.pdfUrl,
             listingUrl: body.listingUrl || null,
+            summary: body.summary ?? null,
             availableFrom,
             shortCode,
             rawExtractedData: body.rawExtractedData

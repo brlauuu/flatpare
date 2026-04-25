@@ -70,6 +70,7 @@ export async function PATCH(
         distanceBikeMin: body.distanceBikeMin,
         distanceTransitMin: body.distanceTransitMin,
         listingUrl: body.listingUrl,
+        summary: body.summary ?? null,
         availableFrom,
       })
       .where(eq(apartments.id, apartmentId))
