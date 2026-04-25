@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { apartments, ratings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
+import { isIsoDate } from "@/lib/iso-date";
 
 export async function GET(
   _request: Request,
@@ -50,6 +51,11 @@ export async function PATCH(
     const apartmentId = parseInt(id);
     const body = await request.json();
 
+    const availableFrom: string | null =
+      typeof body.availableFrom === "string" && isIsoDate(body.availableFrom)
+        ? body.availableFrom
+        : null;
+
     const result = await db
       .update(apartments)
       .set({
@@ -64,6 +70,7 @@ export async function PATCH(
         distanceBikeMin: body.distanceBikeMin,
         distanceTransitMin: body.distanceTransitMin,
         listingUrl: body.listingUrl,
+        availableFrom,
       })
       .where(eq(apartments.id, apartmentId))
       .returning();
