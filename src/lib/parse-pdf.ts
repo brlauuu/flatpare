@@ -42,6 +42,15 @@ export const apartmentExtractionSchema = z.object({
     .describe(
       "Original listing URL from the document (e.g. immobilienscout24, wg-gesucht, homegate, etc.)"
     ),
+  summary: z
+    .string()
+    .nullable()
+    .describe(
+      "A 1-2 sentence English summary of the apartment (~25-40 words). " +
+        "Translate from German if needed. Highlight the most distinctive features: " +
+        "neighborhood, layout style, view, condition, or notable amenities. " +
+        "null only if the listing has no descriptive content beyond the bare facts."
+    ),
   availableFrom: z
     .string()
     .nullable()
@@ -114,6 +123,7 @@ For rooms, use the Swiss convention (e.g. 3.5 Zimmer = 3.5 rooms).
 For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "shared laundry", or "communal laundry". null if not mentioned.
 Always populate laundryEvidence with the exact short snippet (max ~120 characters) you used to decide, or null if no laundry information was found.
 For availableFrom: parse Swiss / German / English availability phrases like "Bezugstermin: 01.05.2026", "verfügbar ab 1. Mai 2026", "available from May 1, 2026" into ISO format YYYY-MM-DD. If the listing says "ab sofort", "per sofort", "immediately", or similar (meaning available now without a specific date), return null. If no availability info is mentioned, return null.
+For summary: write a 1-2 sentence English summary (~25-40 words) of what the apartment is like. Translate from German if needed. Pick out distinctive features — neighborhood character, layout, views, condition, or notable amenities — rather than just restating the metric fields. Return null only if the listing has no descriptive content.
 Return null for any field you cannot determine from the document.`,
           },
           {

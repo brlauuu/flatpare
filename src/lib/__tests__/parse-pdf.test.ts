@@ -49,6 +49,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: true,
       rentChf: 1800,
       listingUrl: "https://www.immobilienscout24.ch/listing/123",
+      summary: null,
       availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
@@ -66,6 +67,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: null,
       rentChf: null,
       listingUrl: null,
+      summary: null,
       availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
@@ -83,6 +85,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: false,
       rentChf: null,
       listingUrl: null,
+      summary: null,
       availableFrom: null,
     };
     const result = apartmentExtractionSchema.parse(data);
@@ -122,6 +125,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: null,
       rentChf: null,
       listingUrl: null,
+      summary: null,
       availableFrom: "2026-05-01",
     });
     expect(result.availableFrom).toBe("2026-05-01");
@@ -138,6 +142,7 @@ describe("apartmentExtractionSchema", () => {
       hasWashingMachine: null,
       rentChf: null,
       listingUrl: null,
+      summary: null,
       availableFrom: null,
     });
     expect(result.availableFrom).toBeNull();
@@ -156,6 +161,60 @@ describe("apartmentExtractionSchema", () => {
         rentChf: null,
         listingUrl: null,
         availableFrom: 12345,
+      })
+    ).toThrow();
+  });
+
+  it("accepts a string summary", () => {
+    const result = apartmentExtractionSchema.parse({
+      name: "X",
+      address: null,
+      sizeM2: null,
+      numRooms: null,
+      numBathrooms: null,
+      numBalconies: null,
+      hasWashingMachine: null,
+      rentChf: null,
+      listingUrl: null,
+      availableFrom: null,
+      summary: "Bright south-facing 2.5-room flat in a leafy district near transit.",
+    });
+    expect(result.summary).toBe(
+      "Bright south-facing 2.5-room flat in a leafy district near transit."
+    );
+  });
+
+  it("accepts null summary", () => {
+    const result = apartmentExtractionSchema.parse({
+      name: "X",
+      address: null,
+      sizeM2: null,
+      numRooms: null,
+      numBathrooms: null,
+      numBalconies: null,
+      hasWashingMachine: null,
+      rentChf: null,
+      listingUrl: null,
+      availableFrom: null,
+      summary: null,
+    });
+    expect(result.summary).toBeNull();
+  });
+
+  it("rejects a non-string summary", () => {
+    expect(() =>
+      apartmentExtractionSchema.parse({
+        name: "X",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: null,
+        summary: 123,
       })
     ).toThrow();
   });
@@ -407,5 +466,59 @@ describe("extractApartmentData — availableFrom passthrough", () => {
 
     const result = await extractApartmentData("base64pdf");
     expect(result.availableFrom).toBeNull();
+  });
+});
+
+describe("extractApartmentData — summary passthrough", () => {
+  it("returns summary from the AI output", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: null,
+        summary: "Quiet 2.5-room flat in a leafy district near transit.",
+        laundryEvidence: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.summary).toBe(
+      "Quiet 2.5-room flat in a leafy district near transit."
+    );
+  });
+
+  it("returns null summary from the AI output", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        availableFrom: null,
+        summary: null,
+        laundryEvidence: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.summary).toBeNull();
   });
 });
