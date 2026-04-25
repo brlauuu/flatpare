@@ -1,8 +1,6 @@
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
-
-const BASEL_SBB = "Basel SBB, Switzerland";
-const BASEL_SBB_COORDS = { lat: 47.5476, lng: 7.5897 };
+import { getStationAddress } from "@/lib/app-settings";
 
 interface DistanceResult {
   bikeMinutes: number | null;
@@ -30,12 +28,13 @@ async function calculateWithGoogleMaps(
   address: string
 ): Promise<DistanceResult> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!;
+  const stationAddress = await getStationAddress();
   const results: DistanceResult = { bikeMinutes: null, transitMinutes: null };
 
   try {
     const [bikeRes, transitRes] = await Promise.all([
-      fetchGoogleDistance(address, "bicycling", apiKey),
-      fetchGoogleDistance(address, "transit", apiKey),
+      fetchGoogleDistance(stationAddress, address, "bicycling", apiKey),
+      fetchGoogleDistance(stationAddress, address, "transit", apiKey),
     ]);
 
     results.bikeMinutes = bikeRes;
@@ -57,6 +56,7 @@ async function calculateWithGoogleMaps(
 }
 
 async function fetchGoogleDistance(
+  origin: string,
   destination: string,
   mode: string,
   apiKey: string
@@ -64,7 +64,7 @@ async function fetchGoogleDistance(
   const url = new URL(
     "https://maps.googleapis.com/maps/api/distancematrix/json"
   );
-  url.searchParams.set("origins", BASEL_SBB);
+  url.searchParams.set("origins", origin);
   url.searchParams.set("destinations", destination);
   url.searchParams.set("mode", mode);
   url.searchParams.set("key", apiKey);
@@ -82,16 +82,18 @@ async function calculateWithOpenRouteService(
   address: string
 ): Promise<DistanceResult> {
   const apiKey = process.env.OPENROUTESERVICE_API_KEY!;
+  const stationAddress = await getStationAddress();
   const results: DistanceResult = { bikeMinutes: null, transitMinutes: null };
 
   try {
-    // First geocode the address
+    const stationCoords = await geocodeWithORS(stationAddress, apiKey);
+    if (!stationCoords) return results;
+
     const coords = await geocodeWithORS(address, apiKey);
     if (!coords) return results;
 
-    // ORS supports cycling-regular; no public transit support
     const bikeRes = await fetchORSRoute(
-      BASEL_SBB_COORDS,
+      stationCoords,
       coords,
       "cycling-regular",
       apiKey
