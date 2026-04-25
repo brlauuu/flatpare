@@ -1,0 +1,1 @@
+ALTER TABLE `apartments` ADD `summary` text;
