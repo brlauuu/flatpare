@@ -185,3 +185,125 @@ describe("extractApartmentData", () => {
     );
   });
 });
+
+describe("extractApartmentData — laundry evidence override", () => {
+  it("overrides hasWashingMachine to false when evidence cites 'zur Mitbenutzung'", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: true,
+        rentChf: null,
+        listingUrl: null,
+        laundryEvidence: "Waschküche zur Mitbenutzung",
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.hasWashingMachine).toBe(false);
+    expect("laundryEvidence" in result).toBe(false);
+  });
+
+  it("overrides null hasWashingMachine to false on shared-laundry evidence", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: null,
+        rentChf: null,
+        listingUrl: null,
+        laundryEvidence: "Waschküche und Trockenraum zur Mitbenutzung",
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.hasWashingMachine).toBe(false);
+    expect("laundryEvidence" in result).toBe(false);
+  });
+
+  it("keeps hasWashingMachine=true when evidence describes in-unit laundry", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: true,
+        rentChf: null,
+        listingUrl: null,
+        laundryEvidence: "eigene Waschmaschine in der Wohnung",
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.hasWashingMachine).toBe(true);
+    expect("laundryEvidence" in result).toBe(false);
+  });
+
+  it("leaves hasWashingMachine=false unchanged when evidence is shared (no-op override)", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: false,
+        rentChf: null,
+        listingUrl: null,
+        laundryEvidence: "Gemeinschaftswaschküche im Keller",
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.hasWashingMachine).toBe(false);
+    expect("laundryEvidence" in result).toBe(false);
+  });
+
+  it("does not override when laundryEvidence is null", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "x",
+        address: null,
+        sizeM2: null,
+        numRooms: null,
+        numBathrooms: null,
+        numBalconies: null,
+        hasWashingMachine: true,
+        rentChf: null,
+        listingUrl: null,
+        laundryEvidence: null,
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const result = await extractApartmentData("base64pdf");
+    expect(result.hasWashingMachine).toBe(true);
+    expect("laundryEvidence" in result).toBe(false);
+  });
+});

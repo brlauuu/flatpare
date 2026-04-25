@@ -29,7 +29,7 @@ export const apartmentExtractionSchema = z.object({
     .describe(
       "Whether the apartment has its own washing machine. " +
         "true if explicitly mentioned as in-unit / private (e.g. 'Waschmaschine in der Wohnung', 'eigene Waschmaschine', 'Waschturm', 'own washing machine'). " +
-        "false if the listing explicitly says there is none, or only a shared/communal laundry room (e.g. 'Waschküche', 'Gemeinschaftswaschküche', 'shared laundry'). " +
+        "false if the listing describes shared / communal laundry — including phrases like 'zur Mitbenutzung', 'zur Mitnutzung', 'Gemeinschaftswaschküche', 'Gemeinschaftswaschraum', 'shared laundry', or 'communal laundry'. " +
         "null if not mentioned."
     ),
   rentChf: z
@@ -39,10 +39,38 @@ export const apartmentExtractionSchema = z.object({
   listingUrl: z
     .string()
     .nullable()
-    .describe("Original listing URL from the document (e.g. immobilienscout24, wg-gesucht, homegate, etc.)"),
+    .describe(
+      "Original listing URL from the document (e.g. immobilienscout24, wg-gesucht, homegate, etc.)"
+    ),
 });
 
 export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
+
+const internalApartmentExtractionSchema = apartmentExtractionSchema.extend({
+  laundryEvidence: z
+    .string()
+    .nullable()
+    .describe(
+      "If laundry information was found, the exact short snippet from the listing " +
+        "that supports the hasWashingMachine value (max ~120 chars). null if not mentioned. " +
+        "Examples: 'Waschküche und Trockenraum zur Mitbenutzung', 'eigene Waschmaschine in der Wohnung'."
+    ),
+});
+
+type InternalApartmentExtraction = z.infer<typeof internalApartmentExtractionSchema>;
+
+const SHARED_LAUNDRY_PATTERN =
+  /zur\s+(mit)?nutzung|zur\s+mitbenutzung|gemeinschafts(wasch|wäsche)|shared\s+laundry|communal\s+laundry/i;
+
+function overrideLaundryFromEvidence(
+  result: InternalApartmentExtraction
+): InternalApartmentExtraction {
+  if (!result.laundryEvidence) return result;
+  if (SHARED_LAUNDRY_PATTERN.test(result.laundryEvidence)) {
+    return { ...result, hasWashingMachine: false };
+  }
+  return result;
+}
 
 function getModel() {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
@@ -63,7 +91,7 @@ export async function extractApartmentData(
   const result = await generateText({
     model,
     output: Output.object({
-      schema: apartmentExtractionSchema,
+      schema: internalApartmentExtractionSchema,
     }),
     messages: [
       {
@@ -75,7 +103,8 @@ export async function extractApartmentData(
 The listing may be in German or English. Extract all available information.
 For rent, prefer the gross/brutto rent (Bruttomiete) if both net and gross are shown.
 For rooms, use the Swiss convention (e.g. 3.5 Zimmer = 3.5 rooms).
-For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "own washing machine"). false if only a shared laundry room is mentioned ("Waschküche", "Gemeinschaftswaschküche", "shared laundry") or if explicitly none. null if not mentioned.
+For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "shared laundry", or "communal laundry". null if not mentioned.
+Always populate laundryEvidence with the exact short snippet (max ~120 characters) you used to decide, or null if no laundry information was found.
 Return null for any field you cannot determine from the document.`,
           },
           {
@@ -104,5 +133,10 @@ Return null for any field you cannot determine from the document.`,
     throw new Error("Failed to extract apartment data from PDF");
   }
 
-  return result.output;
+  const internal = result.output as InternalApartmentExtraction;
+  const withOverride = overrideLaundryFromEvidence(internal);
+  // Strip the internal-only field before returning to public callers.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { laundryEvidence: _evidence, ...publicResult } = withOverride;
+  return publicResult as ApartmentExtraction;
 }
