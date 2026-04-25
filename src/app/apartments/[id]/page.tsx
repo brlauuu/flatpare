@@ -62,6 +62,7 @@ interface ApartmentDetail {
   listingUrl: string | null;
   summary: string | null;
   availableFrom: string | null;
+  userEditedFields: string | null;
   shortCode: string | null;
   mapEmbedUrl: string | null;
   ratings: Rating[];
@@ -103,6 +104,7 @@ export default function ApartmentDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
 
   // Shared applier so both the initial effect and event-driven reloads
   // converge on the same state updates.
@@ -224,6 +226,35 @@ export default function ApartmentDetailPage() {
         details: fetchErrorFromException(err, url),
       });
       setDeleting(false);
+    }
+  }
+
+  async function handleReprocess() {
+    if (!apartment?.pdfUrl) return;
+    const ok = window.confirm(
+      "Reprocess this apartment? Fields you haven't edited will be refreshed from the PDF. Fields you've edited will stay."
+    );
+    if (!ok) return;
+    setReprocessing(true);
+    const url = `/api/apartments/${params.id}/reprocess`;
+    try {
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        setError({
+          headline: "Couldn't reprocess apartment",
+          details: await fetchErrorFromResponse(res, url),
+        });
+        setReprocessing(false);
+        return;
+      }
+      await reloadApartment();
+    } catch (err) {
+      setError({
+        headline: "Couldn't reprocess apartment",
+        details: fetchErrorFromException(err, url),
+      });
+    } finally {
+      setReprocessing(false);
     }
   }
 
@@ -425,6 +456,15 @@ export default function ApartmentDetailPage() {
               Edit
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={reprocessing || editing || !apartment.pdfUrl}
+            onClick={handleReprocess}
+            className="w-full sm:w-auto"
+          >
+            {reprocessing ? "Reprocessing..." : "Reprocess"}
+          </Button>
           <Button
             variant="destructive"
             size="sm"

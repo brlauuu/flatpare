@@ -4,6 +4,7 @@ import { apartments, ratings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
 import { isIsoDate } from "@/lib/iso-date";
+import { diffInferableFields } from "@/lib/edited-fields";
 
 export async function GET(
   _request: Request,
@@ -56,6 +57,36 @@ export async function PATCH(
         ? body.availableFrom
         : null;
 
+    const currentRows = await db
+      .select()
+      .from(apartments)
+      .where(eq(apartments.id, apartmentId))
+      .limit(1);
+
+    if (currentRows.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const previousEdited: string[] = (() => {
+      const raw = currentRows[0].userEditedFields;
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed)
+          ? parsed.filter((v): v is string => typeof v === "string")
+          : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    const newlyChanged = diffInferableFields(
+      currentRows[0] as Record<string, unknown>,
+      body as Record<string, unknown>
+    );
+
+    const merged = Array.from(new Set([...previousEdited, ...newlyChanged]));
+
     const result = await db
       .update(apartments)
       .set({
@@ -72,6 +103,7 @@ export async function PATCH(
         listingUrl: body.listingUrl,
         summary: body.summary ?? null,
         availableFrom,
+        userEditedFields: merged.length > 0 ? JSON.stringify(merged) : null,
       })
       .where(eq(apartments.id, apartmentId))
       .returning();

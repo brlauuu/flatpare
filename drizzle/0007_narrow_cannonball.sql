@@ -1,0 +1,1 @@
+ALTER TABLE `apartments` ADD `user_edited_fields` text;

@@ -217,7 +217,16 @@ describe("GET /api/apartments/[id]", () => {
 
 describe("PATCH /api/apartments/[id]", () => {
   it("updates an apartment", async () => {
+    const current = { id: 1, name: "Old Name", userEditedFields: null };
     const updated = { id: 1, name: "Updated" };
+
+    mockSelect.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([current]),
+        }),
+      }),
+    });
 
     mockUpdate.mockReturnValue({
       set: vi.fn().mockReturnValue({
@@ -239,10 +248,10 @@ describe("PATCH /api/apartments/[id]", () => {
   });
 
   it("returns 404 when apartment not found", async () => {
-    mockUpdate.mockReturnValue({
-      set: vi.fn().mockReturnValue({
+    mockSelect.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([]),
+          limit: vi.fn().mockResolvedValue([]),
         }),
       }),
     });
