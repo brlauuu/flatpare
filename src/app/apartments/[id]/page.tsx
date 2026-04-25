@@ -14,6 +14,7 @@ import { AddressLink } from "@/components/address-link";
 import { ApartmentMap } from "@/components/apartment-map";
 import { ArrowLeft, ArrowRight, WashingMachine } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
+import { cn } from "@/lib/utils";
 import {
   ApartmentFormFields,
   formFromApartment,
@@ -369,7 +370,7 @@ export default function ApartmentDetailPage() {
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <ShortCode code={apartment.shortCode} size="lg" />
           <h1 className="text-2xl font-semibold">{apartment.name}</h1>
@@ -380,13 +381,16 @@ export default function ApartmentDetailPage() {
             />
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {apartment.pdfUrl && (
             <a
               href={apartment.pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "w-full sm:w-auto"
+              )}
             >
               View PDF
             </a>
@@ -396,12 +400,18 @@ export default function ApartmentDetailPage() {
               href={apartment.listingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "w-full sm:w-auto"
+              )}
             >
               Original Listing
             </a>
           ) : (
-            <Badge variant="secondary" className="text-muted-foreground">
+            <Badge
+              variant="secondary"
+              className="w-full justify-center text-muted-foreground sm:w-auto sm:justify-start"
+            >
               URL missing
             </Badge>
           )}
@@ -410,6 +420,7 @@ export default function ApartmentDetailPage() {
               variant="outline"
               size="sm"
               onClick={startEdit}
+              className="w-full sm:w-auto"
             >
               Edit
             </Button>
@@ -419,6 +430,7 @@ export default function ApartmentDetailPage() {
             size="sm"
             disabled={deleting || editing}
             onClick={handleDelete}
+            className="w-full sm:w-auto"
           >
             {deleting ? "Deleting..." : "Delete"}
           </Button>
