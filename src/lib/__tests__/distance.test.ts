@@ -13,11 +13,9 @@ vi.mock("@/lib/db/schema", () => ({
   apiUsage: {},
 }));
 
-vi.mock("@/lib/app-settings", () => ({
-  getStationAddress: vi.fn().mockResolvedValue("Basel SBB, Switzerland"),
-}));
-
 import { calculateDistance } from "../distance";
+
+const ORIGIN = "Basel SBB, Switzerland";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
@@ -32,7 +30,7 @@ afterEach(() => {
 
 describe("calculateDistance", () => {
   it("returns nulls when no provider is configured", async () => {
-    const result = await calculateDistance("Basel, Switzerland");
+    const result = await calculateDistance(ORIGIN, "Basel, Switzerland");
     expect(result).toEqual({ bikeMinutes: null, transitMinutes: null });
   });
 
@@ -52,7 +50,7 @@ describe("calculateDistance", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const result = await calculateDistance("Zürich, Switzerland");
+    const result = await calculateDistance(ORIGIN, "Zürich, Switzerland");
     expect(result.bikeMinutes).toBe(10);
     expect(result.transitMinutes).toBe(10);
     expect(mockFetch).toHaveBeenCalledTimes(2); // bike + transit
@@ -70,7 +68,7 @@ describe("calculateDistance", () => {
       })
     );
 
-    const result = await calculateDistance("Nonexistent Place");
+    const result = await calculateDistance(ORIGIN, "Nonexistent Place");
     expect(result).toEqual({ bikeMinutes: null, transitMinutes: null });
   });
 
@@ -99,7 +97,7 @@ describe("calculateDistance", () => {
       });
     vi.stubGlobal("fetch", mockFetch);
 
-    const result = await calculateDistance("Zürich, Switzerland");
+    const result = await calculateDistance(ORIGIN, "Zürich, Switzerland");
     expect(result.bikeMinutes).toBe(15);
     expect(result.transitMinutes).toBeNull(); // ORS doesn't support transit
   });
@@ -114,7 +112,7 @@ describe("calculateDistance", () => {
       })
     );
 
-    const result = await calculateDistance("???");
+    const result = await calculateDistance(ORIGIN, "???");
     expect(result).toEqual({ bikeMinutes: null, transitMinutes: null });
   });
 
@@ -126,7 +124,7 @@ describe("calculateDistance", () => {
       vi.fn().mockRejectedValue(new Error("Network error"))
     );
 
-    const result = await calculateDistance("Somewhere");
+    const result = await calculateDistance(ORIGIN, "Somewhere");
     expect(result).toEqual({ bikeMinutes: null, transitMinutes: null });
   });
 });
