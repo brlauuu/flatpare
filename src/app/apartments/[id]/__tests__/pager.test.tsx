@@ -72,6 +72,12 @@ beforeEach(() => {
   vi.spyOn(global, "fetch").mockImplementation((input) => {
     const url = typeof input === "string" ? input : (input as Request).url;
     if (url === "/api/apartments") return Promise.resolve(listResponse());
+    if (url === "/api/locations") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    }
     const match = url.match(/\/api\/apartments\/(\d+)$/);
     if (match) return Promise.resolve(apartmentResponse(Number(match[1])));
     return Promise.reject(new Error(`Unexpected fetch: ${url}`));

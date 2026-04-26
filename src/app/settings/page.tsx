@@ -73,7 +73,34 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    void loadLocations();
+    let cancelled = false;
+    (async () => {
+      const url = "/api/locations";
+      try {
+        const res = await fetch(url);
+        if (cancelled) return;
+        if (!res.ok) {
+          setError({
+            headline: "Couldn't load locations",
+            details: await fetchErrorFromResponse(res, url),
+          });
+          return;
+        }
+        const data = (await res.json()) as Location[];
+        if (cancelled) return;
+        setLocations(data);
+        setLoaded(true);
+      } catch (err) {
+        if (cancelled) return;
+        setError({
+          headline: "Couldn't load locations",
+          details: fetchErrorFromException(err, url),
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function startCreate() {

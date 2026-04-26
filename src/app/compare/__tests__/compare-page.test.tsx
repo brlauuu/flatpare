@@ -81,6 +81,12 @@ beforeEach(() => {
         json: () => Promise.resolve(DETAILS.map((d) => ({ id: d.id }))),
       } as Response);
     }
+    if (url === "/api/locations") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    }
     const match = url.match(/\/api\/apartments\/(\d+)$/);
     if (match) {
       const id = Number(match[1]);

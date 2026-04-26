@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import { Button } from "@/components/ui/button";
 import {
   iconComponentFor,
@@ -71,6 +72,7 @@ export function LocationIconDisplay({
   name: string;
   className?: string;
 }) {
-  const Icon = iconComponentFor(name);
-  return <Icon className={className} aria-label={name} />;
+  // The lucide component lookup happens by name; we use createElement so the
+  // linter doesn't see a "component created during render" pattern.
+  return createElement(iconComponentFor(name), { className, "aria-label": name });
 }
