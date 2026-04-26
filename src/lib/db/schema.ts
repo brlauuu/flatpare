@@ -1,4 +1,11 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  real,
+  uniqueIndex,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const apartments = sqliteTable("apartments", {
@@ -11,8 +18,6 @@ export const apartments = sqliteTable("apartments", {
   numBalconies: integer("num_balconies"),
   hasWashingMachine: integer("has_washing_machine", { mode: "boolean" }),
   rentChf: real("rent_chf"),
-  distanceBikeMin: integer("distance_bike_min"),
-  distanceTransitMin: integer("distance_transit_min"),
   pdfUrl: text("pdf_url"),
   listingUrl: text("listing_url"),
   shortCode: text("short_code").unique(),
@@ -66,8 +71,8 @@ export const users = sqliteTable("users", {
 
 export const apiUsage = sqliteTable("api_usage", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  service: text("service").notNull(), // "gemini" | "google_maps"
-  operation: text("operation").notNull(), // "parse_pdf" | "calculate_distance"
+  service: text("service").notNull(),
+  operation: text("operation").notNull(),
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
@@ -75,13 +80,39 @@ export const apiUsage = sqliteTable("api_usage", {
   ),
 });
 
-export const appSettings = sqliteTable("app_settings", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(),
+export const locationsOfInterest = sqliteTable("locations_of_interest", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  label: text("label").notNull(),
+  icon: text("icon").notNull(),
+  address: text("address").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`
   ),
 });
+
+export const apartmentDistances = sqliteTable(
+  "apartment_distances",
+  {
+    apartmentId: integer("apartment_id")
+      .notNull()
+      .references(() => apartments.id, { onDelete: "cascade" }),
+    locationId: integer("location_id")
+      .notNull()
+      .references(() => locationsOfInterest.id, { onDelete: "cascade" }),
+    bikeMin: integer("bike_min"),
+    transitMin: integer("transit_min"),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [
+    primaryKey({ columns: [table.apartmentId, table.locationId] }),
+  ]
+);
 
 export type Apartment = typeof apartments.$inferSelect;
 export type NewApartment = typeof apartments.$inferInsert;
@@ -90,4 +121,7 @@ export type NewRating = typeof ratings.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type ApiUsage = typeof apiUsage.$inferSelect;
-export type AppSettings = typeof appSettings.$inferSelect;
+export type LocationOfInterest = typeof locationsOfInterest.$inferSelect;
+export type NewLocationOfInterest = typeof locationsOfInterest.$inferInsert;
+export type ApartmentDistance = typeof apartmentDistances.$inferSelect;
+export type NewApartmentDistance = typeof apartmentDistances.$inferInsert;

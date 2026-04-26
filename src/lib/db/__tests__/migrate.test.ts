@@ -29,12 +29,29 @@ describe("applyMigrations", () => {
     expect(await columnNames(client, "ratings")).toContain("user_name");
     expect(await columnNames(client, "api_usage")).toContain("service");
     expect(await columnNames(client, "users")).toContain("name");
+    expect(await columnNames(client, "locations_of_interest")).toEqual(
+      expect.arrayContaining(["label", "icon", "address", "sort_order"])
+    );
+    expect(await columnNames(client, "apartment_distances")).toEqual(
+      expect.arrayContaining(["apartment_id", "location_id", "bike_min", "transit_min"])
+    );
+    expect(await columnNames(client, "apartments")).not.toContain(
+      "distance_bike_min"
+    );
+    expect(await columnNames(client, "apartments")).not.toContain(
+      "distance_transit_min"
+    );
+    const settingsTable = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'",
+      args: [],
+    });
+    expect(settingsTable.rows).toHaveLength(0);
 
     const migrations = await client.execute({
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(8);
+    expect(migrations.rows).toHaveLength(9);
   });
 
   it("adds listing_url to a legacy database missing the column", async () => {
@@ -66,7 +83,7 @@ describe("applyMigrations", () => {
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(8);
+    expect(migrations.rows).toHaveLength(9);
   });
 
   it("reconciles a DB that already has has_washing_machine but no 0002 marker", async () => {
@@ -129,13 +146,13 @@ describe("applyMigrations", () => {
     // try to re-add has_washing_machine).
     await applyMigrations(client);
 
-    // 0002 recorded via reconcile + 0003, 0004, 0005, 0006, and 0007 run normally = 8 total
-    // (0000/0001 were seeded, 0002 stamped by reconcile, 0003+0004+0005+0006+0007 by migrator).
+    // 0002 recorded via reconcile + 0003..0008 run normally = 9 total
+    // (0000/0001 were seeded, 0002 stamped by reconcile, 0003+0004+0005+0006+0007+0008 by migrator).
     const rows = await client.execute({
       sql: "SELECT COUNT(*) as n FROM __drizzle_migrations",
       args: [],
     });
-    expect(Number(rows.rows[0].n)).toBe(8);
+    expect(Number(rows.rows[0].n)).toBe(9);
   });
 
   it("backfills the users table from distinct rating user_names", async () => {

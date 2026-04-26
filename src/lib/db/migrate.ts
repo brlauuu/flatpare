@@ -149,12 +149,96 @@ async function backfillShortCodes(client: Client): Promise<void> {
   }
 }
 
+async function migrateLocationsOfInterestBackfill(client: Client): Promise<void> {
+  // After 0008 creates `locations_of_interest` and `apartment_distances`,
+  // move data over from the legacy single-station setup and drop the old
+  // artifacts. Idempotent: only runs when there's nothing in the new tables.
+  const newTable = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='locations_of_interest'",
+    args: [],
+  });
+  if (newTable.rows.length === 0) return;
+
+  const existing = await client.execute({
+    sql: "SELECT COUNT(*) as n FROM locations_of_interest",
+    args: [],
+  });
+  const alreadyHasLocations = Number(existing.rows[0]?.n ?? 0) > 0;
+
+  if (!alreadyHasLocations) {
+    // Determine the default address: prefer app_settings.station_address,
+    // fall back to the historical Basel SBB constant.
+    let defaultAddress = "Basel SBB, Switzerland";
+    const hasSettings = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'",
+      args: [],
+    });
+    if (hasSettings.rows.length > 0) {
+      const row = await client.execute({
+        sql: "SELECT value FROM app_settings WHERE key = 'station_address' LIMIT 1",
+        args: [],
+      });
+      const value = row.rows[0]?.value;
+      if (typeof value === "string" && value.trim() !== "") {
+        defaultAddress = value;
+      }
+    }
+    await client.execute({
+      sql: "INSERT INTO locations_of_interest (label, icon, address, sort_order) VALUES (?, ?, ?, 0)",
+      args: ["Train Station", "Train", defaultAddress],
+    });
+  }
+
+  // Copy legacy distances into apartment_distances, joining the default
+  // location (sort_order = 0). Skip silently if the legacy columns are gone.
+  const apartmentsCols = await client.execute({
+    sql: "PRAGMA table_info(apartments)",
+    args: [],
+  });
+  const aptColNames = new Set(apartmentsCols.rows.map((r) => String(r.name)));
+  if (
+    aptColNames.has("distance_bike_min") &&
+    aptColNames.has("distance_transit_min")
+  ) {
+    const distancesEmpty = await client.execute({
+      sql: "SELECT COUNT(*) as n FROM apartment_distances",
+      args: [],
+    });
+    if (Number(distancesEmpty.rows[0]?.n ?? 0) === 0) {
+      await client.execute({
+        sql: `INSERT INTO apartment_distances (apartment_id, location_id, bike_min, transit_min)
+              SELECT a.id,
+                     (SELECT id FROM locations_of_interest ORDER BY sort_order LIMIT 1),
+                     a.distance_bike_min,
+                     a.distance_transit_min
+              FROM apartments a
+              WHERE a.distance_bike_min IS NOT NULL OR a.distance_transit_min IS NOT NULL`,
+        args: [],
+      });
+    }
+    await client.execute({
+      sql: "ALTER TABLE apartments DROP COLUMN distance_bike_min",
+      args: [],
+    });
+    await client.execute({
+      sql: "ALTER TABLE apartments DROP COLUMN distance_transit_min",
+      args: [],
+    });
+  }
+
+  await client.execute({
+    sql: "DROP TABLE IF EXISTS app_settings",
+    args: [],
+  });
+}
+
 export async function applyMigrations(client: Client): Promise<void> {
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   await backfillShortCodes(client);
+  await migrateLocationsOfInterestBackfill(client);
 }
 
 function createDefaultClient(): Client {
