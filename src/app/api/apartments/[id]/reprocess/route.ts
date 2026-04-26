@@ -5,6 +5,7 @@ import { apartments } from "@/lib/db/schema";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { INFERABLE_FIELDS } from "@/lib/edited-fields";
+import { readStoredFile } from "@/lib/storage";
 
 export async function POST(
   _request: Request,
@@ -35,15 +36,13 @@ export async function POST(
 
     let pdfBase64: string;
     try {
-      const pdfRes = await fetch(apt.pdfUrl);
-      if (!pdfRes.ok) throw new Error(`Failed to fetch PDF (${pdfRes.status})`);
-      const buf = Buffer.from(await pdfRes.arrayBuffer());
+      const buf = await readStoredFile(apt.pdfUrl);
       pdfBase64 = buf.toString("base64");
     } catch (err) {
-      console.error("[reprocess] PDF fetch failed:", err);
+      console.error("[reprocess] PDF read failed:", err);
       return NextResponse.json(
         {
-          error: err instanceof Error ? err.message : "Failed to fetch PDF",
+          error: err instanceof Error ? err.message : "Failed to read PDF",
         },
         { status: 500 }
       );
