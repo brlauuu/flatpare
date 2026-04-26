@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { apartments, ratings } from "@/lib/db/schema";
+import {
+  apartments,
+  apartmentDistances,
+  ratings,
+} from "@/lib/db/schema";
 import { desc, avg, eq } from "drizzle-orm";
 import { getDisplayName } from "@/lib/auth";
 import {
@@ -9,6 +13,8 @@ import {
   pickLetters,
 } from "@/lib/short-code";
 import { isIsoDate } from "@/lib/iso-date";
+import { listLocations } from "@/lib/locations";
+import { calculateDistance } from "@/lib/distance";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
 
@@ -32,8 +38,6 @@ export async function GET() {
         numBalconies: apartments.numBalconies,
         hasWashingMachine: apartments.hasWashingMachine,
         rentChf: apartments.rentChf,
-        distanceBikeMin: apartments.distanceBikeMin,
-        distanceTransitMin: apartments.distanceTransitMin,
         pdfUrl: apartments.pdfUrl,
         listingUrl: apartments.listingUrl,
         summary: apartments.summary,
@@ -51,8 +55,21 @@ export async function GET() {
       .groupBy(apartments.id)
       .orderBy(desc(apartments.createdAt));
 
-    // Decorate with the current user's own rating (or null if not rated yet)
-    // so the list card can show a "Rated"/"Not yet rated" indicator.
+    const allDistances = await db.select().from(apartmentDistances);
+    const distancesByApt = new Map<
+      number,
+      { locationId: number; bikeMin: number | null; transitMin: number | null }[]
+    >();
+    for (const d of allDistances) {
+      const list = distancesByApt.get(d.apartmentId) ?? [];
+      list.push({
+        locationId: d.locationId,
+        bikeMin: d.bikeMin,
+        transitMin: d.transitMin,
+      });
+      distancesByApt.set(d.apartmentId, list);
+    }
+
     const currentUser = await getDisplayName();
     const myRatingByApt = new Map<number, number>();
     if (currentUser) {
@@ -68,12 +85,13 @@ export async function GET() {
       }
     }
 
-    const withMyRating = allApartments.map((a) => ({
+    const decorated = allApartments.map((a) => ({
       ...a,
+      distances: distancesByApt.get(a.id) ?? [],
       myRating: myRatingByApt.has(a.id) ? myRatingByApt.get(a.id)! : null,
     }));
 
-    return NextResponse.json(withMyRating);
+    return NextResponse.json(decorated);
   } catch (error) {
     console.error("[apartments:GET] Error:", error);
     return NextResponse.json(
@@ -92,8 +110,6 @@ export async function POST(request: Request) {
         ? body.availableFrom
         : null;
 
-    // Compute derived parts once (postcode extraction can hit an API);
-    // only the random letters change on unique-constraint retries.
     const parts = await computeShortCodeParts({
       numRooms: body.numRooms ?? null,
       numBathrooms: body.numBathrooms ?? null,
@@ -101,6 +117,7 @@ export async function POST(request: Request) {
       address: body.address ?? null,
     });
 
+    let created: typeof apartments.$inferSelect | null = null;
     for (let attempt = 0; attempt < MAX_SHORT_CODE_ATTEMPTS; attempt++) {
       const shortCode = buildShortCode(parts, pickLetters());
       try {
@@ -115,8 +132,6 @@ export async function POST(request: Request) {
             numBalconies: body.numBalconies,
             hasWashingMachine: body.hasWashingMachine ?? null,
             rentChf: body.rentChf,
-            distanceBikeMin: body.distanceBikeMin,
-            distanceTransitMin: body.distanceTransitMin,
             pdfUrl: body.pdfUrl,
             listingUrl: body.listingUrl || null,
             summary: body.summary ?? null,
@@ -127,7 +142,8 @@ export async function POST(request: Request) {
               : null,
           })
           .returning();
-        return NextResponse.json(result[0], { status: 201 });
+        created = result[0];
+        break;
       } catch (err) {
         if (
           isUniqueConstraintError(err) &&
@@ -139,7 +155,34 @@ export async function POST(request: Request) {
       }
     }
 
-    throw new Error("Failed to generate a unique short code after retries");
+    if (!created) {
+      throw new Error("Failed to generate a unique short code after retries");
+    }
+
+    if (created.address) {
+      const locations = await listLocations();
+      for (const loc of locations) {
+        try {
+          const { bikeMinutes, transitMinutes } = await calculateDistance(
+            loc.address,
+            created.address
+          );
+          await db.insert(apartmentDistances).values({
+            apartmentId: created.id,
+            locationId: loc.id,
+            bikeMin: bikeMinutes,
+            transitMin: transitMinutes,
+          });
+        } catch (err) {
+          console.error(
+            `[apartments:POST] distance calc failed apt=${created.id} loc=${loc.id}:`,
+            err
+          );
+        }
+      }
+    }
+
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     console.error("[apartments:POST] Error:", error);
     return NextResponse.json(
