@@ -235,8 +235,15 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
 export async function applyMigrations(client: Client): Promise<void> {
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
-  const db = drizzle(client, { schema });
-  await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  // On Vercel the `drizzle/` folder isn't reliably present in the serverless
+  // file trace, so SQL migrations are applied at build time via `drizzle-kit
+  // migrate` (see package.json `vercel-build`). Skip the runtime drizzle
+  // migrator when the folder is absent — the backfills below are idempotent
+  // and only need libsql, no fs.
+  if (fs.existsSync(path.join(MIGRATIONS_FOLDER, "meta", "_journal.json"))) {
+    const db = drizzle(client, { schema });
+    await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  }
   await backfillShortCodes(client);
   await migrateLocationsOfInterestBackfill(client);
 }
