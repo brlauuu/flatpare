@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { apartments } from "@/lib/db/schema";
+import { apartments, apartmentDistances } from "@/lib/db/schema";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { INFERABLE_FIELDS } from "@/lib/edited-fields";
 import { readStoredFile } from "@/lib/storage";
+import { listLocations } from "@/lib/locations";
+import { calculateDistance } from "@/lib/distance";
 
 export async function POST(
   _request: Request,
@@ -94,7 +96,40 @@ export async function POST(
       .where(eq(apartments.id, apartmentId))
       .returning();
 
-    return NextResponse.json(result[0]);
+    const updated = result[0];
+
+    // Re-compute distances when the address actually changed. Delete then
+    // re-insert per location, mirroring the POST /apartments flow.
+    const addressChanged =
+      "address" in updates && updates.address !== apt.address;
+    if (addressChanged && updated.address) {
+      await db
+        .delete(apartmentDistances)
+        .where(eq(apartmentDistances.apartmentId, apartmentId));
+
+      const locations = await listLocations();
+      for (const loc of locations) {
+        try {
+          const { bikeMinutes, transitMinutes } = await calculateDistance(
+            loc.address,
+            updated.address
+          );
+          await db.insert(apartmentDistances).values({
+            apartmentId,
+            locationId: loc.id,
+            bikeMin: bikeMinutes,
+            transitMin: transitMinutes,
+          });
+        } catch (err) {
+          console.error(
+            `[reprocess] distance calc failed apt=${apartmentId} loc=${loc.id}:`,
+            err
+          );
+        }
+      }
+    }
+
+    return NextResponse.json(updated);
   } catch (error) {
     console.error("[apartments/id/reprocess:POST] Error:", error);
     return NextResponse.json(
