@@ -249,7 +249,7 @@ function createDefaultClient(): Client {
           authToken: process.env.TURSO_AUTH_TOKEN,
         }
       : {
-          url: "file:./data/flatpare.db",
+          url: process.env.LOCAL_DB_URL ?? "file:./data/flatpare.db",
         }
   );
 }
