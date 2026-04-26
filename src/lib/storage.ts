@@ -36,11 +36,7 @@ export async function readStoredFile(storedUrl: string): Promise<Buffer> {
     if (!result || result.statusCode !== 200) {
       throw new Error(`Blob not found: ${pathname}`);
     }
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of result.stream as AsyncIterable<Uint8Array>) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
+    return Buffer.from(await new Response(result.stream).arrayBuffer());
   }
 
   if (storedUrl.startsWith("/api/uploads/")) {
