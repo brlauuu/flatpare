@@ -1,40 +1,37 @@
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
-import { getStationAddress } from "@/lib/app-settings";
 
-interface DistanceResult {
+export interface DistanceResult {
   bikeMinutes: number | null;
   transitMinutes: number | null;
 }
 
 export async function calculateDistance(
-  address: string
+  originAddress: string,
+  destinationAddress: string
 ): Promise<DistanceResult> {
-  // Try Google Maps first
   if (process.env.GOOGLE_MAPS_API_KEY) {
-    return calculateWithGoogleMaps(address);
+    return calculateWithGoogleMaps(originAddress, destinationAddress);
   }
 
-  // Fall back to OpenRouteService
   if (process.env.OPENROUTESERVICE_API_KEY) {
-    return calculateWithOpenRouteService(address);
+    return calculateWithOpenRouteService(originAddress, destinationAddress);
   }
 
-  // No provider — return nulls for manual entry
   return { bikeMinutes: null, transitMinutes: null };
 }
 
 async function calculateWithGoogleMaps(
-  address: string
+  originAddress: string,
+  destinationAddress: string
 ): Promise<DistanceResult> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!;
-  const stationAddress = await getStationAddress();
   const results: DistanceResult = { bikeMinutes: null, transitMinutes: null };
 
   try {
     const [bikeRes, transitRes] = await Promise.all([
-      fetchGoogleDistance(stationAddress, address, "bicycling", apiKey),
-      fetchGoogleDistance(stationAddress, address, "transit", apiKey),
+      fetchGoogleDistance(originAddress, destinationAddress, "bicycling", apiKey),
+      fetchGoogleDistance(originAddress, destinationAddress, "transit", apiKey),
     ]);
 
     results.bikeMinutes = bikeRes;
@@ -79,22 +76,22 @@ async function fetchGoogleDistance(
 }
 
 async function calculateWithOpenRouteService(
-  address: string
+  originAddress: string,
+  destinationAddress: string
 ): Promise<DistanceResult> {
   const apiKey = process.env.OPENROUTESERVICE_API_KEY!;
-  const stationAddress = await getStationAddress();
   const results: DistanceResult = { bikeMinutes: null, transitMinutes: null };
 
   try {
-    const stationCoords = await geocodeWithORS(stationAddress, apiKey);
-    if (!stationCoords) return results;
+    const originCoords = await geocodeWithORS(originAddress, apiKey);
+    if (!originCoords) return results;
 
-    const coords = await geocodeWithORS(address, apiKey);
-    if (!coords) return results;
+    const destCoords = await geocodeWithORS(destinationAddress, apiKey);
+    if (!destCoords) return results;
 
     const bikeRes = await fetchORSRoute(
-      stationCoords,
-      coords,
+      originCoords,
+      destCoords,
       "cycling-regular",
       apiKey
     );

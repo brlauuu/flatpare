@@ -28,7 +28,7 @@ interface ErrorState {
 type UploadItem = {
   id: string;
   fileName: string;
-  status: "queued" | "uploading" | "parsing_distance" | "done" | "error";
+  status: "queued" | "uploading" | "done" | "error";
   error?: string;
   errorReason?: "quota" | "invalid_pdf" | "unknown";
   errorRetryAfterSeconds?: number;
@@ -111,51 +111,9 @@ export default function UploadPage() {
 
       setItems((prev) =>
         prev.map((item) =>
-          item.id === itemId
-            ? { ...item, status: "parsing_distance", form }
-            : item
+          item.id === itemId ? { ...item, status: "done", form } : item
         )
       );
-
-      if (extracted.address) {
-        try {
-          const distRes = await fetch("/api/distance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ address: extracted.address }),
-          });
-          const dist = await distRes.json();
-          setItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId
-                ? {
-                    ...item,
-                    status: "done",
-                    form: {
-                      ...item.form,
-                      distanceBikeMin:
-                        dist.bikeMinutes?.toString() || "",
-                      distanceTransitMin:
-                        dist.transitMinutes?.toString() || "",
-                    },
-                  }
-                : item
-            )
-          );
-        } catch {
-          setItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId ? { ...item, status: "done" } : item
-            )
-          );
-        }
-      } else {
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === itemId ? { ...item, status: "done" } : item
-          )
-        );
-      }
     } catch (err) {
       setItems((prev) =>
         prev.map((item) =>
@@ -654,8 +612,6 @@ function StatusBadge({
       return <Badge variant="secondary">Queued</Badge>;
     case "uploading":
       return <Badge variant="secondary">Uploading...</Badge>;
-    case "parsing_distance":
-      return <Badge variant="secondary">Calculating distance...</Badge>;
     case "done":
       return <Badge className="bg-blue-100 text-blue-700">Parsed</Badge>;
     case "error":

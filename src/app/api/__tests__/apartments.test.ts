@@ -25,8 +25,6 @@ vi.mock("@/lib/db/schema", () => ({
     numBalconies: "num_balconies",
     hasWashingMachine: "has_washing_machine",
     rentChf: "rent_chf",
-    distanceBikeMin: "distance_bike_min",
-    distanceTransitMin: "distance_transit_min",
     pdfUrl: "pdf_url",
     listingUrl: "listing_url",
     createdAt: "created_at",
@@ -39,12 +37,32 @@ vi.mock("@/lib/db/schema", () => ({
     overallFeeling: "overall_feeling",
     apartmentId: "apartment_id",
   },
+  apartmentDistances: {
+    apartmentId: "apartment_id",
+    locationId: "location_id",
+  },
+  locationsOfInterest: {
+    id: "id",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
   desc: vi.fn(),
   avg: vi.fn(),
   eq: vi.fn(),
+  asc: vi.fn(),
+  sql: vi.fn(),
+}));
+
+vi.mock("@/lib/locations", () => ({
+  listLocations: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/distance", () => ({
+  calculateDistance: vi.fn().mockResolvedValue({
+    bikeMinutes: null,
+    transitMinutes: null,
+  }),
 }));
 
 const mockGetDisplayName = vi.fn();
@@ -82,22 +100,27 @@ describe("GET /api/apartments", () => {
     ];
     mockGetDisplayName.mockResolvedValue(null);
 
-    mockSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        leftJoin: vi.fn().mockReturnValue({
-          groupBy: vi.fn().mockReturnValue({
-            orderBy: vi.fn().mockResolvedValue(apartments),
+    mockSelect
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue(apartments),
+            }),
           }),
         }),
-      }),
-    });
+      })
+      // apartmentDistances query
+      .mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([]),
+      });
 
     const res = await GET();
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data).toEqual([
-      { id: 1, name: "Apt 1", avgOverall: "4.5", myRating: null },
-      { id: 2, name: "Apt 2", avgOverall: null, myRating: null },
+      { id: 1, name: "Apt 1", avgOverall: "4.5", distances: [], myRating: null },
+      { id: 2, name: "Apt 2", avgOverall: null, distances: [], myRating: null },
     ]);
   });
 
@@ -120,7 +143,11 @@ describe("GET /api/apartments", () => {
           }),
         }),
       })
-      // Second select call: Alice's ratings — she rated apartments 1 and 3.
+      // Second select call: apartmentDistances
+      .mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([]),
+      })
+      // Third select call: Alice's ratings — she rated apartments 1 and 3.
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([
@@ -190,6 +217,12 @@ describe("GET /api/apartments/[id]", () => {
             { id: 1, userName: "Alice", kitchen: 4 },
           ]),
         }),
+      })
+      // Third select: apartment_distances
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       });
 
     const req = new Request("http://localhost/api/apartments/1");
@@ -198,6 +231,7 @@ describe("GET /api/apartments/[id]", () => {
     const data = await res.json();
     expect(data.name).toBe("Apt 1");
     expect(data.ratings).toHaveLength(1);
+    expect(data.distances).toEqual([]);
   });
 
   it("returns 404 for non-existent apartment", async () => {

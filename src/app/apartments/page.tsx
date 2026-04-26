@@ -37,16 +37,16 @@ import {
 import { usePersistedEnum } from "@/lib/use-persisted-enum";
 import {
   compareApartments,
-  SORT_FIELD_LABELS,
   SORT_FIELD_STORAGE_KEY,
   SORT_DIRECTION_STORAGE_KEY,
   SORT_CHANGE_EVENT,
-  SORT_FIELD_IDS,
   isSortField,
   isSortDirection,
+  listSortOptions,
   type SortDirection,
   type SortField,
 } from "@/lib/apartment-sort";
+import type { LocationOfInterest } from "@/lib/db/schema";
 
 interface ErrorState {
   headline: string;
@@ -62,8 +62,7 @@ interface ApartmentSummary {
   numBathrooms: number | null;
   numBalconies: number | null;
   rentChf: number | null;
-  distanceBikeMin: number | null;
-  distanceTransitMin: number | null;
+  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
   shortCode: string | null;
   avgOverall: string | null;
   myRating: number | null;
@@ -81,6 +80,7 @@ function isViewMode(v: string): v is ViewMode {
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
+  const [locations, setLocations] = useState<LocationOfInterest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
   const [view, setView] = usePersistedEnum<ViewMode>(
@@ -126,17 +126,23 @@ export default function ApartmentsPage() {
     const url = "/api/apartments";
     (async () => {
       try {
-        const res = await fetch(url);
-        if (!res.ok) {
+        const [aptRes, locRes] = await Promise.all([
+          fetch(url),
+          fetch("/api/locations"),
+        ]);
+        if (!aptRes.ok) {
           setError({
             headline: "Couldn't load apartments",
-            details: await fetchErrorFromResponse(res, url),
+            details: await fetchErrorFromResponse(aptRes, url),
           });
           setLoading(false);
           return;
         }
-        const data = (await res.json()) as ApartmentSummary[];
+        const data = (await aptRes.json()) as ApartmentSummary[];
         setApartments(data);
+        if (locRes.ok) {
+          setLocations((await locRes.json()) as LocationOfInterest[]);
+        }
         setLoading(false);
       } catch (err) {
         setError({
@@ -147,6 +153,8 @@ export default function ApartmentsPage() {
       }
     })();
   }, []);
+
+  const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
 
   if (loading) {
     return (
@@ -219,9 +227,9 @@ export default function ApartmentsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SORT_FIELD_IDS.map((id) => (
-                <SelectItem key={id} value={id}>
-                  {SORT_FIELD_LABELS[id]}
+              {sortOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -4,6 +4,10 @@ import * as schema from "./schema";
 
 const isCloud = !!process.env.TURSO_DATABASE_URL;
 
+// LOCAL_DB_URL lets tests point at a separate sqlite file so they don't
+// trample the dev DB. Falls back to the default local file otherwise.
+const localUrl = process.env.LOCAL_DB_URL ?? "file:./data/flatpare.db";
+
 const client = createClient(
   isCloud
     ? {
@@ -11,7 +15,7 @@ const client = createClient(
         authToken: process.env.TURSO_AUTH_TOKEN,
       }
     : {
-        url: "file:./data/flatpare.db",
+        url: localUrl,
       }
 );
 

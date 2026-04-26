@@ -49,10 +49,16 @@ const APARTMENTS = [
 
 beforeEach(() => {
   localStorage.clear();
-  vi.spyOn(global, "fetch").mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(APARTMENTS),
-  } as Response);
+  vi.spyOn(global, "fetch").mockImplementation(async (input) => {
+    const url = typeof input === "string" ? input : (input as Request).url;
+    if (url === "/api/locations") {
+      return { ok: true, json: () => Promise.resolve([]) } as Response;
+    }
+    return {
+      ok: true,
+      json: () => Promise.resolve(APARTMENTS),
+    } as Response;
+  });
 });
 
 afterEach(() => {

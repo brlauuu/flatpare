@@ -13,6 +13,7 @@ import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { ApartmentMap } from "@/components/apartment-map";
 import { ArrowLeft, ArrowRight, WashingMachine } from "lucide-react";
+import { iconComponentFor } from "@/lib/location-icons";
 import { ErrorDisplay } from "@/components/error-display";
 import { cn } from "@/lib/utils";
 import {
@@ -56,8 +57,6 @@ interface ApartmentDetail {
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
   rentChf: number | null;
-  distanceBikeMin: number | null;
-  distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
   summary: string | null;
@@ -66,6 +65,14 @@ interface ApartmentDetail {
   shortCode: string | null;
   mapEmbedUrl: string | null;
   ratings: Rating[];
+  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
+}
+
+interface LocationLite {
+  id: number;
+  label: string;
+  icon: string;
+  address: string;
 }
 
 const ratingCategories = [
@@ -86,6 +93,7 @@ export default function ApartmentDetailPage() {
   const router = useRouter();
   const pager = useApartmentPager(Number(params.id));
   const [apartment, setApartment] = useState<ApartmentDetail | null>(null);
+  const [locations, setLocations] = useState<LocationLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const EMPTY_RATING = {
@@ -153,7 +161,10 @@ export default function ApartmentDetailPage() {
     const url = `/api/apartments/${params.id}`;
     void (async () => {
       try {
-        const res = await fetch(url);
+        const [res, locRes] = await Promise.all([
+          fetch(url),
+          fetch("/api/locations"),
+        ]);
         if (cancelled) return;
         if (!res.ok) {
           setError({
@@ -166,6 +177,9 @@ export default function ApartmentDetailPage() {
         const data = (await res.json()) as ApartmentDetail;
         if (cancelled) return;
         applyApartmentData(data);
+        if (locRes.ok) {
+          setLocations((await locRes.json()) as LocationLite[]);
+        }
         setLoading(false);
       } catch (err) {
         if (cancelled) return;
@@ -562,14 +576,6 @@ export default function ApartmentDetailPage() {
                 ? "No"
                 : "?"}
           </Badge>
-          {apartment.distanceBikeMin && (
-            <Badge variant="outline">{apartment.distanceBikeMin} min bike</Badge>
-          )}
-          {apartment.distanceTransitMin && (
-            <Badge variant="outline">
-              {apartment.distanceTransitMin} min transit
-            </Badge>
-          )}
         </div>
       )}
 
@@ -577,6 +583,14 @@ export default function ApartmentDetailPage() {
         <div className="text-sm text-muted-foreground">
           Available from: {formatSwissDate(apartment.availableFrom)}
         </div>
+      )}
+
+      {locations.length > 0 && (
+        <DistanceSection
+          locations={locations}
+          distances={apartment.distances}
+          apartmentAddress={apartment.address}
+        />
       )}
 
       <ApartmentMap embedUrl={apartment.mapEmbedUrl} title={apartment.name} />
@@ -657,6 +671,59 @@ export default function ApartmentDetailPage() {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function DistanceSection({
+  locations,
+  distances,
+  apartmentAddress,
+}: {
+  locations: LocationLite[];
+  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
+  apartmentAddress: string | null;
+}) {
+  const distancesByLoc = new Map(distances.map((d) => [d.locationId, d]));
+  return (
+    <div className="space-y-2">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Distance to locations
+      </h2>
+      <div className="space-y-1.5">
+        {locations.map((loc) => {
+          const Icon = iconComponentFor(loc.icon);
+          const d = distancesByLoc.get(loc.id);
+          const bike = d?.bikeMin;
+          const transit = d?.transitMin;
+          const mapsUrl = apartmentAddress
+            ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(apartmentAddress)}&destination=${encodeURIComponent(loc.address)}&travelmode=bicycling`
+            : null;
+          return (
+            <div key={loc.id} className="flex items-center gap-3 text-sm">
+              {mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Bike directions to ${loc.label}`}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ) : (
+                <Icon className="h-4 w-4 text-muted-foreground" aria-label={loc.label} />
+              )}
+              <span className="font-medium">{loc.label}</span>
+              <span className="text-muted-foreground">
+                {bike != null ? `${bike} min bike` : "— bike"}
+                {" · "}
+                {transit != null ? `${transit} min transit` : "— transit"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

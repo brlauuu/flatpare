@@ -22,16 +22,17 @@ import {
 } from "@/lib/fetch-error";
 import {
   compareApartments,
+  compareSortOptions,
   COMPARE_SORT_CHANGE_EVENT,
   COMPARE_SORT_DIRECTION_STORAGE_KEY,
-  COMPARE_SORT_FIELD_IDS,
-  COMPARE_SORT_FIELD_LABELS,
   COMPARE_SORT_FIELD_STORAGE_KEY,
   isSortDirection,
   isSortField,
   type SortDirection,
   type SortField,
 } from "@/lib/apartment-sort";
+import type { LocationOfInterest } from "@/lib/db/schema";
+import { iconComponentFor } from "@/lib/location-icons";
 import { usePersistedEnum } from "@/lib/use-persisted-enum";
 import {
   Select,
@@ -56,8 +57,7 @@ interface ApartmentWithRatings {
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
   rentChf: number | null;
-  distanceBikeMin: number | null;
-  distanceTransitMin: number | null;
+  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
   pdfUrl: string | null;
   listingUrl: string | null;
   shortCode: string | null;
@@ -80,8 +80,6 @@ const metricRows = [
   { key: "numRooms", label: "Rooms", format: (v: number) => `${v}`, best: "max" },
   { key: "numBathrooms", label: "Bathrooms", format: (v: number) => `${v}`, best: "max" },
   { key: "numBalconies", label: "Balconies", format: (v: number) => `${v}`, best: "max" },
-  { key: "distanceBikeMin", label: "Bike to SBB", format: (v: number) => `${v} min`, best: "min" },
-  { key: "distanceTransitMin", label: "Transit to SBB", format: (v: number) => `${v} min`, best: "min" },
 ] as const;
 
 const ratingKeys = ["kitchen", "balconies", "location", "floorplan", "overallFeeling"] as const;
@@ -95,6 +93,7 @@ const ratingLabels: Record<string, string> = {
 
 export default function ComparePage() {
   const [apartments, setApartments] = useState<ApartmentWithRatings[]>([]);
+  const [locations, setLocations] = useState<LocationOfInterest[]>([]);
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
@@ -115,7 +114,10 @@ export default function ComparePage() {
     async function load() {
       const listUrl = "/api/apartments";
       try {
-        const res = await fetch(listUrl);
+        const [res, locRes] = await Promise.all([
+          fetch(listUrl),
+          fetch("/api/locations"),
+        ]);
         if (!res.ok) {
           setError({
             headline: "Couldn't load comparison data",
@@ -142,6 +144,9 @@ export default function ComparePage() {
         }
 
         setApartments(details);
+        if (locRes.ok) {
+          setLocations((await locRes.json()) as LocationOfInterest[]);
+        }
         setLoading(false);
       } catch (err) {
         setError({
@@ -153,6 +158,8 @@ export default function ComparePage() {
     }
     load();
   }, []);
+
+  const sortOptions = useMemo(() => compareSortOptions(locations), [locations]);
 
   const visible = apartments.filter((a) => !hiddenIds.has(a.id));
   const sortedVisible = useMemo(() => {
@@ -223,9 +230,9 @@ export default function ComparePage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {COMPARE_SORT_FIELD_IDS.map((id) => (
-                <SelectItem key={id} value={id}>
-                  {COMPARE_SORT_FIELD_LABELS[id]}
+              {sortOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -351,6 +358,43 @@ export default function ComparePage() {
                         )}
                       >
                         {val != null ? metric.format(val) : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+
+            {/* Per-location distance rows. Header is icon-only with tooltip
+                because 5 locations × bike+transit can otherwise crowd out the
+                table. Each cell renders 'bike / transit' minutes inline. */}
+            {locations.map((loc) => {
+              const Icon = iconComponentFor(loc.icon);
+              return (
+                <tr key={`loc-${loc.id}`} className="border-b">
+                  <td
+                    className="sticky left-0 z-10 bg-background px-4 py-2 font-medium"
+                    title={`Bike + transit to ${loc.label}`}
+                  >
+                    <Icon className="h-4 w-4" aria-label={loc.label} />
+                  </td>
+                  {sortedVisible.map((apt) => {
+                    const d = apt.distances.find(
+                      (x) => x.locationId === loc.id
+                    );
+                    const bike = d?.bikeMin ?? null;
+                    const transit = d?.transitMin ?? null;
+                    return (
+                      <td key={apt.id} className="px-4 py-2 text-xs">
+                        {bike == null && transit == null ? (
+                          "—"
+                        ) : (
+                          <>
+                            {bike != null ? `${bike}` : "—"}
+                            {" / "}
+                            {transit != null ? `${transit} min` : "— min"}
+                          </>
+                        )}
                       </td>
                     );
                   })}

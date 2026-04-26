@@ -22,15 +22,14 @@ const APT_WITH_PDF = {
   numBalconies: 1,
   hasWashingMachine: false,
   rentChf: 2200,
-  distanceBikeMin: 12,
-  distanceTransitMin: 25,
-  pdfUrl: "https://blob.example/sonnenweg.pdf",
+  pdfUrl: "https://blob.example/sonnenweg.pdf" as string | null,
   listingUrl: null,
   shortCode: "ABC-2.5B-WY-4057",
   summary: "Original AI summary.",
   availableFrom: null,
   userEditedFields: null,
   ratings: [],
+  distances: [] as { locationId: number; bikeMin: number | null; transitMin: number | null }[],
 };
 
 const APT_WITH_PDF_REFRESHED = {

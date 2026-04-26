@@ -1,104 +1,155 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
 
 import SettingsPage from "../page";
 
-let fetchCalls: { url: string; init: RequestInit }[] = [];
+type Loc = {
+  id: number;
+  label: string;
+  icon: string;
+  address: string;
+  sortOrder: number;
+};
+
+let locations: Loc[];
+const fetchMock = vi.fn();
+
+function jsonRes(body: unknown, ok = true, status = 200) {
+  return Promise.resolve({
+    ok,
+    status,
+    headers: new Headers({ "content-type": "application/json" }),
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  } as unknown as Response);
+}
 
 beforeEach(() => {
-  fetchCalls = [];
-  vi.spyOn(global, "fetch").mockImplementation(((
-    input: RequestInfo,
-    init?: RequestInit
-  ) => {
+  locations = [
+    { id: 1, label: "Train Station", icon: "Train", address: "Basel SBB", sortOrder: 0 },
+  ];
+  fetchMock.mockReset();
+  fetchMock.mockImplementation(async (input: RequestInfo, init?: RequestInit) => {
     const url = typeof input === "string" ? input : (input as Request).url;
-    fetchCalls.push({ url, init: init ?? {} });
-    const method = init?.method ?? "GET";
-
-    if (url === "/api/settings" && method === "GET") {
-      return Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({ stationAddress: "Basel SBB, Switzerland" }),
-      } as Response);
+    const method = (init?.method ?? "GET").toUpperCase();
+    if (url === "/api/locations" && method === "GET") {
+      return jsonRes(locations);
     }
-    if (url === "/api/settings" && method === "PUT") {
-      const body = JSON.parse((init?.body as string) ?? "{}");
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ stationAddress: body.stationAddress }),
-      } as Response);
+    if (url === "/api/locations" && method === "POST") {
+      const body = JSON.parse(init!.body as string);
+      const created: Loc = {
+        id: locations.length + 1,
+        label: body.label,
+        icon: body.icon,
+        address: body.address,
+        sortOrder: locations.length,
+      };
+      locations = [...locations, created];
+      return jsonRes(created, true, 201);
     }
     if (
-      url === "/api/settings/recompute-distances" &&
-      method === "POST"
+      /^\/api\/locations\/\d+$/.test(url) &&
+      method === "DELETE"
     ) {
-      return Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({ updated: 4, failed: 1, skipped: 0, total: 5 }),
-      } as Response);
+      const id = Number(url.split("/").pop());
+      locations = locations.filter((l) => l.id !== id);
+      return jsonRes({ success: true });
     }
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response);
-  }) as typeof fetch);
+    if (url === "/api/settings/recompute-distances") {
+      return jsonRes({
+        totalApartments: 3,
+        totalLocations: locations.length,
+        updated: 6,
+        failed: 0,
+        skipped: 0,
+      });
+    }
+    return jsonRes({ error: `unexpected fetch ${method} ${url}` }, false, 500);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   cleanup();
-  vi.restoreAllMocks();
 });
 
-describe("Settings page", () => {
-  it("loads the existing setting on mount and shows it in the input", async () => {
+describe("SettingsPage", () => {
+  it("renders the existing locations on load", async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      const input = screen.getByLabelText(/Station address/i) as HTMLInputElement;
-      expect(input.value).toBe("Basel SBB, Switzerland");
+      expect(screen.getByText("Train Station")).toBeInTheDocument();
     });
+    expect(screen.getByText("Basel SBB")).toBeInTheDocument();
+    expect(screen.getByText(/1 of 5/)).toBeInTheDocument();
   });
 
-  it("disables Save when the input is empty", async () => {
+  it("adds a new location via the icon-picker modal", async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
-    const input = await waitFor(() => {
-      const i = screen.getByLabelText(/Station address/i) as HTMLInputElement;
-      expect(i.value).toBe("Basel SBB, Switzerland");
-      return i;
-    });
-    await user.clear(input);
-    expect(screen.getByRole("button", { name: /Save/i })).toBeDisabled();
-  });
+    await waitFor(() => screen.getByText("Train Station"));
 
-  it("disables Save when the input matches the loaded value", async () => {
-    render(<SettingsPage />);
+    await user.click(screen.getByRole("button", { name: /Add location/i }));
+
+    await user.type(screen.getByLabelText(/Label/i), "Work");
+    await user.type(screen.getByLabelText(/Address/i), "Zürich");
+
+    await user.click(screen.getByRole("button", { name: /Pick icon/i }));
+    expect(
+      screen.getByRole("dialog", { name: /Pick an icon/i })
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Briefcase" }));
+
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
     await waitFor(() => {
-      const i = screen.getByLabelText(/Station address/i) as HTMLInputElement;
-      expect(i.value).toBe("Basel SBB, Switzerland");
+      expect(screen.getByText("Work")).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: /Save/i })).toBeDisabled();
+    expect(screen.getByText("Zürich")).toBeInTheDocument();
+    expect(screen.getByText(/2 of 5/)).toBeInTheDocument();
   });
 
-  it("clicking Recompute calls the recompute endpoint and shows the result", async () => {
+  it("deletes a location after confirmation", async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Train Station"));
+
+    await user.click(
+      screen.getByRole("button", { name: /Delete Train Station/i })
+    );
     await waitFor(() => {
-      expect(screen.getByLabelText(/Station address/i)).toBeInTheDocument();
+      expect(screen.queryByText("Train Station")).not.toBeInTheDocument();
     });
+  });
+
+  it("recompute renders a result message", async () => {
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Train Station"));
+
     await user.click(screen.getByRole("button", { name: /Recompute all/i }));
     await waitFor(() => {
       expect(
-        screen.getByText(/Recomputed 4 of 5 apartments/i)
+        screen.getByText(/Recomputed 6 pairs across 3 apartments/i)
       ).toBeInTheDocument();
     });
-    const recomputeCall = fetchCalls.find(
-      (c) => c.url === "/api/settings/recompute-distances"
-    );
-    expect(recomputeCall).toBeDefined();
-    expect(recomputeCall!.init.method).toBe("POST");
+  });
+
+  it("disables Add when at the 5-location limit", async () => {
+    locations = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1,
+      label: `Loc ${i + 1}`,
+      icon: "Train",
+      address: `Addr ${i + 1}`,
+      sortOrder: i,
+    }));
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Loc 1"));
+    expect(
+      screen.getByRole("button", { name: /Add location/i })
+    ).toBeDisabled();
+    expect(screen.getByText(/5 of 5/)).toBeInTheDocument();
   });
 });

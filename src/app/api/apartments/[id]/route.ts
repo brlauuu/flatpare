@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { apartments, ratings } from "@/lib/db/schema";
+import {
+  apartments,
+  apartmentDistances,
+  ratings,
+} from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
 import { isIsoDate } from "@/lib/iso-date";
@@ -29,9 +33,19 @@ export async function GET(
       .from(ratings)
       .where(eq(ratings.apartmentId, apartmentId));
 
+    const distances = await db
+      .select({
+        locationId: apartmentDistances.locationId,
+        bikeMin: apartmentDistances.bikeMin,
+        transitMin: apartmentDistances.transitMin,
+      })
+      .from(apartmentDistances)
+      .where(eq(apartmentDistances.apartmentId, apartmentId));
+
     return NextResponse.json({
       ...apartment[0],
       ratings: apartmentRatings,
+      distances,
       mapEmbedUrl: buildMapEmbedUrl(apartment[0].address),
     });
   } catch (error) {
@@ -98,8 +112,6 @@ export async function PATCH(
         numBalconies: body.numBalconies,
         hasWashingMachine: body.hasWashingMachine ?? null,
         rentChf: body.rentChf,
-        distanceBikeMin: body.distanceBikeMin,
-        distanceTransitMin: body.distanceTransitMin,
         listingUrl: body.listingUrl,
         summary: body.summary ?? null,
         availableFrom,

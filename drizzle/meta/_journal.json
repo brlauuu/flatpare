@@ -57,6 +57,13 @@
       "when": 1777146956276,
       "tag": "0007_narrow_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1777222800000,
+      "tag": "0008_locations_of_interest",
+      "breakpoints": true
     }
   ]
 }

@@ -14,8 +14,6 @@ export type ApartmentForm = {
   numBalconies: string;
   hasWashingMachine: boolean | null;
   rentChf: string;
-  distanceBikeMin: string;
-  distanceTransitMin: string;
   pdfUrl: string;
   listingUrl: string;
   summary: string;
@@ -32,8 +30,6 @@ export const emptyApartmentForm: ApartmentForm = {
   numBalconies: "",
   hasWashingMachine: null,
   rentChf: "",
-  distanceBikeMin: "",
-  distanceTransitMin: "",
   pdfUrl: "",
   listingUrl: "",
   summary: "",
@@ -59,8 +55,6 @@ export function formFromExtracted(
         ? extracted.hasWashingMachine
         : null,
     rentChf: extracted.rentChf != null ? String(extracted.rentChf) : "",
-    distanceBikeMin: "",
-    distanceTransitMin: "",
     pdfUrl,
     listingUrl: (extracted.listingUrl as string) || "",
     summary:
@@ -80,8 +74,6 @@ export type ApartmentLike = {
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
   rentChf: number | null;
-  distanceBikeMin: number | null;
-  distanceTransitMin: number | null;
   pdfUrl: string | null;
   listingUrl: string | null;
   summary: string | null;
@@ -100,8 +92,6 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
     numBalconies: numOrEmpty(apt.numBalconies),
     hasWashingMachine: apt.hasWashingMachine,
     rentChf: numOrEmpty(apt.rentChf),
-    distanceBikeMin: numOrEmpty(apt.distanceBikeMin),
-    distanceTransitMin: numOrEmpty(apt.distanceTransitMin),
     pdfUrl: apt.pdfUrl ?? "",
     listingUrl: apt.listingUrl ?? "",
     summary: apt.summary ?? "",
@@ -120,12 +110,6 @@ export function formToPayload(form: ApartmentForm) {
     numBalconies: form.numBalconies ? parseInt(form.numBalconies) : null,
     hasWashingMachine: form.hasWashingMachine,
     rentChf: form.rentChf ? parseFloat(form.rentChf) : null,
-    distanceBikeMin: form.distanceBikeMin
-      ? parseInt(form.distanceBikeMin)
-      : null,
-    distanceTransitMin: form.distanceTransitMin
-      ? parseInt(form.distanceTransitMin)
-      : null,
     pdfUrl: form.pdfUrl || null,
     listingUrl: form.listingUrl || null,
     summary: form.summary || null,
@@ -250,26 +234,6 @@ export function ApartmentFormFields({
           onChange={(e) => onChange("listingUrl", e.target.value)}
           placeholder="https://..."
         />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor={id("bike")}>Bike to SBB (min)</Label>
-          <Input
-            id={id("bike")}
-            type="number"
-            value={form.distanceBikeMin}
-            onChange={(e) => onChange("distanceBikeMin", e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={id("transit")}>Transit to SBB (min)</Label>
-          <Input
-            id={id("transit")}
-            type="number"
-            value={form.distanceTransitMin}
-            onChange={(e) => onChange("distanceTransitMin", e.target.value)}
-          />
-        </div>
       </div>
     </div>
   );

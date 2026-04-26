@@ -1,16 +1,37 @@
-export type SortField =
+export type StaticSortField =
   | "createdAt"
   | "rentChf"
   | "sizeM2"
   | "numRooms"
   | "numBathrooms"
   | "numBalconies"
-  | "distanceBikeMin"
-  | "distanceTransitMin"
   | "avgOverall"
   | "shortCode";
 
+// `bikeTo:<locationId>` and `transitTo:<locationId>` are generated at runtime
+// from the user's configured locations of interest.
+export type LocationSortField = `bikeTo:${number}` | `transitTo:${number}`;
+
+export type SortField = StaticSortField | LocationSortField;
+
+const STATIC_FIELDS: StaticSortField[] = [
+  "createdAt",
+  "rentChf",
+  "sizeM2",
+  "numRooms",
+  "numBathrooms",
+  "numBalconies",
+  "avgOverall",
+  "shortCode",
+];
+
 export type SortDirection = "asc" | "desc";
+
+export type ApartmentDistance = {
+  locationId: number;
+  bikeMin: number | null;
+  transitMin: number | null;
+};
 
 export interface SortableApartment {
   id: number;
@@ -19,56 +40,113 @@ export interface SortableApartment {
   numRooms: number | null;
   numBathrooms: number | null;
   numBalconies: number | null;
-  distanceBikeMin: number | null;
-  distanceTransitMin: number | null;
+  distances: ApartmentDistance[];
   avgOverall: string | null;
   shortCode: string | null;
   createdAt: string | null;
 }
 
-type Extractor = (apt: SortableApartment) => number | string | null;
+function parseLocationSortField(
+  field: string
+): { mode: "bike" | "transit"; locationId: number } | null {
+  const m = /^(bikeTo|transitTo):(\d+)$/.exec(field);
+  if (!m) return null;
+  return {
+    mode: m[1] === "bikeTo" ? "bike" : "transit",
+    locationId: parseInt(m[2]),
+  };
+}
 
-const EXTRACTORS: Record<SortField, Extractor> = {
-  rentChf: (a) => a.rentChf,
-  sizeM2: (a) => a.sizeM2,
-  numRooms: (a) => a.numRooms,
-  numBathrooms: (a) => a.numBathrooms,
-  numBalconies: (a) => a.numBalconies,
-  distanceBikeMin: (a) => a.distanceBikeMin,
-  distanceTransitMin: (a) => a.distanceTransitMin,
-  avgOverall: (a) => (a.avgOverall === null ? null : parseFloat(a.avgOverall)),
-  createdAt: (a) => (a.createdAt === null ? null : Date.parse(a.createdAt)),
-  shortCode: (a) => a.shortCode,
-};
+function extract(apt: SortableApartment, field: SortField): number | string | null {
+  switch (field) {
+    case "rentChf":
+      return apt.rentChf;
+    case "sizeM2":
+      return apt.sizeM2;
+    case "numRooms":
+      return apt.numRooms;
+    case "numBathrooms":
+      return apt.numBathrooms;
+    case "numBalconies":
+      return apt.numBalconies;
+    case "avgOverall":
+      return apt.avgOverall === null ? null : parseFloat(apt.avgOverall);
+    case "createdAt":
+      return apt.createdAt === null ? null : Date.parse(apt.createdAt);
+    case "shortCode":
+      return apt.shortCode;
+    default: {
+      const parsed = parseLocationSortField(field);
+      if (!parsed) return null;
+      const d = apt.distances.find((x) => x.locationId === parsed.locationId);
+      if (!d) return null;
+      return parsed.mode === "bike" ? d.bikeMin : d.transitMin;
+    }
+  }
+}
 
-export const SORT_FIELD_LABELS: Partial<Record<SortField, string>> = {
-  createdAt: "Date added",
-  rentChf: "Price",
-  sizeM2: "Size",
-  numRooms: "Rooms",
-  avgOverall: "Avg rating",
-  shortCode: "Short code",
-};
-
-export const COMPARE_SORT_FIELD_LABELS: Record<SortField, string> = {
+export const STATIC_LIST_SORT_LABELS: Record<StaticSortField, string> = {
   createdAt: "Date added",
   rentChf: "Price",
   sizeM2: "Size",
   numRooms: "Rooms",
   numBathrooms: "Bathrooms",
   numBalconies: "Balconies",
-  distanceBikeMin: "Bike to SBB",
-  distanceTransitMin: "Transit to SBB",
   avgOverall: "Avg rating",
   shortCode: "Short code",
 };
+
+// Apartments-list sort dropdown defaults — a curated subset of static fields
+// shown even when no locations are configured.
+export const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
+  "createdAt",
+  "rentChf",
+  "sizeM2",
+  "numRooms",
+  "avgOverall",
+  "shortCode",
+];
+
+export type LocationLite = { id: number; label: string };
+
+export type SortFieldOption = { id: SortField; label: string };
+
+export function listSortOptions(locations: LocationLite[]): SortFieldOption[] {
+  const base: SortFieldOption[] = STATIC_LIST_SORT_FIELDS.map((id) => ({
+    id,
+    label: STATIC_LIST_SORT_LABELS[id],
+  }));
+  const dynamic: SortFieldOption[] = locations.flatMap((loc) => [
+    { id: `bikeTo:${loc.id}` as SortField, label: `Bike to ${loc.label}` },
+    {
+      id: `transitTo:${loc.id}` as SortField,
+      label: `Transit to ${loc.label}`,
+    },
+  ]);
+  return [...base, ...dynamic];
+}
+
+export function compareSortOptions(
+  locations: LocationLite[]
+): SortFieldOption[] {
+  const base: SortFieldOption[] = STATIC_FIELDS.map((id) => ({
+    id,
+    label: STATIC_LIST_SORT_LABELS[id],
+  }));
+  const dynamic: SortFieldOption[] = locations.flatMap((loc) => [
+    { id: `bikeTo:${loc.id}` as SortField, label: `Bike to ${loc.label}` },
+    {
+      id: `transitTo:${loc.id}` as SortField,
+      label: `Transit to ${loc.label}`,
+    },
+  ]);
+  return [...base, ...dynamic];
+}
 
 function compareValues(
   va: number | string | null,
   vb: number | string | null
 ): number {
-  // Nulls always sort last, regardless of direction — caller applies direction
-  // only to the primary comparison result (not to null handling).
   if (va === null && vb === null) return 0;
   if (va === null) return 1;
   if (vb === null) return -1;
@@ -78,7 +156,6 @@ function compareValues(
   if (typeof va === "number" && typeof vb === "number") {
     return va - vb;
   }
-  // Mixed types shouldn't happen for a given field; fall back to 0.
   return 0;
 }
 
@@ -88,51 +165,31 @@ export function compareApartments(
   field: SortField,
   direction: SortDirection
 ): number {
-  const extract = EXTRACTORS[field];
-  const va = extract(a);
-  const vb = extract(b);
+  const va = extract(a, field);
+  const vb = extract(b, field);
   const primary = compareValues(va, vb);
   if (primary !== 0) {
-    // Direction only flips the primary comparison. If one side is null, the
-    // non-null side already won above — that win is direction-independent.
     if (va === null || vb === null) return primary;
     return direction === "asc" ? primary : -primary;
   }
-
-  // Tie-break: createdAt desc (newer first), then id ascending.
-  const createdCmp = compareValues(
-    EXTRACTORS.createdAt(a),
-    EXTRACTORS.createdAt(b)
-  );
-  if (createdCmp !== 0) {
-    // Desc by default — newer first.
-    return -createdCmp;
-  }
+  const createdCmp = compareValues(extract(a, "createdAt"), extract(b, "createdAt"));
+  if (createdCmp !== 0) return -createdCmp;
   return a.id - b.id;
 }
 
 export const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";
 export const SORT_DIRECTION_STORAGE_KEY = "flatpare-apartments-sort-direction";
 export const SORT_CHANGE_EVENT = "flatpare-apartments-sort-change";
+export const COMPARE_SORT_FIELD_STORAGE_KEY = "flatpare-compare-sort-field";
+export const COMPARE_SORT_DIRECTION_STORAGE_KEY =
+  "flatpare-compare-sort-direction";
+export const COMPARE_SORT_CHANGE_EVENT = "flatpare-compare-sort-change";
 
-export const SORT_FIELD_IDS = Object.keys(SORT_FIELD_LABELS) as SortField[];
-
-export const COMPARE_SORT_FIELD_IDS = Object.keys(
-  COMPARE_SORT_FIELD_LABELS
-) as SortField[];
-
-// COMPARE_SORT_FIELD_IDS is the superset of all SortField values. Any new
-// SortField member must be added to COMPARE_SORT_FIELD_LABELS or this guard
-// will silently reject stored values and break persistence.
 export function isSortField(v: string): v is SortField {
-  return (COMPARE_SORT_FIELD_IDS as string[]).includes(v);
+  if ((STATIC_FIELDS as string[]).includes(v)) return true;
+  return parseLocationSortField(v) !== null;
 }
 
 export function isSortDirection(v: string): v is SortDirection {
   return v === "asc" || v === "desc";
 }
-
-export const COMPARE_SORT_FIELD_STORAGE_KEY = "flatpare-compare-sort-field";
-export const COMPARE_SORT_DIRECTION_STORAGE_KEY =
-  "flatpare-compare-sort-direction";
-export const COMPARE_SORT_CHANGE_EVENT = "flatpare-compare-sort-change";
