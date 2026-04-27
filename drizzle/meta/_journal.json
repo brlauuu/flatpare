@@ -64,6 +64,13 @@
       "when": 1777222800000,
       "tag": "0008_locations_of_interest",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1777318431337,
+      "tag": "0009_violet_groot",
+      "breakpoints": true
     }
   ]
 }

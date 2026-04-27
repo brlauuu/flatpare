@@ -42,6 +42,8 @@ export async function GET() {
         listingUrl: apartments.listingUrl,
         summary: apartments.summary,
         availableFrom: apartments.availableFrom,
+        listingGone: apartments.listingGone,
+        listingCheckedAt: apartments.listingCheckedAt,
         shortCode: apartments.shortCode,
         createdAt: apartments.createdAt,
         avgKitchen: avg(ratings.kitchen),

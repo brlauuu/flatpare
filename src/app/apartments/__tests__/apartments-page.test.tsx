@@ -412,3 +412,31 @@ describe("Apartments page — search", () => {
     expect(screen.queryByText("Seeblick 7")).toBeNull();
   });
 });
+
+describe("Apartments page — listing gone badge", () => {
+  it("renders a Gone badge for apartments with listingGone=true", async () => {
+    const goneApartments = [
+      { ...APARTMENTS[0], listingGone: true },
+      { ...APARTMENTS[1], listingGone: false },
+      { ...APARTMENTS[2], listingGone: null },
+    ];
+    vi.spyOn(global, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      if (url === "/api/locations") {
+        return { ok: true, json: () => Promise.resolve([]) } as Response;
+      }
+      return {
+        ok: true,
+        json: () => Promise.resolve(goneApartments),
+      } as Response;
+    });
+
+    render(<ApartmentsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
+    });
+
+    const goneBadges = screen.getAllByText("Gone");
+    expect(goneBadges).toHaveLength(1);
+  });
+});

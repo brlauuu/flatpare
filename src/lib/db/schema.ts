@@ -25,6 +25,8 @@ export const apartments = sqliteTable("apartments", {
   userEditedFields: text("user_edited_fields"),
   summary: text("summary"),
   availableFrom: text("available_from"),
+  listingGone: integer("listing_gone", { mode: "boolean" }).default(false),
+  listingCheckedAt: integer("listing_checked_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`
   ),
