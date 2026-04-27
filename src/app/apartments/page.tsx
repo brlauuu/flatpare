@@ -10,6 +10,7 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   Building2,
@@ -67,6 +68,7 @@ interface ApartmentSummary {
   avgOverall: string | null;
   myRating: number | null;
   createdAt: string | null;
+  listingGone: boolean | null;
 }
 
 type ViewMode = "grid" | "list";
@@ -144,6 +146,20 @@ export default function ApartmentsPage() {
           setLocations((await locRes.json()) as LocationOfInterest[]);
         }
         setLoading(false);
+
+        try {
+          const checkRes = await fetch("/api/apartments/check-listings", {
+            method: "POST",
+          });
+          if (checkRes.ok) {
+            const refreshed = await fetch(url);
+            if (refreshed.ok) {
+              setApartments((await refreshed.json()) as ApartmentSummary[]);
+            }
+          }
+        } catch {
+          // background check failure is non-fatal
+        }
       } catch (err) {
         setError({
           headline: "Couldn't load apartments",
@@ -315,7 +331,10 @@ export default function ApartmentsPage() {
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <ShortCode code={apt.shortCode} size="md" />
-                    <RatedBadge myRating={apt.myRating} />
+                    <div className="flex items-center gap-1.5">
+                      {apt.listingGone && <GoneBadge />}
+                      <RatedBadge myRating={apt.myRating} />
+                    </div>
                   </div>
                   <div className="flex items-start justify-between">
                     <h3 className="font-medium leading-tight">{apt.name}</h3>
@@ -385,7 +404,8 @@ export default function ApartmentsPage() {
                   <Badge variant="secondary">{apt.numRooms} rm</Badge>
                 )}
               </div>
-              <div className="shrink-0">
+              <div className="flex shrink-0 items-center gap-1.5">
+                {apt.listingGone && <GoneBadge />}
                 <RatedBadge myRating={apt.myRating} />
               </div>
               {apt.avgOverall && (
@@ -400,6 +420,18 @@ export default function ApartmentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function GoneBadge() {
+  return (
+    <Badge
+      variant="secondary"
+      className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+    >
+      <AlertTriangle className="h-3 w-3" />
+      Gone
+    </Badge>
   );
 }
 
