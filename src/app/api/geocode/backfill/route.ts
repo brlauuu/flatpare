@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments, locationsOfInterest } from "@/lib/db/schema";
-import { geocodeLatLng } from "@/lib/geocode";
+import { geocodeLatLngWithReason } from "@/lib/geocode";
 
 const CONCURRENCY = 5;
 
@@ -68,20 +68,38 @@ export async function POST() {
     ];
 
     let updated = 0;
+    const failures: Array<{
+      table: Pending["table"];
+      id: number;
+      address: string;
+      googleReason?: string;
+      orsReason?: string;
+    }> = [];
+
     await runWithConcurrency(
       pending,
       async (item) => {
-        const coords = await geocodeLatLng(item.address);
-        if (!coords) return;
+        const attempt = await geocodeLatLngWithReason(item.address);
+        if (!attempt.result) {
+          failures.push({
+            table: item.table,
+            id: item.id,
+            address: item.address,
+            googleReason: attempt.googleReason,
+            orsReason: attempt.orsReason,
+          });
+          return;
+        }
+        const { lat, lng } = attempt.result;
         if (item.table === "apartments") {
           await db
             .update(apartments)
-            .set({ latitude: coords.lat, longitude: coords.lng })
+            .set({ latitude: lat, longitude: lng })
             .where(eq(apartments.id, item.id));
         } else {
           await db
             .update(locationsOfInterest)
-            .set({ latitude: coords.lat, longitude: coords.lng })
+            .set({ latitude: lat, longitude: lng })
             .where(eq(locationsOfInterest.id, item.id));
         }
         updated++;
@@ -89,7 +107,11 @@ export async function POST() {
       CONCURRENCY
     );
 
-    return NextResponse.json({ pending: pending.length, updated });
+    return NextResponse.json({
+      pending: pending.length,
+      updated,
+      failures,
+    });
   } catch (error) {
     console.error("[geocode/backfill:POST] Error:", error);
     return NextResponse.json(

@@ -78,9 +78,9 @@ export interface LatLng {
 
 async function tryGoogleGeocodeLatLng(
   address: string
-): Promise<LatLng | null> {
+): Promise<{ result: LatLng | null; reason?: string }> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { result: null, reason: "no_api_key" };
   try {
     const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
     url.searchParams.set("address", address);
@@ -94,17 +94,28 @@ async function tryGoogleGeocodeLatLng(
       typeof loc.lat === "number" &&
       typeof loc.lng === "number"
     ) {
-      return { lat: loc.lat, lng: loc.lng };
+      return { result: { lat: loc.lat, lng: loc.lng } };
     }
-    return null;
-  } catch {
-    return null;
+    const status = typeof data.status === "string" ? data.status : "UNKNOWN";
+    const errorMessage =
+      typeof data.error_message === "string" ? data.error_message : null;
+    const reason = errorMessage ? `${status}: ${errorMessage}` : status;
+    console.error(
+      `[geocode:google] no result for "${address}" — ${reason}`
+    );
+    return { result: null, reason };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "fetch_failed";
+    console.error(`[geocode:google] fetch failed — ${reason}`);
+    return { result: null, reason };
   }
 }
 
-async function tryOrsGeocodeLatLng(address: string): Promise<LatLng | null> {
+async function tryOrsGeocodeLatLng(
+  address: string
+): Promise<{ result: LatLng | null; reason?: string }> {
   const apiKey = process.env.OPENROUTESERVICE_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { result: null, reason: "no_api_key" };
   try {
     const url = new URL("https://api.openrouteservice.org/geocode/search");
     url.searchParams.set("api_key", apiKey);
@@ -120,23 +131,42 @@ async function tryOrsGeocodeLatLng(address: string): Promise<LatLng | null> {
       typeof coords[0] === "number" &&
       typeof coords[1] === "number"
     ) {
-      return { lat: coords[1], lng: coords[0] };
+      return { result: { lat: coords[1], lng: coords[0] } };
     }
-    return null;
-  } catch {
-    return null;
+    return { result: null, reason: "ors_no_results" };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "fetch_failed";
+    console.error(`[geocode:ors] fetch failed — ${reason}`);
+    return { result: null, reason };
   }
+}
+
+export interface GeocodeAttempt {
+  result: LatLng | null;
+  googleReason?: string;
+  orsReason?: string;
+}
+
+export async function geocodeLatLngWithReason(
+  address: string | null | undefined
+): Promise<GeocodeAttempt> {
+  if (!address || !address.trim()) {
+    return { result: null, googleReason: "empty_address" };
+  }
+  const google = await tryGoogleGeocodeLatLng(address);
+  if (google.result) return { result: google.result };
+  const ors = await tryOrsGeocodeLatLng(address);
+  return {
+    result: ors.result,
+    googleReason: google.reason,
+    orsReason: ors.reason,
+  };
 }
 
 export async function geocodeLatLng(
   address: string | null | undefined
 ): Promise<LatLng | null> {
-  if (!address || !address.trim()) return null;
-  const google = await tryGoogleGeocodeLatLng(address);
-  if (google) return google;
-  const ors = await tryOrsGeocodeLatLng(address);
-  if (ors) return ors;
-  return null;
+  return (await geocodeLatLngWithReason(address)).result;
 }
 
 export async function extractPostcode(
