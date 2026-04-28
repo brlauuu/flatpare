@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
 import { isIsoDate } from "@/lib/iso-date";
 import { diffInferableFields } from "@/lib/edited-fields";
+import { geocodeLatLng } from "@/lib/geocode";
 
 export async function GET(
   _request: Request,
@@ -124,7 +125,31 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(result[0]);
+    let updated = result[0];
+    const addressChanged = body.address !== currentRows[0].address;
+    if (addressChanged) {
+      try {
+        const coords = updated.address
+          ? await geocodeLatLng(updated.address)
+          : null;
+        const updatedRows = await db
+          .update(apartments)
+          .set({
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
+          })
+          .where(eq(apartments.id, apartmentId))
+          .returning();
+        if (updatedRows[0]) updated = updatedRows[0];
+      } catch (err) {
+        console.error(
+          `[apartments/id:PATCH] geocode failed apt=${apartmentId}:`,
+          err
+        );
+      }
+    }
+
+    return NextResponse.json(updated);
   } catch (error) {
     console.error("[apartments/id:PATCH] Error:", error);
     return NextResponse.json(

@@ -10,7 +10,7 @@ vi.mock("@/lib/db/schema", () => ({
   apiUsage: {},
 }));
 
-import { extractPostcode } from "../geocode";
+import { extractPostcode, geocodeLatLng } from "../geocode";
 
 beforeEach(() => {
   delete process.env.GOOGLE_MAPS_API_KEY;
@@ -125,6 +125,54 @@ describe("extractPostcode — no providers available", () => {
   it("returns null when regex fails and neither key is set", async () => {
     const fetchSpy = vi.spyOn(global, "fetch");
     expect(await extractPostcode("A street with no digits")).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("geocodeLatLng", () => {
+  it("returns null when no provider configured", async () => {
+    expect(await geocodeLatLng("Bahnhofstrasse 1, 8001 Zürich")).toBeNull();
+  });
+
+  it("uses Google when GOOGLE_MAPS_API_KEY is set", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [{ geometry: { location: { lat: 47.5, lng: 8.55 } } }],
+      }),
+    } as Response);
+
+    const result = await geocodeLatLng("Bahnhofstrasse 1, 8001 Zürich");
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(result).toEqual({ lat: 47.5, lng: 8.55 });
+  });
+
+  it("falls back to ORS when Google returns no results", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    process.env.OPENROUTESERVICE_API_KEY = "ors-key";
+    const fetchSpy = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          features: [{ geometry: { coordinates: [8.55, 47.5] } }],
+        }),
+      } as Response);
+
+    const result = await geocodeLatLng("Address");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ lat: 47.5, lng: 8.55 });
+  });
+
+  it("returns null for empty input without calling fetch", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+    expect(await geocodeLatLng("")).toBeNull();
+    expect(await geocodeLatLng(null)).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

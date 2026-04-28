@@ -15,6 +15,7 @@ import {
 import { isIsoDate } from "@/lib/iso-date";
 import { listLocations } from "@/lib/locations";
 import { calculateDistance } from "@/lib/distance";
+import { geocodeLatLng } from "@/lib/geocode";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
 
@@ -44,6 +45,8 @@ export async function GET() {
         availableFrom: apartments.availableFrom,
         listingGone: apartments.listingGone,
         listingCheckedAt: apartments.listingCheckedAt,
+        latitude: apartments.latitude,
+        longitude: apartments.longitude,
         shortCode: apartments.shortCode,
         createdAt: apartments.createdAt,
         avgKitchen: avg(ratings.kitchen),
@@ -162,6 +165,22 @@ export async function POST(request: Request) {
     }
 
     if (created.address) {
+      try {
+        const coords = await geocodeLatLng(created.address);
+        if (coords) {
+          await db
+            .update(apartments)
+            .set({ latitude: coords.lat, longitude: coords.lng })
+            .where(eq(apartments.id, created.id));
+          created = { ...created, latitude: coords.lat, longitude: coords.lng };
+        }
+      } catch (err) {
+        console.error(
+          `[apartments:POST] geocode failed apt=${created.id}:`,
+          err
+        );
+      }
+
       const locations = await listLocations();
       for (const loc of locations) {
         try {

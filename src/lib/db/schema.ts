@@ -27,6 +27,8 @@ export const apartments = sqliteTable("apartments", {
   availableFrom: text("available_from"),
   listingGone: integer("listing_gone", { mode: "boolean" }).default(false),
   listingCheckedAt: integer("listing_checked_at", { mode: "timestamp" }),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`
   ),
@@ -88,6 +90,8 @@ export const locationsOfInterest = sqliteTable("locations_of_interest", {
   icon: text("icon").notNull(),
   address: text("address").notNull(),
   sortOrder: integer("sort_order").notNull(),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`
   ),

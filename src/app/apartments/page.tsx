@@ -48,6 +48,7 @@ import {
   type SortField,
 } from "@/lib/apartment-sort";
 import type { LocationOfInterest } from "@/lib/db/schema";
+import { ApartmentsOverviewMap } from "@/components/apartments-overview-map";
 
 interface ErrorState {
   headline: string;
@@ -69,6 +70,8 @@ interface ApartmentSummary {
   myRating: number | null;
   createdAt: string | null;
   listingGone: boolean | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 type ViewMode = "grid" | "list";
@@ -207,8 +210,30 @@ export default function ApartmentsPage() {
     );
   }
 
+  async function refreshAfterBackfill() {
+    try {
+      const [aptRes, locRes] = await Promise.all([
+        fetch("/api/apartments"),
+        fetch("/api/locations"),
+      ]);
+      if (aptRes.ok) {
+        setApartments((await aptRes.json()) as ApartmentSummary[]);
+      }
+      if (locRes.ok) {
+        setLocations((await locRes.json()) as LocationOfInterest[]);
+      }
+    } catch {
+      // best-effort refresh
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <ApartmentsOverviewMap
+        apartments={apartments}
+        locations={locations}
+        onBackfillComplete={refreshAfterBackfill}
+      />
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
