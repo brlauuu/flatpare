@@ -49,7 +49,7 @@ For deployment and non-Docker setup, pick a path below.
    | `TURSO_AUTH_TOKEN` | Yes | Auth token from Turso |
    | `BLOB_READ_WRITE_TOKEN` | Yes | Auto-added when you connect Vercel Blob |
    | `GOOGLE_GENERATIVE_AI_API_KEY` | Yes | PDF parsing |
-   | `GOOGLE_MAPS_API_KEY` | No | Auto distance calculation |
+   | `GOOGLE_MAPS_API_KEY` | No | Distances, geocoding, embedded map (see [docs/google-apis.md](./docs/google-apis.md)) |
 
 3. Connect a **Blob store**: dashboard → **Storage** → **Create** → **Blob**.
 4. Push the database schema before first use:
@@ -82,7 +82,7 @@ turso db show flatpare --url           # libsql://flatpare-<you>.turso.io
 turso db tokens create flatpare        # auth token
 ```
 
-Get a Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Optionally enable the **Distance Matrix API** in [Google Cloud Console](https://console.cloud.google.com/apis) and create a key.
+Get a Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). For the Maps Platform key (distances, geocoding, embedded maps), enable **Geocoding API**, **Distance Matrix API**, and **Maps Embed API** in [Google Cloud Console](https://console.cloud.google.com/apis) and create a key — see [docs/google-apis.md](./docs/google-apis.md) for the full list and why each is needed.
 
 Configure `.env.local`:
 
@@ -244,7 +244,7 @@ src/
 | `TURSO_AUTH_TOKEN` | No | Cloud | Turso auth token |
 | `BLOB_READ_WRITE_TOKEN` | No | Cloud | Vercel Blob token (auto-set on Vercel) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | No | Cloud | Google Gemini API key for PDF parsing |
-| `GOOGLE_MAPS_API_KEY` | No | Cloud | Google Maps for distance calculation |
+| `GOOGLE_MAPS_API_KEY` | No | Cloud | Maps Platform key — needs Geocoding, Distance Matrix, and Maps Embed APIs enabled. See [docs/google-apis.md](./docs/google-apis.md). |
 | `OPENROUTESERVICE_API_KEY` | No | Local | Free distance calculation alternative |
 | `DISABLE_SECURE_COOKIES` | No | Local | Set to bypass secure cookie flag in dev |
 
