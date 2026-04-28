@@ -48,3 +48,4 @@ next-env.d.ts
 
 # git worktrees (local isolated workspaces)
 /.worktrees/
+.claude/
