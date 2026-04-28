@@ -164,15 +164,16 @@ export async function POST(request: Request) {
       throw new Error("Failed to generate a unique short code after retries");
     }
 
+    let geocoded: { lat: number; lng: number } | null = null;
     if (created.address) {
+      const address = created.address;
       try {
-        const coords = await geocodeLatLng(created.address);
-        if (coords) {
+        geocoded = await geocodeLatLng(address);
+        if (geocoded) {
           await db
             .update(apartments)
-            .set({ latitude: coords.lat, longitude: coords.lng })
+            .set({ latitude: geocoded.lat, longitude: geocoded.lng })
             .where(eq(apartments.id, created.id));
-          created = { ...created, latitude: coords.lat, longitude: coords.lng };
         }
       } catch (err) {
         console.error(
@@ -186,7 +187,7 @@ export async function POST(request: Request) {
         try {
           const { bikeMinutes, transitMinutes } = await calculateDistance(
             loc.address,
-            created.address
+            address
           );
           await db.insert(apartmentDistances).values({
             apartmentId: created.id,
@@ -203,7 +204,10 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json(created, { status: 201 });
+    const responseBody = geocoded
+      ? { ...created, latitude: geocoded.lat, longitude: geocoded.lng }
+      : created;
+    return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
     console.error("[apartments:POST] Error:", error);
     return NextResponse.json(
