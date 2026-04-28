@@ -71,6 +71,74 @@ async function tryOrsGeocode(address: string): Promise<string | null> {
   }
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+async function tryGoogleGeocodeLatLng(
+  address: string
+): Promise<LatLng | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    url.searchParams.set("address", address);
+    url.searchParams.set("key", apiKey);
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    await logUsage("google_maps");
+    const loc = data.results?.[0]?.geometry?.location;
+    if (
+      loc &&
+      typeof loc.lat === "number" &&
+      typeof loc.lng === "number"
+    ) {
+      return { lat: loc.lat, lng: loc.lng };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function tryOrsGeocodeLatLng(address: string): Promise<LatLng | null> {
+  const apiKey = process.env.OPENROUTESERVICE_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = new URL("https://api.openrouteservice.org/geocode/search");
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("text", address);
+    url.searchParams.set("size", "1");
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    await logUsage("openrouteservice");
+    const coords = data.features?.[0]?.geometry?.coordinates;
+    if (
+      Array.isArray(coords) &&
+      coords.length >= 2 &&
+      typeof coords[0] === "number" &&
+      typeof coords[1] === "number"
+    ) {
+      return { lat: coords[1], lng: coords[0] };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function geocodeLatLng(
+  address: string | null | undefined
+): Promise<LatLng | null> {
+  if (!address || !address.trim()) return null;
+  const google = await tryGoogleGeocodeLatLng(address);
+  if (google) return google;
+  const ors = await tryOrsGeocodeLatLng(address);
+  if (ors) return ors;
+  return null;
+}
+
 export async function extractPostcode(
   address: string
 ): Promise<string | null> {

@@ -8,6 +8,7 @@ import {
   isLocationIconName,
   MAX_LOCATIONS,
 } from "@/lib/location-icons";
+import { geocodeLatLng } from "@/lib/geocode";
 
 export type LocationInput = {
   label: string;
@@ -62,6 +63,20 @@ export async function createLocation(
     .insert(locationsOfInterest)
     .values({ ...normalized, sortOrder: nextSortOrder })
     .returning();
+
+  try {
+    const coords = await geocodeLatLng(created.address);
+    if (coords) {
+      const [withCoords] = await db
+        .update(locationsOfInterest)
+        .set({ latitude: coords.lat, longitude: coords.lng })
+        .where(eq(locationsOfInterest.id, created.id))
+        .returning();
+      return withCoords ?? created;
+    }
+  } catch (err) {
+    console.error(`[locations:create] geocode failed loc=${created.id}:`, err);
+  }
   return created;
 }
 
@@ -88,12 +103,36 @@ export async function updateLocation(
     updates.icon = trimmed;
   }
 
+  const previous = await getLocation(id);
+  const addressChanged =
+    updates.address !== undefined &&
+    previous !== null &&
+    updates.address !== previous.address;
+
   const [updated] = await db
     .update(locationsOfInterest)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(locationsOfInterest.id, id))
     .returning();
   if (!updated) throw new Error(`Location ${id} not found`);
+
+  if (addressChanged) {
+    try {
+      const coords = await geocodeLatLng(updated.address);
+      const [withCoords] = await db
+        .update(locationsOfInterest)
+        .set({
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+        })
+        .where(eq(locationsOfInterest.id, id))
+        .returning();
+      return withCoords ?? updated;
+    } catch (err) {
+      console.error(`[locations:update] geocode failed loc=${id}:`, err);
+    }
+  }
+
   return updated;
 }
 

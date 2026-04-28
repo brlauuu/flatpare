@@ -8,6 +8,7 @@ import { INFERABLE_FIELDS } from "@/lib/edited-fields";
 import { readStoredFile } from "@/lib/storage";
 import { listLocations } from "@/lib/locations";
 import { calculateDistance } from "@/lib/distance";
+import { geocodeLatLng } from "@/lib/geocode";
 
 export async function POST(
   _request: Request,
@@ -103,6 +104,22 @@ export async function POST(
     const addressChanged =
       "address" in updates && updates.address !== apt.address;
     if (addressChanged && updated.address) {
+      try {
+        const coords = await geocodeLatLng(updated.address);
+        await db
+          .update(apartments)
+          .set({
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
+          })
+          .where(eq(apartments.id, apartmentId));
+      } catch (err) {
+        console.error(
+          `[reprocess] geocode failed apt=${apartmentId}:`,
+          err
+        );
+      }
+
       await db
         .delete(apartmentDistances)
         .where(eq(apartmentDistances.apartmentId, apartmentId));
