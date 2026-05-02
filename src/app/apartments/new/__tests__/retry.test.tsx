@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import UploadPage from "../page";
+import { _resetBlobModeProbeForTests } from "@/lib/upload-pdf";
 
 function makePdfFile(name = "listing.pdf"): File {
   const blob = new Blob(["%PDF-1.4\n...\n"], { type: "application/pdf" });
@@ -38,11 +39,17 @@ function successResponse() {
 }
 
 function errorResponse(status: number, body: Record<string, unknown>) {
-  return {
+  const res = {
     ok: false,
     status,
+    statusText: "Error",
     json: () => Promise.resolve(body),
-  } as Response;
+    text: () => Promise.resolve(JSON.stringify(body)),
+    clone() {
+      return res;
+    },
+  };
+  return res as unknown as Response;
 }
 
 async function dropPdf(user: ReturnType<typeof userEvent.setup>, file: File) {
@@ -53,8 +60,35 @@ async function dropPdf(user: ReturnType<typeof userEvent.setup>, file: File) {
   await user.upload(input, file);
 }
 
+function probeResponse(enabled: boolean) {
+  return {
+    ok: enabled,
+    status: enabled ? 200 : 404,
+    json: () => Promise.resolve({ enabled }),
+  } as Response;
+}
+
+// Mocks fetch so the upload-token probe always reports "not configured"
+// (forcing the multipart fallback path), and parse-pdf calls get the
+// supplied responses in order.
+function mockParsePdf(...responses: Response[]) {
+  let i = 0;
+  return vi
+    .spyOn(global, "fetch")
+    .mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/parse-pdf/upload-token")) {
+        return probeResponse(false);
+      }
+      const next = responses[i++];
+      if (!next) throw new Error(`No mocked response for fetch #${i} to ${url}`);
+      return next;
+    });
+}
+
 beforeEach(() => {
   pushMock.mockReset();
+  _resetBlobModeProbeForTests();
 });
 
 afterEach(() => {
@@ -64,7 +98,7 @@ afterEach(() => {
 
 describe("Upload page — retry", () => {
   it("renders a Retry button and the parsed message on a quota error", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    mockParsePdf(
       errorResponse(429, {
         error: "AI quota exceeded — try again in 34s.",
         reason: "quota",
@@ -82,16 +116,14 @@ describe("Upload page — retry", () => {
 
   it("re-submits the same file on Retry and transitions to done", async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi
-      .spyOn(global, "fetch")
-      .mockResolvedValueOnce(
-        errorResponse(429, {
-          error: "AI quota exceeded — try again in 34s.",
-          reason: "quota",
-          retryAfterSeconds: 34,
-        })
-      )
-      .mockResolvedValueOnce(successResponse());
+    const fetchSpy = mockParsePdf(
+      errorResponse(429, {
+        error: "AI quota exceeded — try again in 34s.",
+        reason: "quota",
+        retryAfterSeconds: 34,
+      }),
+      successResponse()
+    );
     render(<UploadPage />);
     await dropPdf(user, makePdfFile("listing.pdf"));
     await waitFor(() => {
@@ -101,15 +133,16 @@ describe("Upload page — retry", () => {
     await waitFor(() => {
       expect(screen.getByText("Parsed Apartment")).toBeInTheDocument();
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    const retryCall = fetchSpy.mock.calls[1];
-    expect(retryCall[0]).toBe("/api/parse-pdf");
-    const body = retryCall[1]?.body as FormData;
+    const parsePdfCalls = fetchSpy.mock.calls.filter(
+      (c) => String(c[0]) === "/api/parse-pdf"
+    );
+    expect(parsePdfCalls).toHaveLength(2);
+    const body = parsePdfCalls[1][1]?.body as FormData;
     expect((body.get("file") as File).name).toBe("listing.pdf");
   });
 
   it("shows the Retry button on an invalid_pdf error", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    mockParsePdf(
       errorResponse(400, {
         error:
           "Couldn't read this PDF. It may be corrupted or an unsupported format.",
@@ -126,7 +159,7 @@ describe("Upload page — retry", () => {
   });
 
   it("shows the Retry button on an unknown error", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce(
+    mockParsePdf(
       errorResponse(500, {
         error: "Parsing failed: ECONNRESET",
         reason: "unknown",

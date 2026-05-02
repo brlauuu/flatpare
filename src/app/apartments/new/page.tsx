@@ -19,6 +19,7 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
+import { uploadAndParsePdf } from "@/lib/upload-pdf";
 
 interface ErrorState {
   headline: string;
@@ -76,29 +77,30 @@ export default function UploadPage() {
     );
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/parse-pdf", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await uploadAndParsePdf(file);
 
       if (!res.ok) {
-        const data = (await res.json()) as {
+        let parsed: {
           error?: string;
           reason?: "quota" | "invalid_pdf" | "unknown";
           retryAfterSeconds?: number;
-        };
+        } = {};
+        try {
+          parsed = await res.clone().json();
+        } catch {
+          // Non-JSON error (e.g. platform-level 413 HTML page). Fall through to
+          // the shared parser so the user sees status + body excerpt.
+        }
+        const fallback = await fetchErrorFromResponse(res, "/api/parse-pdf");
         setItems((prev) =>
           prev.map((i) =>
             i.id === itemId
               ? {
                   ...i,
                   status: "error",
-                  error: data.error ?? "Parsing failed",
-                  errorReason: data.reason ?? "unknown",
-                  errorRetryAfterSeconds: data.retryAfterSeconds,
+                  error: parsed.error ?? fallback.message ?? "Parsing failed",
+                  errorReason: parsed.reason ?? "unknown",
+                  errorRetryAfterSeconds: parsed.retryAfterSeconds,
                 }
               : i
           )
