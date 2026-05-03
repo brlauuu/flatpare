@@ -146,7 +146,7 @@ App Router route handlers under `src/app/api/`.
 |--------|----------|---------|
 | `POST` | `/api/auth` | Verify `APP_PASSWORD`, set HTTP-only auth cookie |
 | `POST` | `/api/auth/name` | Set display-name cookie |
-| `GET` / `POST` | `/api/auth/users` | List / create users |
+| `GET` | `/api/auth/users` | List users |
 | `DELETE` | `/api/auth/users/[name]` | Remove a user |
 
 ### 3.2 Apartments
@@ -235,7 +235,7 @@ User visits / -> proxy.ts checks auth cookie
 - Auth state: HTTP-only cookie containing a signed token.
 - Display name: separate cookie (readable by client).
 - The proxy (`src/proxy.ts` — this is what was `middleware.ts` before Next.js 16 renamed it) gates all routes except `/`, `/add-user`, and the auth API.
-- `requireUser()` in `src/lib/auth.ts` is the server-side helper used by route handlers.
+- Route handlers gate access by calling `isAuthenticated()` (boolean) and read the current actor with `getDisplayName()`, both from `src/lib/auth.ts`. There's no shared `requireUser()` helper.
 - Cookies are `Secure` in production unless `DISABLE_SECURE_COOKIES` is set.
 - No expiry for MVP (session lasts until cookie cleared).
 
@@ -274,7 +274,7 @@ src/
 
   lib/
     db/                          # Drizzle schema, client, migrate
-    auth.ts                      # Cookie/session helpers, requireUser
+    auth.ts                      # Cookie/session helpers (isAuthenticated, getDisplayName, etc.)
     parse-pdf.ts                 # AI extraction (Gemini)
     parse-pdf-error.ts           # Classified error reasons
     distance.ts                  # Google Maps / ORS distance
