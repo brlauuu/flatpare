@@ -2,13 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { ApartmentMap } from "@/components/apartment-map";
@@ -17,11 +14,15 @@ import { iconComponentFor } from "@/lib/location-icons";
 import { ErrorDisplay } from "@/components/error-display";
 import { cn } from "@/lib/utils";
 import {
-  ApartmentFormFields,
   formFromApartment,
   formToPayload,
   type ApartmentForm,
 } from "@/components/apartment-form-fields";
+import { ApartmentEditForm } from "@/components/apartment-edit-form";
+import {
+  MyRatingPanel,
+  OtherRatingPanel,
+} from "@/components/apartment-rating-panel";
 import {
   type ErrorDetails,
   fetchErrorFromResponse,
@@ -74,14 +75,6 @@ interface LocationLite {
   icon: string;
   address: string;
 }
-
-const ratingCategories = [
-  { key: "kitchen", label: "Kitchen" },
-  { key: "balconies", label: "Balconies" },
-  { key: "location", label: "Location" },
-  { key: "floorplan", label: "Floorplan" },
-  { key: "overallFeeling", label: "Overall feeling" },
-] as const;
 
 function getCookieValue(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
@@ -505,38 +498,20 @@ export default function ApartmentDetailPage() {
 
       {/* Apartment metrics or edit form */}
       {editing && editForm ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Edit apartment</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ApartmentFormFields
-              form={editForm}
-              onChange={(field, value) =>
-                setEditForm((prev) =>
-                  prev ? { ...prev, [field]: value } : prev
-                )
-              }
-              onWashingMachineChange={(v) =>
-                setEditForm((prev) =>
-                  prev ? { ...prev, hasWashingMachine: v } : prev
-                )
-              }
-            />
-            <div className="flex gap-2">
-              <Button onClick={handleSaveEdit} disabled={savingEdit}>
-                {savingEdit ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={cancelEdit}
-                disabled={savingEdit}
-              >
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <ApartmentEditForm
+          form={editForm}
+          saving={savingEdit}
+          onChange={(field, value) =>
+            setEditForm((prev) => (prev ? { ...prev, [field]: value } : prev))
+          }
+          onWashingMachineChange={(v) =>
+            setEditForm((prev) =>
+              prev ? { ...prev, hasWashingMachine: v } : prev
+            )
+          }
+          onSave={handleSaveEdit}
+          onCancel={cancelEdit}
+        />
       ) : (
         <div className="flex flex-wrap gap-2">
           {apartment.rentChf && (
@@ -597,79 +572,18 @@ export default function ApartmentDetailPage() {
 
       <Separator />
 
-      {/* My rating */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Your Rating ({userName})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {ratingCategories.map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between">
-              <Label className="text-sm">{label}</Label>
-              <StarRating
-                value={myRating[key]}
-                onChange={(v) =>
-                  setMyRating((prev) => ({ ...prev, [key]: v }))
-                }
-              />
-            </div>
-          ))}
-          <div className="space-y-2">
-            <Label htmlFor="rating-comment">Comment</Label>
-            <Textarea
-              id="rating-comment"
-              value={myRating.comment}
-              onChange={(e) =>
-                setMyRating((prev) => ({ ...prev, comment: e.target.value }))
-              }
-              placeholder="Notes about this apartment..."
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSaveRating}
-              disabled={saving || !isRatingDirty}
-            >
-              {saving ? "Saving..." : "Save Rating"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleCancelRating}
-              disabled={saving || !isRatingDirty}
-            >
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <MyRatingPanel
+        userName={userName}
+        rating={myRating}
+        saving={saving}
+        dirty={isRatingDirty}
+        onChange={setMyRating}
+        onSave={handleSaveRating}
+        onCancel={handleCancelRating}
+      />
 
-      {/* Other ratings */}
       {otherRatings.map((rating) => (
-        <Card key={rating.id}>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {rating.userName}&apos;s Rating
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {ratingCategories.map(({ key, label }) => (
-              <div key={key} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <StarRating
-                  value={rating[key]}
-                  readonly
-                  size="sm"
-                />
-              </div>
-            ))}
-            {rating.comment && (
-              <div className="rounded-md bg-muted p-3 text-sm">
-                {rating.comment}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <OtherRatingPanel key={rating.id} rating={rating} />
       ))}
     </div>
   );
