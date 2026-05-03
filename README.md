@@ -233,7 +233,7 @@ src/
 |--------|----------|-------------|
 | `POST` | `/api/auth` | Verify password, set auth cookie |
 | `POST` | `/api/auth/name` | Set display name cookie |
-| `GET` / `POST` | `/api/auth/users` | List / create users |
+| `GET` | `/api/auth/users` | List users |
 | `DELETE` | `/api/auth/users/[name]` | Remove a user |
 | `GET` / `POST` | `/api/apartments` | List apartments / create |
 | `GET` / `PATCH` / `DELETE` | `/api/apartments/[id]` | Get, update, delete an apartment |
