@@ -64,7 +64,7 @@ Subsequent pushes to `main` deploy automatically.
 <details>
 <summary><strong>Cloud mode — run locally against Turso + Gemini</strong></summary>
 
-**Prerequisites:** Node.js 20+, a [Turso](https://turso.tech) account, a [Google AI Studio](https://aistudio.google.com) API key, optionally a [Google Maps](https://console.cloud.google.com) key.
+**Prerequisites:** Node.js 24+ (LTS), a [Turso](https://turso.tech) account, a [Google AI Studio](https://aistudio.google.com) API key, optionally a [Google Maps](https://console.cloud.google.com) key.
 
 ```bash
 git clone <repo-url>
