@@ -69,3 +69,76 @@ describe("uploadFile", () => {
     expect(mockWriteFile).toHaveBeenCalled();
   });
 });
+
+describe("readStoredFile", () => {
+  it("fetches from Vercel Blob when given an /api/pdf/ URL", async () => {
+    const blobBytes = new TextEncoder().encode("blob-bytes").buffer;
+    const mockGet = vi.fn(async () => ({
+      statusCode: 200,
+      stream: new Response(blobBytes).body,
+    }));
+
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: mockGet }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    const buf = await readStoredFile("/api/pdf/apartments/x.pdf");
+
+    expect(mockGet).toHaveBeenCalledWith("apartments/x.pdf", { access: "private" });
+    expect(buf.toString()).toBe("blob-bytes");
+  });
+
+  it("throws when the blob is missing", async () => {
+    const mockGet = vi.fn(async () => null);
+
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: mockGet }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(readStoredFile("/api/pdf/missing.pdf")).rejects.toThrow(
+      /Blob not found/
+    );
+  });
+
+  it("reads from local disk when given an /api/uploads/ URL", async () => {
+    const mockReadFile = vi.fn(async () => Buffer.from("disk-bytes"));
+
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return {
+        ...actual,
+        default: { ...actual, readFile: mockReadFile },
+        readFile: mockReadFile,
+      };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    const buf = await readStoredFile("/api/uploads/file%20with%20spaces.pdf");
+
+    expect(buf.toString()).toBe("disk-bytes");
+    // Filename was URL-decoded before reading from disk.
+    expect(mockReadFile).toHaveBeenCalledWith(
+      expect.stringMatching(/file with spaces\.pdf$/)
+    );
+  });
+
+  it("throws on an unrecognized URL prefix", async () => {
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(readStoredFile("https://example.com/x.pdf")).rejects.toThrow(
+      /Unrecognized stored URL/
+    );
+  });
+});
