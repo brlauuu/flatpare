@@ -32,7 +32,7 @@ export const LOCATION_ICONS = [
 
 export type LocationIconName = (typeof LOCATION_ICONS)[number]["name"];
 
-export const ICON_NAMES = LOCATION_ICONS.map((i) => i.name) as LocationIconName[];
+const ICON_NAMES = LOCATION_ICONS.map((i) => i.name) as LocationIconName[];
 
 export function isLocationIconName(value: string): value is LocationIconName {
   return (ICON_NAMES as string[]).includes(value);

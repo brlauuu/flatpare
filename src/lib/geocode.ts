@@ -71,7 +71,7 @@ async function tryOrsGeocode(address: string): Promise<string | null> {
   }
 }
 
-export interface LatLng {
+interface LatLng {
   lat: number;
   lng: number;
 }
@@ -141,7 +141,7 @@ async function tryOrsGeocodeLatLng(
   }
 }
 
-export interface GeocodeAttempt {
+interface GeocodeAttempt {
   result: LatLng | null;
   googleReason?: string;
   orsReason?: string;

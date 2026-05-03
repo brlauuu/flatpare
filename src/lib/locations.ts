@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   locationsOfInterest,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/location-icons";
 import { geocodeLatLng } from "@/lib/geocode";
 
-export type LocationInput = {
+type LocationInput = {
   label: string;
   icon: string;
   address: string;
@@ -166,13 +166,4 @@ export async function moveLocation(
     .update(locationsOfInterest)
     .set({ sortOrder: swapWith.sortOrder })
     .where(eq(locationsOfInterest.id, current.id));
-}
-
-// Used by callers that just need to know if locations exist (e.g. apartment
-// detail rendering). Cheaper than listLocations when we only need a count.
-export async function locationCount(): Promise<number> {
-  const rows = await db
-    .select({ n: sql<number>`COUNT(*)` })
-    .from(locationsOfInterest);
-  return Number(rows[0]?.n ?? 0);
 }

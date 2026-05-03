@@ -1,6 +1,6 @@
-export type ParsePdfErrorReason = "quota" | "invalid_pdf" | "unknown";
+type ParsePdfErrorReason = "quota" | "invalid_pdf" | "unknown";
 
-export interface ClassifiedParsePdfError {
+interface ClassifiedParsePdfError {
   reason: ParsePdfErrorReason;
   message: string;
   retryAfterSeconds?: number;

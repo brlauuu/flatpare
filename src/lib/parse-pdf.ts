@@ -61,7 +61,7 @@ export const apartmentExtractionSchema = z.object({
     ),
 });
 
-export type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
+type ApartmentExtraction = z.infer<typeof apartmentExtractionSchema>;
 
 const internalApartmentExtractionSchema = apartmentExtractionSchema.extend({
   laundryEvidence: z
