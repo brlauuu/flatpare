@@ -20,7 +20,7 @@
 ## Features
 
 - **PDF upload & AI parsing** — listings are extracted into structured data (rent, size, rooms, address).
-- **Auto distance** — bike and transit travel time from Basel SBB.
+- **Auto distance** — bike and transit travel time to user-managed locations of interest (work, schools, family).
 - **Star ratings & comparison grid** — each user rates on 5 categories; results show side-by-side.
 - **Simple auth** — shared password + display name, no accounts.
 - **Cloud or local** — deploy to Vercel, or run fully self-hosted.
@@ -175,6 +175,7 @@ docker compose up -d
 src/
   app/
     page.tsx                    # Login (password gate)
+    add-user/page.tsx           # First-run user onboarding
     apartments/
       page.tsx                  # Apartment list
       new/page.tsx              # PDF upload & parse
@@ -182,11 +183,15 @@ src/
     compare/page.tsx            # Comparison grid
     costs/page.tsx              # API cost dashboard
     guide/page.tsx              # In-app user guide
+    settings/page.tsx           # Locations of interest, distance recompute
     api/
-      auth/                     # Password, name, users
-      apartments/               # List, create, update, delete, ratings
-      parse-pdf/                # PDF upload & AI extraction
-      distance/                 # Distance calculation
+      auth/                     # Password, name, users (incl. delete)
+      apartments/               # CRUD, ratings, reprocess, listing checks
+      parse-pdf/                # PDF upload, AI extraction, blob upload tokens
+      geocode/backfill/         # Geocode addresses missing lat/lng
+      locations/                # Locations of interest CRUD + reorder
+      settings/                 # Recompute per-location distances
+      pdf/, uploads/            # Authenticated file streaming
       costs/                    # API usage cost estimates
   components/                   # UI components (shadcn/ui + custom)
   content/guide.md              # User guide markdown source
@@ -195,8 +200,15 @@ src/
     auth.ts                     # Cookie/session helpers
     parse-pdf.ts                # AI extraction (Gemini)
     distance.ts                 # Distance (Google Maps / OpenRouteService)
+    geocode.ts                  # Address → lat/lng (Google / ORS)
+    locations.ts                # Locations of interest helpers
+    listing-status.ts           # Detect expired listing URLs
+    map-embed.ts                # Google Maps embed URL builder
+    short-code.ts               # Short-code generator for apartments
     storage.ts                  # File storage (Blob / filesystem)
-  proxy.ts                      # Auth proxy (Next.js 16)
+    upload-pdf.ts               # Client-direct Vercel Blob upload (>4.5 MB)
+  instrumentation.ts            # Next.js instrumentation hook (DB migrate)
+  proxy.ts                      # Auth proxy (renamed middleware.ts in Next.js 16)
 ```
 
 </details>
@@ -206,11 +218,11 @@ src/
 
 - **Authentication:** shared password gate with HTTP-only cookies; no accounts. The auth proxy (`proxy.ts`) redirects unauthenticated requests.
 - **PDF flow:** upload → store → AI extraction → structured data → user reviews & saves. Uses Google Gemini when configured; falls back to manual entry.
-- **Distance:** Google Maps preferred, OpenRouteService fallback. Returns bike and transit minutes.
+- **Distance:** Google Maps preferred, OpenRouteService fallback. Bike and transit minutes are stored per (apartment, location of interest) pair in `apartment_distances`.
 - **Ratings:** one upsert per user per apartment across 5 categories; averages drive the comparison grid.
-- **Storage:** Turso or local SQLite for data; Vercel Blob or `./uploads/` for files.
+- **Storage:** Turso or local SQLite for data; Vercel Blob or `./uploads/` for files. Uploads larger than ~4.5 MB go through `lib/upload-pdf.ts` (client-direct Blob upload) to bypass the serverless body limit.
 
-**Tables:** `apartments`, `ratings` (unique on `(apartmentId, userName)`), `api_usage`.
+**Tables:** `apartments`, `ratings` (unique on `(apartmentId, userName)`), `users`, `api_usage`, `locations_of_interest`, `apartment_distances`.
 
 </details>
 
@@ -221,15 +233,22 @@ src/
 |--------|----------|-------------|
 | `POST` | `/api/auth` | Verify password, set auth cookie |
 | `POST` | `/api/auth/name` | Set display name cookie |
-| `GET` | `/api/auth/users` | List distinct users who have rated |
-| `GET` | `/api/apartments` | List all apartments with average ratings |
-| `POST` | `/api/apartments` | Create a new apartment |
-| `GET` | `/api/apartments/[id]` | Get apartment with all ratings |
-| `PATCH` | `/api/apartments/[id]` | Update apartment fields |
-| `DELETE` | `/api/apartments/[id]` | Delete apartment and cascade ratings |
+| `GET` | `/api/auth/users` | List users |
+| `DELETE` | `/api/auth/users/[name]` | Remove a user |
+| `GET` / `POST` | `/api/apartments` | List apartments / create |
+| `GET` / `PATCH` / `DELETE` | `/api/apartments/[id]` | Get, update, delete an apartment |
 | `POST` | `/api/apartments/[id]/ratings` | Upsert a rating for the current user |
-| `POST` | `/api/parse-pdf` | Upload PDF, store file, run AI extraction |
-| `POST` | `/api/distance` | Calculate bike/transit distance for an address |
+| `POST` | `/api/apartments/[id]/reprocess` | Re-run AI extraction on an existing PDF |
+| `POST` | `/api/apartments/check-listings` | Probe listing URLs and mark expired ones |
+| `POST` | `/api/parse-pdf` | Upload PDF (≤ 4.5 MB), store, run AI extraction |
+| `GET` / `POST` | `/api/parse-pdf/upload-token` | Issue Vercel Blob client-upload tokens (large PDFs) |
+| `GET` | `/api/pdf/[...path]` | Authenticated PDF streaming |
+| `GET` | `/api/uploads/[...path]` | Authenticated raw upload streaming |
+| `GET` / `POST` | `/api/locations` | List / create locations of interest |
+| `GET` / `PUT` / `DELETE` | `/api/locations/[id]` | Get, update, delete a location |
+| `POST` | `/api/locations/[id]/move` | Reorder locations |
+| `POST` | `/api/geocode/backfill` | Geocode apartments missing lat/lng |
+| `POST` | `/api/settings/recompute-distances` | Recompute all per-location distances |
 | `GET` | `/api/costs` | Get API usage stats and estimated costs |
 
 </details>
