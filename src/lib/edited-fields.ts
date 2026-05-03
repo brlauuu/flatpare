@@ -12,7 +12,7 @@ export const INFERABLE_FIELDS = [
   "availableFrom",
 ] as const;
 
-export type InferableField = (typeof INFERABLE_FIELDS)[number];
+type InferableField = (typeof INFERABLE_FIELDS)[number];
 
 export function diffInferableFields(
   current: Record<string, unknown>,

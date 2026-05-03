@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
 
-export interface DistanceResult {
+interface DistanceResult {
   bikeMinutes: number | null;
   transitMinutes: number | null;
 }

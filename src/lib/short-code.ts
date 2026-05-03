@@ -11,14 +11,14 @@ export function pickLetters(): string {
   return out;
 }
 
-export interface ShortCodeInput {
+interface ShortCodeInput {
   numRooms: number | null;
   numBathrooms: number | null;
   hasWashingMachine: boolean | null;
   address: string | null;
 }
 
-export interface ShortCodeParts {
+interface ShortCodeParts {
   rooms: string;
   baths: string;
   wash: string;

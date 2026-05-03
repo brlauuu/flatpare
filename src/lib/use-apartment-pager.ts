@@ -17,7 +17,7 @@ import {
   fetchErrorFromResponse,
 } from "@/lib/fetch-error";
 
-export interface ApartmentPagerResult {
+interface ApartmentPagerResult {
   loading: boolean;
   error: ErrorDetails | null;
   total: number;

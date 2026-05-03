@@ -1,4 +1,4 @@
-export type StaticSortField =
+type StaticSortField =
   | "createdAt"
   | "rentChf"
   | "sizeM2"
@@ -10,7 +10,7 @@ export type StaticSortField =
 
 // `bikeTo:<locationId>` and `transitTo:<locationId>` are generated at runtime
 // from the user's configured locations of interest.
-export type LocationSortField = `bikeTo:${number}` | `transitTo:${number}`;
+type LocationSortField = `bikeTo:${number}` | `transitTo:${number}`;
 
 export type SortField = StaticSortField | LocationSortField;
 
@@ -85,7 +85,7 @@ function extract(apt: SortableApartment, field: SortField): number | string | nu
   }
 }
 
-export const STATIC_LIST_SORT_LABELS: Record<StaticSortField, string> = {
+const STATIC_LIST_SORT_LABELS: Record<StaticSortField, string> = {
   createdAt: "Date added",
   rentChf: "Price",
   sizeM2: "Size",
@@ -98,7 +98,7 @@ export const STATIC_LIST_SORT_LABELS: Record<StaticSortField, string> = {
 
 // Apartments-list sort dropdown defaults — a curated subset of static fields
 // shown even when no locations are configured.
-export const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
+const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
   "createdAt",
   "rentChf",
   "sizeM2",
@@ -109,7 +109,7 @@ export const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
 
 export type LocationLite = { id: number; label: string };
 
-export type SortFieldOption = { id: SortField; label: string };
+type SortFieldOption = { id: SortField; label: string };
 
 export function listSortOptions(locations: LocationLite[]): SortFieldOption[] {
   const base: SortFieldOption[] = STATIC_LIST_SORT_FIELDS.map((id) => ({
