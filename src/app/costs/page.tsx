@@ -38,9 +38,11 @@ interface CostsData {
     last30Days: {
       totalCost: number;
       freeCreditRemainingUsd: number;
+      overageUsd: number;
     };
   };
   totalEstimatedCost30d: number;
+  effectiveTotalAfterCreditsUsd: number;
 }
 
 function formatTokens(n: number): string {
@@ -106,10 +108,18 @@ export default function CostsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Infrastructure Costs</h1>
         <p className="text-sm text-muted-foreground">
           Estimated costs based on tracked API usage
+        </p>
+        <p className="text-xs text-muted-foreground">
+          These figures are approximations meant to give you a sense of what to
+          expect, calculated from logged API calls and each provider&apos;s
+          published list prices. They don&apos;t account for free tiers, region
+          pricing, billing cycles, or any contract you may have — the provider
+          decides what you actually pay. For source-of-truth amounts, check
+          each provider&apos;s billing dashboard.
         </p>
       </div>
 
@@ -120,20 +130,29 @@ export default function CostsPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-3xl font-semibold">
-            {formatUsd(data.totalEstimatedCost30d)}
+            {formatUsd(data.effectiveTotalAfterCreditsUsd)}
           </p>
           <p className="text-sm text-muted-foreground">
-            estimated across tracked API services
+            estimated after the ${data.googleMaps.freeCreditUsd}/month Google
+            Maps credit · gross{" "}
+            {formatUsd(data.totalEstimatedCost30d)} before credits
           </p>
-          {data.googleMaps.last30Days.totalCost <
-            data.googleMaps.freeCreditUsd && (
-            <p className="text-sm text-green-700 dark:text-green-400">
-              Google Maps usage is fully covered by the {" "}
+          {data.googleMaps.last30Days.overageUsd === 0 &&
+            data.googleMaps.last30Days.totalCost <
+              data.googleMaps.freeCreditUsd && (
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Google Maps usage is fully covered by the free credit (
+                {formatUsd(data.googleMaps.last30Days.freeCreditRemainingUsd)}{" "}
+                remaining this period).
+              </p>
+            )}
+          {data.googleMaps.last30Days.overageUsd > 0 && (
+            <p className="text-sm text-red-700 dark:text-red-400">
+              Maps usage exceeded the free credit by{" "}
               <span className="font-medium">
-                ${data.googleMaps.freeCreditUsd}/month free credit
+                {formatUsd(data.googleMaps.last30Days.overageUsd)}
               </span>{" "}
-              ({formatUsd(data.googleMaps.last30Days.freeCreditRemainingUsd)}{" "}
-              remaining this period).
+              this period.
             </p>
           )}
         </CardContent>
@@ -146,6 +165,12 @@ export default function CostsPage() {
           <p className="text-xs text-muted-foreground">
             Model: gemini-2.5-flash &middot; Pricing: $0.15/1M input, $0.60/1M
             output tokens
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Free tier:</span> AI Studio API keys
+            without billing enabled get ~1M tokens/day on gemini-2.5-flash —
+            most self-hosters never get billed for parsing. The cost below
+            assumes a billed key.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -211,7 +236,7 @@ export default function CostsPage() {
         <CardContent className="space-y-6">
           <MapsServiceBlock
             name="Distance Matrix"
-            pricing="$5/1,000 elements · 2 elements per call (bike + transit)"
+            pricing="Per call: 1 bike element (Basic, $5/1k) + 1 transit element (Advanced, $10/1k) ≈ $0.015"
             allTimeCalls={data.googleMaps.distanceMatrix.allTime.calls}
             last30Calls={data.googleMaps.distanceMatrix.last30Days.calls}
             last30Cost={

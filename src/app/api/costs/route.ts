@@ -3,17 +3,24 @@ import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
 import { sql, eq, sum, count, and, gte } from "drizzle-orm";
 
-// Pricing estimates (per token, USD).
+// Pricing estimates (per token, USD). Gemini also has a free tier on AI
+// Studio keys without billing enabled (~1M tokens/day on gemini-2.5-flash);
+// the calc below ignores that and gives a worst-case "if you were billed"
+// number. The page surfaces the free-tier caveat alongside.
 // Source: https://ai.google.dev/pricing
 const GEMINI_FLASH_INPUT_PER_TOKEN = 0.00000015; // $0.15 per 1M input tokens
 const GEMINI_FLASH_OUTPUT_PER_TOKEN = 0.0000006; // $0.60 per 1M output tokens
 
 // Google Maps Platform pricing (USD).
-// Distance Matrix: $5 per 1000 elements; we issue 2 elements per row
-// (bike + transit), so 1 calculate_distance row = $0.01.
-// Geocoding API:   $5 per 1000 calls = $0.005 per geocode row.
+// Each calculate_distance row issues TWO requests against the Distance Matrix
+// API — one bike (Basic SKU, $5/1k elements = $0.005) and one transit
+// (Advanced SKU, $10/1k elements = $0.010). Combined: $0.015 per row.
+// Geocoding API: $5/1k calls = $0.005 per geocode row.
 // Source: https://mapsplatform.google.com/pricing
-const MAPS_DISTANCE_PER_ROW = (5 / 1000) * 2;
+const MAPS_DISTANCE_BIKE_PER_ELEMENT = 5 / 1000;
+const MAPS_DISTANCE_TRANSIT_PER_ELEMENT = 10 / 1000;
+const MAPS_DISTANCE_PER_ROW =
+  MAPS_DISTANCE_BIKE_PER_ELEMENT + MAPS_DISTANCE_TRANSIT_PER_ELEMENT;
 const MAPS_GEOCODE_PER_ROW = 5 / 1000;
 
 // Google Maps Platform gives a recurring $200/month credit covering all
@@ -125,9 +132,18 @@ export async function GET() {
           freeCreditRemainingUsd: round4(
             Math.max(0, MAPS_FREE_CREDIT_USD - mapsCost30d)
           ),
+          // > 0 means the period exceeded the credit by this amount.
+          overageUsd: round4(Math.max(0, mapsCost30d - MAPS_FREE_CREDIT_USD)),
         },
       },
+      // Pre-credit gross. Useful for transparency, but not the "what will I
+      // be billed" number — see effectiveTotalAfterCreditsUsd.
       totalEstimatedCost30d: round4(geminiCost30d + mapsCost30d),
+      // Post-credit estimate: Gemini cost (no free credit assumed) plus
+      // anything above the $200/mo Maps credit.
+      effectiveTotalAfterCreditsUsd: round4(
+        geminiCost30d + Math.max(0, mapsCost30d - MAPS_FREE_CREDIT_USD)
+      ),
     });
   } catch (error) {
     console.error("[costs:GET] Error:", error);

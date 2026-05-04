@@ -65,6 +65,8 @@ describe("GET /api/costs", () => {
     expect(data.googleMaps.last30Days).toHaveProperty(
       "freeCreditRemainingUsd"
     );
+    expect(data.googleMaps.last30Days).toHaveProperty("overageUsd");
+    expect(data).toHaveProperty("effectiveTotalAfterCreditsUsd");
   });
 
   it("prices distance and geocode rows differently", async () => {
@@ -87,9 +89,10 @@ describe("GET /api/costs", () => {
     const res = await GET();
     const data = await res.json();
 
-    // Distance Matrix: 10 calls × ($5/1000 × 2 elements) = $0.10
+    // Distance Matrix per call = 1 bike Basic element ($0.005) + 1 transit
+    // Advanced element ($0.010) = $0.015. 10 calls = $0.15.
     expect(data.googleMaps.distanceMatrix.last30Days.estimatedCostUsd).toBe(
-      0.1
+      0.15
     );
     // Geocoding API: 10 calls × $5/1000 = $0.05
     expect(data.googleMaps.geocoding.last30Days.estimatedCostUsd).toBe(0.05);
@@ -114,14 +117,18 @@ describe("GET /api/costs", () => {
     const res = await GET();
     const data = await res.json();
 
-    // Distance: 100 × $0.01 = $1.00; Geocoding: 100 × $0.005 = $0.50.
-    // Total Maps cost: $1.50; remaining of $200 credit: $198.50.
-    expect(data.googleMaps.last30Days.totalCost).toBe(1.5);
-    expect(data.googleMaps.last30Days.freeCreditRemainingUsd).toBe(198.5);
+    // Distance: 100 × $0.015 = $1.50; Geocoding: 100 × $0.005 = $0.50.
+    // Total Maps cost: $2.00; remaining of $200 credit: $198.00.
+    expect(data.googleMaps.last30Days.totalCost).toBe(2);
+    expect(data.googleMaps.last30Days.freeCreditRemainingUsd).toBe(198);
+    expect(data.googleMaps.last30Days.overageUsd).toBe(0);
+    // Maps usage is fully covered, so post-credit total equals Gemini cost
+    // alone (which is 0 since input/output tokens are "0" in this mock).
+    expect(data.effectiveTotalAfterCreditsUsd).toBe(0);
   });
 
-  it("clamps remaining free credit at zero when exceeded", async () => {
-    // 30,000 distance calls × $0.01 = $300, well over the $200 credit.
+  it("exposes overage and post-credit total when Maps usage exceeds the credit", async () => {
+    // 30,000 distance calls × $0.015 = $450, well over the $200 credit.
     vi.mocked(db.select).mockImplementation(
       () =>
         ({
@@ -140,6 +147,11 @@ describe("GET /api/costs", () => {
     const res = await GET();
     const data = await res.json();
 
+    // Distance: 30000 × $0.015 = $450; Geocoding: 30000 × $0.005 = $150.
+    // Maps total = $600; over the $200 credit by $400.
     expect(data.googleMaps.last30Days.freeCreditRemainingUsd).toBe(0);
+    expect(data.googleMaps.last30Days.overageUsd).toBe(400);
+    // Post-credit total = Gemini ($0) + Maps overage ($400).
+    expect(data.effectiveTotalAfterCreditsUsd).toBe(400);
   });
 });
