@@ -127,29 +127,31 @@ export default function ApartmentsPage() {
     );
   }, [filteredApartments, sortField, sortDirection]);
 
-  useEffect(() => {
+  // Fetches apartments + locations. The optional listing-status check only
+  // runs on the initial mount — re-fetches triggered by user switching just
+  // need fresh ratings, not another network probe.
+  async function reload(opts?: { runListingCheck?: boolean }) {
     const url = "/api/apartments";
-    (async () => {
-      try {
-        const [aptRes, locRes] = await Promise.all([
-          fetch(url),
-          fetch("/api/locations"),
-        ]);
-        if (!aptRes.ok) {
-          setError({
-            headline: "Couldn't load apartments",
-            details: await fetchErrorFromResponse(aptRes, url),
-          });
-          setLoading(false);
-          return;
-        }
-        const data = (await aptRes.json()) as ApartmentSummary[];
-        setApartments(data);
-        if (locRes.ok) {
-          setLocations((await locRes.json()) as LocationOfInterest[]);
-        }
+    try {
+      const [aptRes, locRes] = await Promise.all([
+        fetch(url),
+        fetch("/api/locations"),
+      ]);
+      if (!aptRes.ok) {
+        setError({
+          headline: "Couldn't load apartments",
+          details: await fetchErrorFromResponse(aptRes, url),
+        });
         setLoading(false);
+        return;
+      }
+      setApartments((await aptRes.json()) as ApartmentSummary[]);
+      if (locRes.ok) {
+        setLocations((await locRes.json()) as LocationOfInterest[]);
+      }
+      setLoading(false);
 
+      if (opts?.runListingCheck) {
         try {
           const checkRes = await fetch("/api/apartments/check-listings", {
             method: "POST",
@@ -163,14 +165,32 @@ export default function ApartmentsPage() {
         } catch {
           // background check failure is non-fatal
         }
-      } catch (err) {
-        setError({
-          headline: "Couldn't load apartments",
-          details: fetchErrorFromException(err, url),
-        });
-        setLoading(false);
       }
+    } catch (err) {
+      setError({
+        headline: "Couldn't load apartments",
+        details: fetchErrorFromException(err, url),
+      });
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void (async () => {
+      await reload({ runListingCheck: true });
     })();
+  }, []);
+
+  // Re-fetch when the active user switches so apartment cards show ratings
+  // belonging to the new user, not the previous one.
+  useEffect(() => {
+    function handler() {
+      void (async () => {
+        await reload();
+      })();
+    }
+    window.addEventListener("flatpare-user-changed", handler);
+    return () => window.removeEventListener("flatpare-user-changed", handler);
   }, []);
 
   const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
