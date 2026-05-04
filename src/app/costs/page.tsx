@@ -26,10 +26,23 @@ interface CostsData {
     };
   };
   googleMaps: {
-    allTime: { calls: number };
-    last30Days: { calls: number; estimatedCostUsd: number };
+    freeCreditUsd: number;
+    distanceMatrix: {
+      allTime: { calls: number };
+      last30Days: { calls: number; estimatedCostUsd: number };
+    };
+    geocoding: {
+      allTime: { calls: number };
+      last30Days: { calls: number; estimatedCostUsd: number };
+    };
+    last30Days: {
+      totalCost: number;
+      freeCreditRemainingUsd: number;
+      overageUsd: number;
+    };
   };
   totalEstimatedCost30d: number;
+  effectiveTotalAfterCreditsUsd: number;
 }
 
 function formatTokens(n: number): string {
@@ -95,10 +108,18 @@ export default function CostsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Infrastructure Costs</h1>
         <p className="text-sm text-muted-foreground">
           Estimated costs based on tracked API usage
+        </p>
+        <p className="text-xs text-muted-foreground">
+          These figures are approximations meant to give you a sense of what to
+          expect, calculated from logged API calls and each provider&apos;s
+          published list prices. They don&apos;t account for free tiers, region
+          pricing, billing cycles, or any contract you may have — the provider
+          decides what you actually pay. For source-of-truth amounts, check
+          each provider&apos;s billing dashboard.
         </p>
       </div>
 
@@ -107,13 +128,33 @@ export default function CostsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Last 30 Days Total</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           <p className="text-3xl font-semibold">
-            {formatUsd(data.totalEstimatedCost30d)}
+            {formatUsd(data.effectiveTotalAfterCreditsUsd)}
           </p>
           <p className="text-sm text-muted-foreground">
-            estimated across tracked API services
+            estimated after the ${data.googleMaps.freeCreditUsd}/month Google
+            Maps credit · gross{" "}
+            {formatUsd(data.totalEstimatedCost30d)} before credits
           </p>
+          {data.googleMaps.last30Days.overageUsd === 0 &&
+            data.googleMaps.last30Days.totalCost <
+              data.googleMaps.freeCreditUsd && (
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Google Maps usage is fully covered by the free credit (
+                {formatUsd(data.googleMaps.last30Days.freeCreditRemainingUsd)}{" "}
+                remaining this period).
+              </p>
+            )}
+          {data.googleMaps.last30Days.overageUsd > 0 && (
+            <p className="text-sm text-red-700 dark:text-red-400">
+              Maps usage exceeded the free credit by{" "}
+              <span className="font-medium">
+                {formatUsd(data.googleMaps.last30Days.overageUsd)}
+              </span>{" "}
+              this period.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -124,6 +165,12 @@ export default function CostsPage() {
           <p className="text-xs text-muted-foreground">
             Model: gemini-2.5-flash &middot; Pricing: $0.15/1M input, $0.60/1M
             output tokens
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Free tier:</span> AI Studio API keys
+            without billing enabled get ~1M tokens/day on gemini-2.5-flash —
+            most self-hosters never get billed for parsing. The cost below
+            assumes a billed key.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -173,44 +220,60 @@ export default function CostsPage() {
         </CardContent>
       </Card>
 
-      {/* Google Maps */}
+      {/* Google Maps Platform */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            Google Maps (Distance Calculation)
-          </CardTitle>
+          <CardTitle className="text-lg">Google Maps Platform</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Distance Matrix API &middot; $5/1,000 elements &middot; 2 elements
-            per call (bike + transit)
+            Recurring{" "}
+            <span className="font-medium">
+              ${data.googleMaps.freeCreditUsd}/month free credit
+            </span>{" "}
+            covers all Maps APIs (Distance Matrix, Geocoding, Embed) combined.
+            Costs below only apply once that credit is exhausted.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              Last 30 days
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <Stat
-                label="API calls"
-                value={String(data.googleMaps.last30Days.calls)}
-              />
-              <Stat
-                label="Est. cost"
-                value={formatUsd(data.googleMaps.last30Days.estimatedCostUsd)}
-              />
-            </div>
+        <CardContent className="space-y-6">
+          <MapsServiceBlock
+            name="Distance Matrix"
+            pricing="Per call: 1 bike element (Basic, $5/1k) + 1 transit element (Advanced, $10/1k) ≈ $0.015"
+            allTimeCalls={data.googleMaps.distanceMatrix.allTime.calls}
+            last30Calls={data.googleMaps.distanceMatrix.last30Days.calls}
+            last30Cost={
+              data.googleMaps.distanceMatrix.last30Days.estimatedCostUsd
+            }
+          />
+          <Separator />
+          <MapsServiceBlock
+            name="Geocoding API"
+            pricing="$5/1,000 calls · 1 call per address geocoded"
+            allTimeCalls={data.googleMaps.geocoding.allTime.calls}
+            last30Calls={data.googleMaps.geocoding.last30Days.calls}
+            last30Cost={data.googleMaps.geocoding.last30Days.estimatedCostUsd}
+          />
+          <Separator />
+          <div className="space-y-1">
+            <h4 className="text-sm font-medium">Maps Embed API</h4>
+            <p className="text-xs text-muted-foreground">
+              Used for the embedded apartment map.{" "}
+              <span className="font-medium">Free, unlimited</span> — never
+              counts against the $200 credit.
+            </p>
           </div>
           <Separator />
-          <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              All time
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <Stat
-                label="API calls"
-                value={String(data.googleMaps.allTime.calls)}
-              />
-            </div>
+          <div className="rounded-md bg-muted/50 p-3 text-sm">
+            <span className="text-muted-foreground">
+              Maps usage this period:{" "}
+            </span>
+            <span className="font-medium">
+              {formatUsd(data.googleMaps.last30Days.totalCost)}
+            </span>
+            <span className="text-muted-foreground">
+              {" "}
+              / ${data.googleMaps.freeCreditUsd} free credit ·{" "}
+              {formatUsd(data.googleMaps.last30Days.freeCreditRemainingUsd)}{" "}
+              remaining
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -243,11 +306,39 @@ export default function CostsPage() {
               name="Google Cloud Console"
               description="Gemini API and Maps API billing"
               url="https://console.cloud.google.com/billing"
-              freeNote="Maps: $200/mo free credit"
+              freeNote="Source of truth for actual billed amounts"
             />
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function MapsServiceBlock({
+  name,
+  pricing,
+  allTimeCalls,
+  last30Calls,
+  last30Cost,
+}: {
+  name: string;
+  pricing: string;
+  allTimeCalls: number;
+  last30Calls: number;
+  last30Cost: number;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <h4 className="text-sm font-medium">{name}</h4>
+        <p className="text-xs text-muted-foreground">{pricing}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <Stat label="Calls (30d)" value={String(last30Calls)} />
+        <Stat label="Est. cost (30d)" value={formatUsd(last30Cost)} />
+        <Stat label="Calls (all time)" value={String(allTimeCalls)} />
+      </div>
     </div>
   );
 }
