@@ -200,6 +200,150 @@ describe("POST /api/apartments", () => {
     const data = await res.json();
     expect(data.name).toBe("New Place");
   });
+
+  it("retries on unique-constraint collisions and eventually succeeds", async () => {
+    const newApt = { name: "Retry Apt", address: null };
+    let attempts = 0;
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockImplementation(async () => {
+          attempts += 1;
+          if (attempts < 3) {
+            throw new Error("UNIQUE constraint failed: apartments.short_code");
+          }
+          return [{ id: 7, ...newApt }];
+        }),
+      }),
+    });
+
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify(newApt),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(attempts).toBeGreaterThanOrEqual(3);
+  });
+
+  it("returns 500 when the short-code retry budget is exhausted", async () => {
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockRejectedValue(
+          new Error("UNIQUE constraint failed: apartments.short_code")
+        ),
+      }),
+    });
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x", address: null }),
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("ignores invalid availableFrom (stores null)", async () => {
+    let captured: Record<string, unknown> | null = null;
+    mockInsert.mockReturnValue({
+      values: vi.fn((v: Record<string, unknown>) => {
+        captured = v;
+        return {
+          returning: vi.fn().mockResolvedValue([{ id: 1, ...v }]),
+        };
+      }),
+    });
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "x",
+        address: null,
+        availableFrom: "not-a-date",
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect((captured as Record<string, unknown>).availableFrom).toBeNull();
+  });
+
+  it("preserves a valid ISO availableFrom", async () => {
+    let captured: Record<string, unknown> | null = null;
+    mockInsert.mockReturnValue({
+      values: vi.fn((v: Record<string, unknown>) => {
+        captured = v;
+        return {
+          returning: vi.fn().mockResolvedValue([{ id: 1, ...v }]),
+        };
+      }),
+    });
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "x",
+        address: null,
+        availableFrom: "2026-07-01",
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect((captured as Record<string, unknown>).availableFrom).toBe(
+      "2026-07-01"
+    );
+  });
+
+  it("serializes rawExtractedData as JSON when provided", async () => {
+    let captured: Record<string, unknown> | null = null;
+    mockInsert.mockReturnValue({
+      values: vi.fn((v: Record<string, unknown>) => {
+        captured = v;
+        return {
+          returning: vi.fn().mockResolvedValue([{ id: 1, ...v }]),
+        };
+      }),
+    });
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "x",
+        address: null,
+        rawExtractedData: { foo: "bar", n: 42 },
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const stored = (captured as Record<string, string>).rawExtractedData;
+    expect(JSON.parse(stored)).toEqual({ foo: "bar", n: 42 });
+  });
+
+  it("returns 500 on a non-constraint database error", async () => {
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockRejectedValue(new Error("disk full")),
+      }),
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x", address: null }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toMatch(/disk full/);
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("returns 500 on malformed JSON body", async () => {
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: "{not json",
+      headers: { "content-type": "application/json" },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(errSpy).toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/apartments/[id]", () => {
