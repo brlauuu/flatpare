@@ -6,16 +6,22 @@ import {
   ratings,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { isAuthenticated } from "@/lib/auth";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
 import { isIsoDate } from "@/lib/iso-date";
 import { diffInferableFields } from "@/lib/edited-fields";
 import { geocodeLatLng } from "@/lib/geocode";
+
+function unauthorized() {
+  return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+}
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const apartmentId = parseInt(id);
 
@@ -63,6 +69,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const apartmentId = parseInt(id);
     const body = await request.json();
@@ -164,6 +171,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const apartmentId = parseInt(id);
 
