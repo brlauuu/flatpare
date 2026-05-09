@@ -65,14 +65,6 @@ function jsonRes(body: unknown, ok = true, status = 200) {
   return res as unknown as Response;
 }
 
-async function dropPdf(user: ReturnType<typeof userEvent.setup>, file: File) {
-  const input = document.querySelector(
-    'input[type="file"]'
-  ) as HTMLInputElement;
-  expect(input).toBeTruthy();
-  await user.upload(input, file);
-}
-
 beforeEach(() => {
   pushMock.mockReset();
   _resetBlobModeProbeForTests();
