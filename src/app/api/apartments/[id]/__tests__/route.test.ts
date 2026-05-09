@@ -187,8 +187,7 @@ describe("PATCH /api/apartments/[id]", () => {
     // userEditedFields should be the union of previous + newly-changed
     // inferable fields. "name" was already edited; "rentChf" changed too.
     expect(capturedSet).not.toBeNull();
-    const stored = JSON.parse((capturedSet as Record<string, string>)
-      .userEditedFields);
+    const stored = JSON.parse(capturedSet!.userEditedFields as string);
     expect(stored).toEqual(expect.arrayContaining(["name", "rentChf"]));
   });
 
@@ -295,7 +294,8 @@ describe("PATCH /api/apartments/[id]", () => {
     });
     const res = await PATCH(req, withParams("1"));
     expect(res.status).toBe(200);
-    expect((capturedSet as Record<string, unknown>).availableFrom).toBeNull();
+    expect(capturedSet).not.toBeNull();
+    expect(capturedSet!.availableFrom).toBeNull();
   });
 });
 

@@ -1,10 +1,25 @@
-# Security notes — accepted advisories
+# Security & dependency notes
 
-This file lists `npm audit` advisories that have been intentionally left unfixed, with rationale. Re-evaluate on every dependency bump and when upstream patches are released.
+## Pinned major versions awaiting upstream
+
+### eslint stays on 9 (10 breaks eslint-config-next)
+
+`eslint@10.3.0` is current, but bumping breaks `eslint-config-next@16.2.6` because the bundled `eslint-plugin-react` calls the now-removed `context.getFilename()` API.
+
+```
+TypeError: Error while loading rule 'react/display-name':
+  contextOrFilename.getFilename is not a function
+```
+
+**Re-check trigger:** new `eslint-config-next` release that ships an `eslint-plugin-react` compatible with the eslint 10 rule API.
+
+## Accepted npm audit advisories
+
+This section lists `npm audit` advisories that have been intentionally left unfixed, with rationale. Re-evaluate on every dependency bump and when upstream patches are released.
 
 Last reviewed: 2026-05-09 (issue #132).
 
-## Accepted
+
 
 ### esbuild ≤0.24.2 — GHSA-67mh-4wv8-2f99 (moderate, dev-only)
 
