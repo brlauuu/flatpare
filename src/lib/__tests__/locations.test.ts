@@ -4,6 +4,7 @@ import { locationsOfInterest, apartments } from "@/lib/db/schema";
 import {
   createLocation,
   deleteLocation,
+  getLocation,
   listLocations,
   moveLocation,
   updateLocation,
@@ -116,5 +117,64 @@ describe("locations", () => {
     await moveLocation(b.id, "down");
     const list = await listLocations();
     expect(list.map((l) => l.label)).toEqual(["A", "B"]);
+  });
+
+  it("getLocation returns null when the id is not found", async () => {
+    expect(await getLocation(99999)).toBeNull();
+  });
+
+  it("updateLocation patches address and triggers a re-geocode pass", async () => {
+    const created = await createLocation({
+      label: "A",
+      icon: "Train",
+      address: "Old St",
+    });
+    const updated = await updateLocation(created.id, { address: "New St 2" });
+    expect(updated.address).toBe("New St 2");
+  });
+
+  it("updateLocation patches icon", async () => {
+    const created = await createLocation({
+      label: "A",
+      icon: "Train",
+      address: "X",
+    });
+    const updated = await updateLocation(created.id, { icon: "Bus" });
+    expect(updated.icon).toBe("Bus");
+  });
+
+  it("updateLocation rejects an empty label or address (whitespace only)", async () => {
+    const created = await createLocation({
+      label: "A",
+      icon: "Train",
+      address: "X",
+    });
+    await expect(
+      updateLocation(created.id, { label: "   " })
+    ).rejects.toThrow(/label/i);
+    await expect(
+      updateLocation(created.id, { address: "  " })
+    ).rejects.toThrow(/address/i);
+  });
+
+  it("updateLocation rejects an unknown icon", async () => {
+    const created = await createLocation({
+      label: "A",
+      icon: "Train",
+      address: "X",
+    });
+    await expect(
+      updateLocation(created.id, { icon: "Skull" })
+    ).rejects.toThrow(/icon/i);
+  });
+
+  it("updateLocation throws when the id does not exist", async () => {
+    await expect(
+      updateLocation(99999, { label: "X" })
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("moveLocation throws when the id does not exist", async () => {
+    await expect(moveLocation(99999, "up")).rejects.toThrow(/not found/i);
   });
 });
