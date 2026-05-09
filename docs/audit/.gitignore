@@ -1,0 +1,5 @@
+# Audit reports are generated artifacts — keep the directory, ignore contents.
+# Findings are tracked as GitHub issues (label: codebase-audit).
+*
+!.gitignore
+!.gitkeep
