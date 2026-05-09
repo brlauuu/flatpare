@@ -22,9 +22,12 @@ import {
   setDisplayName,
   verifyPassword,
 } from "../auth";
-import { __cookieStore } from "next/headers";
+import * as nextHeaders from "next/headers";
 
-const cookieStore = __cookieStore as Map<string, { value: string }>;
+// __cookieStore is exposed by the vi.mock above; not in the real types.
+const cookieStore = (nextHeaders as unknown as {
+  __cookieStore: Map<string, { value: string }>;
+}).__cookieStore;
 
 beforeEach(() => {
   cookieStore.clear();

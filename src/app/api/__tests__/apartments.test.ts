@@ -263,7 +263,8 @@ describe("POST /api/apartments", () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect((captured as Record<string, unknown>).availableFrom).toBeNull();
+    expect(captured).not.toBeNull();
+    expect(captured!.availableFrom).toBeNull();
   });
 
   it("preserves a valid ISO availableFrom", async () => {
@@ -286,7 +287,8 @@ describe("POST /api/apartments", () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect((captured as Record<string, unknown>).availableFrom).toBe(
+    expect(captured).not.toBeNull();
+    expect(captured!.availableFrom).toBe(
       "2026-07-01"
     );
   });
@@ -311,7 +313,8 @@ describe("POST /api/apartments", () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(201);
-    const stored = (captured as Record<string, string>).rawExtractedData;
+    expect(captured).not.toBeNull();
+    const stored = captured!.rawExtractedData as string;
     expect(JSON.parse(stored)).toEqual({ foo: "bar", n: 42 });
   });
 
