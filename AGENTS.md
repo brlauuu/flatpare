@@ -35,4 +35,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Smaller uploads and the local-disk fallback go through `src/lib/storage.ts`.
 
 ## Dev server
-- Runs on **port 3002**, not 3000 (`dev` and `start` scripts in `package.json`). Same in Docker.
+- `npm run dev` and `npm run start` listen on **port 3002** (not the Next.js default 3000); both scripts pass `-p 3002`.
+- In Docker the container's Next.js server runs on the standalone-image default of **3000**; `docker-compose.yml` publishes it to the host on `${PORT:-3002}` (i.e. host `3002` → container `3000`). Override the host port with `PORT=...` if 3002 is taken; the container side is fixed.
