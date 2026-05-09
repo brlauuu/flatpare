@@ -2,13 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { ErrorDisplay } from "@/components/error-display";
 import {
-  ApartmentFormFields,
   emptyApartmentForm,
   formFromExtracted,
   formToPayload,
@@ -20,24 +14,16 @@ import {
   fetchErrorFromException,
 } from "@/lib/fetch-error";
 import { uploadAndParsePdf } from "@/lib/upload-pdf";
+import { UploadStep } from "./_components/upload-step";
+import { ReviewStep } from "./_components/review-step";
+import { SingleEntryStep } from "./_components/single-entry-step";
+import { StatusBadge } from "./_components/status-badge";
+import type { UploadItem } from "./_components/types";
 
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
 }
-
-type UploadItem = {
-  id: string;
-  fileName: string;
-  status: "queued" | "uploading" | "done" | "error";
-  error?: string;
-  errorReason?: "quota" | "invalid_pdf" | "unknown";
-  errorRetryAfterSeconds?: number;
-  form: ApartmentForm;
-  expanded: boolean;
-  saved: boolean;
-  discarded: boolean;
-};
 
 export default function UploadPage() {
   const router = useRouter();
@@ -49,7 +35,6 @@ export default function UploadPage() {
   const [singleForm, setSingleForm] = useState<ApartmentForm>(emptyApartmentForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
 
@@ -67,6 +52,19 @@ export default function UploadPage() {
           : item
       )
     );
+  }
+
+  function updateItemWashingMachine(id: string, value: boolean | null) {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, form: { ...it.form, hasWashingMachine: value } } : it
+      )
+    );
+  }
+
+  function discardItem(id: string) {
+    fileMapRef.current.delete(id);
+    updateItem(id, { discarded: true });
   }
 
   async function parseOne(itemId: string, file: File) {
@@ -204,13 +202,7 @@ export default function UploadPage() {
 
   const handleFiles = useCallback(
     (fileList: FileList) => {
-      const files = Array.from(fileList);
-      if (files.length === 1) {
-        // Single file — same flow as before but through the batch system
-        processFiles(files);
-      } else {
-        processFiles(files);
-      }
+      processFiles(Array.from(fileList));
     },
     [processFiles]
   );
@@ -306,73 +298,19 @@ export default function UploadPage() {
     }
   }
 
-  // --- Upload step ---
   if (step === "upload") {
     return (
-      <div className="mx-auto max-w-lg space-y-6">
-        <h1 className="text-2xl font-semibold">Upload Listings</h1>
-
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            handleFiles(e.dataTransfer.files);
-          }}
-          className={cn(
-            "flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 transition-colors",
-            dragOver
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25"
-          )}
-        >
-          <p className="text-muted-foreground">
-            Drag and drop one or more PDFs here, or
-          </p>
-          <input
-            type="file"
-            accept=".pdf"
-            multiple
-            className="hidden"
-            id="pdf-file-input"
-            onChange={(e) => {
-              if (e.target.files) handleFiles(e.target.files);
-            }}
-          />
-          <Button
-            variant="outline"
-            onClick={() => {
-              document.getElementById("pdf-file-input")?.click();
-            }}
-          >
-            Choose files
-          </Button>
-        </div>
-
-        {error && (
-          <ErrorDisplay headline={error.headline} details={error.details} />
-        )}
-
-        <div className="text-center">
-          <Button
-            variant="link"
-            onClick={() => {
-              setSingleForm(emptyApartmentForm);
-              setStep("single");
-            }}
-          >
-            Or add manually without PDF
-          </Button>
-        </div>
-      </div>
+      <UploadStep
+        onFiles={handleFiles}
+        onManualEntry={() => {
+          setSingleForm(emptyApartmentForm);
+          setStep("single");
+        }}
+        error={error}
+      />
     );
   }
 
-  // --- Processing step ---
   if (step === "processing") {
     const doneCount = items.filter(
       (i) => i.status === "done" || i.status === "error"
@@ -397,230 +335,42 @@ export default function UploadPage() {
     );
   }
 
-  // --- Review step (batch) ---
   if (step === "review") {
-    const saveable = items.filter(
-      (i) => i.status === "done" && !i.saved && !i.discarded && i.form.name.trim()
-    );
-    const savedCount = items.filter((i) => i.saved).length;
-    const allDone = items.every(
-      (i) => i.saved || i.discarded || i.status === "error"
-    );
-
     return (
-      <div className="mx-auto max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Review Apartments</h1>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setItems([]);
-                setStep("upload");
-              }}
-            >
-              Upload more
-            </Button>
-            {saveable.length > 0 && (
-              <Button onClick={handleSaveAll} disabled={saving}>
-                {saving
-                  ? "Saving..."
-                  : `Save ${saveable.length === 1 ? "apartment" : `all ${saveable.length}`}`}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {allDone && savedCount > 0 && (
-          <p className="text-sm text-muted-foreground">
-            All apartments saved. Redirecting...
-          </p>
-        )}
-
-        {error && (
-          <ErrorDisplay headline={error.headline} details={error.details} />
-        )}
-
-        <div className="space-y-3">
-          {items.map((item) => {
-            if (item.discarded) return null;
-
-            return (
-              <Card
-                key={item.id}
-                className={cn(item.saved && "opacity-60")}
-              >
-                <CardHeader
-                  className="cursor-pointer"
-                  onClick={() =>
-                    !item.saved &&
-                    updateItem(item.id, { expanded: !item.expanded })
-                  }
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-sm text-muted-foreground">
-                        {item.expanded ? "▼" : "▶"}
-                      </span>
-                      <div className="min-w-0">
-                        <CardTitle className="text-base truncate">
-                          {item.form.name || item.fileName}
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {[
-                            item.form.address,
-                            item.form.rentChf &&
-                              `CHF ${item.form.rentChf}`,
-                            item.form.sizeM2 && `${item.form.sizeM2} m²`,
-                            item.form.numRooms &&
-                              `${item.form.numRooms} rooms`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ") || item.fileName}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge
-                        status={item.status}
-                        error={item.error}
-                        saved={item.saved}
-                      />
-                      {!item.saved && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            fileMapRef.current.delete(item.id);
-                            updateItem(item.id, { discarded: true });
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {item.status === "error" && item.error && (
-                  <CardContent>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm text-destructive">{item.error}</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => retryItem(item.id)}
-                      >
-                        Retry
-                      </Button>
-                    </div>
-                  </CardContent>
-                )}
-
-                {item.expanded && !item.saved && item.status !== "error" && (
-                  <CardContent>
-                    <ApartmentFormFields
-                      form={item.form}
-                      onChange={(field, value) =>
-                        updateItemForm(item.id, field, value)
-                      }
-                      onWashingMachineChange={(v) =>
-                        setItems((prev) =>
-                          prev.map((it) =>
-                            it.id === item.id
-                              ? { ...it, form: { ...it.form, hasWashingMachine: v } }
-                              : it
-                          )
-                        )
-                      }
-                    />
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      </div>
+      <ReviewStep
+        items={items}
+        saving={saving}
+        error={error}
+        onSaveAll={handleSaveAll}
+        onUploadMore={() => {
+          setItems([]);
+          setStep("upload");
+        }}
+        onRetry={retryItem}
+        onUpdateItem={updateItem}
+        onUpdateForm={updateItemForm}
+        onUpdateWashingMachine={updateItemWashingMachine}
+        onDiscard={discardItem}
+      />
     );
   }
 
-  // --- Manual single entry ---
   return (
-    <div className="mx-auto max-w-lg">
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Apartment Manually</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Fill in the apartment details
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveSingle} className="space-y-4">
-            <ApartmentFormFields
-              form={singleForm}
-              onChange={(field, value) =>
-                setSingleForm((prev) => ({ ...prev, [field]: value }))
-              }
-              onWashingMachineChange={(v) =>
-                setSingleForm((prev) => ({ ...prev, hasWashingMachine: v }))
-              }
-            />
-
-            {error && (
-          <ErrorDisplay headline={error.headline} details={error.details} />
-        )}
-
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1" disabled={saving}>
-                {saving ? "Saving..." : "Save Apartment"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSingleForm(emptyApartmentForm);
-                  setStep("upload");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <SingleEntryStep
+      form={singleForm}
+      saving={saving}
+      error={error}
+      onSubmit={handleSaveSingle}
+      onChange={(field, value) =>
+        setSingleForm((prev) => ({ ...prev, [field]: value }))
+      }
+      onWashingMachineChange={(v) =>
+        setSingleForm((prev) => ({ ...prev, hasWashingMachine: v }))
+      }
+      onCancel={() => {
+        setSingleForm(emptyApartmentForm);
+        setStep("upload");
+      }}
+    />
   );
-}
-
-// --- Status badge ---
-
-function StatusBadge({
-  status,
-  error,
-  saved,
-}: {
-  status: UploadItem["status"];
-  error?: string;
-  saved?: boolean;
-}) {
-  if (saved) {
-    return <Badge className="bg-green-100 text-green-700">Saved</Badge>;
-  }
-
-  switch (status) {
-    case "queued":
-      return <Badge variant="secondary">Queued</Badge>;
-    case "uploading":
-      return <Badge variant="secondary">Uploading...</Badge>;
-    case "done":
-      return <Badge className="bg-blue-100 text-blue-700">Parsed</Badge>;
-    case "error":
-      return (
-        <Badge variant="destructive" title={error}>
-          Error
-        </Badge>
-      );
-  }
 }

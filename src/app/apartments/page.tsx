@@ -2,20 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { StarRating } from "@/components/star-rating";
-import { ShortCode } from "@/components/short-code";
-import { AddressLink } from "@/components/address-link";
 import {
-  AlertTriangle,
   ArrowDown,
   ArrowUp,
   Building2,
-  CheckCircle2,
-  Circle,
   LayoutGrid,
   List as ListIcon,
   Search,
@@ -49,29 +41,13 @@ import {
 } from "@/lib/apartment-sort";
 import type { LocationOfInterest } from "@/lib/db/schema";
 import { ApartmentsOverviewMap } from "@/components/apartments-overview-map";
+import { ApartmentCard } from "./_components/apartment-card";
+import { ApartmentRow } from "./_components/apartment-row";
+import type { ApartmentSummary } from "./_components/apartment-summary";
 
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
-}
-
-interface ApartmentSummary {
-  id: number;
-  name: string;
-  address: string | null;
-  sizeM2: number | null;
-  numRooms: number | null;
-  numBathrooms: number | null;
-  numBalconies: number | null;
-  rentChf: number | null;
-  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
-  shortCode: string | null;
-  avgOverall: string | null;
-  myRating: number | null;
-  createdAt: string | null;
-  listingGone: boolean | null;
-  latitude: number | null;
-  longitude: number | null;
 }
 
 type ViewMode = "grid" | "list";
@@ -371,48 +347,7 @@ export default function ApartmentsPage() {
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {sortedApartments.map((apt) => (
-            <Link key={apt.id} href={`/apartments/${apt.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <ShortCode code={apt.shortCode} size="md" />
-                    <div className="flex items-center gap-1.5">
-                      {apt.listingGone && <GoneBadge />}
-                      <RatedBadge myRating={apt.myRating} />
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-medium leading-tight">{apt.name}</h3>
-                    {apt.avgOverall && (
-                      <StarRating
-                        value={Math.round(parseFloat(apt.avgOverall))}
-                        readonly
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                  {apt.address && (
-                    <AddressLink
-                      address={apt.address}
-                      className="text-sm text-muted-foreground"
-                    />
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {apt.rentChf && (
-                      <Badge variant="secondary">
-                        CHF {apt.rentChf.toLocaleString()}
-                      </Badge>
-                    )}
-                    {apt.sizeM2 && (
-                      <Badge variant="secondary">{apt.sizeM2} m²</Badge>
-                    )}
-                    {apt.numRooms && (
-                      <Badge variant="secondary">{apt.numRooms} rooms</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <ApartmentCard key={apt.id} apt={apt} />
           ))}
         </div>
       ) : (
@@ -421,81 +356,10 @@ export default function ApartmentsPage() {
           className="divide-y overflow-hidden rounded-lg border"
         >
           {sortedApartments.map((apt) => (
-            <Link
-              key={apt.id}
-              href={`/apartments/${apt.id}`}
-              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <ShortCode code={apt.shortCode} size="sm" />
-                  <h3 className="truncate font-medium leading-tight">
-                    {apt.name}
-                  </h3>
-                </div>
-                {apt.address && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {apt.address}
-                  </p>
-                )}
-              </div>
-              <div className="hidden flex-wrap items-center gap-2 sm:flex">
-                {apt.rentChf && (
-                  <Badge variant="secondary">
-                    CHF {apt.rentChf.toLocaleString()}
-                  </Badge>
-                )}
-                {apt.numRooms && (
-                  <Badge variant="secondary">{apt.numRooms} rm</Badge>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {apt.listingGone && <GoneBadge />}
-                <RatedBadge myRating={apt.myRating} />
-              </div>
-              {apt.avgOverall && (
-                <StarRating
-                  value={Math.round(parseFloat(apt.avgOverall))}
-                  readonly
-                  size="sm"
-                />
-              )}
-            </Link>
+            <ApartmentRow key={apt.id} apt={apt} />
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function GoneBadge() {
-  return (
-    <Badge
-      variant="secondary"
-      className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
-    >
-      <AlertTriangle className="h-3 w-3" />
-      Gone
-    </Badge>
-  );
-}
-
-function RatedBadge({ myRating }: { myRating: number | null }) {
-  if (myRating !== null) {
-    return (
-      <Badge
-        variant="secondary"
-        className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
-      >
-        <CheckCircle2 className="h-3 w-3" />
-        Rated
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="gap-1 text-muted-foreground">
-      <Circle className="h-3 w-3" />
-      Not yet rated
-    </Badge>
   );
 }

@@ -3,16 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { ApartmentMap } from "@/components/apartment-map";
-import { ArrowLeft, ArrowRight, WashingMachine } from "lucide-react";
-import { iconComponentFor } from "@/lib/location-icons";
 import { ErrorDisplay } from "@/components/error-display";
-import { cn } from "@/lib/utils";
 import {
   formFromApartment,
   formToPayload,
@@ -31,49 +26,18 @@ import {
 import { useApartmentPager } from "@/lib/use-apartment-pager";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 import { formatSwissDate } from "@/lib/iso-date";
+import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
+import { ApartmentActions } from "./_components/apartment-actions";
+import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
+import { DistanceSection } from "./_components/distance-section";
+import type {
+  ApartmentDetail,
+  LocationLite,
+} from "./_components/types";
 
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
-}
-
-interface Rating {
-  id: number;
-  userName: string;
-  kitchen: number;
-  balconies: number;
-  location: number;
-  floorplan: number;
-  overallFeeling: number;
-  comment: string;
-}
-
-interface ApartmentDetail {
-  id: number;
-  name: string;
-  address: string | null;
-  sizeM2: number | null;
-  numRooms: number | null;
-  numBathrooms: number | null;
-  numBalconies: number | null;
-  hasWashingMachine: boolean | null;
-  rentChf: number | null;
-  pdfUrl: string | null;
-  listingUrl: string | null;
-  summary: string | null;
-  availableFrom: string | null;
-  userEditedFields: string | null;
-  shortCode: string | null;
-  mapEmbedUrl: string | null;
-  ratings: Rating[];
-  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
-}
-
-interface LocationLite {
-  id: number;
-  label: string;
-  icon: string;
-  address: string;
 }
 
 function getCookieValue(name: string): string | null {
@@ -377,37 +341,13 @@ export default function ApartmentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={pager.prevId === null}
-          onClick={() => {
-            if (pager.prevId !== null) router.push(`/apartments/${pager.prevId}`);
-          }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        {pager.position !== null && pager.total > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {pager.position} of {pager.total}
-          </span>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={pager.nextId === null}
-          onClick={() => {
-            if (pager.nextId !== null) router.push(`/apartments/${pager.nextId}`);
-          }}
-        >
-          Next
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <ApartmentPagerNav
+        prevId={pager.prevId}
+        nextId={pager.nextId}
+        position={pager.position}
+        total={pager.total}
+        onNavigate={(id) => router.push(`/apartments/${id}`)}
+      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <ShortCode code={apartment.shortCode} size="lg" />
@@ -419,69 +359,16 @@ export default function ApartmentDetailPage() {
             />
           )}
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          {apartment.pdfUrl && (
-            <a
-              href={apartment.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "w-full sm:w-auto"
-              )}
-            >
-              View PDF
-            </a>
-          )}
-          {apartment.listingUrl ? (
-            <a
-              href={apartment.listingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "w-full sm:w-auto"
-              )}
-            >
-              Original Listing
-            </a>
-          ) : (
-            <Badge
-              variant="secondary"
-              className="w-full justify-center text-muted-foreground sm:w-auto sm:justify-start"
-            >
-              URL missing
-            </Badge>
-          )}
-          {!editing && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={startEdit}
-              className="w-full sm:w-auto"
-            >
-              Edit
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={reprocessing || editing || !apartment.pdfUrl}
-            onClick={handleReprocess}
-            className="w-full sm:w-auto"
-          >
-            {reprocessing ? "Reprocessing..." : "Reprocess"}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={deleting || editing}
-            onClick={handleDelete}
-            className="w-full sm:w-auto"
-          >
-            {deleting ? "Deleting..." : "Delete"}
-          </Button>
-        </div>
+        <ApartmentActions
+          pdfUrl={apartment.pdfUrl}
+          listingUrl={apartment.listingUrl}
+          editing={editing}
+          reprocessing={reprocessing}
+          deleting={deleting}
+          onEdit={startEdit}
+          onReprocess={handleReprocess}
+          onDelete={handleDelete}
+        />
       </div>
 
       {apartment.summary && (
@@ -513,45 +400,7 @@ export default function ApartmentDetailPage() {
           onCancel={cancelEdit}
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {apartment.rentChf && (
-            <Badge variant="secondary">
-              CHF {apartment.rentChf.toLocaleString()}/mo
-            </Badge>
-          )}
-          {apartment.sizeM2 && (
-            <Badge variant="secondary">{apartment.sizeM2} m²</Badge>
-          )}
-          {apartment.numRooms && (
-            <Badge variant="secondary">{apartment.numRooms} rooms</Badge>
-          )}
-          {apartment.numBathrooms != null && (
-            <Badge variant="secondary">{apartment.numBathrooms} bath</Badge>
-          )}
-          {apartment.numBalconies != null && (
-            <Badge variant="secondary">
-              {apartment.numBalconies} balcon{apartment.numBalconies !== 1 ? "ies" : "y"}
-            </Badge>
-          )}
-          <Badge
-            variant="secondary"
-            title={
-              apartment.hasWashingMachine === true
-                ? "Washing machine: yes"
-                : apartment.hasWashingMachine === false
-                  ? "Washing machine: no (or shared)"
-                  : "Washing machine: unknown"
-            }
-            className="gap-1"
-          >
-            <WashingMachine className="h-3 w-3" />
-            {apartment.hasWashingMachine === true
-              ? "Yes"
-              : apartment.hasWashingMachine === false
-                ? "No"
-                : "?"}
-          </Badge>
-        </div>
+        <ApartmentMetricBadges apartment={apartment} />
       )}
 
       {apartment.availableFrom && (
@@ -589,55 +438,3 @@ export default function ApartmentDetailPage() {
   );
 }
 
-function DistanceSection({
-  locations,
-  distances,
-  apartmentAddress,
-}: {
-  locations: LocationLite[];
-  distances: { locationId: number; bikeMin: number | null; transitMin: number | null }[];
-  apartmentAddress: string | null;
-}) {
-  const distancesByLoc = new Map(distances.map((d) => [d.locationId, d]));
-  return (
-    <div className="space-y-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Distance to locations
-      </h2>
-      <div className="space-y-1.5">
-        {locations.map((loc) => {
-          const Icon = iconComponentFor(loc.icon);
-          const d = distancesByLoc.get(loc.id);
-          const bike = d?.bikeMin;
-          const transit = d?.transitMin;
-          const mapsUrl = apartmentAddress
-            ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(apartmentAddress)}&destination=${encodeURIComponent(loc.address)}&travelmode=bicycling`
-            : null;
-          return (
-            <div key={loc.id} className="flex items-center gap-3 text-sm">
-              {mapsUrl ? (
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Bike directions to ${loc.label}`}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ) : (
-                <Icon className="h-4 w-4 text-muted-foreground" aria-label={loc.label} />
-              )}
-              <span className="font-medium">{loc.label}</span>
-              <span className="text-muted-foreground">
-                {bike != null ? `${bike} min bike` : "— bike"}
-                {" · "}
-                {transit != null ? `${transit} min transit` : "— transit"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
