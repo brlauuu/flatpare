@@ -121,13 +121,5 @@ export const apartmentDistances = sqliteTable(
 );
 
 export type Apartment = typeof apartments.$inferSelect;
-export type NewApartment = typeof apartments.$inferInsert;
 export type Rating = typeof ratings.$inferSelect;
-export type NewRating = typeof ratings.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-export type ApiUsage = typeof apiUsage.$inferSelect;
 export type LocationOfInterest = typeof locationsOfInterest.$inferSelect;
-export type NewLocationOfInterest = typeof locationsOfInterest.$inferInsert;
-export type ApartmentDistance = typeof apartmentDistances.$inferSelect;
-export type NewApartmentDistance = typeof apartmentDistances.$inferInsert;
