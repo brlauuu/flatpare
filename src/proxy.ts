@@ -8,16 +8,28 @@ export function proxy(request: NextRequest) {
   const hasName = !!nameCookie?.value;
   const path = request.nextUrl.pathname;
 
-  // Allow access to login page and auth API
+  // Login page + auth API are always reachable.
   if (path === "/" || path.startsWith("/api/auth")) {
-    // If already fully authed, redirect away from login
+    // Bounce a fully-authed user away from the login page.
     if (path === "/" && isAuthed && hasName) {
       return NextResponse.redirect(new URL("/apartments", request.url));
     }
     return NextResponse.next();
   }
 
-  // Protect all other routes
+  // API routes return JSON 401 on failure — the UI handles that better than a
+  // 302 to an HTML login page, and external clients can detect it cleanly.
+  if (path.startsWith("/api/")) {
+    if (!isAuthed || !hasName) {
+      return NextResponse.json(
+        { error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  // Page routes redirect to the login screen.
   if (!isAuthed || !hasName) {
     return NextResponse.redirect(new URL("/", request.url));
   }
@@ -27,6 +39,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
