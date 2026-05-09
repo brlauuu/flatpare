@@ -26,9 +26,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `npm test` runs once; `npm run test:watch` watches.
 
 ## Auth
-- Shared `APP_PASSWORD` cookie + display-name model (no real accounts). See `src/lib/auth.ts` and `src/app/api/auth/`.
-- Server routes gate access by calling `isAuthenticated()` (boolean) and read the current actor with `getDisplayName()` from `src/lib/auth.ts`. Return 401 on failure — there's no shared `requireUser()` helper.
-- `DISABLE_SECURE_COOKIES` (any truthy value) bypasses the Secure flag for plain-HTTP dev.
+- Shared-password + display-name model (no real accounts). See `src/lib/auth.ts` and `src/app/api/auth/`.
+- The shared password lives in the **`APP_PASSWORD` env var**. `verifyPassword(input)` compares the submitted value against it.
+- On a successful match, two cookies are set:
+  - **`flatpare-auth=true`** — httpOnly; `isAuthenticated()` checks this and returns a boolean.
+  - **`flatpare-name=<display-name>`** — readable from client JS; `getDisplayName()` returns the value or `null`.
+- Server routes gate access by calling `isAuthenticated()` and return **401** on failure. There is no shared `requireUser()` helper — don't add one without discussion.
+- `DISABLE_SECURE_COOKIES` (any truthy value) drops the `Secure` flag so cookies work over plain HTTP in dev.
 
 ## File uploads
 - Files larger than ~4.5 MB **must** use `src/lib/upload-pdf.ts` (client-direct Vercel Blob upload via `/api/parse-pdf/upload-token`). Multipart-POSTing big bodies through serverless routes hits the body limit.
