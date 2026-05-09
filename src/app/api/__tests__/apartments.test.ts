@@ -66,8 +66,10 @@ vi.mock("@/lib/distance", () => ({
 }));
 
 const mockGetDisplayName = vi.fn();
+const mockIsAuthenticated = vi.fn();
 vi.mock("@/lib/auth", () => ({
   getDisplayName: () => mockGetDisplayName(),
+  isAuthenticated: () => mockIsAuthenticated(),
 }));
 
 vi.mock("@/lib/short-code", () => ({
@@ -86,6 +88,7 @@ import { GET as getById, PATCH, DELETE } from "../../api/apartments/[id]/route";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockIsAuthenticated.mockResolvedValue(true);
 });
 
 afterEach(() => {
