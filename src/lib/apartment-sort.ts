@@ -27,7 +27,7 @@ const STATIC_FIELDS: StaticSortField[] = [
 
 export type SortDirection = "asc" | "desc";
 
-export type ApartmentDistance = {
+type ApartmentDistance = {
   locationId: number;
   bikeMin: number | null;
   transitMin: number | null;
@@ -107,7 +107,7 @@ const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
   "shortCode",
 ];
 
-export type LocationLite = { id: number; label: string };
+type LocationLite = { id: number; label: string };
 
 type SortFieldOption = { id: SortField; label: string };
 
