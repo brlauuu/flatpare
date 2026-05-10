@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { moveLocation } from "@/lib/locations";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const body = (await request.json()) as { direction?: unknown };
     if (body.direction !== "up" && body.direction !== "down") {

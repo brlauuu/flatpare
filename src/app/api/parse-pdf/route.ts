@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { uploadFile, readStoredFile } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 interface BlobUploadBody {
   pathname?: unknown;
@@ -23,6 +24,7 @@ function emptyExtraction(filename: string) {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAuthenticated())) return unauthorized();
   try {
     const contentType = request.headers.get("content-type") ?? "";
 

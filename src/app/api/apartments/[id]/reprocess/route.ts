@@ -9,12 +9,14 @@ import { readStoredFile } from "@/lib/storage";
 import { listLocations } from "@/lib/locations";
 import { calculateDistance } from "@/lib/distance";
 import { geocodeLatLng } from "@/lib/geocode";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const apartmentId = parseInt(id);
 

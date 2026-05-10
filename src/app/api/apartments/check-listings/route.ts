@@ -3,9 +3,11 @@ import { db } from "@/lib/db";
 import { apartments } from "@/lib/db/schema";
 import { eq, isNotNull } from "drizzle-orm";
 import { checkListings } from "@/lib/listing-status";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 export async function POST() {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const rows = await db
       .select({ id: apartments.id, listingUrl: apartments.listingUrl })
       .from(apartments)

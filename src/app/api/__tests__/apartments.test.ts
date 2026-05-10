@@ -70,6 +70,11 @@ const mockIsAuthenticated = vi.fn();
 vi.mock("@/lib/auth", () => ({
   getDisplayName: () => mockGetDisplayName(),
   isAuthenticated: () => mockIsAuthenticated(),
+  unauthorized: () =>
+    new Response(JSON.stringify({ error: "Not authenticated" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    }),
 }));
 
 vi.mock("@/lib/short-code", () => ({

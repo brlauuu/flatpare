@@ -3,9 +3,11 @@ import { db } from "@/lib/db";
 import { apartments, apartmentDistances } from "@/lib/db/schema";
 import { calculateDistance } from "@/lib/distance";
 import { listLocations } from "@/lib/locations";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 export async function POST() {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const allApartments = await db
       .select({ id: apartments.id, address: apartments.address })
       .from(apartments);
