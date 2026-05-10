@@ -102,5 +102,36 @@ describe("DistanceSection", () => {
     expect(
       screen.queryByRole("link", { name: /Bike directions to Train Station/i })
     ).toBeNull();
+    // The row still renders — just without the directions link wrapper.
+    expect(screen.getByText("Train Station")).toBeInTheDocument();
+    expect(screen.getByText(/12 min bike.*25 min transit/)).toBeInTheDocument();
+  });
+
+  it("renders the section heading", () => {
+    render(
+      <DistanceSection
+        locations={[locations[0]]}
+        distances={[{ locationId: 1, bikeMin: 12, transitMin: 25 }]}
+        apartmentAddress="Sonnenweg 3"
+      />
+    );
+    expect(
+      screen.getByRole("heading", { name: /Distance to locations/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders nothing meaningful when locations is empty", () => {
+    const { container } = render(
+      <DistanceSection
+        locations={[]}
+        distances={[]}
+        apartmentAddress="Sonnenweg 3"
+      />
+    );
+    // Section heading still renders, but no rows.
+    expect(
+      screen.getByRole("heading", { name: /Distance to locations/i })
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll("a").length).toBe(0);
   });
 });
