@@ -48,6 +48,33 @@ beforeEach(() => {
       locations = [...locations, created];
       return jsonRes(created, true, 201);
     }
+    if (/^\/api\/locations\/\d+$/.test(url) && method === "PUT") {
+      const id = Number(url.split("/").pop());
+      const body = JSON.parse(init!.body as string);
+      locations = locations.map((l) =>
+        l.id === id ? { ...l, ...body } : l
+      );
+      return jsonRes(locations.find((l) => l.id === id)!);
+    }
+    if (
+      /^\/api\/locations\/\d+\/move$/.test(url) &&
+      method === "POST"
+    ) {
+      const id = Number(url.split("/")[3]);
+      const body = JSON.parse(init!.body as string);
+      const idx = locations.findIndex((l) => l.id === id);
+      const swapWith =
+        body.direction === "up" ? locations[idx - 1] : locations[idx + 1];
+      if (swapWith) {
+        const reordered = [...locations];
+        reordered[idx] = swapWith;
+        reordered[
+          body.direction === "up" ? idx - 1 : idx + 1
+        ] = locations[idx];
+        locations = reordered;
+      }
+      return jsonRes({ success: true });
+    }
     if (
       /^\/api\/locations\/\d+$/.test(url) &&
       method === "DELETE"
@@ -133,6 +160,117 @@ describe("SettingsPage", () => {
     await waitFor(() => {
       expect(
         screen.getByText(/Recomputed 6 pairs across 3 apartments/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("edit flow: opens, changes label, saves, reflects new label", async () => {
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Train Station"));
+
+    await user.click(
+      screen.getByRole("button", { name: /Edit Train Station/i })
+    );
+
+    const labelInput = screen.getByLabelText(/^Label$/i) as HTMLInputElement;
+    await user.clear(labelInput);
+    await user.type(labelInput, "Renamed");
+
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+    await waitFor(() => {
+      expect(screen.getByText("Renamed")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Train Station")).not.toBeInTheDocument();
+  });
+
+  it("move up reorders locations", async () => {
+    locations = [
+      { id: 1, label: "First", icon: "Train", address: "A", sortOrder: 0 },
+      { id: 2, label: "Second", icon: "Train", address: "B", sortOrder: 1 },
+    ];
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("First"));
+
+    await user.click(screen.getByRole("button", { name: /Move Second up/i }));
+    await waitFor(() => {
+      const labels = Array.from(
+        document.querySelectorAll('[class*="font-medium"]')
+      )
+        .map((el) => el.textContent?.trim())
+        .filter((s) => s === "First" || s === "Second");
+      expect(labels[0]).toBe("Second");
+      expect(labels[1]).toBe("First");
+    });
+  });
+
+  it("move down reorders locations", async () => {
+    locations = [
+      { id: 1, label: "First", icon: "Train", address: "A", sortOrder: 0 },
+      { id: 2, label: "Second", icon: "Train", address: "B", sortOrder: 1 },
+    ];
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("First"));
+
+    await user.click(screen.getByRole("button", { name: /Move First down/i }));
+    await waitFor(() => {
+      const movePosts = fetchMock.mock.calls.filter(
+        (c: unknown[]) => String(c[0]).includes("/move")
+      );
+      expect(movePosts.length).toBe(1);
+    });
+  });
+
+  it("shows an error when locations fail to load", async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      jsonRes({ error: "boom" }, false, 500)
+    );
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Couldn't load locations/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows an error when recompute fails on the server", async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (url === "/api/locations" && method === "GET") return jsonRes(locations);
+      if (url === "/api/settings/recompute-distances") {
+        return jsonRes({ error: "rate limit" }, false, 503);
+      }
+      return jsonRes({}, false, 500);
+    });
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Train Station"));
+    await user.click(screen.getByRole("button", { name: /Recompute all/i }));
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Couldn't recompute distances/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows an error when recompute throws on the network", async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (url === "/api/locations" && method === "GET") return jsonRes(locations);
+      if (url === "/api/settings/recompute-distances") {
+        throw new TypeError("Failed to fetch");
+      }
+      return jsonRes({}, false, 500);
+    });
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByText("Train Station"));
+    await user.click(screen.getByRole("button", { name: /Recompute all/i }));
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Couldn't recompute distances/i)
       ).toBeInTheDocument();
     });
   });

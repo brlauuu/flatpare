@@ -353,6 +353,38 @@ describe("Upload page — batch review flow", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  it("shows 'Failed to save' on an item when the apartments POST throws on the network", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(global, "fetch").mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/api/parse-pdf/upload-token")) {
+          return probeResponse(false);
+        }
+        if (url === "/api/parse-pdf" && init?.method === "POST") {
+          return parseSuccess("net.pdf");
+        }
+        if (url === "/api/apartments" && init?.method === "POST") {
+          throw new TypeError("Failed to fetch");
+        }
+        throw new Error(`Unexpected fetch: ${url}`);
+      }
+    );
+    render(<UploadPage />);
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    await user.upload(input, makePdfFile("net.pdf"));
+    await waitFor(() => {
+      expect(screen.getByText("Parsed net.pdf")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to save/i)).toBeInTheDocument();
+    });
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
   it("expanding a card reveals the editable form", async () => {
     const user = userEvent.setup();
     mockTwoSuccesses();
@@ -378,6 +410,14 @@ describe("Upload page — batch review flow", () => {
     });
   });
 });
+
+// NOTE on branch coverage:
+// new/page.tsx sits at ~67% branches. The remaining gaps are not reachable
+// through normal UI flows — e.g. the `if (toSave.length === 0)` guard inside
+// handleSaveAll only fires if items state changes between the Save button
+// rendering and being clicked, and the `processingRef.current` early-exit
+// fires only on a (currently never-triggered) cancel handler. They're kept
+// as defensive code, not as testable branches.
 
 describe("Upload page — Save all guard", () => {
   it('shows "No apartments to save" when nothing is saveable', async () => {
