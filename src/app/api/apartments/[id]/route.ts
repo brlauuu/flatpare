@@ -6,15 +6,11 @@ import {
   ratings,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 import { buildMapEmbedUrl } from "@/lib/map-embed";
 import { isIsoDate } from "@/lib/iso-date";
 import { diffInferableFields } from "@/lib/edited-fields";
 import { geocodeLatLng } from "@/lib/geocode";
-
-function unauthorized() {
-  return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-}
 
 export async function GET(
   _request: Request,

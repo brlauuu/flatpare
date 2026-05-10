@@ -19,10 +19,24 @@ vi.mock("@/lib/parse-pdf", () => ({
   })),
 }));
 
+const { mockIsAuthenticated } = vi.hoisted(() => ({
+  mockIsAuthenticated: vi.fn(async () => true),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAuthenticated: mockIsAuthenticated,
+  unauthorized: () =>
+    new Response(JSON.stringify({ error: "Not authenticated" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    }),
+}));
+
 import { POST } from "../../api/parse-pdf/route";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockIsAuthenticated.mockResolvedValue(true);
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 });
 
@@ -39,6 +53,16 @@ function createPdfFormData(): FormData {
 }
 
 describe("POST /api/parse-pdf", () => {
+  it("returns 401 when not authenticated", async () => {
+    mockIsAuthenticated.mockResolvedValueOnce(false);
+    const req = new Request("http://localhost/api/parse-pdf", {
+      method: "POST",
+      body: new FormData(),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
   it("returns 400 for non-PDF file", async () => {
     const formData = new FormData();
     const file = new File(["text"], "test.txt", { type: "text/plain" });

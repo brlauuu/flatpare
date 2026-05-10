@@ -3,6 +3,7 @@ import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments, locationsOfInterest } from "@/lib/db/schema";
 import { geocodeLatLngWithReason } from "@/lib/geocode";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 const CONCURRENCY = 5;
 
@@ -34,6 +35,7 @@ async function runWithConcurrency<T>(
 }
 
 export async function POST() {
+  if (!(await isAuthenticated())) return unauthorized();
   try {
     const aptRows = await db
       .select({ id: apartments.id, address: apartments.address })

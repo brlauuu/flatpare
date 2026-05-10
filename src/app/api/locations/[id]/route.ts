@@ -4,12 +4,14 @@ import {
   getLocation,
   updateLocation,
 } from "@/lib/locations";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const loc = await getLocation(parseInt(id));
     if (!loc) {
@@ -30,6 +32,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     const body = (await request.json()) as Partial<{
       label: unknown;
@@ -59,6 +62,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { id } = await params;
     await deleteLocation(parseInt(id));
     return NextResponse.json({ success: true });

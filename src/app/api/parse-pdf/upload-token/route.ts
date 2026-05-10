@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 // Server route that mints short-lived client tokens so the browser can upload
 // PDFs directly to Vercel Blob — bypassing the 4.5 MB serverless body limit
@@ -12,6 +13,7 @@ function blobConfigured(): boolean {
 }
 
 export async function GET() {
+  if (!(await isAuthenticated())) return unauthorized();
   // Probe used by the client to decide between direct-upload and multipart fallback.
   if (!blobConfigured()) {
     return NextResponse.json({ enabled: false }, { status: 404 });
@@ -20,6 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAuthenticated())) return unauthorized();
   if (!blobConfigured()) {
     return NextResponse.json(
       { error: "Blob storage not configured" },

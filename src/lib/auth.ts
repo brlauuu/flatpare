@@ -1,7 +1,15 @@
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 const AUTH_COOKIE = "flatpare-auth";
 const NAME_COOKIE = "flatpare-name";
+
+// Defense-in-depth helper for API routes. The proxy already 401s `/api/*`
+// for unauthenticated callers; routes still call this so they fail closed
+// if the proxy is ever misconfigured.
+export function unauthorized(): NextResponse {
+  return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+}
 
 export async function isAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();

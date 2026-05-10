@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
 import { sql, eq, sum, count, and, gte } from "drizzle-orm";
+import { isAuthenticated, unauthorized } from "@/lib/auth";
 
 // Pricing estimates (per token, USD). Gemini also has a free tier on AI
 // Studio keys without billing enabled (~1M tokens/day on gemini-2.5-flash);
@@ -33,6 +34,7 @@ function round4(n: number): number {
 }
 
 export async function GET() {
+  if (!(await isAuthenticated())) return unauthorized();
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const since = Math.floor(thirtyDaysAgo.getTime() / 1000);

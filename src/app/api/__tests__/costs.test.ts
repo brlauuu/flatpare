@@ -1,5 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+const { mockIsAuthenticated } = vi.hoisted(() => ({
+  mockIsAuthenticated: vi.fn(async () => true),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAuthenticated: mockIsAuthenticated,
+  unauthorized: () =>
+    new Response(JSON.stringify({ error: "Not authenticated" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    }),
+}));
+
 // Default mock: every query returns 5 calls / 1000 input / 500 output tokens.
 // Tests can override with vi.mocked(db.select)... before invoking GET.
 vi.mock("@/lib/db", () => ({
@@ -42,6 +55,7 @@ import { db } from "@/lib/db";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockIsAuthenticated.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -49,6 +63,12 @@ afterEach(() => {
 });
 
 describe("GET /api/costs", () => {
+  it("returns 401 when not authenticated", async () => {
+    mockIsAuthenticated.mockResolvedValueOnce(false);
+    const res = await GET();
+    expect(res.status).toBe(401);
+  });
+
   it("returns the new cost data shape with per-Maps-service breakdown", async () => {
     const res = await GET();
     expect(res.status).toBe(200);

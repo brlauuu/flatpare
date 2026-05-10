@@ -24,6 +24,11 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("@/lib/auth", () => ({
   isAuthenticated: vi.fn(),
+  unauthorized: () =>
+    new Response(JSON.stringify({ error: "Not authenticated" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    }),
 }));
 
 vi.mock("@/lib/map-embed", () => ({
