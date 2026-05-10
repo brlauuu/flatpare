@@ -140,4 +140,18 @@ describe("GET /api/auth/users", () => {
     const data = await res.json();
     expect(data).toEqual(["Alice", "Bob"]);
   });
+
+  it("returns an empty list (200) when the db throws — failure is not user-facing here", async () => {
+    const original = (
+      await import("@/lib/db")
+    ).db.select as unknown as ReturnType<typeof vi.fn>;
+    original.mockImplementationOnce(() => {
+      throw new Error("db down");
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await usersGet();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+    expect(errSpy).toHaveBeenCalled();
+  });
 });

@@ -10,11 +10,14 @@ export default defineConfig({
     testTimeout: 15000,
     hookTimeout: 15000,
     coverage: {
-      // shadcn-generated primitives are vendored and re-emitted from the
-      // shadcn CLI; testing them adds noise without signal. Excluded so
-      // the threshold check tracks our code.
       exclude: [
+        // shadcn-generated primitives — vendored, re-emitted by the CLI;
+        // testing them adds noise without signal.
         "src/components/ui/**",
+        // Drizzle schema is pure table/column declarations. Coverage %
+        // is misleading: 100% branches, but ~30% lines are untested
+        // because there's nothing executable to assert.
+        "src/lib/db/schema.ts",
         // vitest's defaults (node_modules, dist, etc.) — kept implicit.
       ],
       // Floor — we're well above as of #129; set here so a regression
