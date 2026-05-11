@@ -6,7 +6,7 @@ import {
   ratings,
 } from "@/lib/db/schema";
 import { desc, avg, eq } from "drizzle-orm";
-import { getDisplayName } from "@/lib/auth";
+import { getDisplayName, isAuthenticated, unauthorized } from "@/lib/auth";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -28,6 +28,7 @@ function isUniqueConstraintError(err: unknown): boolean {
 
 export async function GET() {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const allApartments = await db
       .select({
         id: apartments.id,
@@ -108,6 +109,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const body = await request.json();
 
     const availableFrom: string | null =
