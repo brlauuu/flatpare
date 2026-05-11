@@ -25,6 +25,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Tests live in co-located `__tests__/` directories next to the source.
 - `npm test` runs once; `npm run test:watch` watches.
 - **Coverage thresholds are enforced in CI** via `vitest.config.ts`: lines ≥ 80, statements ≥ 80, functions ≥ 78, branches ≥ 75. New code without tests will fail the build.
+- Two paths are excluded from the coverage count: `src/components/ui/**` (shadcn primitives — vendored, re-emitted by the CLI) and `src/lib/db/schema.ts` (Drizzle table declarations, no executable logic). Don't write tests targeting those files.
 
 ## Auth
 - Shared-password + display-name model (no real accounts). See `src/lib/auth.ts` and `src/app/api/auth/`.
