@@ -101,6 +101,12 @@ afterEach(() => {
 });
 
 describe("GET /api/apartments", () => {
+  it("returns 401 when not authenticated", async () => {
+    mockIsAuthenticated.mockResolvedValueOnce(false);
+    const res = await GET();
+    expect(res.status).toBe(401);
+  });
+
   it("returns list of apartments with myRating=null when no user cookie", async () => {
     const apartments = [
       { id: 1, name: "Apt 1", avgOverall: "4.5" },
@@ -180,6 +186,16 @@ describe("GET /api/apartments", () => {
 });
 
 describe("POST /api/apartments", () => {
+  it("returns 401 when not authenticated", async () => {
+    mockIsAuthenticated.mockResolvedValueOnce(false);
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
   it("creates a new apartment", async () => {
     const newApt = {
       name: "New Place",
