@@ -54,15 +54,23 @@ vi.mock("drizzle-orm", () => ({
   sql: vi.fn(),
 }));
 
+const mockListLocations = vi.fn().mockResolvedValue([]);
+const mockCalculateDistance = vi.fn().mockResolvedValue({
+  bikeMinutes: null,
+  transitMinutes: null,
+});
+const mockGeocodeLatLng = vi.fn().mockResolvedValue(null);
+
 vi.mock("@/lib/locations", () => ({
-  listLocations: vi.fn().mockResolvedValue([]),
+  listLocations: () => mockListLocations(),
 }));
 
 vi.mock("@/lib/distance", () => ({
-  calculateDistance: vi.fn().mockResolvedValue({
-    bikeMinutes: null,
-    transitMinutes: null,
-  }),
+  calculateDistance: (...args: unknown[]) => mockCalculateDistance(...args),
+}));
+
+vi.mock("@/lib/geocode", () => ({
+  geocodeLatLng: (...args: unknown[]) => mockGeocodeLatLng(...args),
 }));
 
 const mockGetDisplayName = vi.fn();
@@ -220,6 +228,117 @@ describe("POST /api/apartments", () => {
     expect(res.status).toBe(201);
     const data = await res.json();
     expect(data.name).toBe("New Place");
+  });
+
+  it("geocodes and writes lat/lng on POST when an address is present", async () => {
+    const newApt = {
+      name: "Geocoded Apt",
+      address: "Real St 1",
+      sizeM2: 50,
+    };
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 7, ...newApt }]),
+      }),
+    });
+    mockUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+    mockGeocodeLatLng.mockResolvedValueOnce({ lat: 47.5, lng: 8.5 });
+
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify(newApt),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.latitude).toBe(47.5);
+    expect(data.longitude).toBe(8.5);
+    expect(mockGeocodeLatLng).toHaveBeenCalledWith("Real St 1");
+  });
+
+  it("does not fail when geocoding throws — apartment is still created", async () => {
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([
+          { id: 8, name: "x", address: "x" },
+        ]),
+      }),
+    });
+    mockGeocodeLatLng.mockRejectedValueOnce(new Error("rate limit"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x", address: "x" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("inserts a distance row per configured location when address is present", async () => {
+    mockInsert.mockReturnValueOnce({
+      values: vi.fn().mockReturnValue({
+        returning: vi
+          .fn()
+          .mockResolvedValue([{ id: 9, name: "x", address: "a" }]),
+      }),
+    });
+    // Subsequent inserts for apartmentDistances.
+    const distanceInsert = vi.fn().mockResolvedValue(undefined);
+    mockInsert.mockReturnValue({
+      values: distanceInsert,
+    });
+    mockGeocodeLatLng.mockResolvedValueOnce(null);
+    mockListLocations.mockResolvedValueOnce([
+      { id: 7, address: "Loc A" },
+      { id: 8, address: "Loc B" },
+    ]);
+    mockCalculateDistance
+      .mockResolvedValueOnce({ bikeMinutes: 12, transitMinutes: 25 })
+      .mockResolvedValueOnce({ bikeMinutes: 18, transitMinutes: 30 });
+
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x", address: "a" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(distanceInsert).toHaveBeenCalledTimes(2);
+  });
+
+  it("logs and continues when distance calc throws for one location", async () => {
+    mockInsert.mockReturnValueOnce({
+      values: vi.fn().mockReturnValue({
+        returning: vi
+          .fn()
+          .mockResolvedValue([{ id: 10, name: "x", address: "a" }]),
+      }),
+    });
+    mockInsert.mockReturnValue({
+      values: vi.fn().mockResolvedValue(undefined),
+    });
+    mockGeocodeLatLng.mockResolvedValueOnce(null);
+    mockListLocations.mockResolvedValueOnce([
+      { id: 7, address: "Loc A" },
+      { id: 8, address: "Loc B" },
+    ]);
+    mockCalculateDistance
+      .mockRejectedValueOnce(new Error("rate limit"))
+      .mockResolvedValueOnce({ bikeMinutes: 18, transitMinutes: 30 });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x", address: "a" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(errSpy).toHaveBeenCalled();
   });
 
   it("retries on unique-constraint collisions and eventually succeeds", async () => {
