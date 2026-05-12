@@ -1,9 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createClient } from "@libsql/client";
-import { applyMigrations } from "../migrate";
+import { applyMigrations, runMigrations } from "../migrate";
 
 async function columnNames(
   client: ReturnType<typeof createClient>,
@@ -192,5 +194,34 @@ describe("applyMigrations", () => {
       args: [],
     });
     expect(rows.rows.map((r) => r.name)).toEqual(["Alice", "Bob"]);
+  });
+});
+
+describe("runMigrations", () => {
+  const tmpDir = path.join(process.cwd(), "data");
+  const dbPath = path.join(tmpDir, "migrate-test.db");
+  const savedEnv = { ...process.env };
+
+  beforeEach(() => {
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+    process.env.TURSO_DATABASE_URL = "";
+    process.env.TURSO_AUTH_TOKEN = "";
+    process.env.LOCAL_DB_URL = `file:${dbPath}`;
+  });
+
+  afterEach(() => {
+    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+    process.env = { ...savedEnv };
+  });
+
+  it("runs against the local sqlite path resolved from LOCAL_DB_URL", async () => {
+    await runMigrations();
+    expect(fs.existsSync(dbPath)).toBe(true);
+
+    // Re-validating: a second call resolves immediately thanks to the
+    // module-level cachedPromise (no second migration is run, but it must
+    // not throw).
+    await expect(runMigrations()).resolves.toBeUndefined();
   });
 });
