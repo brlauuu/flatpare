@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { ratings, users } from "@/lib/db/schema";
 import { eq, ne, asc } from "drizzle-orm";
-import { setDisplayName } from "@/lib/auth";
+import { isAuthenticated, setDisplayName, unauthorized } from "@/lib/auth";
 
 const NAME_COOKIE = "flatpare-name";
 
@@ -12,6 +12,7 @@ export async function DELETE(
   { params }: { params: Promise<{ name: string }> }
 ) {
   try {
+    if (!(await isAuthenticated())) return unauthorized();
     const { name: raw } = await params;
     const name = decodeURIComponent(raw);
 

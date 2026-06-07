@@ -8,8 +8,8 @@ export function proxy(request: NextRequest) {
   const hasName = !!nameCookie?.value;
   const path = request.nextUrl.pathname;
 
-  // Login page + auth API are always reachable.
-  if (path === "/" || path.startsWith("/api/auth")) {
+  // Login page and the main auth endpoint are always reachable.
+  if (path === "/" || path === "/api/auth") {
     // Bounce a fully-authed user away from the login page.
     if (path === "/" && isAuthed && hasName) {
       return NextResponse.redirect(new URL("/apartments", request.url));
@@ -17,20 +17,22 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // API routes return JSON 401 on failure — the UI handles that better than a
-  // 302 to an HTML login page, and external clients can detect it cleanly.
-  if (path.startsWith("/api/")) {
-    if (!isAuthed || !hasName) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      );
+  // Other auth API routes and the onboarding page require the app password (isAuthed).
+  if (path.startsWith("/api/auth/") || path === "/add-user") {
+    if (!isAuthed) {
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
   }
 
-  // Page routes redirect to the login screen.
+  // All other routes require full authentication (password + display name).
   if (!isAuthed || !hasName) {
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/", request.url));
   }
 

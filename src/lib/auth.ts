@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
 const AUTH_COOKIE = "flatpare-auth";
 const NAME_COOKIE = "flatpare-name";
@@ -42,5 +43,13 @@ export async function setDisplayName(name: string): Promise<void> {
 }
 
 export function verifyPassword(input: string): boolean {
-  return input === process.env.APP_PASSWORD;
+  const password = process.env.APP_PASSWORD;
+  if (!password || !input) return false;
+
+  // To prevent timing attacks even with different string lengths,
+  // we hash both and compare the fixed-length digests.
+  const inputHash = crypto.createHash("sha256").update(input).digest();
+  const expectedHash = crypto.createHash("sha256").update(password).digest();
+
+  return crypto.timingSafeEqual(inputHash, expectedHash);
 }

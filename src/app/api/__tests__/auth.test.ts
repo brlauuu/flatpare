@@ -5,6 +5,8 @@ vi.mock("@/lib/auth", () => ({
   verifyPassword: vi.fn(),
   setAuthenticated: vi.fn(async () => {}),
   setDisplayName: vi.fn(async () => {}),
+  isAuthenticated: vi.fn(async () => true),
+  unauthorized: vi.fn(() => ({ status: 401, json: async () => ({ error: "Not authenticated" }) })),
 }));
 
 // Mock db

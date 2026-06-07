@@ -40,9 +40,9 @@ describe("proxy — /api/auth bypass", () => {
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("lets unauthenticated callers reach /api/auth/name", () => {
+  it("restricts /api/auth/name for unauthenticated callers", () => {
     const res = proxy(makeRequest("/api/auth/name"));
-    expect(res.headers.get("x-middleware-next")).toBe("1");
+    expect(res.status).toBe(401);
   });
 });
 
