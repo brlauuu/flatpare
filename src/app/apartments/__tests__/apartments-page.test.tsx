@@ -220,7 +220,7 @@ describe("Apartments page — sort", () => {
       expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
     });
     await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
-    const options = screen.getAllByRole("option");
+    const options = await screen.findAllByRole("option");
     expect(options).toHaveLength(6);
     const labels = options.map((o) => o.textContent);
     expect(labels).toEqual([
