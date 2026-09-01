@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
-
-const AUTH_COOKIE = "flatpare-auth";
-const NAME_COOKIE = "flatpare-name";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { AUTH_COOKIE, NAME_COOKIE, authCookieMatches, authCookieValue } from "./auth-cookie";
 
 // Defense-in-depth helper for API routes. The proxy already 401s `/api/*`
 // for unauthenticated callers; routes still call this so they fail closed
@@ -14,12 +12,14 @@ export function unauthorized(): NextResponse {
 
 export async function isAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
-  return cookieStore.get(AUTH_COOKIE)?.value === "true";
+  return authCookieMatches(cookieStore.get(AUTH_COOKIE)?.value);
 }
 
 export async function setAuthenticated(): Promise<void> {
+  const value = authCookieValue();
+  if (!value) throw new Error("APP_PASSWORD is not set");
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE, "true", {
+  cookieStore.set(AUTH_COOKIE, value, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" && !process.env.DISABLE_SECURE_COOKIES,
     sameSite: "lax",
@@ -46,10 +46,11 @@ export function verifyPassword(input: string): boolean {
   const password = process.env.APP_PASSWORD;
   if (!password || !input) return false;
 
-  // To prevent timing attacks even with different string lengths,
-  // we hash both and compare the fixed-length digests.
-  const inputHash = crypto.createHash("sha256").update(input).digest();
-  const expectedHash = crypto.createHash("sha256").update(password).digest();
+  // Hash both sides first: timingSafeEqual throws on a length mismatch, so
+  // comparing the raw strings would both leak length and crash on input of
+  // the wrong size. Equal-length digests avoid that.
+  const inputHash = createHmac("sha256", password).update(input).digest();
+  const expectedHash = createHmac("sha256", password).update(password).digest();
 
-  return crypto.timingSafeEqual(inputHash, expectedHash);
+  return timingSafeEqual(inputHash, expectedHash);
 }

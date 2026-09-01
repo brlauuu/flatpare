@@ -31,9 +31,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Shared-password + display-name model (no real accounts). See `src/lib/auth.ts` and `src/app/api/auth/`.
 - The shared password lives in the **`APP_PASSWORD` env var**. `verifyPassword(input)` compares the submitted value against it.
 - On a successful match, two cookies are set:
-  - **`flatpare-auth=true`** — httpOnly; `isAuthenticated()` checks this and returns a boolean.
+  - **`flatpare-auth`** — httpOnly; the value is `HMAC-SHA256(APP_PASSWORD, "flatpare-auth-v1")`, not a static `true`, so it can't be forged by anyone who just knows the cookie name. `isAuthenticated()` verifies it in constant time and returns a boolean. Cookie names and the HMAC helpers live in `src/lib/auth-cookie.ts` — the proxy can't import `next/headers`, so both sides share that module. Rotating `APP_PASSWORD` invalidates every session.
   - **`flatpare-name=<display-name>`** — readable from client JS; `getDisplayName()` returns the value or `null`.
-- **`src/proxy.ts` is the primary gate.** It enforces auth on every page route (redirect → `/`) and every `/api/*` path (JSON 401), with `/api/auth/*` allow-listed for the login flow. The matcher only excludes `_next/static`, `_next/image`, and `favicon.ico`.
+- **`src/proxy.ts` is the primary gate.** It enforces auth on every page route (redirect → `/`) and every `/api/*` path (JSON 401). Only `/` and an **exact** `/api/auth` are public — the allow-list is not a prefix match, because `startsWith("/api/auth")` once exposed user listing and deletion (PR #176). `/api/auth/*` and `/add-user` require the auth cookie but not a display name, since that's the step that sets it. The matcher only excludes `_next/static`, `_next/image`, and `favicon.ico`.
 - Route handlers may add an explicit `if (!(await isAuthenticated())) return unauthorized()` as defense-in-depth (already done on `/api/apartments/[id]`); prefer this for routes that hit paid third-party APIs or grant write tokens.
 - There is no shared `requireUser()` helper — don't add one without discussion.
 - `DISABLE_SECURE_COOKIES` (any truthy value) drops the `Secure` flag so cookies work over plain HTTP in dev.

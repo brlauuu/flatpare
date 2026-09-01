@@ -1,12 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock auth lib
-vi.mock("@/lib/auth", () => ({
-  verifyPassword: vi.fn(),
-  setAuthenticated: vi.fn(async () => {}),
-  setDisplayName: vi.fn(async () => {}),
-  isAuthenticated: vi.fn(async () => true),
-  unauthorized: vi.fn(() => ({ status: 401, json: async () => ({ error: "Not authenticated" }) })),
+vi.mock("@/lib/auth", async () => {
+  const { NextResponse } = await import("next/server");
+  return {
+    verifyPassword: vi.fn(),
+    setAuthenticated: vi.fn(async () => {}),
+    setDisplayName: vi.fn(async () => {}),
+    isAuthenticated: vi.fn(async () => true),
+    unauthorized: vi.fn(() =>
+      NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    ),
+  };
+});
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({
+    get: vi.fn(() => undefined),
+    set: vi.fn(),
+    delete: vi.fn(),
+  })),
 }));
 
 // Mock db
@@ -45,12 +58,15 @@ vi.mock("drizzle-orm", () => ({
 import { POST as authPost } from "../../api/auth/route";
 import { POST as namePost } from "../../api/auth/name/route";
 import { GET as usersGet } from "../../api/auth/users/route";
-import { verifyPassword } from "@/lib/auth";
+import { DELETE as userDelete } from "../../api/auth/users/[name]/route";
+import { verifyPassword, isAuthenticated } from "@/lib/auth";
 
 const mockedVerifyPassword = vi.mocked(verifyPassword);
+const mockedIsAuthenticated = vi.mocked(isAuthenticated);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedIsAuthenticated.mockResolvedValue(true);
   usersSelectRows.length = 0;
   lastInsertValues = null;
 });
@@ -155,5 +171,53 @@ describe("GET /api/auth/users", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);
     expect(errSpy).toHaveBeenCalled();
+  });
+});
+
+// These three routes were reachable without the password until PR #176: the
+// proxy allow-listed the whole `/api/auth` prefix. They now check for
+// themselves, so they stay closed even if the gate regresses again.
+describe("auth routes — defense in depth", () => {
+  beforeEach(() => {
+    mockedIsAuthenticated.mockResolvedValue(false);
+  });
+
+  it("POST /api/auth/name returns 401 for an unauthenticated caller", async () => {
+    const req = new Request("http://localhost/api/auth/name", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "Mallory" }),
+    });
+    const res = await namePost(req);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Not authenticated" });
+  });
+
+  it("POST /api/auth/name writes nothing when unauthenticated", async () => {
+    const req = new Request("http://localhost/api/auth/name", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "Mallory" }),
+    });
+    await namePost(req);
+    expect(lastInsertValues).toBeNull();
+  });
+
+  it("GET /api/auth/users returns 401 for an unauthenticated caller", async () => {
+    const res = await usersGet();
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Not authenticated" });
+  });
+
+  it("GET /api/auth/users does not leak names when unauthenticated", async () => {
+    usersSelectRows.push({ name: "Alice" }, { name: "Bob" });
+    const res = await usersGet();
+    expect(await res.json()).toEqual({ error: "Not authenticated" });
+  });
+
+  it("DELETE /api/auth/users/[name] returns 401 for an unauthenticated caller", async () => {
+    const res = await userDelete(new Request("http://localhost/api/auth/users/Alice"), {
+      params: Promise.resolve({ name: "Alice" }),
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Not authenticated" });
   });
 });

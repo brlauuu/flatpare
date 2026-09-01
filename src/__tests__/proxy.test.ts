@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy } from "../proxy";
+import { authCookieValue } from "@/lib/auth-cookie";
+
+beforeAll(() => {
+  process.env.APP_PASSWORD = "test-password";
+});
 
 function makeRequest(
   path: string,
@@ -15,10 +20,13 @@ function makeRequest(
   });
 }
 
-const authedCookies = {
-  "flatpare-auth": "true",
+// The auth cookie is an HMAC keyed by APP_PASSWORD, so tests have to mint a
+// real one — which is the point: "true" no longer opens anything.
+const authCookie = () => authCookieValue() as string;
+const authedCookies = () => ({
+  "flatpare-auth": authCookie(),
   "flatpare-name": "Alice",
-};
+});
 
 describe("proxy — login page", () => {
   it("lets an unauthenticated visitor see the login page", () => {
@@ -28,7 +36,7 @@ describe("proxy — login page", () => {
   });
 
   it("redirects an authed visitor away from the login page", () => {
-    const res = proxy(makeRequest("/", authedCookies));
+    const res = proxy(makeRequest("/", authedCookies()));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/apartments");
   });
@@ -40,9 +48,68 @@ describe("proxy — /api/auth bypass", () => {
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("restricts /api/auth/name for unauthenticated callers", () => {
-    const res = proxy(makeRequest("/api/auth/name"));
-    expect(res.status).toBe(401);
+  // Regression guard: the allow-list used to be startsWith("/api/auth"),
+  // which left every one of these reachable without the password.
+  const guardedAuthPaths = [
+    "/api/auth/name",
+    "/api/auth/users",
+    "/api/auth/users/Alice",
+  ];
+
+  for (const path of guardedAuthPaths) {
+    it(`returns JSON 401 for unauthenticated ${path}`, async () => {
+      const res = proxy(makeRequest(path));
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Not authenticated" });
+    });
+
+    it(`lets a password-authed caller without a display name reach ${path}`, () => {
+      const res = proxy(makeRequest(path, { "flatpare-auth": authCookie() }));
+      expect(res.headers.get("x-middleware-next")).toBe("1");
+    });
+  }
+
+  it("redirects unauthenticated /add-user to the login page", () => {
+    const res = proxy(makeRequest("/add-user"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toMatch(/\/$/);
+  });
+
+  it("lets a password-authed visitor without a name reach /add-user", () => {
+    const res = proxy(makeRequest("/add-user", { "flatpare-auth": authCookie() }));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+});
+
+describe("proxy — auth cookie can't be forged", () => {
+  const forged = ["true", "1", "", "yes", "a".repeat(64)];
+
+  for (const value of forged) {
+    it(`rejects a hand-set auth cookie of ${JSON.stringify(value)}`, () => {
+      const res = proxy(
+        makeRequest("/api/apartments", {
+          "flatpare-auth": value,
+          "flatpare-name": "Mallory",
+        })
+      );
+      expect(res.status).toBe(401);
+    });
+  }
+
+  it("rejects a cookie minted under a different password", () => {
+    const stale = authCookie();
+    process.env.APP_PASSWORD = "rotated-password";
+    try {
+      const res = proxy(
+        makeRequest("/api/apartments", {
+          "flatpare-auth": stale,
+          "flatpare-name": "Alice",
+        })
+      );
+      expect(res.status).toBe(401);
+    } finally {
+      process.env.APP_PASSWORD = "test-password";
+    }
   });
 });
 
@@ -74,14 +141,14 @@ describe("proxy — protected API routes", () => {
     });
 
     it(`lets authenticated calls through to ${path}`, () => {
-      const res = proxy(makeRequest(path, authedCookies));
+      const res = proxy(makeRequest(path, authedCookies()));
       expect(res.headers.get("x-middleware-next")).toBe("1");
     });
   }
 
   it("returns 401 when auth cookie is set but display name is missing", async () => {
     const res = proxy(
-      makeRequest("/api/apartments", { "flatpare-auth": "true" })
+      makeRequest("/api/apartments", { "flatpare-auth": authCookie() })
     );
     expect(res.status).toBe(401);
   });
@@ -113,7 +180,7 @@ describe("proxy — protected page routes", () => {
     });
 
     it(`lets authenticated ${path} render`, () => {
-      const res = proxy(makeRequest(path, authedCookies));
+      const res = proxy(makeRequest(path, authedCookies()));
       expect(res.headers.get("x-middleware-next")).toBe("1");
     });
   }
