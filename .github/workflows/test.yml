@@ -21,6 +21,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Ensure local DB directory exists
         run: mkdir -p data
 
