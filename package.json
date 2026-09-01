@@ -8,6 +8,7 @@
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start -p 3002",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
