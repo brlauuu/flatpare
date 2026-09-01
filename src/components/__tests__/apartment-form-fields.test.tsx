@@ -12,7 +12,7 @@ import {
 afterEach(() => cleanup());
 
 describe("ApartmentFormFields — onChange wiring", () => {
-  const fieldsThatCallOnChange: Array<[keyof typeof emptyApartmentForm, string, string]> = [
+  const fieldsThatCallOnChange: Array<[keyof typeof emptyApartmentForm, RegExp, string]> = [
     ["address", /^Address$/, "Bahnhofstrasse 1"],
     ["rentChf", /^Rent/, "2500"],
     ["sizeM2", /^Size/, "75"],
