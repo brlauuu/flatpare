@@ -49,3 +49,6 @@ next-env.d.ts
 # git worktrees (local isolated workspaces)
 /.worktrees/
 .claude/
+
+# enola architectural snapshots (local, regenerated on demand)
+/.enola/
