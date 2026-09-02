@@ -7,9 +7,46 @@ import {
   primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { users } from "./schema-auth";
+
+export const households = sqliteTable("households", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Read by E5/E6. Present now so the column does not need adding later.
+  tier: text("tier").notNull().default("free"),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
+export const householdMembers = sqliteTable(
+  "household_members",
+  {
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["owner", "member"] }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [primaryKey({ columns: [table.householdId, table.userId] })]
+);
+
+export type Household = typeof households.$inferSelect;
+export type HouseholdMember = typeof householdMembers.$inferSelect;
 
 export const apartments = sqliteTable("apartments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  householdId: integer("household_id")
+    .notNull()
+    .references(() => households.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   address: text("address"),
   sizeM2: real("size_m2"),
@@ -41,10 +78,15 @@ export const ratings = sqliteTable(
   "ratings",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
     apartmentId: integer("apartment_id")
       .notNull()
       .references(() => apartments.id, { onDelete: "cascade" }),
-    userName: text("user_name").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     kitchen: integer("kitchen").default(0),
     balconies: integer("balconies").default(0),
     location: integer("location").default(0),
@@ -61,20 +103,16 @@ export const ratings = sqliteTable(
   (table) => [
     uniqueIndex("ratings_apartment_user_idx").on(
       table.apartmentId,
-      table.userName
+      table.userId
     ),
   ]
 );
 
-export const users = sqliteTable("users", {
-  name: text("name").primaryKey().notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-});
-
 export const apiUsage = sqliteTable("api_usage", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  householdId: integer("household_id").references(() => households.id, {
+    onDelete: "set null",
+  }),
   service: text("service").notNull(),
   operation: text("operation").notNull(),
   inputTokens: integer("input_tokens"),
@@ -86,6 +124,9 @@ export const apiUsage = sqliteTable("api_usage", {
 
 export const locationsOfInterest = sqliteTable("locations_of_interest", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  householdId: integer("household_id")
+    .notNull()
+    .references(() => households.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   icon: text("icon").notNull(),
   address: text("address").notNull(),
@@ -103,6 +144,9 @@ export const locationsOfInterest = sqliteTable("locations_of_interest", {
 export const apartmentDistances = sqliteTable(
   "apartment_distances",
   {
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
     apartmentId: integer("apartment_id")
       .notNull()
       .references(() => apartments.id, { onDelete: "cascade" }),
@@ -123,3 +167,5 @@ export const apartmentDistances = sqliteTable(
 export type Apartment = typeof apartments.$inferSelect;
 export type Rating = typeof ratings.$inferSelect;
 export type LocationOfInterest = typeof locationsOfInterest.$inferSelect;
+
+export { users, accounts, sessions, verificationTokens } from "./schema-auth";

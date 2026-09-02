@@ -159,6 +159,18 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   });
   if (newTable.rows.length === 0) return;
 
+  // Once `household_id` exists, locations are tenant-scoped and there is no
+  // ownerless default household to attach a fallback row to — this legacy
+  // single-station backfill only applies to pre-tenancy databases.
+  const locationsCols = await client.execute({
+    sql: "PRAGMA table_info(locations_of_interest)",
+    args: [],
+  });
+  const hasHouseholdId = locationsCols.rows.some(
+    (r) => r.name === "household_id"
+  );
+  if (hasHouseholdId) return;
+
   const existing = await client.execute({
     sql: "SELECT COUNT(*) as n FROM locations_of_interest",
     args: [],
