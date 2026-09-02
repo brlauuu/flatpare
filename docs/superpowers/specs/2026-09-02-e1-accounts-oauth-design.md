@@ -100,12 +100,18 @@ constant-time comparison is retained for it.
 ## Sign-in and household resolution
 
 On first sign-in a user gets a household and is its owner. On subsequent
-sign-ins the session resolves to their existing membership. An invited user who
-accepts joins the inviter's household instead of creating one.
+sign-ins the session resolves to their existing membership. A user who is
+already a member of a household resolves to it rather than creating one — the
+code path an invited member will use once invitations exist.
 
-Invitations are modelled here but the key-wrapping half belongs to E2; until
-then an invitation grants membership without any encrypted-data access, because
-there is no encrypted data yet.
+**Invitations are out of scope for E1** (split to #197 on 2026-09-02). E1 lands
+single-member households. The membership model is a join table, and
+`resolveHouseholdForUser` already prefers an existing membership over creating
+one, so nothing here has to change when invitations arrive.
+
+The split is deliberate: once E2 lands, an invitation is a key-wrapping
+operation requiring an owner to be online, not just a database row. Building the
+flow before that shape is known would mean building it twice.
 
 ## Storage — the IDOR fix
 
@@ -161,6 +167,11 @@ local warning.
 
 ## Out of scope
 
-Household switching UI, ownership transfer, a second owner (backlogged as #192),
-per-member permissions beyond owner/member, and everything E2 owns: passphrases,
-key wrapping, and encrypted data.
+Invitations and member removal (#197), household switching UI, ownership
+transfer, a second owner (#192), per-member permissions beyond owner/member,
+tier limits (E5, #187), and everything E2 owns: passphrases, key wrapping, and
+encrypted data.
+
+E1 therefore ships households that contain exactly one member. That is a
+deliberate intermediate state, not an oversight: it is complete and secure on
+its own, and #197 makes it multi-user.
