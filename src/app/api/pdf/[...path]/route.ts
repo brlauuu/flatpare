@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { requireHousehold } from "@/lib/session";
-import { householdIdFromStoredPath } from "@/lib/storage";
+import {
+  householdIdFromStoredPath,
+  hasResidualPercentEncoding,
+} from "@/lib/storage";
 
 export async function GET(
   _request: Request,
@@ -15,6 +18,16 @@ export async function GET(
   }
 
   const { path: segments } = await params;
+
+  // See hasResidualPercentEncoding in storage.ts: Next has already decoded
+  // each segment once here, so anything still carrying a "%" is either a
+  // double-encoded traversal payload or a filename @vercel/blob's get()
+  // would resolve differently than what we checked. Refuse before either
+  // string is built.
+  if (hasResidualPercentEncoding(segments)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const pathname = segments.join("/");
 
   const owner = householdIdFromStoredPath(pathname);

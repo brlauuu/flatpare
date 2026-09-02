@@ -124,6 +124,58 @@ describe("Upload page — client-direct Vercel Blob path", () => {
     expect(multipartCalls).toHaveLength(0);
   });
 
+  // Fix round 1, IMPORTANT 1 regression: the upload-token route now
+  // requires the pathname it receives to already be its own canonical
+  // form (see the comment in upload-token/route.ts). upload-pdf.ts must
+  // canonicalize client-side before minting/uploading so an ordinary
+  // filename with a space doesn't get refused.
+  it("canonicalizes a filename containing a space before minting/uploading", async () => {
+    blobUploadMock.mockResolvedValue({
+      pathname: "households/7/123-my%20listing.pdf",
+    });
+
+    vi.spyOn(global, "fetch").mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/api/parse-pdf/upload-token")) {
+          return probeResponse(true);
+        }
+        if (url === "/api/parse-pdf" && init?.method === "POST") {
+          const body = JSON.parse(init.body as string);
+          expect(body.pathname).toBe("households/7/123-my%20listing.pdf");
+          expect(body.filename).toBe("my listing.pdf");
+          return jsonResponse({
+            pdfUrl: "/api/pdf/households/7/123-my%20listing.pdf",
+            extracted: {
+              name: "Spaced Apartment",
+              address: null,
+              sizeM2: null,
+              numRooms: null,
+              numBathrooms: null,
+              numBalconies: null,
+              hasWashingMachine: null,
+              rentChf: null,
+              listingUrl: null,
+            },
+            aiAvailable: true,
+          });
+        }
+        throw new Error(`Unexpected fetch: ${init?.method ?? "GET"} ${url}`);
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<UploadPage />);
+    await dropPdf(user, makePdfFile("my listing.pdf"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Spaced Apartment")).toBeInTheDocument();
+    });
+
+    const [pathname] = blobUploadMock.mock.calls[0] as [string];
+    expect(pathname).toMatch(/^households\/7\/\d+-my%20listing\.pdf$/);
+  });
+
   it("falls back to multipart upload when the probe reports unconfigured", async () => {
     vi.spyOn(global, "fetch").mockImplementation(
       async (input: RequestInfo | URL, init?: RequestInit) => {

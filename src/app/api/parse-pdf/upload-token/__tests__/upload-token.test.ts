@@ -143,6 +143,35 @@ describe("POST /api/parse-pdf/upload-token", () => {
       )
     ).rejects.toThrow();
   });
+
+  // Fix round 1, IMPORTANT 1: the check validates `canonical` but
+  // handleUpload signs the raw `pathname` — trusting the two are
+  // equivalent would rest the safety property on an unproven assumption
+  // about how the blob backend resolves a non-canonical key. This
+  // pathname is a deliberately awkward case: its dot segment cancels out
+  // to land back in the caller's OWN household (7), so the
+  // household-ownership check alone would let it through. The
+  // canonical-equality check must still refuse it, because raw !==
+  // canonical.
+  it("rejects a non-canonical pathname even when it resolves back to the caller's own household", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "test-token";
+    mockHandleUpload.mockResolvedValueOnce({
+      type: "blob.generate-client-token",
+      clientToken: "tok_123",
+    });
+
+    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "blob.generate-client-token" }),
+    });
+    await POST(req);
+
+    const opts = mockHandleUpload.mock.calls[0][0];
+    await expect(
+      opts.onBeforeGenerateToken("households/7/../7/x.pdf", null, false)
+    ).rejects.toThrow();
+  });
 });
 
 describe("POST /api/parse-pdf/upload-token — real handleUpload, no mock (guard end-to-end)", () => {

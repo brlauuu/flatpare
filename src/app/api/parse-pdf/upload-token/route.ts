@@ -72,8 +72,33 @@ export async function POST(request: Request) {
       // householdIdFromStoredPath is reused rather than re-implemented so
       // there is exactly one definition of what a household-scoped path
       // looks like.
+      //
+      // We validate `canonical` but handleUpload signs the original
+      // `pathname` — it has no hook to sign anything else. Trusting that
+      // the two are equivalent would mean the safety property rests on an
+      // argument about how the blob backend resolves a non-canonical key,
+      // which is exactly the kind of external assumption that produced the
+      // earlier bypass in this epic. Close it by construction instead:
+      // require `pathname` to already BE its own canonical form.
+      //
+      // canonicalizePathname doesn't just resolve dot segments — it's a
+      // full WHATWG URL path re-serialization, so it also percent-encodes
+      // raw spaces and non-ASCII characters. A naive version of this check
+      // would reject perfectly ordinary filenames ("my listing.pdf",
+      // "café.pdf"). That's why upload-pdf.ts runs the exact same
+      // canonicalizePathname over the pathname it constructs *before*
+      // ever calling upload() — the client sends an already-canonical
+      // string, so this check is a no-op for every legitimate upload and
+      // only rejects a pathname that canonicalization would have rewritten
+      // (dot-segment tricks, or a raw pathname some other client sent
+      // un-canonicalized).
       onBeforeGenerateToken: async (pathname) => {
         const canonical = canonicalizePathname(pathname);
+        if (canonical !== pathname) {
+          throw new Error(
+            "Refusing to mint an upload token for a non-canonical pathname"
+          );
+        }
         if (householdIdFromStoredPath(canonical) !== householdId) {
           throw new Error(
             "Refusing to mint an upload token outside the caller's household"

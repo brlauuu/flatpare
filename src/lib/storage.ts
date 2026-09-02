@@ -1,6 +1,9 @@
 import { put, get } from "@vercel/blob";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import path from "path";
+import { canonicalizePathname } from "@/lib/pathname";
+
+export { canonicalizePathname, hasResidualPercentEncoding } from "@/lib/pathname";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
@@ -28,16 +31,10 @@ export function householdIdFromStoredPath(pathname: string): number | null {
   return Number(segments[1]);
 }
 
-// Canonicalize a client-supplied pathname the same way @vercel/blob's get()
-// resolves one internally: string-interpolate into a URL and let the
-// WHATWG parser collapse percent-encoded dot segments ("%2e%2e" -> "..",
-// then resolved away). Any caller that checks a pathname's household and
-// then uses that pathname for a blob operation MUST check this canonical
-// form, not the raw input — checking one string and using another is
-// exactly how a prior confirmed bypass in this codebase worked.
-export function canonicalizePathname(pathname: string): string {
-  return new URL(`https://x/${pathname}`).pathname.slice(1);
-}
+// canonicalizePathname and hasResidualPercentEncoding now live in
+// src/lib/pathname.ts (re-exported above) — that module has zero
+// dependencies, so src/lib/upload-pdf.ts (which runs in the browser) can
+// import it directly without pulling in "fs" or "@vercel/blob".
 
 export async function uploadFile(
   householdId: number,

@@ -27,5 +27,5 @@ jobs:
       - name: Ensure local DB directory exists
         run: mkdir -p data
 
-      - name: Test
-        run: npm test
+      - name: Test with coverage
+        run: npm run test:coverage

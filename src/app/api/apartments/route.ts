@@ -12,7 +12,7 @@ import {
   UnauthorizedError,
 } from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
-import { householdIdFromStoredPath } from "@/lib/storage";
+import { householdIdFromStoredPath, canonicalizePathname } from "@/lib/storage";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -34,9 +34,7 @@ function storedPathHousehold(url: string): number | null {
   try {
     if (url.startsWith("/api/pdf/")) {
       const raw = url.slice("/api/pdf/".length);
-      return householdIdFromStoredPath(
-        new URL(`https://x/${raw}`).pathname.slice(1)
-      );
+      return householdIdFromStoredPath(canonicalizePathname(raw));
     }
     if (url.startsWith("/api/uploads/")) {
       return householdIdFromStoredPath(
