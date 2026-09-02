@@ -53,6 +53,59 @@ describe("proxy — session gate", () => {
     const res = await proxy(makeRequest("/api/auth/signin"));
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
+
+  // Deliberate contract, per R3: the proxy passes through ANY path under
+  // /api/auth/ unconditionally, signed in or not, because Auth.js owns that
+  // namespace and its endpoint set is version-dependent — enumerating an
+  // allow-list would be brittle and would break sign-in on an upgrade. This
+  // is a *broader* pass-through than the old exact "/api/auth" match (see
+  // AGENTS.md's note on PR #176, where a startsWith("/api/auth") prefix once
+  // exposed user listing and deletion). Route handlers under /api/auth/*
+  // must carry their own authorization — the proxy will not do it for them.
+  it("passes through any /api/auth/* sub-path unconditionally, signed out or in", async () => {
+    const authPaths = [
+      "/api/auth/signin",
+      "/api/auth/callback/google",
+      "/api/auth/session",
+      "/api/auth/some/arbitrary/sub-path",
+    ];
+    for (const path of authPaths) {
+      signedOut();
+      const outRes = await proxy(makeRequest(path));
+      expect(outRes.headers.get("x-middleware-next")).toBe("1");
+
+      signedIn();
+      const inRes = await proxy(makeRequest(path));
+      expect(inRes.headers.get("x-middleware-next")).toBe("1");
+    }
+  });
+
+  // The other half of isAuthed: a session can carry a user id without a
+  // household (e.g. mid-provisioning, or a bug that drops the JWT callback's
+  // householdId assignment). Both branches must still fail closed.
+  it("redirects a page request when the session has a user id but no householdId", async () => {
+    mockedAuth.mockResolvedValue({
+      user: { id: "u1" },
+      householdId: undefined,
+      role: "owner",
+      expires: new Date(Date.now() + 3600_000).toISOString(),
+    } as never);
+    const res = await proxy(makeRequest("/apartments"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toMatch(/\/$/);
+  });
+
+  it("returns JSON 401 for an API request when the session has a user id but no householdId", async () => {
+    mockedAuth.mockResolvedValue({
+      user: { id: "u1" },
+      householdId: undefined,
+      role: "owner",
+      expires: new Date(Date.now() + 3600_000).toISOString(),
+    } as never);
+    const res = await proxy(makeRequest("/api/apartments"));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Not authenticated" });
+  });
 });
 
 describe("proxy — login page", () => {
