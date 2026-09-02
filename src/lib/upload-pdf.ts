@@ -7,13 +7,25 @@ import { upload } from "@vercel/blob/client";
 const UPLOAD_TOKEN_URL = "/api/parse-pdf/upload-token";
 const PARSE_URL = "/api/parse-pdf";
 
-let blobModeProbe: Promise<boolean> | null = null;
+interface BlobModeProbe {
+  enabled: boolean;
+  // The caller's own household id, needed to mint blob keys under the
+  // `households/<id>/` prefix that the upload-token route (and every
+  // file-serving route) requires. Present whenever `enabled` is true.
+  householdId?: number;
+}
 
-function blobModeEnabled(): Promise<boolean> {
+let blobModeProbe: Promise<BlobModeProbe> | null = null;
+
+function probeBlobMode(): Promise<BlobModeProbe> {
   if (!blobModeProbe) {
     blobModeProbe = fetch(UPLOAD_TOKEN_URL, { method: "GET" })
-      .then((r) => r.ok)
-      .catch(() => false);
+      .then(async (r) => {
+        if (!r.ok) return { enabled: false };
+        const data = (await r.json()) as { householdId?: number };
+        return { enabled: true, householdId: data.householdId };
+      })
+      .catch(() => ({ enabled: false }));
   }
   return blobModeProbe;
 }
@@ -23,8 +35,9 @@ export function _resetBlobModeProbeForTests() {
 }
 
 export async function uploadAndParsePdf(file: File): Promise<Response> {
-  if (await blobModeEnabled()) {
-    const pathname = `apartments/${Date.now()}-${file.name}`;
+  const probe = await probeBlobMode();
+  if (probe.enabled && probe.householdId) {
+    const pathname = `households/${probe.householdId}/${Date.now()}-${file.name}`;
     const blob = await upload(pathname, file, {
       access: "private",
       handleUploadUrl: UPLOAD_TOKEN_URL,

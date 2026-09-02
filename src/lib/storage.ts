@@ -28,6 +28,17 @@ export function householdIdFromStoredPath(pathname: string): number | null {
   return Number(segments[1]);
 }
 
+// Canonicalize a client-supplied pathname the same way @vercel/blob's get()
+// resolves one internally: string-interpolate into a URL and let the
+// WHATWG parser collapse percent-encoded dot segments ("%2e%2e" -> "..",
+// then resolved away). Any caller that checks a pathname's household and
+// then uses that pathname for a blob operation MUST check this canonical
+// form, not the raw input — checking one string and using another is
+// exactly how a prior confirmed bypass in this codebase worked.
+export function canonicalizePathname(pathname: string): string {
+  return new URL(`https://x/${pathname}`).pathname.slice(1);
+}
+
 export async function uploadFile(
   householdId: number,
   filename: string,
@@ -72,18 +83,14 @@ export async function readStoredFile(
 ): Promise<Buffer> {
   if (storedUrl.startsWith("/api/pdf/")) {
     const rawPathname = storedUrl.slice("/api/pdf/".length);
-    // Canonicalize BEFORE checking or fetching. @vercel/blob's get()
-    // builds a URL by string-interpolating the pathname and hands it to
-    // fetch(), which WHATWG-parses it and collapses percent-encoded dot
-    // segments ("%2e%2e" -> "..", then resolved away) that a literal
-    // check on the raw string would miss entirely. Checking the raw
-    // string and fetching the raw string are two different operations on
-    // two copies of the same text that a URL parser reads differently —
-    // that gap IS the vulnerability. So: parse once, right here, and use
-    // nothing but the resulting `key` from this point on — the string we
-    // check is required (by construction, it's the same variable) to be
-    // the string we fetch.
-    const key = new URL(`https://x/${rawPathname}`).pathname.slice(1);
+    // Canonicalize BEFORE checking or fetching — see canonicalizePathname.
+    // Checking the raw string and fetching the raw string are two
+    // different operations on two copies of the same text that a URL
+    // parser reads differently — that gap IS the vulnerability. So: parse
+    // once, right here, and use nothing but the resulting `key` from this
+    // point on — the string we check is required (by construction, it's
+    // the same variable) to be the string we fetch.
+    const key = canonicalizePathname(rawPathname);
     if (householdIdFromStoredPath(key) !== expectedHouseholdId) {
       throw new Error(
         "Refusing to read a file outside the caller's household"
