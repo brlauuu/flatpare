@@ -40,6 +40,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // The PWA manifest and its icons must stay public: a browser fetches the
+    // manifest WITHOUT credentials, so gating it behind auth makes the app
+    // silently uninstallable (the fetch gets a 307 to the login page and the
+    // manifest never parses). None of these files contain user data.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png).*)",
   ],
 };

@@ -34,11 +34,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - On a successful match, two cookies are set:
   - **`flatpare-auth`** — httpOnly; the value is `HMAC-SHA256(APP_PASSWORD, "flatpare-auth-v1")`, not a static `true`, so it can't be forged by anyone who just knows the cookie name. `isAuthenticated()` verifies it in constant time and returns a boolean. Cookie names and the HMAC helpers live in `src/lib/auth-cookie.ts` — the proxy can't import `next/headers`, so both sides share that module. Rotating `APP_PASSWORD` invalidates every session.
   - **`flatpare-name=<display-name>`** — readable from client JS; `getDisplayName()` returns the value or `null`.
-- **`src/proxy.ts` is the primary gate.** It enforces auth on every page route (redirect → `/`) and every `/api/*` path (JSON 401). Only `/` and an **exact** `/api/auth` are public — the allow-list is not a prefix match, because `startsWith("/api/auth")` once exposed user listing and deletion (PR #176). `/api/auth/*` and `/add-user` require the auth cookie but not a display name, since that's the step that sets it. The matcher only excludes `_next/static`, `_next/image`, and `favicon.ico`.
+- **`src/proxy.ts` is the primary gate.** It enforces auth on every page route (redirect → `/`) and every `/api/*` path (JSON 401). Only `/` and an **exact** `/api/auth` are public — the allow-list is not a prefix match, because `startsWith("/api/auth")` once exposed user listing and deletion (PR #176). `/api/auth/*` and `/add-user` require the auth cookie but not a display name, since that's the step that sets it. The matcher excludes `_next/static`, `_next/image`, `favicon.ico`, and the PWA assets (`manifest.webmanifest`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`) — browsers fetch a manifest **without credentials**, so gating it makes the app silently uninstallable. Everything else in `public/` is behind auth.
 - Route handlers may add an explicit `if (!(await isAuthenticated())) return unauthorized()` as defense-in-depth (already done on `/api/apartments/[id]`); prefer this for routes that hit paid third-party APIs or grant write tokens.
 - There is no shared `requireUser()` helper — don't add one without discussion.
 - `DISABLE_SECURE_COOKIES` (any truthy value) drops the `Secure` flag so cookies work over plain HTTP in dev.
 - **Accepted security advisories** are documented in `docs/security-notes.md` — check there before chasing a `npm audit` warning.
+
+## PWA
+- `src/app/manifest.ts` is the web app manifest (Next's `MetadataRoute.Manifest`, served at `/manifest.webmanifest`) — not a static file in `public/`.
+- Icons in `public/` are generated from `public/flatpare_logo.svg` by cropping the square mark out of the wordmark. `icon-maskable-512.png` keeps the mark inside Android's safe zone; `apple-touch-icon.png` exists because iOS ignores the manifest's icons.
+- `theme_color` / `background_color` mirror `--primary` / `--background` from `globals.css`, converted from oklch to hex. Update both together.
+- **There is deliberately no service worker.** Under E2EE an offline shell can't show real data, and a stale cached shell is a hard failure to debug remotely. See `docs/superpowers/specs/2026-09-01-accounts-e2ee-billing-design.md`.
 
 ## File uploads
 - Files larger than ~4.5 MB **must** use `src/lib/upload-pdf.ts` (client-direct Vercel Blob upload via `/api/parse-pdf/upload-token`). Multipart-POSTing big bodies through serverless routes hits the body limit.
