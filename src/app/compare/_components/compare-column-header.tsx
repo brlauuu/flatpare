@@ -20,7 +20,7 @@ export function CompareColumnHeader({
               href={`/apartments/${apt.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold hover:underline"
+              className="flex min-h-11 items-center font-semibold hover:underline sm:min-h-0"
             >
               {apt.name}
             </a>
@@ -30,7 +30,7 @@ export function CompareColumnHeader({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`View PDF for ${apt.name}`}
-                className="text-muted-foreground hover:text-foreground"
+                className="tap-target text-muted-foreground hover:text-foreground"
               >
                 <FileText className="h-3.5 w-3.5" />
               </a>
@@ -41,7 +41,7 @@ export function CompareColumnHeader({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Original listing for ${apt.name}`}
-                className="text-muted-foreground hover:text-foreground"
+                className="tap-target text-muted-foreground hover:text-foreground"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -59,7 +59,7 @@ export function CompareColumnHeader({
           variant="ghost"
           size="sm"
           aria-label={`Hide ${apt.name}`}
-          className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:text-destructive"
+          className="tap-target h-6 w-6 shrink-0 p-0 text-muted-foreground hover:text-destructive"
           onClick={() => onHide(apt.id)}
         >
           ✕

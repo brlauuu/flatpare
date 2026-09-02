@@ -28,7 +28,7 @@ export function AddressLink({
         window.open(mapsUrl(address), "_blank", "noopener,noreferrer");
       }}
       className={cn(
-        "text-left underline-offset-2 hover:underline hover:text-foreground",
+        "flex min-h-11 items-center text-left underline-offset-2 hover:underline hover:text-foreground sm:min-h-0",
         className
       )}
       aria-label={`Open ${address} in Google Maps`}

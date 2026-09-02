@@ -81,6 +81,7 @@ export function AddUserForm() {
               <Input
                 id="name"
                 type="text"
+                className="h-11 sm:h-8"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="e.g. Lara"
@@ -94,14 +95,14 @@ export function AddUserForm() {
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1"
+                className="h-11 flex-1 sm:h-8"
                 onClick={() => router.back()}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="flex-1"
+                className="h-11 flex-1 sm:h-8"
                 disabled={loading || !displayName.trim()}
               >
                 {loading ? "Saving..." : "Enter"}

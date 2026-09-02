@@ -50,6 +50,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
         />
         <Button
           variant="outline"
+          className="h-11 sm:h-8"
           onClick={() => {
             document.getElementById("pdf-file-input")?.click();
           }}
@@ -61,7 +62,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
       {error && <ErrorDisplay headline={error.headline} details={error.details} />}
 
       <div className="text-center">
-        <Button variant="link" onClick={onManualEntry}>
+        <Button variant="link" className="h-11 sm:h-8" onClick={onManualEntry}>
           Or add manually without PDF
         </Button>
       </div>

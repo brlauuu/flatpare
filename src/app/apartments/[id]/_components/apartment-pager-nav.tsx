@@ -22,6 +22,7 @@ export function ApartmentPagerNav({
         type="button"
         variant="outline"
         size="sm"
+        className="h-11 sm:h-7"
         disabled={prevId === null}
         onClick={() => {
           if (prevId !== null) onNavigate(prevId);
@@ -39,6 +40,7 @@ export function ApartmentPagerNav({
         type="button"
         variant="outline"
         size="sm"
+        className="h-11 sm:h-7"
         disabled={nextId === null}
         onClick={() => {
           if (nextId !== null) onNavigate(nextId);

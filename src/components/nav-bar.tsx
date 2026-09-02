@@ -82,7 +82,7 @@ export function NavBar({ userName }: { userName: string }) {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/apartments" className="flex items-center">
+        <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
           <Image
             src="/flatpare_logo.svg"
             alt="Flatpare"

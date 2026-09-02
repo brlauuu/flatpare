@@ -238,7 +238,7 @@ export default function ApartmentsPage() {
           placeholder="Search by name, code, or address..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-9 pl-9 pr-9"
+          className="h-11 pl-9 pr-9 sm:h-9"
         />
         {query.length > 0 && (
           <Button
@@ -247,7 +247,7 @@ export default function ApartmentsPage() {
             size="sm"
             aria-label="Clear search"
             onClick={() => setQuery("")}
-            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+            className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 p-0 sm:h-7 sm:w-7"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -305,7 +305,7 @@ export default function ApartmentsPage() {
               aria-pressed={view === "grid"}
               onClick={() => setView("grid")}
               className={cn(
-                "h-10 gap-1 px-3 sm:h-7 sm:px-2",
+                "h-11 w-11 gap-1 px-3 sm:h-7 sm:w-auto sm:px-2",
                 view === "grid" && "bg-background shadow-sm"
               )}
             >
@@ -319,7 +319,7 @@ export default function ApartmentsPage() {
               aria-pressed={view === "list"}
               onClick={() => setView("list")}
               className={cn(
-                "h-10 gap-1 px-3 sm:h-7 sm:px-2",
+                "h-11 w-11 gap-1 px-3 sm:h-7 sm:w-auto sm:px-2",
                 view === "list" && "bg-background shadow-sm"
               )}
             >

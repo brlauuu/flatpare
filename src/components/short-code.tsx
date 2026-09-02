@@ -57,7 +57,7 @@ export function ShortCode({
         type="button"
         aria-label={copied ? "Copied" : `Copy ${code}`}
         onClick={handleCopy}
-        className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+        className="tap-target rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
       >
         {copied ? (
           <Check className={iconClasses[size]} />

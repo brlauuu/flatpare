@@ -39,7 +39,7 @@ export function DistanceSection({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Bike directions to ${loc.label}`}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="tap-target text-muted-foreground hover:text-foreground"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
