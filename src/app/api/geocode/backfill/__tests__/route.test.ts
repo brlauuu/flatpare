@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockRequireHousehold, selectMock, updateMock, geocodeMock } =
+const {
+  mockRequireHousehold,
+  mockAssertMembership,
+  selectMock,
+  updateMock,
+  geocodeMock,
+} =
   vi.hoisted(() => ({
     mockRequireHousehold: vi.fn(),
+    mockAssertMembership: vi.fn(),
     selectMock: vi.fn(),
     updateMock: vi.fn(),
     geocodeMock: vi.fn(),
@@ -11,6 +18,13 @@ const { mockRequireHousehold, selectMock, updateMock, geocodeMock } =
 vi.mock("@/lib/session", () => ({
   requireHousehold: mockRequireHousehold,
 }));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -47,7 +61,7 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLngWithReason: geocodeMock,
 }));
 
-import { UnauthorizedError } from "@/lib/household";
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
@@ -57,6 +71,7 @@ beforeEach(() => {
     userId: "u1",
     role: "owner",
   });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 function selectReturns(rows: unknown[]) {
@@ -170,5 +185,13 @@ describe("POST /api/geocode/backfill", () => {
     expect(res.status).toBe(401);
     expect(selectMock).not.toHaveBeenCalled();
     expect(geocodeMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the database says the member was removed", async () => {
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await POST();
+    expect(res.status).toBe(404);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockRequireHousehold, dbMocks, checkListingsMock } = vi.hoisted(
-  () => ({
+const { mockRequireHousehold, mockAssertMembership, dbMocks, checkListingsMock } =
+  vi.hoisted(() => ({
     mockRequireHousehold: vi.fn(),
+    mockAssertMembership: vi.fn(),
     dbMocks: {
       select: vi.fn(),
       update: vi.fn(),
@@ -14,6 +15,13 @@ const { mockRequireHousehold, dbMocks, checkListingsMock } = vi.hoisted(
 vi.mock("@/lib/session", () => ({
   requireHousehold: mockRequireHousehold,
 }));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -42,7 +50,7 @@ vi.mock("@/lib/listing-status", () => ({
   checkListings: checkListingsMock,
 }));
 
-import { UnauthorizedError } from "@/lib/household";
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
@@ -52,6 +60,7 @@ beforeEach(() => {
     userId: "u1",
     role: "owner",
   });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 function selectReturns(rows: unknown[]) {
@@ -140,5 +149,14 @@ describe("POST /api/apartments/check-listings", () => {
     expect(res.status).toBe(401);
     expect(dbMocks.select).not.toHaveBeenCalled();
     expect(checkListingsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the database says the member was removed", async () => {
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await POST();
+    // 404, not 403.
+    expect(res.status).toBe(404);
+    expect(dbMocks.select).not.toHaveBeenCalled();
+    expect(dbMocks.update).not.toHaveBeenCalled();
   });
 });

@@ -348,6 +348,14 @@ describe("session and membership gating", () => {
   it("destructive handlers answer 404 when the member was removed", async () => {
     // The JWT still names the household; the database says otherwise.
     mockAssertMembership.mockRejectedValue(new ForbiddenError());
+    const create = await listPOST(
+      new Request("http://x/api/locations", {
+        method: "POST",
+        body: JSON.stringify({ label: "a", icon: "Train", address: "b" }),
+      })
+    );
+    expect(create.status).toBe(404);
+    expect(locationsLib.createLocation).not.toHaveBeenCalled();
     const put = await itemPUT(
       new Request("http://x/api/locations/1", {
         method: "PUT",

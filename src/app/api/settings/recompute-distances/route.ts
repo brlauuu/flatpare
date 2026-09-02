@@ -4,16 +4,32 @@ import { apartments, apartmentDistances } from "@/lib/db/schema";
 import { calculateDistance } from "@/lib/distance";
 import { listLocations } from "@/lib/locations";
 import { eq } from "drizzle-orm";
-import { UnauthorizedError } from "@/lib/household";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 export async function POST() {
   let householdId: number;
+  let userId: string;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId, userId } = await requireHousehold());
   } catch (e) {
     if (e instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // This rewrites the household's apartment_distances rows, so the
+  // 24h-valid JWT is not trusted on its own.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     throw e;
   }

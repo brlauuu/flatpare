@@ -3,7 +3,11 @@ import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments, locationsOfInterest } from "@/lib/db/schema";
 import { geocodeLatLngWithReason } from "@/lib/geocode";
-import { UnauthorizedError } from "@/lib/household";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 const CONCURRENCY = 5;
@@ -37,11 +41,23 @@ async function runWithConcurrency<T>(
 
 export async function POST() {
   let householdId: number;
+  let userId: string;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId, userId } = await requireHousehold());
   } catch (e) {
     if (e instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // This writes lat/lng onto existing apartments and locations, so the
+  // 24h-valid JWT is not trusted on its own.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     throw e;
   }

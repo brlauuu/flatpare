@@ -84,11 +84,19 @@ vi.mock("@/lib/parse-pdf", () => ({
 }));
 
 const readStoredFile = vi.fn(async () => Buffer.from("%PDF-1.4"));
-vi.mock("@/lib/storage", () => ({
-  readStoredFile: (...args: unknown[]) => readStoredFile(...(args as [])),
-  uploadFile: vi.fn(async () => "/api/uploads/households/1/x.pdf"),
-  householdIdFromStoredPath: () => 1,
-}));
+// Only the two I/O functions are stubbed; householdIdFromStoredPath is the
+// REAL parser, because the pdfUrl write-time check under test is exactly that
+// parser applied to a caller-supplied string.
+vi.mock("@/lib/storage", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/storage")>(
+    "@/lib/storage"
+  );
+  return {
+    ...actual,
+    readStoredFile: (...args: unknown[]) => readStoredFile(...(args as [])),
+    uploadFile: vi.fn(async () => "/api/uploads/households/1/x.pdf"),
+  };
+});
 
 import { GET as apartmentsGet, POST as apartmentsPost } from "../apartments/route";
 import {
@@ -108,6 +116,7 @@ import {
 import { POST as locationMovePost } from "../locations/[id]/move/route";
 import { POST as backfillPost } from "../geocode/backfill/route";
 import { POST as recomputePost } from "../settings/recompute-distances/route";
+import { GET as householdUsersGet } from "../auth/users/route";
 
 let houseA = 0;
 let houseB = 0;
@@ -257,6 +266,19 @@ describe("list endpoints return only the caller's household", () => {
     expect(body.map((l: { label: string }) => l.label)).toEqual(["A work"]);
   });
 
+  it("GET /api/auth/users lists only this household's members", async () => {
+    // This route used to list `users.name` for every account in the
+    // deployment. Proven here against the real database rather than a mocked
+    // select, which returns its fixture whatever the where clause says.
+    const res = await householdUsersGet();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(["Ann"]);
+
+    currentSession.householdId = houseB;
+    currentSession.userId = "ub";
+    expect(await (await householdUsersGet()).json()).toEqual(["Bob"]);
+  });
+
   it("GET /api/apartments/[id] reads the caller's own row", async () => {
     const res = await apartmentGet(new Request("http://x"), idParams(flatA));
     expect(res.status).toBe(200);
@@ -277,6 +299,46 @@ describe("writes land in the caller's household", () => {
     expect(res.status).toBe(201);
     const created = await res.json();
     expect(created.householdId).toBe(houseA);
+  });
+
+  it("POST /api/apartments rejects a pdfUrl from another household", async () => {
+    const res = await apartmentsPost(
+      jsonRequest("http://x/api/apartments", {
+        name: "Pointer",
+        pdfUrl: `/api/uploads/households/${houseB}/theirs.pdf`,
+      })
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/household/i);
+    // Nothing was written: no dangling pointer into their namespace.
+    expect(await db.select().from(apartments)).toHaveLength(2);
+  });
+
+  it("POST /api/apartments accepts a pdfUrl in the caller's own household", async () => {
+    const res = await apartmentsPost(
+      jsonRequest("http://x/api/apartments", {
+        name: "Mine",
+        pdfUrl: `/api/uploads/households/${houseA}/mine.pdf`,
+      })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).pdfUrl).toBe(
+      `/api/uploads/households/${houseA}/mine.pdf`
+    );
+  });
+
+  it("POST /api/apartments rejects a pdfUrl that percent-encodes its way out", async () => {
+    // The cloud branch is canonicalized through the URL parser before the
+    // check, the same way readStoredFile does it — checking the raw string
+    // and resolving a different one is what the Task 4 bypass exploited.
+    const res = await apartmentsPost(
+      jsonRequest("http://x/api/apartments", {
+        name: "Sneaky",
+        pdfUrl: `/api/pdf/households/${houseA}/%2e%2e/${houseB}/theirs.pdf`,
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(await db.select().from(apartments)).toHaveLength(2);
   });
 
   it("POST /api/locations stamps the session household", async () => {
@@ -538,6 +600,59 @@ describe("a removed member's still-valid JWT", () => {
       .from(locationsOfInterest)
       .where(eq(locationsOfInterest.id, locA));
     expect(row.label).toBe("A work");
+  });
+
+  it("cannot check listings — no row is overwritten", async () => {
+    const res = await checkListingsPost();
+    expect(res.status).toBe(404);
+    expect(checkListings).not.toHaveBeenCalled();
+    const after = await rowById(flatA);
+    expect(after.listingGone).toBe(false);
+    expect(after.listingCheckedAt).toBeNull();
+  });
+
+  it("cannot run the geocode backfill — no coordinates are written", async () => {
+    const res = await backfillPost();
+    expect(res.status).toBe(404);
+    expect(geocodeLatLngWithReason).not.toHaveBeenCalled();
+    expect((await rowById(flatA)).latitude).toBeNull();
+    const [loc] = await db
+      .select()
+      .from(locationsOfInterest)
+      .where(eq(locationsOfInterest.id, locA));
+    expect(loc.latitude).toBeNull();
+  });
+
+  it("cannot recompute distances — the existing rows are untouched", async () => {
+    const res = await recomputePost();
+    expect(res.status).toBe(404);
+    expect(calculateDistance).not.toHaveBeenCalled();
+    const rows = await db
+      .select()
+      .from(apartmentDistances)
+      .where(eq(apartmentDistances.householdId, houseA));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].bikeMin).toBe(1);
+  });
+
+  it("cannot create an apartment in the ex-household", async () => {
+    const res = await apartmentsPost(
+      jsonRequest("http://x/api/apartments", { name: "Ghost flat" })
+    );
+    expect(res.status).toBe(404);
+    expect(await db.select().from(apartments)).toHaveLength(2);
+  });
+
+  it("cannot create a location in the ex-household", async () => {
+    const res = await locationsPost(
+      jsonRequest("http://x/api/locations", {
+        label: "Ghost",
+        icon: "Bus",
+        address: "Nowhere",
+      })
+    );
+    expect(res.status).toBe(404);
+    expect(await db.select().from(locationsOfInterest)).toHaveLength(3);
   });
 
   it("cannot post a rating", async () => {

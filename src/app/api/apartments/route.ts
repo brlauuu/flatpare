@@ -6,8 +6,13 @@ import {
   ratings,
 } from "@/lib/db/schema";
 import { desc, avg, eq, and } from "drizzle-orm";
-import { UnauthorizedError } from "@/lib/household";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
+import { householdIdFromStoredPath } from "@/lib/storage";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -19,6 +24,30 @@ import { calculateDistance } from "@/lib/distance";
 import { geocodeLatLng } from "@/lib/geocode";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
+
+// Resolve the owning household of a stored-file URL, canonicalizing each
+// branch exactly the way readStoredFile does — the cloud branch through the
+// URL parser (a raw-string check and a parsed fetch are two readings of the
+// same text, and that gap was the Task 4 bypass), the local branch through
+// decodeURIComponent. Returns null for anything unrecognized.
+function storedPathHousehold(url: string): number | null {
+  try {
+    if (url.startsWith("/api/pdf/")) {
+      const raw = url.slice("/api/pdf/".length);
+      return householdIdFromStoredPath(
+        new URL(`https://x/${raw}`).pathname.slice(1)
+      );
+    }
+    if (url.startsWith("/api/uploads/")) {
+      return householdIdFromStoredPath(
+        decodeURIComponent(url.slice("/api/uploads/".length))
+      );
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 function isUniqueConstraintError(err: unknown): boolean {
   return (
@@ -135,8 +164,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   let householdId: number;
+  let userId: string;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId, userId } = await requireHousehold());
   } catch (e) {
     if (e instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -144,8 +174,39 @@ export async function POST(request: Request) {
     throw e;
   }
 
+  // A create is a write, so the JWT is not trusted on its own: a removed
+  // member's token still names their old household for up to 24h and would
+  // otherwise keep inserting rows into it.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw e;
+  }
+
   try {
     const body = await request.json();
+
+    // pdfUrl arrives from the client. Both readers re-check ownership, so a
+    // foreign value is not readable — but storing one writes a dangling
+    // pointer into another household's namespace, so reject it at write time
+    // rather than relying on every future reader to keep checking.
+    if (body.pdfUrl != null) {
+      if (typeof body.pdfUrl !== "string") {
+        return NextResponse.json(
+          { error: "pdfUrl must be a string" },
+          { status: 400 }
+        );
+      }
+      if (storedPathHousehold(body.pdfUrl) !== householdId) {
+        return NextResponse.json(
+          { error: "pdfUrl does not belong to this household" },
+          { status: 400 }
+        );
+      }
+    }
 
     const availableFrom: string | null =
       typeof body.availableFrom === "string" && isIsoDate(body.availableFrom)

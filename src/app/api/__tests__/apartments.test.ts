@@ -111,7 +111,7 @@ vi.mock("@/lib/short-code", () => ({
   pickLetters: vi.fn(() => "ABC"),
 }));
 
-import { UnauthorizedError } from "@/lib/household";
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { GET, POST } from "../../api/apartments/route";
 import { GET as getById, PATCH, DELETE } from "../../api/apartments/[id]/route";
 
@@ -646,5 +646,17 @@ describe("DELETE /api/apartments/[id]", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.success).toBe(true);
+  });
+
+  it("POST returns 404 when the database says the member was removed", async () => {
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "Ghost" }),
+    });
+    const res = await POST(req);
+    // 404, not 403 — and nothing is inserted into the ex-household.
+    expect(res.status).toBe(404);
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });

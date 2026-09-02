@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createLocation, listLocations } from "@/lib/locations";
-import { UnauthorizedError } from "@/lib/household";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 export async function GET() {
@@ -28,11 +32,23 @@ export async function GET() {
 
 export async function POST(request: Request) {
   let householdId: number;
+  let userId: string;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId, userId } = await requireHousehold());
   } catch (e) {
     if (e instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // A create is a write: a removed member's token still names their old
+  // household for up to 24h and would otherwise keep inserting into it.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     throw e;
   }
