@@ -20,6 +20,7 @@ session gate out of "Auth.js wiring" so it carries its own test cycle.
 - Session strategy is **JWT**, lifetime capped at **24 hours**.
 - Reads may trust the JWT. **Destructive and membership-changing operations must re-check membership against the database.**
 - `MAX_MEMBERS` / `MAX_APARTMENTS` are **not** part of E1 (that is E5). Do not add limit enforcement here.
+- **Invitations are not part of E1** (split to #197). E1 ships households with exactly one member. Do not add an `invitations` table, an invite UI, or member-removal endpoints. `resolveHouseholdForUser` must still prefer an existing membership over creating one — that is the code path invitations will use later.
 - The production database is **wiped**; no migration path is written.
 - Tests that assert tenant isolation **must run against the real test SQLite database**, never against a mocked `db`. A mocked `db.select()` returns its fixture regardless of the `where` clause, so a mock-based isolation test passes even when scoping is entirely absent. This is the single most important testing rule in this plan.
 - Read `node_modules/next/dist/docs/` before using an unfamiliar Next.js API. This repo is Next 16 and differs from older training data.
