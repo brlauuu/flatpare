@@ -30,6 +30,7 @@ const BASE_APARTMENT = {
   ratings: [
     {
       id: 1,
+      userId: "alice-id",
       userName: "Alice",
       kitchen: 3,
       balconies: 3,
@@ -65,7 +66,8 @@ beforeEach(() => {
     if (url === "/api/auth/session" && method === "GET") {
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ user: { name: "Alice" } }),
+        json: () =>
+          Promise.resolve({ user: { id: "alice-id", name: "Alice" } }),
       } as Response);
     }
     if (url.endsWith("/api/apartments/42") && method === "GET") {

@@ -8,7 +8,7 @@ Flatpare helps small groups compare apartments together. Upload PDF listings, ra
 
 ### 1. Log In
 
-Enter the shared password your group agreed on, then pick a display name. Your name appears on ratings so everyone knows who said what.
+Sign in with Google or GitHub, or your group's shared password if that's how your Flatpare is set up. Your account name appears on ratings so everyone knows who said what.
 
 ### 2. Upload an Apartment
 

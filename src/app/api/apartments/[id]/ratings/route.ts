@@ -56,7 +56,12 @@ export async function POST(
 
     const body = await request.json();
 
-    // Upsert: update if exists, insert if not
+    // Upsert: update if exists, insert if not. This returns a raw row
+    // (userId only, no joined userName) — deliberately not left-joined like
+    // GET /api/apartments/[id]: handleSaveRating on the client ignores this
+    // body and redirects, so there is nothing today that reads a name off
+    // it. If a caller ever starts reading this response's rating data, join
+    // `users` here the same way, rather than assuming the shape.
     const existing = await db
       .select()
       .from(ratings)

@@ -538,12 +538,16 @@ describe("GET /api/apartments/[id]", () => {
           }),
         }),
       })
-      // Second select: ratings
+      // Second select: ratings, left-joined against users for a display name
+      // (userId is the identity key; userName is resolved for display only —
+      // see the route's leftJoin against @/lib/db/schema-auth's `users`).
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: 1, userName: "Alice", kitchen: 4 },
-          ]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              { id: 1, userId: "u1", userName: "Alice", kitchen: 4 },
+            ]),
+          }),
         }),
       })
       // Third select: apartment_distances
@@ -559,6 +563,10 @@ describe("GET /api/apartments/[id]", () => {
     const data = await res.json();
     expect(data.name).toBe("Apt 1");
     expect(data.ratings).toHaveLength(1);
+    // Both fields must survive: userId is the identity key, userName is the
+    // joined display label — dropping either regresses "my rating" matching
+    // or the "X's Rating" header, respectively.
+    expect(data.ratings[0]).toMatchObject({ userId: "u1", userName: "Alice" });
     expect(data.distances).toEqual([]);
   });
 

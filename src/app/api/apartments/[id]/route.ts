@@ -5,6 +5,7 @@ import {
   apartmentDistances,
   ratings,
 } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema-auth";
 import { and, eq } from "drizzle-orm";
 import {
   assertMembership,
@@ -56,9 +57,24 @@ export async function GET(
 
     if (apartment.length === 0) return notFound();
 
+    // Ratings are keyed on userId (Task 1 of this epic moved off userName
+    // as the identity key, since names aren't unique across OAuth accounts
+    // and can be null). The left join resolves a display name for the UI;
+    // callers must still key identity on userId, never on the joined name.
     const apartmentRatings = await db
-      .select()
+      .select({
+        id: ratings.id,
+        userId: ratings.userId,
+        userName: users.name,
+        kitchen: ratings.kitchen,
+        balconies: ratings.balconies,
+        location: ratings.location,
+        floorplan: ratings.floorplan,
+        overallFeeling: ratings.overallFeeling,
+        comment: ratings.comment,
+      })
       .from(ratings)
+      .leftJoin(users, eq(ratings.userId, users.id))
       .where(
         and(
           eq(ratings.apartmentId, apartmentId),

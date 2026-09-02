@@ -34,7 +34,7 @@
 | 🚲 **Auto distance** | Bike + transit minutes from each apartment to user-defined "locations of interest" (work, schools, family). |
 | 🗺️ **Map view** | Apartments overview map (Leaflet) plus an embedded Google Map per detail page. |
 | 💰 **Cost dashboard** | Tracks Gemini and Maps API usage with monthly cost estimates and a per-service breakdown. |
-| 🔐 **Simple auth** | Shared password + display name. No real accounts, no OAuth, no accidents. |
+| 🔐 **Real accounts** | Sign in with Google or GitHub OAuth (hosted tier), or a shared password (self-host, no third-party setup required). |
 | ☁️ **Cloud or local** | One repo runs on Vercel + Turso + Vercel Blob, or fully self-hosted with SQLite + local disk. |
 
 ## Tech stack
@@ -54,7 +54,7 @@
 ## Quickstart
 
 ```bash
-cp .env.example .env.local        # set APP_PASSWORD at minimum
+cp .env.example .env.local        # set AUTH_SECRET + APP_PASSWORD at minimum
 docker compose up -d
 ```
 
@@ -68,7 +68,7 @@ Open <http://localhost:3002>. That's it for the local-only path — SQLite + fil
 git clone https://github.com/brlauuu/flatpare.git
 cd flatpare
 npm install
-cp .env.example .env.local        # set APP_PASSWORD
+cp .env.example .env.local        # set AUTH_SECRET + APP_PASSWORD
 npm run db:push                   # creates ./data/flatpare.db
 npm run dev                       # http://localhost:3002
 ```
@@ -94,6 +94,7 @@ Get a Gemini key at <https://aistudio.google.com/apikey>. For Maps Platform (dis
 Configure `.env.local`:
 
 ```env
+AUTH_SECRET=<generate with: npx auth secret>
 APP_PASSWORD=<shared password>
 TURSO_DATABASE_URL=libsql://flatpare-<you>.turso.io
 TURSO_AUTH_TOKEN=<token>
@@ -130,12 +131,19 @@ Transit isn't supported — enter manually if you need it.
 
    | Variable | Required | Notes |
    |---|---|---|
-   | `APP_PASSWORD` | yes | Shared access password |
+   | `AUTH_SECRET` | yes | Auth.js session encryption key — generate with `npx auth secret` |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes* | Google OAuth. Set **both** or neither — one without the other registers a broken provider and disables the password fallback (see Auth model below) |
+   | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | yes* | GitHub OAuth. Same both-or-neither rule |
+   | `APP_PASSWORD` | yes* | Shared password fallback — only used when **no** OAuth client ID is set |
    | `TURSO_DATABASE_URL` | yes | `libsql://...` URL from Turso |
    | `TURSO_AUTH_TOKEN` | yes | Auth token from Turso |
    | `BLOB_READ_WRITE_TOKEN` | yes | Auto-added when you connect Vercel Blob |
    | `GOOGLE_GENERATIVE_AI_API_KEY` | yes | Gemini PDF parsing |
    | `GOOGLE_MAPS_API_KEY` | optional | Distances + geocoding + embedded map |
+
+   \* Set at least one auth path: `AUTH_SECRET` plus a Google or GitHub OAuth pair, or `APP_PASSWORD` if you're deliberately staying on the password fallback for a hosted deployment (not recommended — see Auth model below).
+
+   **Register OAuth callback URLs with Google and GitHub before deploying** — for the production domain *and* every Vercel preview URL. Nothing fails locally to warn you if this is skipped; the first production sign-in just fails at the provider's redirect.
 
 3. **Storage → Create → Blob** to provision the blob store.
 4. Push the schema once before first use:
@@ -146,13 +154,18 @@ Transit isn't supported — enter manually if you need it.
 
 5. Subsequent pushes to `main` deploy automatically. The `vercel-build` script in `package.json` runs the migration step inside the build.
 
+> **Upgrading an existing hosted deployment to this release requires a fresh database.** Migration 0011 adds a `NOT NULL` `household_id` column to `apartments`, `ratings`, `locations_of_interest`, and `apartment_distances`, which SQLite only allows on an empty table. A preflight check in `src/lib/db/migrate.ts` catches this and refuses to run rather than failing opaquely — but because migrations run at boot (`src/instrumentation.ts`), **the app will not start** until those four tables are emptied. Wipe the database **before** deploying, not after: deploying first means the very first request triggers the failed boot-time migration. Existing data is untouched by the failed attempt (the abort is atomic) — it's just inaccessible until you act.
+
 ## Configuration
 
 All env vars live in `.env.local` (loaded via Next.js) or your Vercel project settings.
 
 | Variable | Required | Mode | Description |
 |---|---|---|---|
-| `APP_PASSWORD` | yes | both | Shared access password (env var, **not** the cookie name). |
+| `AUTH_SECRET` | yes | both | Auth.js session encryption key — generate with `npx auth secret`. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes* | cloud | Google OAuth. Set **both** or neither — a CLIENT_ID with no CLIENT_SECRET registers a broken provider *and* disables the password fallback, locking everyone out. |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | yes* | cloud | GitHub OAuth. Same both-or-neither rule. |
+| `APP_PASSWORD` | yes* | local | Shared password fallback for the self-host credentials provider — only registered when **no** OAuth `_CLIENT_ID` is set. |
 | `TURSO_DATABASE_URL` | cloud | cloud | Turso database URL. Local mode falls back to a SQLite file. |
 | `TURSO_AUTH_TOKEN` | cloud | cloud | Turso auth token. |
 | `BLOB_READ_WRITE_TOKEN` | cloud | cloud | Vercel Blob token (auto-set by Vercel). |
@@ -160,28 +173,30 @@ All env vars live in `.env.local` (loaded via Next.js) or your Vercel project se
 | `GOOGLE_MAPS_API_KEY` | optional | both | Distances + geocoding + embed. |
 | `OPENROUTESERVICE_API_KEY` | optional | both | Bike-distance fallback when Maps key is unset. |
 | `LOCAL_DB_URL` | optional | local | Override the SQLite path (defaults to `file:./data/flatpare.db`; tests use `file:./data/test.db`). |
-| `DISABLE_SECURE_COOKIES` | optional | dev | Drops the `Secure` flag so cookies survive plain HTTP. |
 
-See [docs/google-apis.md](./docs/google-apis.md) for the Google Maps setup walk-through and [docs/security-notes.md](./docs/security-notes.md) for accepted `npm audit` advisories.
+\* Exactly one auth path is required: `AUTH_SECRET` + a Google or GitHub OAuth pair (cloud/hosted), or `AUTH_SECRET` + `APP_PASSWORD` with no OAuth vars set (self-host). There is no `DISABLE_SECURE_COOKIES` var any more — `@auth/core` derives the session cookie's `Secure` flag from the request protocol, so plain HTTP self-hosting already works with no config.
+
+See [docs/google-apis.md](./docs/google-apis.md) for the Google Maps setup walk-through and [docs/security-notes.md](./docs/security-notes.md) for accepted `npm audit` advisories and the full auth model writeup.
 
 ## Auth model
 
-Flatpare uses a deliberately simple shared-password model — no accounts, no OAuth.
+Flatpare uses **Auth.js v5** (`src/auth.ts`), with real per-user accounts — not the shared-password + display-name model of earlier releases.
 
-- The password lives in the **`APP_PASSWORD` env var**. `verifyPassword(input)` (in `src/lib/auth.ts`) compares the submitted value against it.
-- A successful login sets two cookies:
-  - **`flatpare-auth=true`** (httpOnly) — `isAuthenticated()` checks this.
-  - **`flatpare-name=<display name>`** (readable from client JS) — `getDisplayName()` reads this.
-- API routes return **401** when `isAuthenticated()` is false. There is no `requireUser()` helper — guard explicitly per route.
-- `DISABLE_SECURE_COOKIES=true` strips the `Secure` flag so cookies work over plain HTTP in dev.
+- **Two provider paths**, chosen at boot from env vars: **OAuth (Google / GitHub)** when a `_CLIENT_ID` is set (the hosted-tier path), or a **shared-password credentials provider** when neither is set (self-host, zero third-party setup — `verifyPassword(input)` in `src/lib/auth.ts` does the constant-time comparison against `APP_PASSWORD`). The password path is never registered once OAuth is configured, so it can't be a back door on the hosted tier.
+- **Sessions are JWTs capped at 24h** (not the library's 30-day default) — a member removed from a household keeps read access until their token expires, so the window is bounded. Destructive operations and bulk/create handlers re-check membership against the database directly rather than trusting the token.
+- **`src/proxy.ts`** gates every page and `/api/*` route on the session; `/api/auth/*` is allow-listed wholesale (Auth.js owns that namespace end to end). `src/lib/session.ts`'s `requireHousehold()` is the shared authentication-and-tenant-scope check used by every route handler as defense-in-depth.
+- **Two deployment footguns to watch for, documented rather than fixed in code:** a CLIENT_ID set without its CLIENT_SECRET breaks sign-in for everyone (see the Configuration table above), and OAuth callback URLs must be registered with Google/GitHub before the first production deploy — nothing fails locally to warn you.
+- **Upgrading from a pre-accounts database requires wiping it first** — see the note under Deploying to Vercel.
+
+Full detail, including the JWT staleness reasoning and the upgrade break, lives in [`docs/security-notes.md`](./docs/security-notes.md) and [`AGENTS.md`](./AGENTS.md).
 
 ## Project layout
 
 ```
 src/
   app/
-    page.tsx                      # Login (password gate)
-    add-user/page.tsx             # First-run user onboarding
+    page.tsx                      # Sign-in (Google / GitHub / password, per configured providers)
+    login-form.tsx                # Client-side sign-in form
     apartments/
       page.tsx                    # List view (grid + list, sortable, searchable)
       _components/                # ApartmentCard, ApartmentRow, badges
@@ -195,7 +210,7 @@ src/
     guide/page.tsx                # In-app user guide (renders src/content/guide.md)
     settings/page.tsx             # Locations of interest + distance recompute
     api/
-      auth/                       # Password, name, users
+      auth/[...nextauth]/         # Auth.js route handler (sign-in, callback, session, CSRF)
       apartments/                 # CRUD, ratings, reprocess, listing checks
       parse-pdf/                  # Upload, AI extraction, blob upload tokens
       geocode/backfill/           # Geocode rows missing lat/lng
@@ -207,7 +222,7 @@ src/
   content/guide.md                # User guide source
   lib/
     db/                           # Drizzle schema, client, migration runner
-    auth.ts                       # Cookie helpers + password verifier
+    auth.ts                       # verifyPassword() — self-host credentials provider only
     parse-pdf.ts                  # AI extraction (Gemini)
     distance.ts                   # Distance (Maps / ORS)
     geocode.ts                    # Address → lat/lng
@@ -217,6 +232,9 @@ src/
     short-code.ts                 # Apartment short-code generator
     storage.ts                    # File storage (Blob / FS)
     upload-pdf.ts                 # Client-direct Blob upload (>4.5 MB)
+    session.ts                    # requireHousehold() — session + tenant-scope check for route handlers
+    household.ts                  # assertMembership(), UnauthorizedError, ForbiddenError
+  auth.ts                         # Auth.js v5 config — providers, JWT session, household claims
   instrumentation.ts              # Boot hook — runs Drizzle migrations
   proxy.ts                        # Auth gate (Next.js 16 renamed middleware.ts)
 drizzle/                          # SQL migrations
@@ -227,10 +245,7 @@ docs/                             # google-apis.md, security-notes.md
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/auth` | Verify password, set auth cookie |
-| `POST` | `/api/auth/name` | Set display-name cookie |
-| `GET` | `/api/auth/users` | List users |
-| `DELETE` | `/api/auth/users/[name]` | Remove a user |
+| `*` | `/api/auth/*` | Auth.js — sign-in, OAuth callback, session, CSRF (owned entirely by `next-auth`, not app code) |
 | `GET` / `POST` | `/api/apartments` | List / create |
 | `GET` / `PATCH` / `DELETE` | `/api/apartments/[id]` | Get, update, delete |
 | `POST` | `/api/apartments/[id]/ratings` | Upsert a rating |

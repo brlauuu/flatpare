@@ -60,14 +60,19 @@ export default function ApartmentDetailPage() {
   const [cleanRating, setCleanRating] = useState(EMPTY_RATING);
   const [saving, setSaving] = useState(false);
   const [userName, setUserName] = useState("");
+  const [myId, setMyId] = useState("");
   const [error, setError] = useState<ErrorState | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
-  // The signed-in account's display name, fetched once from Auth.js's own
-  // session endpoint (there is no more per-browser display-name cookie to
-  // switch, since Task 6 removed that model — one session is one account).
+  // The signed-in account's id and display name, fetched once from
+  // Auth.js's own session endpoint (there is no more per-browser
+  // display-name cookie to switch, since Task 6 removed that model — one
+  // session is one account). Identity is keyed on `myIdRef` — `userId` is
+  // the only stable, unique field; `users.name` is nullable and not unique
+  // across OAuth accounts, so it's for display only.
+  const myIdRef = useRef<string>("");
   const myNameRef = useRef<string>("");
 
   // Shared applier so both the initial effect and later reloads (after a
@@ -75,9 +80,9 @@ export default function ApartmentDetailPage() {
   function applyApartmentData(data: ApartmentDetail) {
     setApartment(data);
     setError(null);
-    const name = myNameRef.current;
-    setUserName(name);
-    const existing = data.ratings?.find((r) => r.userName === name);
+    setUserName(myNameRef.current);
+    setMyId(myIdRef.current);
+    const existing = data.ratings?.find((r) => r.userId === myIdRef.current);
     const snapshot = existing
       ? {
           kitchen: existing.kitchen,
@@ -133,8 +138,9 @@ export default function ApartmentDetailPage() {
         }
         if (sessionRes.ok) {
           const session = (await sessionRes.json()) as {
-            user?: { name?: string | null };
+            user?: { id?: string; name?: string | null };
           } | null;
+          myIdRef.current = session?.user?.id ?? "";
           myNameRef.current = session?.user?.name ?? "";
         }
         const data = (await res.json()) as ApartmentDetail;
@@ -330,9 +336,7 @@ export default function ApartmentDetailPage() {
     return null;
   }
 
-  const otherRatings = apartment.ratings.filter(
-    (r) => r.userName !== userName
-  );
+  const otherRatings = apartment.ratings.filter((r) => r.userId !== myId);
 
   return (
     <div className="space-y-6">

@@ -21,15 +21,6 @@ vi.mock("@/lib/session", () => ({
   requireHousehold: mockRequireHousehold,
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: vi.fn(async () => true),
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
-}));
-
 // Household 2's blob genuinely contains sensitive data — the whole point
 // of this test is to confirm household 1 never gets it back.
 const HOUSEHOLD_2_SECRET = "SECRET-HOUSEHOLD-2-LISTING-DATA";

@@ -272,8 +272,36 @@ describe("list endpoints return only the caller's household", () => {
     expect(body.name).toBe("A flat");
     // Only A's rating and distance come back.
     expect(body.ratings).toHaveLength(1);
+    // userId is the identity key; userName is resolved via a left join
+    // against `users` for display — both must survive the response.
     expect(body.ratings[0].userId).toBe("ua");
+    expect(body.ratings[0].userName).toBe("Ann");
     expect(body.distances).toHaveLength(1);
+  });
+
+  it("GET /api/apartments/[id] resolves a null userName for an account with no display name, rather than dropping the rating", async () => {
+    // Some OAuth accounts never get a `name` (e.g. Google without one set).
+    // The left join must still return the rating — with userName: null —
+    // not silently omit it or crash.
+    await db.insert(users).values({ id: "uc", email: "c@example.com" });
+    await db.insert(householdMembers).values({
+      householdId: houseA,
+      userId: "uc",
+      role: "member",
+    });
+    await db.insert(ratings).values({
+      householdId: houseA,
+      apartmentId: flatA,
+      userId: "uc",
+      overallFeeling: 2,
+    });
+
+    const res = await apartmentGet(new Request("http://x"), idParams(flatA));
+    const body = await res.json();
+    expect(body.ratings).toHaveLength(2);
+    const nameless = body.ratings.find((r: { userId: string }) => r.userId === "uc");
+    expect(nameless).toBeDefined();
+    expect(nameless.userName).toBeNull();
   });
 });
 

@@ -87,15 +87,22 @@ export function MyRatingPanel({
 export function OtherRatingPanel({
   rating,
 }: {
-  rating: { id: number; userName: string; comment: string } & Record<
-    RatingCategoryKey,
-    number
-  >;
+  // userId identifies the rater; userName is a left-joined display label
+  // only — it is nullable (some OAuth accounts have no name) and not unique
+  // across accounts, so it must never be used to key anything.
+  rating: {
+    id: number;
+    userId: string;
+    userName: string | null;
+    comment: string;
+  } & Record<RatingCategoryKey, number>;
 }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{rating.userName}&apos;s Rating</CardTitle>
+        <CardTitle className="text-lg">
+          {rating.userName ? `${rating.userName}’s Rating` : "Household member's Rating"}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {RATING_CATEGORIES.map(({ key, label }) => (

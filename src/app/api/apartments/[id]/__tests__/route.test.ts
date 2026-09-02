@@ -107,6 +107,18 @@ function selectUnlimited(rows: unknown[]) {
   });
 }
 
+// Ratings are left-joined against `users` for a display name (userId stays
+// the identity key) — see the leftJoin in the route's GET handler.
+function selectRatings(rows: unknown[]) {
+  mockSelect.mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      leftJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(rows),
+      }),
+    }),
+  });
+}
+
 describe("GET /api/apartments/[id]", () => {
   it("returns 401 when not authenticated", async () => {
     mockedAuth.mockResolvedValue(false);
@@ -126,7 +138,7 @@ describe("GET /api/apartments/[id]", () => {
   it("returns the apartment with ratings, distances, and mapEmbedUrl on success", async () => {
     mockedAuth.mockResolvedValue(true);
     selectReturns([{ id: 1, address: "Main St 1", userEditedFields: null }]);
-    selectUnlimited([{ id: 11, kitchen: 4 }]);
+    selectRatings([{ id: 11, userId: "u1", userName: "Ann", kitchen: 4 }]);
     selectUnlimited([
       { locationId: 7, bikeMin: 8, transitMin: 12 },
     ]);
@@ -136,7 +148,9 @@ describe("GET /api/apartments/[id]", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.id).toBe(1);
-    expect(body.ratings).toEqual([{ id: 11, kitchen: 4 }]);
+    expect(body.ratings).toEqual([
+      { id: 11, userId: "u1", userName: "Ann", kitchen: 4 },
+    ]);
     expect(body.distances).toEqual([
       { locationId: 7, bikeMin: 8, transitMin: 12 },
     ]);
