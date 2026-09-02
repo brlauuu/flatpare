@@ -253,14 +253,19 @@ export default function ApartmentsPage() {
           </Button>
         )}
       </div>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Apartments</h1>
-        <div className="flex items-center gap-2">
+        {/* Wraps on phones: the control cluster is ~390px wide and used to
+            push the document past the viewport. */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
           <Select
             value={sortField}
             onValueChange={(value) => setSortField(value as SortField)}
           >
-            <SelectTrigger aria-label="Sort by" className="h-8 w-[160px]">
+            <SelectTrigger
+              aria-label="Sort by"
+              className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -279,7 +284,7 @@ export default function ApartmentsPage() {
             onClick={() =>
               setSortDirection(sortDirection === "asc" ? "desc" : "asc")
             }
-            className="h-8 w-8 p-0"
+            className="h-11 w-11 p-0 sm:h-8 sm:w-8"
           >
             {sortDirection === "asc" ? (
               <ArrowUp className="h-4 w-4" />
@@ -300,7 +305,7 @@ export default function ApartmentsPage() {
               aria-pressed={view === "grid"}
               onClick={() => setView("grid")}
               className={cn(
-                "h-7 gap-1 px-2",
+                "h-10 gap-1 px-3 sm:h-7 sm:px-2",
                 view === "grid" && "bg-background shadow-sm"
               )}
             >
@@ -314,14 +319,17 @@ export default function ApartmentsPage() {
               aria-pressed={view === "list"}
               onClick={() => setView("list")}
               className={cn(
-                "h-7 gap-1 px-2",
+                "h-10 gap-1 px-3 sm:h-7 sm:px-2",
                 view === "list" && "bg-background shadow-sm"
               )}
             >
               <ListIcon className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Link href="/apartments/new" className={buttonVariants()}>
+          <Link
+            href="/apartments/new"
+            className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
+          >
             Upload New
           </Link>
         </div>

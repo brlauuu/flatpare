@@ -27,7 +27,9 @@ export function ThemeToggle() {
   const mounted = useIsClient();
 
   if (!mounted) {
-    return <div className="h-8 w-20" />;
+    // Must match the rendered toggle at both breakpoints, or every mobile
+    // page load shifts when the real control replaces it.
+    return <div className="h-11 w-32 sm:h-8 sm:w-20" />;
   }
 
   return (
@@ -39,7 +41,7 @@ export function ThemeToggle() {
           onClick={() => setTheme(value)}
           aria-label={`Switch to ${label} theme`}
           className={cn(
-            "rounded-sm p-1 transition-colors",
+            "flex min-h-11 min-w-11 items-center justify-center rounded-sm p-2.5 transition-colors sm:min-h-0 sm:min-w-0 sm:p-1",
             theme === value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
