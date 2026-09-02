@@ -159,9 +159,18 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   });
   if (newTable.rows.length === 0) return;
 
+  const existing = await client.execute({
+    sql: "SELECT COUNT(*) as n FROM locations_of_interest",
+    args: [],
+  });
+  const alreadyHasLocations = Number(existing.rows[0]?.n ?? 0) > 0;
+
   // Once `household_id` exists, locations are tenant-scoped and there is no
   // ownerless default household to attach a fallback row to — this legacy
-  // single-station backfill only applies to pre-tenancy databases.
+  // single-station default-row insertion only applies to pre-tenancy
+  // databases. Everything below this block (copying legacy distances,
+  // dropping the legacy columns, dropping app_settings) is unrelated
+  // cleanup that must keep running unconditionally regardless of tenancy.
   const locationsCols = await client.execute({
     sql: "PRAGMA table_info(locations_of_interest)",
     args: [],
@@ -169,15 +178,8 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   const hasHouseholdId = locationsCols.rows.some(
     (r) => r.name === "household_id"
   );
-  if (hasHouseholdId) return;
 
-  const existing = await client.execute({
-    sql: "SELECT COUNT(*) as n FROM locations_of_interest",
-    args: [],
-  });
-  const alreadyHasLocations = Number(existing.rows[0]?.n ?? 0) > 0;
-
-  if (!alreadyHasLocations) {
+  if (!alreadyHasLocations && !hasHouseholdId) {
     // Determine the default address: prefer app_settings.station_address,
     // fall back to the historical Basel SBB constant.
     let defaultAddress = "Basel SBB, Switzerland";
