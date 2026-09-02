@@ -39,9 +39,31 @@ describe("applyMigrations", () => {
     expect(await columnNames(client, "apartments")).toContain(
       "has_washing_machine"
     );
-    expect(await columnNames(client, "ratings")).toContain("user_name");
+    // 0011 replaced the display-name key with the Auth.js user id and added
+    // the tenancy column. Asserting the OLD column is gone as well as the new
+    // ones being present: a migration that only added columns would pass a
+    // "contains user_id" check on its own.
+    expect(await columnNames(client, "ratings")).toContain("user_id");
+    expect(await columnNames(client, "ratings")).toContain("household_id");
+    expect(await columnNames(client, "ratings")).not.toContain("user_name");
+    for (const table of [
+      "apartments",
+      "locations_of_interest",
+      "apartment_distances",
+    ]) {
+      expect(await columnNames(client, table)).toContain("household_id");
+    }
+    expect(await columnNames(client, "households")).toEqual(
+      expect.arrayContaining(["id", "name", "owner_id", "tier"])
+    );
+    expect(await columnNames(client, "household_members")).toEqual(
+      expect.arrayContaining(["household_id", "user_id", "role"])
+    );
     expect(await columnNames(client, "api_usage")).toContain("service");
-    expect(await columnNames(client, "users")).toContain("name");
+    // The Auth.js users table, not the legacy name-keyed one.
+    expect(await columnNames(client, "users")).toEqual(
+      expect.arrayContaining(["id", "name", "email"])
+    );
     expect(await columnNames(client, "locations_of_interest")).toEqual(
       expect.arrayContaining(["label", "icon", "address", "sort_order"])
     );
@@ -168,11 +190,50 @@ describe("applyMigrations", () => {
     expect(Number(rows.rows[0].n)).toBe(EXPECTED_MIGRATION_COUNT);
   });
 
-  it("backfills the users table from distinct rating user_names", async () => {
+  // Replaces "backfills the users table from distinct rating user_names".
+  // That guarantee no longer exists: 0011 drops and recreates `users` in the
+  // Auth.js shape, so whatever 0001 backfilled into the old name-keyed table
+  // is gone by the end of the chain — there is nothing left to observe.
+  //
+  // What IS worth pinning is the boundary this replaced it with, because it
+  // is sharp and surprising. 0011 adds `household_id NOT NULL` with no
+  // default to four existing tables. SQLite permits that only while the table
+  // is empty, so:
+  //   - a legacy database with no rows migrates cleanly, and
+  //   - a legacy database that still holds pre-tenancy rows aborts.
+  // The spec accepts wiping production for this release; a self-hoster
+  // upgrading in place hits the abort at boot (instrumentation.ts runs
+  // migrations), so this must not regress silently in either direction.
+  it("migrates a legacy database that has the old tables but no rows", async () => {
     const client = createClient({ url: ":memory:" });
 
-    // Simulate a DB that already has ratings (from before the users table
-    // existed): run only the first migration manually, then add some data.
+    await client.execute({
+      sql: `CREATE TABLE apartments (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        name text NOT NULL,
+        listing_url text
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE TABLE ratings (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        apartment_id integer NOT NULL,
+        user_name text NOT NULL
+      )`,
+      args: [],
+    });
+
+    await applyMigrations(client);
+
+    expect(await columnNames(client, "ratings")).toContain("household_id");
+    expect(await columnNames(client, "ratings")).not.toContain("user_name");
+    expect(await columnNames(client, "apartments")).toContain("household_id");
+  });
+
+  it("refuses to migrate a legacy database that still holds pre-tenancy rows", async () => {
+    const client = createClient({ url: ":memory:" });
+
     await client.execute({
       sql: `CREATE TABLE apartments (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -198,13 +259,7 @@ describe("applyMigrations", () => {
       args: [],
     });
 
-    await applyMigrations(client);
-
-    const rows = await client.execute({
-      sql: "SELECT name FROM users ORDER BY name",
-      args: [],
-    });
-    expect(rows.rows.map((r) => r.name)).toEqual(["Alice", "Bob"]);
+    await expect(applyMigrations(client)).rejects.toThrow(/NOT NULL/i);
   });
 });
 
