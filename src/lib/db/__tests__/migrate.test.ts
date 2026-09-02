@@ -259,7 +259,72 @@ describe("applyMigrations", () => {
       args: [],
     });
 
-    await expect(applyMigrations(client)).rejects.toThrow(/NOT NULL/i);
+    // The preflight speaks before the migrator does: the raw failure
+    // ("Cannot add a NOT NULL column with default value NULL") names neither
+    // the table, the migration, nor the remedy.
+    await expect(applyMigrations(client)).rejects.toThrow(
+      /requires a fresh database/i
+    );
+  });
+
+  it("the preflight error names the tables to empty and says data is untouched", async () => {
+    const client = createClient({ url: ":memory:" });
+    await client.execute({
+      sql: `CREATE TABLE apartments (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        name text NOT NULL,
+        listing_url text
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO apartments (name) VALUES ('A')",
+      args: [],
+    });
+
+    const err = await applyMigrations(client).catch((e: Error) => e);
+    const message = (err as Error).message;
+    for (const table of [
+      "apartments",
+      "ratings",
+      "locations_of_interest",
+      "apartment_distances",
+    ]) {
+      expect(message).toContain(table);
+    }
+    expect(message).toMatch(/untouched/i);
+    // ...and it really is untouched: nothing ran, so no migration was
+    // recorded and the legacy row survives.
+    const applied = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
+      args: [],
+    });
+    expect(applied.rows).toHaveLength(0);
+    const rows = await client.execute({
+      sql: "SELECT COUNT(*) AS n FROM apartments",
+      args: [],
+    });
+    expect(Number(rows.rows[0].n)).toBe(1);
+  });
+
+  it("the preflight does not fire on an already-migrated database", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'u1@example.com')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO households (name, owner_id) VALUES ('H', 'u1')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO apartments (household_id, name) VALUES (1, 'A')",
+      args: [],
+    });
+    // Rows are present, but household_id exists, so re-running is a no-op
+    // rather than a refusal.
+    await expect(applyMigrations(client)).resolves.toBeUndefined();
   });
 });
 

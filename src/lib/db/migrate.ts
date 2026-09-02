@@ -246,7 +246,50 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   });
 }
 
+// Migration 0011 adds `household_id NOT NULL` with no default to the four
+// data tables. SQLite permits that only while a table is empty, so a database
+// that still holds pre-tenancy rows aborts mid-chain with
+// "Cannot add a NOT NULL column with default value NULL" — an error that names
+// neither the table, nor the migration, nor what to do about it. The abort is
+// atomic (the whole chain rolls back and the legacy data is untouched), but a
+// self-hoster hitting it at boot has nothing to act on.
+//
+// No data migration is possible here: pre-tenancy rows belong to no household,
+// and inventing a placeholder would hand the first person to sign in someone
+// else's data. So the release genuinely requires a fresh database, and the
+// right thing is to say so before the migrator produces its opaque failure.
+async function preflightTenancyMigration(client: Client): Promise<void> {
+  const tables = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='apartments'",
+    args: [],
+  });
+  if (tables.rows.length === 0) return; // fresh database, nothing to check
+
+  const cols = await client.execute({
+    sql: "PRAGMA table_info(apartments)",
+    args: [],
+  });
+  const alreadyTenanted = cols.rows.some((r) => r.name === "household_id");
+  if (alreadyTenanted) return; // 0011 has already run
+
+  const counted = await client.execute({
+    sql: "SELECT COUNT(*) AS n FROM apartments",
+    args: [],
+  });
+  if (Number(counted.rows[0]?.n ?? 0) === 0) return; // empty: 0011 will apply
+
+  throw new Error(
+    "This release introduces per-household data isolation and requires a " +
+      "fresh database. The existing `apartments` table still holds " +
+      "pre-tenancy rows, which belong to no household and cannot be " +
+      "assigned to one automatically. Empty these tables before upgrading: " +
+      "apartments, ratings, locations_of_interest, apartment_distances. " +
+      "No migration has been applied and your data is untouched."
+  );
+}
+
 export async function applyMigrations(client: Client): Promise<void> {
+  await preflightTenancyMigration(client);
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
   // On Vercel the `drizzle/` folder isn't reliably present in the serverless
