@@ -31,6 +31,7 @@ function makeApt(over: Partial<ApartmentWithRatings> = {}): ApartmentWithRatings
 
 const trainStation: LocationOfInterest = {
   id: 7,
+  householdId: 1,
   label: "Train Station",
   icon: "Train",
   address: "Basel SBB",

@@ -1,27 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockIsAuthenticated, locationsLib } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => true),
-  locationsLib: {
-    listLocations: vi.fn(),
-    createLocation: vi.fn(),
-    getLocation: vi.fn(),
-    updateLocation: vi.fn(),
-    deleteLocation: vi.fn(),
-    moveLocation: vi.fn(),
-  },
+const { mockRequireHousehold, mockAssertMembership, locationsLib } = vi.hoisted(
+  () => ({
+    mockRequireHousehold: vi.fn(),
+    mockAssertMembership: vi.fn(),
+    locationsLib: {
+      listLocations: vi.fn(),
+      createLocation: vi.fn(),
+      getLocation: vi.fn(),
+      updateLocation: vi.fn(),
+      deleteLocation: vi.fn(),
+      moveLocation: vi.fn(),
+    },
+  })
+);
+
+const HOUSEHOLD_ID = 7;
+
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
-}));
+// The real error classes: the routes branch on `instanceof`, so a stand-in
+// class defined in the factory would silently fall through to a 500.
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/locations", () => locationsLib);
+
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 
 import { GET as listGET, POST as listPOST } from "../route";
 import {
@@ -33,7 +44,12 @@ import { POST as movePOST } from "../[id]/move/route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: HOUSEHOLD_ID,
+    userId: "u1",
+    role: "owner",
+  });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 function withParams(id: string) {
@@ -42,6 +58,7 @@ function withParams(id: string) {
 
 const sampleRow = {
   id: 1,
+  householdId: HOUSEHOLD_ID,
   label: "Train",
   icon: "Train",
   address: "Basel SBB",
@@ -82,7 +99,7 @@ describe("POST /api/locations", () => {
     });
     const res = await listPOST(req);
     expect(res.status).toBe(201);
-    expect(locationsLib.createLocation).toHaveBeenCalledWith({
+    expect(locationsLib.createLocation).toHaveBeenCalledWith(HOUSEHOLD_ID, {
       label: "Train",
       icon: "Train",
       address: "Basel SBB",
@@ -179,7 +196,7 @@ describe("PUT /api/locations/[id]", () => {
     const res = await itemPUT(req, withParams("1"));
     expect(res.status).toBe(200);
     expect((await res.json()).label).toBe("New Label");
-    expect(locationsLib.updateLocation).toHaveBeenCalledWith(1, {
+    expect(locationsLib.updateLocation).toHaveBeenCalledWith(HOUSEHOLD_ID, 1, {
       label: "New Label",
     });
   });
@@ -213,13 +230,13 @@ describe("PUT /api/locations/[id]", () => {
 
 describe("DELETE /api/locations/[id]", () => {
   it("deletes and returns success", async () => {
-    locationsLib.deleteLocation.mockResolvedValue(undefined);
+    locationsLib.deleteLocation.mockResolvedValue(true);
     const res = await itemDELETE(
       new Request("http://x/api/locations/1", { method: "DELETE" }),
       withParams("1")
     );
     expect(res.status).toBe(200);
-    expect(locationsLib.deleteLocation).toHaveBeenCalledWith(1);
+    expect(locationsLib.deleteLocation).toHaveBeenCalledWith(HOUSEHOLD_ID, 1);
   });
 
   it("returns 500 on lib error", async () => {
@@ -243,7 +260,11 @@ describe("POST /api/locations/[id]/move", () => {
     });
     const res = await movePOST(req, withParams("1"));
     expect(res.status).toBe(200);
-    expect(locationsLib.moveLocation).toHaveBeenCalledWith(1, "up");
+    expect(locationsLib.moveLocation).toHaveBeenCalledWith(
+      HOUSEHOLD_ID,
+      1,
+      "up"
+    );
   });
 
   it("rejects an invalid direction with 400", async () => {
@@ -280,5 +301,100 @@ describe("POST /api/locations/[id]/move", () => {
     const res = await movePOST(req, withParams("1"));
     expect(res.status).toBe(500);
     expect(errSpy).toHaveBeenCalled();
+  });
+});
+
+describe("session and membership gating", () => {
+  it("every handler answers 401 when there is no session", async () => {
+    mockRequireHousehold.mockRejectedValue(new UnauthorizedError());
+    const calls: Array<Promise<Response>> = [
+      listGET(),
+      listPOST(
+        new Request("http://x/api/locations", {
+          method: "POST",
+          body: JSON.stringify({ label: "a", icon: "Train", address: "b" }),
+        })
+      ),
+      itemGET(new Request("http://x/api/locations/1"), withParams("1")),
+      itemPUT(
+        new Request("http://x/api/locations/1", {
+          method: "PUT",
+          body: JSON.stringify({ label: "a" }),
+        }),
+        withParams("1")
+      ),
+      itemDELETE(
+        new Request("http://x/api/locations/1", { method: "DELETE" }),
+        withParams("1")
+      ),
+      movePOST(
+        new Request("http://x/api/locations/1/move", {
+          method: "POST",
+          body: JSON.stringify({ direction: "up" }),
+        }),
+        withParams("1")
+      ),
+    ];
+    for (const res of await Promise.all(calls)) {
+      expect(res.status).toBe(401);
+    }
+    expect(locationsLib.listLocations).not.toHaveBeenCalled();
+    expect(locationsLib.createLocation).not.toHaveBeenCalled();
+    expect(locationsLib.updateLocation).not.toHaveBeenCalled();
+    expect(locationsLib.deleteLocation).not.toHaveBeenCalled();
+    expect(locationsLib.moveLocation).not.toHaveBeenCalled();
+  });
+
+  it("destructive handlers answer 404 when the member was removed", async () => {
+    // The JWT still names the household; the database says otherwise.
+    mockAssertMembership.mockRejectedValue(new ForbiddenError());
+    const put = await itemPUT(
+      new Request("http://x/api/locations/1", {
+        method: "PUT",
+        body: JSON.stringify({ label: "a" }),
+      }),
+      withParams("1")
+    );
+    const del = await itemDELETE(
+      new Request("http://x/api/locations/1", { method: "DELETE" }),
+      withParams("1")
+    );
+    const move = await movePOST(
+      new Request("http://x/api/locations/1/move", {
+        method: "POST",
+        body: JSON.stringify({ direction: "up" }),
+      }),
+      withParams("1")
+    );
+    // 404, not 403 — the response must not confirm the row exists.
+    for (const res of [put, del, move]) expect(res.status).toBe(404);
+    expect(locationsLib.updateLocation).not.toHaveBeenCalled();
+    expect(locationsLib.deleteLocation).not.toHaveBeenCalled();
+    expect(locationsLib.moveLocation).not.toHaveBeenCalled();
+  });
+
+  it("PUT answers 404 (not 400) when the row is not in this household", async () => {
+    locationsLib.updateLocation.mockRejectedValue(
+      new Error("Location 1 not found")
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await itemPUT(
+      new Request("http://x/api/locations/1", {
+        method: "PUT",
+        body: JSON.stringify({ label: "a" }),
+      }),
+      withParams("1")
+    );
+    expect(res.status).toBe(404);
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("DELETE answers 404 when the lib deleted nothing", async () => {
+    locationsLib.deleteLocation.mockResolvedValue(false);
+    const res = await itemDELETE(
+      new Request("http://x/api/locations/1", { method: "DELETE" }),
+      withParams("1")
+    );
+    expect(res.status).toBe(404);
   });
 });

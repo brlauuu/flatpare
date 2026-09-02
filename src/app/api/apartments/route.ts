@@ -5,8 +5,9 @@ import {
   apartmentDistances,
   ratings,
 } from "@/lib/db/schema";
-import { desc, avg, eq } from "drizzle-orm";
-import { getDisplayName, isAuthenticated, unauthorized } from "@/lib/auth";
+import { desc, avg, eq, and } from "drizzle-orm";
+import { UnauthorizedError } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -27,8 +28,18 @@ function isUniqueConstraintError(err: unknown): boolean {
 }
 
 export async function GET() {
+  let householdId: number;
+  let userId: string;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId, userId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  try {
     const allApartments = await db
       .select({
         id: apartments.id,
@@ -57,11 +68,24 @@ export async function GET() {
         avgOverall: avg(ratings.overallFeeling),
       })
       .from(apartments)
-      .leftJoin(ratings, eq(apartments.id, ratings.apartmentId))
+      // The join predicate is scoped too, not only the outer where: a rating
+      // row carries its own household_id, and averages must never be computed
+      // across tenants even if a stray row ever pointed the wrong way.
+      .leftJoin(
+        ratings,
+        and(
+          eq(apartments.id, ratings.apartmentId),
+          eq(ratings.householdId, householdId)
+        )
+      )
+      .where(eq(apartments.householdId, householdId))
       .groupBy(apartments.id)
       .orderBy(desc(apartments.createdAt));
 
-    const allDistances = await db.select().from(apartmentDistances);
+    const allDistances = await db
+      .select()
+      .from(apartmentDistances)
+      .where(eq(apartmentDistances.householdId, householdId));
     const distancesByApt = new Map<
       number,
       { locationId: number; bikeMin: number | null; transitMin: number | null }[]
@@ -76,19 +100,21 @@ export async function GET() {
       distancesByApt.set(d.apartmentId, list);
     }
 
-    const currentUser = await getDisplayName();
     const myRatingByApt = new Map<number, number>();
-    if (currentUser) {
-      const myRows = await db
-        .select({
-          apartmentId: ratings.apartmentId,
-          overallFeeling: ratings.overallFeeling,
-        })
-        .from(ratings)
-        .where(eq(ratings.userName, currentUser));
-      for (const r of myRows) {
-        myRatingByApt.set(r.apartmentId, r.overallFeeling ?? 0);
-      }
+    const myRows = await db
+      .select({
+        apartmentId: ratings.apartmentId,
+        overallFeeling: ratings.overallFeeling,
+      })
+      .from(ratings)
+      .where(
+        and(
+          eq(ratings.userId, userId),
+          eq(ratings.householdId, householdId)
+        )
+      );
+    for (const r of myRows) {
+      myRatingByApt.set(r.apartmentId, r.overallFeeling ?? 0);
     }
 
     const decorated = allApartments.map((a) => ({
@@ -108,8 +134,17 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let householdId: number;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  try {
     const body = await request.json();
 
     const availableFrom: string | null =
@@ -131,6 +166,7 @@ export async function POST(request: Request) {
         const result = await db
           .insert(apartments)
           .values({
+            householdId,
             name: body.name,
             address: body.address,
             sizeM2: body.sizeM2,
@@ -175,7 +211,12 @@ export async function POST(request: Request) {
           await db
             .update(apartments)
             .set({ latitude: geocoded.lat, longitude: geocoded.lng })
-            .where(eq(apartments.id, created.id));
+            .where(
+              and(
+                eq(apartments.id, created.id),
+                eq(apartments.householdId, householdId)
+              )
+            );
         }
       } catch (err) {
         console.error(
@@ -184,7 +225,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const locations = await listLocations();
+      const locations = await listLocations(householdId);
       for (const loc of locations) {
         try {
           const { bikeMinutes, transitMinutes } = await calculateDistance(
@@ -192,6 +233,7 @@ export async function POST(request: Request) {
             address
           );
           await db.insert(apartmentDistances).values({
+            householdId,
             apartmentId: created.id,
             locationId: loc.id,
             bikeMin: bikeMinutes,

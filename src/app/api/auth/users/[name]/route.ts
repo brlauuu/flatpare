@@ -1,51 +1,20 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { db } from "@/lib/db";
-import { ratings, users } from "@/lib/db/schema";
-import { eq, ne, asc } from "drizzle-orm";
-import { isAuthenticated, setDisplayName, unauthorized } from "@/lib/auth";
 
-const NAME_COOKIE = "flatpare-name";
-
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ name: string }> }
-) {
-  try {
-    if (!(await isAuthenticated())) return unauthorized();
-    const { name: raw } = await params;
-    const name = decodeURIComponent(raw);
-
-    await db.delete(ratings).where(eq(ratings.userName, name));
-    await db.delete(users).where(eq(users.name, name));
-
-    const cookieStore = await cookies();
-    const currentName = cookieStore.get(NAME_COOKIE)?.value;
-    const isSelf = currentName === name;
-
-    if (!isSelf) {
-      return NextResponse.json({ switchedTo: undefined });
-    }
-
-    const [next] = await db
-      .select({ name: users.name })
-      .from(users)
-      .where(ne(users.name, name))
-      .orderBy(asc(users.createdAt))
-      .limit(1);
-
-    if (next) {
-      await setDisplayName(next.name);
-      return NextResponse.json({ switchedTo: next.name });
-    }
-
-    cookieStore.delete(NAME_COOKIE);
-    return NextResponse.json({ switchedTo: null });
-  } catch (error) {
-    console.error("[auth/users/[name]:DELETE] Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete user" },
-      { status: 500 }
-    );
-  }
+// Legacy endpoint, retired. It used to delete `ratings` and `users` rows by
+// display name with no household predicate at all — under multi-tenancy that
+// is a cross-tenant destructive operation on a route the proxy allow-lists
+// wholesale (`/api/auth/*`, ruling R3), and display names are not unique
+// across households in the first place.
+//
+// Removing a member is issue #197 / E5, explicitly out of scope here, so this
+// answers 410 and touches no data. Task 6 deletes the file with the rest of
+// the shared-password model.
+export async function DELETE() {
+  return NextResponse.json(
+    {
+      error:
+        "Removing a user by display name is no longer supported. Household membership is managed per account.",
+    },
+    { status: 410 }
+  );
 }

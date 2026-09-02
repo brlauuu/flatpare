@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   locationsOfInterest,
@@ -16,6 +16,15 @@ type LocationInput = {
   address: string;
 };
 
+// Every function here takes the caller's household as its FIRST parameter and
+// filters on it. It is required, not optional, so the compiler enumerates any
+// future call site instead of relying on each one to remember — the same
+// reasoning as `readStoredFile`'s required `expectedHouseholdId`.
+//
+// A row belonging to another household is indistinguishable from a row that
+// does not exist: lookups return null / throw "not found", never a distinct
+// "forbidden". A 403 would confirm the id exists somewhere else.
+
 function normalizeInput(input: LocationInput): LocationInput {
   const label = input.label.trim();
   const icon = input.icon.trim();
@@ -28,30 +37,42 @@ function normalizeInput(input: LocationInput): LocationInput {
   return { label, icon, address };
 }
 
-export async function listLocations(): Promise<LocationOfInterest[]> {
+function scoped(householdId: number, id: number) {
+  return and(
+    eq(locationsOfInterest.id, id),
+    eq(locationsOfInterest.householdId, householdId)
+  );
+}
+
+export async function listLocations(
+  householdId: number
+): Promise<LocationOfInterest[]> {
   return db
     .select()
     .from(locationsOfInterest)
+    .where(eq(locationsOfInterest.householdId, householdId))
     .orderBy(asc(locationsOfInterest.sortOrder), asc(locationsOfInterest.id));
 }
 
 export async function getLocation(
+  householdId: number,
   id: number
 ): Promise<LocationOfInterest | null> {
   const rows = await db
     .select()
     .from(locationsOfInterest)
-    .where(eq(locationsOfInterest.id, id))
+    .where(scoped(householdId, id))
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function createLocation(
+  householdId: number,
   input: LocationInput
 ): Promise<LocationOfInterest> {
   const normalized = normalizeInput(input);
 
-  const existing = await listLocations();
+  const existing = await listLocations(householdId);
   if (existing.length >= MAX_LOCATIONS) {
     throw new Error(`Cannot have more than ${MAX_LOCATIONS} locations`);
   }
@@ -61,7 +82,7 @@ export async function createLocation(
 
   const [created] = await db
     .insert(locationsOfInterest)
-    .values({ ...normalized, sortOrder: nextSortOrder })
+    .values({ ...normalized, householdId, sortOrder: nextSortOrder })
     .returning();
 
   try {
@@ -70,7 +91,7 @@ export async function createLocation(
       const [withCoords] = await db
         .update(locationsOfInterest)
         .set({ latitude: coords.lat, longitude: coords.lng })
-        .where(eq(locationsOfInterest.id, created.id))
+        .where(scoped(householdId, created.id))
         .returning();
       return withCoords ?? created;
     }
@@ -81,6 +102,7 @@ export async function createLocation(
 }
 
 export async function updateLocation(
+  householdId: number,
   id: number,
   input: Partial<LocationInput>
 ): Promise<LocationOfInterest> {
@@ -103,7 +125,7 @@ export async function updateLocation(
     updates.icon = trimmed;
   }
 
-  const previous = await getLocation(id);
+  const previous = await getLocation(householdId, id);
   const addressChanged =
     updates.address !== undefined &&
     previous !== null &&
@@ -112,7 +134,7 @@ export async function updateLocation(
   const [updated] = await db
     .update(locationsOfInterest)
     .set({ ...updates, updatedAt: new Date() })
-    .where(eq(locationsOfInterest.id, id))
+    .where(scoped(householdId, id))
     .returning();
   if (!updated) throw new Error(`Location ${id} not found`);
 
@@ -125,7 +147,7 @@ export async function updateLocation(
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
         })
-        .where(eq(locationsOfInterest.id, id))
+        .where(scoped(householdId, id))
         .returning();
       return withCoords ?? updated;
     } catch (err) {
@@ -136,15 +158,25 @@ export async function updateLocation(
   return updated;
 }
 
-export async function deleteLocation(id: number): Promise<void> {
-  await db.delete(locationsOfInterest).where(eq(locationsOfInterest.id, id));
+// Returns false when the id does not exist in this household, so the route can
+// answer 404 instead of reporting success for a row it never touched.
+export async function deleteLocation(
+  householdId: number,
+  id: number
+): Promise<boolean> {
+  const deleted = await db
+    .delete(locationsOfInterest)
+    .where(scoped(householdId, id))
+    .returning({ id: locationsOfInterest.id });
+  return deleted.length > 0;
 }
 
 export async function moveLocation(
+  householdId: number,
   id: number,
   direction: "up" | "down"
 ): Promise<void> {
-  const all = await listLocations();
+  const all = await listLocations(householdId);
   const idx = all.findIndex((l) => l.id === id);
   if (idx === -1) throw new Error(`Location ${id} not found`);
   const swapWith = direction === "up" ? all[idx - 1] : all[idx + 1];
@@ -157,13 +189,13 @@ export async function moveLocation(
   await db
     .update(locationsOfInterest)
     .set({ sortOrder: tempOrder })
-    .where(eq(locationsOfInterest.id, current.id));
+    .where(scoped(householdId, current.id));
   await db
     .update(locationsOfInterest)
     .set({ sortOrder: current.sortOrder })
-    .where(eq(locationsOfInterest.id, swapWith.id));
+    .where(scoped(householdId, swapWith.id));
   await db
     .update(locationsOfInterest)
     .set({ sortOrder: swapWith.sortOrder })
-    .where(eq(locationsOfInterest.id, current.id));
+    .where(scoped(householdId, current.id));
 }

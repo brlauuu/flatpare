@@ -28,8 +28,11 @@ vi.mock("@/lib/db/schema", () => ({
     pdfUrl: "pdf_url",
     listingUrl: "listing_url",
     createdAt: "created_at",
+    householdId: "household_id",
   },
   ratings: {
+    userId: "user_id",
+    householdId: "household_id",
     kitchen: "kitchen",
     balconies: "balconies",
     location: "location",
@@ -40,6 +43,7 @@ vi.mock("@/lib/db/schema", () => ({
   apartmentDistances: {
     apartmentId: "apartment_id",
     locationId: "location_id",
+    householdId: "household_id",
   },
   locationsOfInterest: {
     id: "id",
@@ -47,6 +51,7 @@ vi.mock("@/lib/db/schema", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: vi.fn(),
   desc: vi.fn(),
   avg: vi.fn(),
   eq: vi.fn(),
@@ -62,7 +67,7 @@ const mockCalculateDistance = vi.fn().mockResolvedValue({
 const mockGeocodeLatLng = vi.fn().mockResolvedValue(null);
 
 vi.mock("@/lib/locations", () => ({
-  listLocations: () => mockListLocations(),
+  listLocations: (...args: unknown[]) => mockListLocations(...args),
 }));
 
 vi.mock("@/lib/distance", () => ({
@@ -73,17 +78,27 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLng: (...args: unknown[]) => mockGeocodeLatLng(...args),
 }));
 
-const mockGetDisplayName = vi.fn();
-const mockIsAuthenticated = vi.fn();
-vi.mock("@/lib/auth", () => ({
-  getDisplayName: () => mockGetDisplayName(),
-  isAuthenticated: () => mockIsAuthenticated(),
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
 }));
+
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
+}));
+
+// assertMembership is stubbed here (this suite mocks `db` wholesale, so it
+// has no database to re-check against); its real behaviour is proven in
+// cross-tenant.test.ts against the actual test database.
+const { mockAssertMembership } = vi.hoisted(() => ({
+  mockAssertMembership: vi.fn(),
+}));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/short-code", () => ({
   computeShortCodeParts: vi.fn(async () => ({
@@ -96,12 +111,20 @@ vi.mock("@/lib/short-code", () => ({
   pickLetters: vi.fn(() => "ABC"),
 }));
 
+import { UnauthorizedError } from "@/lib/household";
 import { GET, POST } from "../../api/apartments/route";
 import { GET as getById, PATCH, DELETE } from "../../api/apartments/[id]/route";
 
+const HOUSEHOLD_ID = 7;
+
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: HOUSEHOLD_ID,
+    userId: "u1",
+    role: "owner",
+  });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 afterEach(() => {
@@ -110,31 +133,42 @@ afterEach(() => {
 
 describe("GET /api/apartments", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const res = await GET();
     expect(res.status).toBe(401);
   });
 
-  it("returns list of apartments with myRating=null when no user cookie", async () => {
+  it("returns the list with myRating=null when the user has rated nothing", async () => {
     const apartments = [
       { id: 1, name: "Apt 1", avgOverall: "4.5" },
       { id: 2, name: "Apt 2", avgOverall: null },
     ];
-    mockGetDisplayName.mockResolvedValue(null);
 
     mockSelect
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           leftJoin: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockResolvedValue(apartments),
+            // .where(household predicate) is the new link in the chain.
+            where: vi.fn().mockReturnValue({
+              groupBy: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockResolvedValue(apartments),
+              }),
             }),
           }),
         }),
       })
-      // apartmentDistances query
+      // apartmentDistances query — now filtered by household.
       .mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      })
+      // The caller's own ratings: always queried now that the user comes
+      // from the session instead of an optional display-name cookie.
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       });
 
     const res = await GET();
@@ -146,30 +180,34 @@ describe("GET /api/apartments", () => {
     ]);
   });
 
-  it("populates myRating per apartment when the user has rated some of them", async () => {
+  it("populates myRating per apartment when the session user rated some", async () => {
     const apartments = [
       { id: 1, name: "Apt 1", avgOverall: "4.5" },
       { id: 2, name: "Apt 2", avgOverall: null },
       { id: 3, name: "Apt 3", avgOverall: "3.0" },
     ];
-    mockGetDisplayName.mockResolvedValue("Alice");
 
     // First select call: apartments with avgs
     mockSelect
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           leftJoin: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockResolvedValue(apartments),
+            // .where(household predicate) is the new link in the chain.
+            where: vi.fn().mockReturnValue({
+              groupBy: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockResolvedValue(apartments),
+              }),
             }),
           }),
         }),
       })
       // Second select call: apartmentDistances
       .mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       })
-      // Third select call: Alice's ratings — she rated apartments 1 and 3.
+      // Third select call: the session user's ratings — 1 and 3 are rated.
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue([
@@ -195,7 +233,7 @@ describe("GET /api/apartments", () => {
 
 describe("POST /api/apartments", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const req = new Request("http://localhost/api/apartments", {
       method: "POST",
       body: JSON.stringify({ name: "x" }),
@@ -593,7 +631,11 @@ describe("PATCH /api/apartments/[id]", () => {
 describe("DELETE /api/apartments/[id]", () => {
   it("deletes an apartment", async () => {
     mockDelete.mockReturnValue({
-      where: vi.fn().mockResolvedValue(undefined),
+      where: vi.fn().mockReturnValue({
+        // .returning() so the handler can tell "deleted" from "no such row
+        // in this household" and answer 404 for the latter.
+        returning: vi.fn().mockResolvedValue([{ id: 1 }]),
+      }),
     });
 
     const req = new Request("http://localhost/api/apartments/1", {

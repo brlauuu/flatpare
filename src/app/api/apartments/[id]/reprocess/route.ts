@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments, apartmentDistances } from "@/lib/db/schema";
 import { extractApartmentData } from "@/lib/parse-pdf";
@@ -9,26 +9,61 @@ import { readStoredFile } from "@/lib/storage";
 import { listLocations } from "@/lib/locations";
 import { calculateDistance } from "@/lib/distance";
 import { geocodeLatLng } from "@/lib/geocode";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
+
+const notFound = () =>
+  NextResponse.json({ error: "Not found" }, { status: 404 });
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let householdId: number;
+  let userId: string;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId, userId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // Reprocess rewrites the apartment row and its distances, so it is a
+  // destructive handler: re-check membership against the database rather than
+  // trusting a JWT that stays valid for up to 24h after a member is removed.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) return notFound();
+    throw e;
+  }
+
+  try {
     const { id } = await params;
     const apartmentId = parseInt(id);
+    if (!Number.isInteger(apartmentId)) return notFound();
 
+    const scope = and(
+      eq(apartments.id, apartmentId),
+      eq(apartments.householdId, householdId)
+    );
+
+    // This select used to filter on the id alone. With small sequential ids,
+    // that let any member re-extract, read back and OVERWRITE another
+    // household's apartment. The household predicate is the fix.
     const rows = await db
       .select()
       .from(apartments)
-      .where(eq(apartments.id, apartmentId))
+      .where(scope)
       .limit(1);
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    if (rows.length === 0) return notFound();
 
     const apt = rows[0];
 
@@ -41,10 +76,10 @@ export async function POST(
 
     let pdfBase64: string;
     try {
-      // The apartment's own recorded householdId is the source of truth
-      // for which household its PDF belongs to — readStoredFile rejects
-      // if apt.pdfUrl doesn't actually match it.
-      const buf = await readStoredFile(apt.pdfUrl, apt.householdId);
+      // The SESSION's household, not apt.householdId. Passing a value read off
+      // the caller-selected row would check request-derived data against
+      // request-derived data — self-consistent, and therefore a no-op.
+      const buf = await readStoredFile(apt.pdfUrl, householdId);
       pdfBase64 = buf.toString("base64");
     } catch (err) {
       console.error("[reprocess] PDF read failed:", err);
@@ -99,8 +134,10 @@ export async function POST(
     const result = await db
       .update(apartments)
       .set(updates)
-      .where(eq(apartments.id, apartmentId))
+      .where(scope)
       .returning();
+
+    if (result.length === 0) return notFound();
 
     const updated = result[0];
 
@@ -117,7 +154,7 @@ export async function POST(
             latitude: coords?.lat ?? null,
             longitude: coords?.lng ?? null,
           })
-          .where(eq(apartments.id, apartmentId));
+          .where(scope);
       } catch (err) {
         console.error(
           `[reprocess] geocode failed apt=${apartmentId}:`,
@@ -127,9 +164,14 @@ export async function POST(
 
       await db
         .delete(apartmentDistances)
-        .where(eq(apartmentDistances.apartmentId, apartmentId));
+        .where(
+          and(
+            eq(apartmentDistances.apartmentId, apartmentId),
+            eq(apartmentDistances.householdId, householdId)
+          )
+        );
 
-      const locations = await listLocations();
+      const locations = await listLocations(householdId);
       for (const loc of locations) {
         try {
           const { bikeMinutes, transitMinutes } = await calculateDistance(
@@ -137,6 +179,7 @@ export async function POST(
             updated.address
           );
           await db.insert(apartmentDistances).values({
+            householdId,
             apartmentId,
             locationId: loc.id,
             bikeMin: bikeMinutes,

@@ -3,7 +3,8 @@ import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments, locationsOfInterest } from "@/lib/db/schema";
 import { geocodeLatLngWithReason } from "@/lib/geocode";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 
 const CONCURRENCY = 5;
 
@@ -35,12 +36,27 @@ async function runWithConcurrency<T>(
 }
 
 export async function POST() {
-  if (!(await isAuthenticated())) return unauthorized();
+  let householdId: number;
+  try {
+    ({ householdId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
   try {
     const aptRows = await db
       .select({ id: apartments.id, address: apartments.address })
       .from(apartments)
-      .where(and(isNull(apartments.latitude), isNotNull(apartments.address)));
+      .where(
+        and(
+          eq(apartments.householdId, householdId),
+          isNull(apartments.latitude),
+          isNotNull(apartments.address)
+        )
+      );
 
     const locRows = await db
       .select({
@@ -48,7 +64,12 @@ export async function POST() {
         address: locationsOfInterest.address,
       })
       .from(locationsOfInterest)
-      .where(isNull(locationsOfInterest.latitude));
+      .where(
+        and(
+          eq(locationsOfInterest.householdId, householdId),
+          isNull(locationsOfInterest.latitude)
+        )
+      );
 
     const pending: Pending[] = [
       ...aptRows
@@ -97,12 +118,22 @@ export async function POST() {
           await db
             .update(apartments)
             .set({ latitude: lat, longitude: lng })
-            .where(eq(apartments.id, item.id));
+            .where(
+              and(
+                eq(apartments.id, item.id),
+                eq(apartments.householdId, householdId)
+              )
+            );
         } else {
           await db
             .update(locationsOfInterest)
             .set({ latitude: lat, longitude: lng })
-            .where(eq(locationsOfInterest.id, item.id));
+            .where(
+              and(
+                eq(locationsOfInterest.id, item.id),
+                eq(locationsOfInterest.householdId, householdId)
+              )
+            );
         }
         updated++;
       },

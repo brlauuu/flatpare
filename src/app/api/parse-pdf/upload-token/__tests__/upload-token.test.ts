@@ -1,28 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const { mockHandleUpload, mockIsAuthenticated } = vi.hoisted(() => ({
+const { mockHandleUpload, mockRequireHousehold } = vi.hoisted(() => ({
   mockHandleUpload: vi.fn(),
-  mockIsAuthenticated: vi.fn(async () => true),
+  mockRequireHousehold: vi.fn(),
 }));
 
 vi.mock("@vercel/blob/client", () => ({
   handleUpload: mockHandleUpload,
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
+import { UnauthorizedError } from "@/lib/household";
 import { GET, POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
   delete process.env.BLOB_READ_WRITE_TOKEN;
 });
 
@@ -32,7 +32,7 @@ afterEach(() => {
 
 describe("GET /api/parse-pdf/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const res = await GET();
     expect(res.status).toBe(401);
   });
@@ -55,7 +55,7 @@ describe("GET /api/parse-pdf/upload-token", () => {
 
 describe("POST /api/parse-pdf/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const req = new Request("http://localhost/api/parse-pdf/upload-token", {
       method: "POST",
       body: "{}",

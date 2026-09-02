@@ -1,26 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
-  mockIsAuthenticated,
+  mockRequireHousehold,
   selectMock,
   insertMock,
   listLocationsMock,
   calcDistanceMock,
 } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => true),
+  mockRequireHousehold: vi.fn(),
   selectMock: vi.fn(),
   insertMock: vi.fn(),
   listLocationsMock: vi.fn(),
   calcDistanceMock: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -31,11 +26,16 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/db/schema", () => ({
-  apartments: { id: "id", address: "address" },
+  apartments: { id: "id", address: "address", householdId: "household_id" },
   apartmentDistances: {
     apartmentId: "apartment_id",
     locationId: "location_id",
+    householdId: "household_id",
   },
+}));
+
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn(),
 }));
 
 vi.mock("@/lib/distance", () => ({
@@ -46,16 +46,24 @@ vi.mock("@/lib/locations", () => ({
   listLocations: listLocationsMock,
 }));
 
+import { UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
 });
 
 function selectApartments(rows: unknown[]) {
   selectMock.mockReturnValueOnce({
-    from: vi.fn().mockResolvedValue(rows),
+    // .from(...).where(...) — the where is the household predicate.
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(rows),
+    }),
   });
 }
 
@@ -150,5 +158,23 @@ describe("POST /api/settings/recompute-distances", () => {
     const res = await POST();
     expect(res.status).toBe(500);
     expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("asks the locations lib for THIS household's locations only", async () => {
+    selectApartments([{ id: 1, address: "Apt St 1" }]);
+    listLocationsMock.mockResolvedValue(sampleLocations);
+    calcDistanceMock.mockResolvedValue({ bikeMinutes: 1, transitMinutes: 2 });
+    insertReturnsOk();
+
+    await POST();
+    expect(listLocationsMock).toHaveBeenCalledWith(7);
+  });
+
+  it("returns 401 without a session and never queries", async () => {
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    const res = await POST();
+    expect(res.status).toBe(401);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(listLocationsMock).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { apiUsage } from "@/lib/db/schema";
 import { sql, eq, sum, count, and, gte } from "drizzle-orm";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 
 // Pricing estimates (per token, USD). Gemini also has a free tier on AI
 // Studio keys without billing enabled (~1M tokens/day on gemini-2.5-flash);
@@ -33,8 +34,22 @@ function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
 
+// NOTE: the figures below are still deployment-wide, not per household.
+// `api_usage.household_id` exists but nothing writes it — the recorders in
+// lib/parse-pdf.ts, lib/distance.ts and lib/geocode.ts insert without it — so
+// filtering here would report zero for everyone. Scoping this endpoint means
+// threading the household through those recorders first; it is called out in
+// the Task 5 report as follow-up work rather than half-done here.
 export async function GET() {
-  if (!(await isAuthenticated())) return unauthorized();
+  try {
+    await requireHousehold();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const since = Math.floor(thirtyDaysAgo.getTime() / 1000);

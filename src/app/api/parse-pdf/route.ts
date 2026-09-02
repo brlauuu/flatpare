@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { uploadFile, readStoredFile } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 interface BlobUploadBody {
@@ -25,20 +25,18 @@ function emptyExtraction(filename: string) {
 }
 
 export async function POST(request: Request) {
-  // Legacy shared-password gate, kept as the repo-wide defense-in-depth
-  // convention (see AGENTS.md and the other ~15 routes that still check
-  // this alongside the proxy). requireHousehold() below is the real
-  // tenant-scoping check this route needs for readStoredFile/uploadFile;
-  // removing this one would make this route the odd one out among routes
-  // that haven't migrated off the shared-password model yet, which is a
-  // broader decision than this fix.
-  if (!(await isAuthenticated())) return unauthorized();
-
+  // The legacy shared-password gate that used to sit here is gone: every data
+  // route now resolves the session household, so this one is no longer the
+  // odd one out. requireHousehold() is both the authentication check and the
+  // tenant scope for readStoredFile/uploadFile.
   let householdId: number;
   try {
     ({ householdId } = await requireHousehold());
-  } catch {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
   }
 
   try {

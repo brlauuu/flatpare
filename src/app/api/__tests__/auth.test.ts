@@ -1,18 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock auth lib
-vi.mock("@/lib/auth", async () => {
-  const { NextResponse } = await import("next/server");
-  return {
-    verifyPassword: vi.fn(),
-    setAuthenticated: vi.fn(async () => {}),
-    setDisplayName: vi.fn(async () => {}),
-    isAuthenticated: vi.fn(async () => true),
-    unauthorized: vi.fn(() =>
-      NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-    ),
-  };
-});
+// The legacy shared-password endpoints. Task 6 deletes them along with the
+// rest of the display-name model; this suite pins their behaviour until then,
+// because `/api/auth/*` is allow-listed wholesale by the proxy (ruling R3) and
+// each route's own check is the only gate in front of it.
+vi.mock("@/lib/auth", () => ({
+  verifyPassword: vi.fn(),
+  setAuthenticated: vi.fn(async () => {}),
+  setDisplayName: vi.fn(async () => {}),
+}));
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
@@ -22,15 +18,20 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-// Mock db
-const usersSelectRows: { name: string }[] = [];
+const usersSelectRows: { name: string | null }[] = [];
 let lastInsertValues: Record<string, unknown> | null = null;
+let lastWhere: unknown = null;
 
 vi.mock("@/lib/db", () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        orderBy: vi.fn().mockResolvedValue(usersSelectRows),
+        innerJoin: vi.fn(() => ({
+          where: vi.fn((w: unknown) => {
+            lastWhere = w;
+            return { orderBy: vi.fn().mockResolvedValue(usersSelectRows) };
+          }),
+        })),
       })),
     })),
     insert: vi.fn(() => ({
@@ -39,36 +40,57 @@ vi.mock("@/lib/db", () => ({
         return { onConflictDoNothing: vi.fn().mockResolvedValue(undefined) };
       }),
     })),
+    delete: vi.fn(() => ({
+      where: vi.fn().mockResolvedValue(undefined),
+    })),
   },
 }));
 
 vi.mock("@/lib/db/schema", () => ({
-  users: { name: "name", createdAt: "created_at" },
-  ratings: { userName: "user_name" },
+  users: { id: "id", name: "name", email: "email" },
+  householdMembers: { householdId: "household_id", userId: "user_id" },
+  ratings: { userId: "user_id", householdId: "household_id" },
 }));
 
 vi.mock("drizzle-orm", () => ({
   asc: vi.fn((c) => c),
   desc: vi.fn((c) => c),
-  eq: vi.fn(),
+  eq: vi.fn((a, b) => ({ eq: [a, b] })),
   ne: vi.fn(),
   avg: vi.fn(),
+  and: vi.fn(),
 }));
 
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
+}));
+
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
+}));
+
+import { UnauthorizedError } from "@/lib/household";
 import { POST as authPost } from "../../api/auth/route";
 import { POST as namePost } from "../../api/auth/name/route";
 import { GET as usersGet } from "../../api/auth/users/route";
 import { DELETE as userDelete } from "../../api/auth/users/[name]/route";
-import { verifyPassword, isAuthenticated } from "@/lib/auth";
+import { setDisplayName, verifyPassword } from "@/lib/auth";
 
 const mockedVerifyPassword = vi.mocked(verifyPassword);
-const mockedIsAuthenticated = vi.mocked(isAuthenticated);
+const mockedSetDisplayName = vi.mocked(setDisplayName);
+
+const HOUSEHOLD_ID = 7;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: HOUSEHOLD_ID,
+    userId: "u1",
+    role: "owner",
+  });
   usersSelectRows.length = 0;
   lastInsertValues = null;
+  lastWhere = null;
 });
 
 afterEach(() => {
@@ -86,8 +108,7 @@ describe("POST /api/auth", () => {
 
     const res = await authPost(req);
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.success).toBe(true);
+    expect((await res.json()).success).toBe(true);
   });
 
   it("returns 401 for invalid password", async () => {
@@ -100,13 +121,12 @@ describe("POST /api/auth", () => {
 
     const res = await authPost(req);
     expect(res.status).toBe(401);
-    const data = await res.json();
-    expect(data.error).toBe("Invalid password");
+    expect((await res.json()).error).toBe("Invalid password");
   });
 });
 
 describe("POST /api/auth/name", () => {
-  it("returns success and upserts the user", async () => {
+  it("sets the display-name cookie", async () => {
     const req = new Request("http://localhost/api/auth/name", {
       method: "POST",
       body: JSON.stringify({ displayName: "Alice" }),
@@ -114,12 +134,20 @@ describe("POST /api/auth/name", () => {
 
     const res = await namePost(req);
     expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.success).toBe(true);
-    expect(lastInsertValues).toEqual({ name: "Alice" });
+    expect((await res.json()).success).toBe(true);
+    expect(mockedSetDisplayName).toHaveBeenCalledWith("Alice");
   });
 
-  it("trims whitespace before inserting", async () => {
+  it("no longer creates a users row — identities come from Auth.js", async () => {
+    const req = new Request("http://localhost/api/auth/name", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "Alice" }),
+    });
+    await namePost(req);
+    expect(lastInsertValues).toBeNull();
+  });
+
+  it("trims whitespace", async () => {
     const req = new Request("http://localhost/api/auth/name", {
       method: "POST",
       body: JSON.stringify({ displayName: "  Bob  " }),
@@ -127,7 +155,7 @@ describe("POST /api/auth/name", () => {
 
     const res = await namePost(req);
     expect(res.status).toBe(200);
-    expect(lastInsertValues).toEqual({ name: "Bob" });
+    expect(mockedSetDisplayName).toHaveBeenCalledWith("Bob");
   });
 
   it("returns 400 for empty display name", async () => {
@@ -135,9 +163,7 @@ describe("POST /api/auth/name", () => {
       method: "POST",
       body: JSON.stringify({ displayName: "" }),
     });
-
-    const res = await namePost(req);
-    expect(res.status).toBe(400);
+    expect((await namePost(req)).status).toBe(400);
   });
 
   it("returns 400 for whitespace-only display name", async () => {
@@ -145,18 +171,24 @@ describe("POST /api/auth/name", () => {
       method: "POST",
       body: JSON.stringify({ displayName: "   " }),
     });
-
-    const res = await namePost(req);
-    expect(res.status).toBe(400);
+    expect((await namePost(req)).status).toBe(400);
   });
 });
 
 describe("GET /api/auth/users", () => {
-  it("returns list of users from the users table", async () => {
+  it("returns the names of THIS household's members", async () => {
     usersSelectRows.push({ name: "Alice" }, { name: "Bob" });
     const res = await usersGet();
-    const data = await res.json();
-    expect(data).toEqual(["Alice", "Bob"]);
+    expect(await res.json()).toEqual(["Alice", "Bob"]);
+    // The join is filtered on the session household, not the whole users
+    // table — that listing used to expose every account in the deployment.
+    expect(lastWhere).toEqual({ eq: ["household_id", HOUSEHOLD_ID] });
+  });
+
+  it("drops members who have no display name yet", async () => {
+    usersSelectRows.push({ name: "Alice" }, { name: null });
+    const res = await usersGet();
+    expect(await res.json()).toEqual(["Alice"]);
   });
 
   it("returns an empty list (200) when the db throws — failure is not user-facing here", async () => {
@@ -174,15 +206,26 @@ describe("GET /api/auth/users", () => {
   });
 });
 
-// These three routes were reachable without the password until PR #176: the
-// proxy allow-listed the whole `/api/auth` prefix. They now check for
-// themselves, so they stay closed even if the gate regresses again.
+describe("DELETE /api/auth/users/[name]", () => {
+  it("is retired: 410 and no database access", async () => {
+    // It used to delete ratings and users by display name with no household
+    // predicate — a cross-tenant destructive operation, and display names are
+    // not unique across households. Member removal is issue #197 / E5.
+    const { db } = await import("@/lib/db");
+    const res = await userDelete();
+    expect(res.status).toBe(410);
+    expect(db.delete).not.toHaveBeenCalled();
+  });
+});
+
+// The proxy allow-lists `/api/auth/*` wholesale (ruling R3), so these routes'
+// own checks are the only gate. They must stay closed on their own.
 describe("auth routes — defense in depth", () => {
   beforeEach(() => {
-    mockedIsAuthenticated.mockResolvedValue(false);
+    mockRequireHousehold.mockRejectedValue(new UnauthorizedError());
   });
 
-  it("POST /api/auth/name returns 401 for an unauthenticated caller", async () => {
+  it("POST /api/auth/name returns 401 for a caller with no session", async () => {
     const req = new Request("http://localhost/api/auth/name", {
       method: "POST",
       body: JSON.stringify({ displayName: "Mallory" }),
@@ -198,25 +241,13 @@ describe("auth routes — defense in depth", () => {
       body: JSON.stringify({ displayName: "Mallory" }),
     });
     await namePost(req);
+    expect(mockedSetDisplayName).not.toHaveBeenCalled();
     expect(lastInsertValues).toBeNull();
   });
 
-  it("GET /api/auth/users returns 401 for an unauthenticated caller", async () => {
-    const res = await usersGet();
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "Not authenticated" });
-  });
-
-  it("GET /api/auth/users does not leak names when unauthenticated", async () => {
+  it("GET /api/auth/users returns 401 and leaks no names", async () => {
     usersSelectRows.push({ name: "Alice" }, { name: "Bob" });
     const res = await usersGet();
-    expect(await res.json()).toEqual({ error: "Not authenticated" });
-  });
-
-  it("DELETE /api/auth/users/[name] returns 401 for an unauthenticated caller", async () => {
-    const res = await userDelete(new Request("http://localhost/api/auth/users/Alice"), {
-      params: Promise.resolve({ name: "Alice" }),
-    });
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Not authenticated" });
   });

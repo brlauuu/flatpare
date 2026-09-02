@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
+
+function notAuthenticated() {
+  return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+}
 
 // Server route that mints short-lived client tokens so the browser can upload
 // PDFs directly to Vercel Blob — bypassing the 4.5 MB serverless body limit
@@ -13,7 +18,12 @@ function blobConfigured(): boolean {
 }
 
 export async function GET() {
-  if (!(await isAuthenticated())) return unauthorized();
+  try {
+    await requireHousehold();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return notAuthenticated();
+    throw e;
+  }
   // Probe used by the client to decide between direct-upload and multipart fallback.
   if (!blobConfigured()) {
     return NextResponse.json({ enabled: false }, { status: 404 });
@@ -22,7 +32,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAuthenticated())) return unauthorized();
+  try {
+    await requireHousehold();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return notAuthenticated();
+    throw e;
+  }
   if (!blobConfigured()) {
     return NextResponse.json(
       { error: "Blob storage not configured" },
@@ -36,6 +51,11 @@ export async function POST(request: Request) {
     const result = await handleUpload({
       body,
       request,
+      // NOTE: the minted token still carries no pathname constraint, so a
+      // signed-in caller can choose the blob key. That is ruling R6's Task 4b
+      // (client key generation in src/lib/upload-pdf.ts must move under
+      // `households/<id>/` first); constraining it here alone would reject the
+      // keys the current client mints and break every cloud upload.
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ["application/pdf"],
         maximumSizeInBytes: MAX_PDF_BYTES,

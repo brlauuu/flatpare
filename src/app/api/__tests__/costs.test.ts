@@ -1,16 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockIsAuthenticated } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => true),
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
 // Default mock: every query returns 5 calls / 1000 input / 500 output tokens.
@@ -50,12 +45,17 @@ vi.mock("drizzle-orm", () => ({
   gte: vi.fn(),
 }));
 
+import { UnauthorizedError } from "@/lib/household";
 import { GET } from "../../api/costs/route";
 import { db } from "@/lib/db";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
 });
 
 afterEach(() => {
@@ -64,7 +64,7 @@ afterEach(() => {
 
 describe("GET /api/costs", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const res = await GET();
     expect(res.status).toBe(401);
   });

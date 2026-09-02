@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockIsAuthenticated, dbMocks, checkListingsMock } = vi.hoisted(
+const { mockRequireHousehold, dbMocks, checkListingsMock } = vi.hoisted(
   () => ({
-    mockIsAuthenticated: vi.fn(async () => true),
+    mockRequireHousehold: vi.fn(),
     dbMocks: {
       select: vi.fn(),
       update: vi.fn(),
@@ -11,13 +11,8 @@ const { mockIsAuthenticated, dbMocks, checkListingsMock } = vi.hoisted(
   })
 );
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -30,6 +25,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/db/schema", () => ({
   apartments: {
     id: "id",
+    householdId: "household_id",
     listingUrl: "listing_url",
     listingGone: "listing_gone",
     listingCheckedAt: "listing_checked_at",
@@ -37,6 +33,7 @@ vi.mock("@/lib/db/schema", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: vi.fn(),
   eq: vi.fn(),
   isNotNull: vi.fn(),
 }));
@@ -45,11 +42,16 @@ vi.mock("@/lib/listing-status", () => ({
   checkListings: checkListingsMock,
 }));
 
+import { UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
 });
 
 function selectReturns(rows: unknown[]) {
@@ -130,5 +132,13 @@ describe("POST /api/apartments/check-listings", () => {
       results: [],
     });
     expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 without a session and never queries", async () => {
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    const res = await POST();
+    expect(res.status).toBe(401);
+    expect(dbMocks.select).not.toHaveBeenCalled();
+    expect(checkListingsMock).not.toHaveBeenCalled();
   });
 });
