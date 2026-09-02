@@ -374,7 +374,7 @@ function DashboardLink({
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 text-sm text-primary underline-offset-4 hover:underline"
+        className="flex min-h-11 shrink-0 items-center text-sm text-primary underline-offset-4 hover:underline sm:min-h-0"
       >
         Open dashboard
       </a>

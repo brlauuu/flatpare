@@ -63,13 +63,18 @@ export function MyRatingPanel({
           />
         </div>
         <div className="flex gap-2">
-          <Button onClick={onSave} disabled={saving || !dirty}>
+          <Button
+            onClick={onSave}
+            disabled={saving || !dirty}
+            className="h-11 sm:h-8"
+          >
             {saving ? "Saving..." : "Save Rating"}
           </Button>
           <Button
             variant="outline"
             onClick={onCancel}
             disabled={saving || !dirty}
+            className="h-11 sm:h-8"
           >
             Cancel
           </Button>

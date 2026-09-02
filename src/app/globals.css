@@ -129,6 +129,25 @@
   }
 }
 
+/* Expands a small control's touch area to at least 44px on phones without
+   changing its visual size or disturbing the surrounding layout. Use for
+   isolated icon buttons; do NOT use it on adjacent controls (rating stars,
+   segmented toggles) where the expanded areas would overlap each other. */
+@utility tap-target {
+  position: relative;
+  @media (width < 40rem) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
 /* Prose styles for the in-app guide */
 .guide-prose {
   line-height: 1.75;

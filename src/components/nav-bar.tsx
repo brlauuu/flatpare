@@ -82,7 +82,7 @@ export function NavBar({ userName }: { userName: string }) {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/apartments" className="flex items-center">
+        <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
           <Image
             src="/flatpare_logo.svg"
             alt="Flatpare"
@@ -111,7 +111,7 @@ export function NavBar({ userName }: { userName: string }) {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:min-h-0">
               <User className="h-3.5 w-3.5" />
               <span>{userName}</span>
               <ChevronDown className="h-3 w-3" />
@@ -173,7 +173,7 @@ export function NavBar({ userName }: { userName: string }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex-1 py-3 text-center text-xs transition-colors",
+              "flex min-h-11 flex-1 items-center justify-center py-3 text-center text-xs transition-colors",
               pathname === item.href
                 ? "font-medium text-foreground"
                 : "text-muted-foreground"

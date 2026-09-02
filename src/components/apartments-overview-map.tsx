@@ -95,7 +95,7 @@ export function ApartmentsOverviewMap({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="apartments-overview-map-panel"
-        className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left"
+        className="flex min-h-11 w-full items-center justify-between rounded-none px-4 py-3 text-left sm:min-h-0"
       >
         <span className="flex items-center gap-2">
           <MapIcon className="h-4 w-4" />

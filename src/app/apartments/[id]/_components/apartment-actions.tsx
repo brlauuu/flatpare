@@ -32,7 +32,7 @@ export function ApartmentActions({
           rel="noopener noreferrer"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full sm:w-auto"
+            "h-11 w-full sm:h-7 sm:w-auto"
           )}
         >
           View PDF
@@ -45,7 +45,7 @@ export function ApartmentActions({
           rel="noopener noreferrer"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full sm:w-auto"
+            "h-11 w-full sm:h-7 sm:w-auto"
           )}
         >
           Original Listing
@@ -63,7 +63,7 @@ export function ApartmentActions({
           variant="outline"
           size="sm"
           onClick={onEdit}
-          className="w-full sm:w-auto"
+          className="h-11 w-full sm:h-7 sm:w-auto"
         >
           Edit
         </Button>
@@ -73,7 +73,7 @@ export function ApartmentActions({
         size="sm"
         disabled={reprocessing || editing || !pdfUrl}
         onClick={onReprocess}
-        className="w-full sm:w-auto"
+        className="h-11 w-full sm:h-7 sm:w-auto"
       >
         {reprocessing ? "Reprocessing..." : "Reprocess"}
       </Button>
@@ -82,7 +82,7 @@ export function ApartmentActions({
         size="sm"
         disabled={deleting || editing}
         onClick={onDelete}
-        className="w-full sm:w-auto"
+        className="h-11 w-full sm:h-7 sm:w-auto"
       >
         {deleting ? "Deleting..." : "Delete"}
       </Button>
