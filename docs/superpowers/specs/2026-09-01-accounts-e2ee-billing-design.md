@@ -43,6 +43,15 @@ exception is real and must be stated wherever the encryption is marketed.
 | Existing data | Wiped. Clean start, no migration path |
 | Mobile | PWA first. Native deferred to backlog |
 
+## Terminology update (2026-09-02)
+
+This document calls the tenancy unit an **account**. E1's implementation design
+renames it to **household**, because Auth.js's Drizzle adapter requires a table
+named `accounts` for OAuth provider links and two concepts cannot share one name
+in one schema. Read "account" as "household" throughout, except where it plainly
+means an OAuth link or a Stripe customer. See
+[2026-09-02-e1-accounts-oauth-design.md](./2026-09-02-e1-accounts-oauth-design.md).
+
 ## Epics and dependency order
 
 ```
