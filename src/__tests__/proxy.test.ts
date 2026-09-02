@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
-import { proxy } from "../proxy";
+import { proxy, config } from "../proxy";
 import { authCookieValue } from "@/lib/auth-cookie";
 
 beforeAll(() => {
@@ -182,6 +182,36 @@ describe("proxy — protected page routes", () => {
     it(`lets authenticated ${path} render`, () => {
       const res = proxy(makeRequest(path, authedCookies()));
       expect(res.headers.get("x-middleware-next")).toBe("1");
+    });
+  }
+});
+
+// The manifest is fetched by the browser WITHOUT credentials. If the matcher
+// stops excluding it, the fetch gets a 307 to the login page, the manifest
+// never parses, and the app silently stops being installable — with no error
+// anywhere. Same for the icons it references.
+describe("proxy — PWA assets stay public", () => {
+  const matcher = new RegExp(`^${config.matcher[0]}$`);
+
+  const publicAssets = [
+    "/manifest.webmanifest",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/icon-maskable-512.png",
+    "/apple-touch-icon.png",
+    "/favicon.ico",
+  ];
+
+  for (const path of publicAssets) {
+    it(`does not run the proxy for ${path}`, () => {
+      expect(matcher.test(path)).toBe(false);
+    });
+  }
+
+  const guarded = ["/apartments", "/api/apartments", "/settings", "/compare"];
+  for (const path of guarded) {
+    it(`still runs the proxy for ${path}`, () => {
+      expect(matcher.test(path)).toBe(true);
     });
   }
 });

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -18,7 +18,24 @@ export const metadata: Metadata = {
   description: "Collaborative apartment comparison tool",
   icons: {
     icon: "/favicon.ico",
+    // iOS ignores the web app manifest's icons and uses this instead; without
+    // it a home-screen install gets a screenshot thumbnail.
+    apple: "/apple-touch-icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Flatpare",
+    statusBarStyle: "default",
+  },
+};
+
+// Paints the browser/status bar to match the app instead of flashing white
+// when the installed app launches.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#050e0f" },
+  ],
 };
 
 export default function RootLayout({
