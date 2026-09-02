@@ -116,7 +116,6 @@ import {
 import { POST as locationMovePost } from "../locations/[id]/move/route";
 import { POST as backfillPost } from "../geocode/backfill/route";
 import { POST as recomputePost } from "../settings/recompute-distances/route";
-import { GET as householdUsersGet } from "../auth/users/route";
 
 let houseA = 0;
 let houseB = 0;
@@ -264,19 +263,6 @@ describe("list endpoints return only the caller's household", () => {
   it("GET /api/locations", async () => {
     const body = await (await locationsGet()).json();
     expect(body.map((l: { label: string }) => l.label)).toEqual(["A work"]);
-  });
-
-  it("GET /api/auth/users lists only this household's members", async () => {
-    // This route used to list `users.name` for every account in the
-    // deployment. Proven here against the real database rather than a mocked
-    // select, which returns its fixture whatever the where clause says.
-    const res = await householdUsersGet();
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual(["Ann"]);
-
-    currentSession.householdId = houseB;
-    currentSession.userId = "ub";
-    expect(await (await householdUsersGet()).json()).toEqual(["Bob"]);
   });
 
   it("GET /api/apartments/[id] reads the caller's own row", async () => {

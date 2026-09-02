@@ -9,6 +9,14 @@ export default defineConfig({
     include: ["src/**/__tests__/**/*.test.{ts,tsx}"],
     testTimeout: 15000,
     hookTimeout: 15000,
+    // The real-database suites (cross-tenant, tenancy, locations) share one
+    // libSQL file (data/test.db, created once by test-global-setup.ts) and
+    // write concurrently under file-level parallelism, producing SQLITE_BUSY
+    // failures that vary run to run. Turning off file parallelism serializes
+    // test *files* (tests within a file still run concurrently), which is
+    // the only fix that doesn't also require reworking global setup to hand
+    // each worker its own migrated database file.
+    fileParallelism: false,
     coverage: {
       exclude: [
         // shadcn-generated primitives — vendored, re-emitted by the CLI;

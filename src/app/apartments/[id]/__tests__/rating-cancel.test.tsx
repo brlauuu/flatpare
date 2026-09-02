@@ -47,12 +47,6 @@ beforeEach(() => {
   push.mockReset();
   refresh.mockReset();
   fetchCalls = [];
-  // Current user is Alice (via cookie)
-  Object.defineProperty(document, "cookie", {
-    configurable: true,
-    get: () => "flatpare-name=Alice",
-    set: () => {},
-  });
 
   vi.spyOn(global, "fetch").mockImplementation(((
     input: RequestInfo,
@@ -65,6 +59,13 @@ beforeEach(() => {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve([]),
+      } as Response);
+    }
+    // Current user is Alice, per the Auth.js session.
+    if (url === "/api/auth/session" && method === "GET") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ user: { name: "Alice" } }),
       } as Response);
     }
     if (url.endsWith("/api/apartments/42") && method === "GET") {

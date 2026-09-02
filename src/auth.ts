@@ -18,6 +18,16 @@ const hasOAuth = !!(
   process.env.GOOGLE_CLIENT_ID || process.env.GITHUB_CLIENT_ID
 );
 
+// The login page (src/app/page.tsx) needs to know which providers to render
+// buttons for, without reading env vars itself in client-shipped code. This
+// is computed with the same rule as `providers` below, so the two can never
+// drift apart: keep them next to each other.
+export const enabledProviderIds: Array<"google" | "github" | "credentials"> = [
+  ...(process.env.GOOGLE_CLIENT_ID ? (["google"] as const) : []),
+  ...(process.env.GITHUB_CLIENT_ID ? (["github"] as const) : []),
+  ...(hasOAuth ? [] : (["credentials"] as const)),
+];
+
 // Self-hosters get a password path so `docker compose up` works with no
 // third-party setup. When OAuth is configured the credentials provider is
 // not registered at all — it must not be a back door on the hosted tier.

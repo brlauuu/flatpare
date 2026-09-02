@@ -58,12 +58,6 @@ beforeEach(() => {
     body: APT_WITH_PDF_REFRESHED,
   };
 
-  Object.defineProperty(document, "cookie", {
-    configurable: true,
-    get: () => "flatpare-name=Alice",
-    set: () => {},
-  });
-
   vi.spyOn(global, "fetch").mockImplementation(((
     input: RequestInfo,
     init?: RequestInit
@@ -76,6 +70,12 @@ beforeEach(() => {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve([]),
+      } as Response);
+    }
+    if (url === "/api/auth/session" && method === "GET") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ user: { name: "Alice" } }),
       } as Response);
     }
     if (url.endsWith("/api/apartments/42/reprocess") && method === "POST") {
