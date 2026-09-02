@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
-import { isAuthenticated } from "@/lib/auth";
+import { requireHousehold } from "@/lib/session";
+import { householdIdFromStoredPath } from "@/lib/storage";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
@@ -9,17 +10,26 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let householdId: number;
+  try {
+    ({ householdId } = await requireHousehold());
+  } catch {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { path: segments } = await params;
   const filename = segments.join("/");
 
-  // Prevent path traversal
+  const owner = householdIdFromStoredPath(filename);
+  if (owner === null || owner !== householdId) {
+    // 404, not 403: a 403 confirms the file exists in someone else's household.
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Belt-and-braces: confirm the resolved path still lands inside UPLOADS_DIR.
   const filePath = path.resolve(UPLOADS_DIR, filename);
-  if (!filePath.startsWith(UPLOADS_DIR)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!filePath.startsWith(path.resolve(UPLOADS_DIR) + path.sep)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   try {

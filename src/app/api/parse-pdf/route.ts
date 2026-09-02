@@ -3,6 +3,7 @@ import { uploadFile, readStoredFile } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { requireHousehold } from "@/lib/session";
 
 interface BlobUploadBody {
   pathname?: unknown;
@@ -58,7 +59,12 @@ export async function POST(request: Request) {
 
       originalFilename = file.name;
       const filename = `${Date.now()}-${file.name}`;
-      pdfUrl = await uploadFile(filename, file);
+      // TODO(task 5): this route still gates on the legacy shared-password
+      // isAuthenticated() check above, not requireHousehold(). Minimal fix
+      // to keep uploadFile's new householdId-scoped signature compiling;
+      // Task 5 owns wiring this route to the Auth.js session properly.
+      const { householdId } = await requireHousehold();
+      pdfUrl = await uploadFile(householdId, filename, file);
       pdfBuffer = Buffer.from(await file.arrayBuffer());
     }
 

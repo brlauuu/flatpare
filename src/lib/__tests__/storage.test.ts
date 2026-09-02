@@ -15,11 +15,11 @@ function createMockFile(name: string): File {
 }
 
 describe("uploadFile", () => {
-  it("uploads to Vercel Blob with access: 'private' and returns an /api/pdf path", async () => {
+  it("uploads to Vercel Blob under households/<id>/ with access: 'private' and returns an /api/pdf path", async () => {
     process.env.BLOB_READ_WRITE_TOKEN = "test-token";
 
     const mockPut = vi.fn(async () => ({
-      pathname: "apartments/test.pdf",
+      pathname: "households/7/test.pdf",
       url: "ignored-private-url",
     }));
 
@@ -31,11 +31,11 @@ describe("uploadFile", () => {
 
     const { uploadFile } = await import("../storage");
     const file = createMockFile("test.pdf");
-    const url = await uploadFile("test.pdf", file);
+    const url = await uploadFile(7, "test.pdf", file);
 
-    expect(url).toBe("/api/pdf/apartments/test.pdf");
+    expect(url).toBe("/api/pdf/households/7/test.pdf");
     expect(mockPut).toHaveBeenCalledWith(
-      "apartments/test.pdf",
+      "households/7/test.pdf",
       file,
       { access: "private" }
     );
@@ -43,7 +43,7 @@ describe("uploadFile", () => {
     delete process.env.BLOB_READ_WRITE_TOKEN;
   });
 
-  it("uses local filesystem when no BLOB_READ_WRITE_TOKEN", async () => {
+  it("uses local filesystem when no BLOB_READ_WRITE_TOKEN, scoped under households/<id>/", async () => {
     delete process.env.BLOB_READ_WRITE_TOKEN;
 
     const mockWriteFile = vi.fn(async () => {});
@@ -62,11 +62,17 @@ describe("uploadFile", () => {
 
     const { uploadFile } = await import("../storage");
     const file = createMockFile("local.pdf");
-    const url = await uploadFile("local.pdf", file);
+    const url = await uploadFile(7, "local.pdf", file);
 
-    expect(url).toBe("/api/uploads/local.pdf");
-    expect(mockMkdir).toHaveBeenCalled();
-    expect(mockWriteFile).toHaveBeenCalled();
+    expect(url).toBe("/api/uploads/households/7/local.pdf");
+    expect(mockMkdir).toHaveBeenCalledWith(
+      expect.stringMatching(/households[/\\]7$/),
+      { recursive: true }
+    );
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringMatching(/households[/\\]7[/\\]local\.pdf$/),
+      expect.anything()
+    );
   });
 });
 
@@ -85,9 +91,11 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
-    const buf = await readStoredFile("/api/pdf/apartments/x.pdf");
+    const buf = await readStoredFile("/api/pdf/households/7/x.pdf");
 
-    expect(mockGet).toHaveBeenCalledWith("apartments/x.pdf", { access: "private" });
+    expect(mockGet).toHaveBeenCalledWith("households/7/x.pdf", {
+      access: "private",
+    });
     expect(buf.toString()).toBe("blob-bytes");
   });
 
@@ -101,9 +109,9 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
-    await expect(readStoredFile("/api/pdf/missing.pdf")).rejects.toThrow(
-      /Blob not found/
-    );
+    await expect(
+      readStoredFile("/api/pdf/households/7/missing.pdf")
+    ).rejects.toThrow(/Blob not found/);
   });
 
   it("reads from local disk when given an /api/uploads/ URL", async () => {
@@ -120,13 +128,41 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
-    const buf = await readStoredFile("/api/uploads/file%20with%20spaces.pdf");
+    const buf = await readStoredFile(
+      "/api/uploads/households/7/file%20with%20spaces.pdf"
+    );
 
     expect(buf.toString()).toBe("disk-bytes");
     // Filename was URL-decoded before reading from disk.
     expect(mockReadFile).toHaveBeenCalledWith(
-      expect.stringMatching(/file with spaces\.pdf$/)
+      expect.stringMatching(/households[/\\]7[/\\]file with spaces\.pdf$/)
     );
+  });
+
+  it("rejects a local path with no household prefix", async () => {
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(
+      readStoredFile("/api/uploads/apartments/x.pdf")
+    ).rejects.toThrow(/unscoped/);
+  });
+
+  it("rejects a local path that escapes the uploads directory", async () => {
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(
+      readStoredFile("/api/uploads/households/7/../8/secret.pdf")
+    ).rejects.toThrow(/unscoped/);
   });
 
   it("throws on an unrecognized URL prefix", async () => {

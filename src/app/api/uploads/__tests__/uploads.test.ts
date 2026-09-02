@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: vi.fn(),
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
 }));
 
-import { isAuthenticated } from "@/lib/auth";
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
+}));
+
 import { GET } from "../[...path]/route";
 
-const mockIsAuthenticated = vi.mocked(isAuthenticated);
-
 beforeEach(() => {
-  mockIsAuthenticated.mockReset();
+  mockRequireHousehold.mockReset();
 });
 
 afterEach(() => {
@@ -25,23 +26,64 @@ function makeRequest(params: string[]) {
 }
 
 describe("GET /api/uploads/[...path]", () => {
-  it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValue(false);
-    const { request, ctx } = makeRequest(["file.pdf"]);
+  it("returns 401 when there is no session", async () => {
+    mockRequireHousehold.mockRejectedValue(new Error("no session"));
+    const { request, ctx } = makeRequest(["households", "1", "file.pdf"]);
     const res = await GET(request, ctx);
     expect(res.status).toBe(401);
   });
 
-  it("rejects path traversal attempts with 403 for authed users", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
-    const { request, ctx } = makeRequest(["..", "..", "etc", "passwd"]);
+  it("returns 404, not 403, for a path belonging to another household", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 1,
+      userId: "u1",
+      role: "owner",
+    });
+    const { request, ctx } = makeRequest(["households", "2", "secret.pdf"]);
     const res = await GET(request, ctx);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
-  it("returns 404 for authed users when file is missing", async () => {
-    mockIsAuthenticated.mockResolvedValue(true);
-    const { request, ctx } = makeRequest(["definitely-not-there-" + Date.now() + ".pdf"]);
+  it("rejects path traversal attempts with 404 for authed users", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 1,
+      userId: "u1",
+      role: "owner",
+    });
+    const { request, ctx } = makeRequest([
+      "households",
+      "1",
+      "..",
+      "..",
+      "etc",
+      "passwd",
+    ]);
+    const res = await GET(request, ctx);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for a path with no household prefix", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 1,
+      userId: "u1",
+      role: "owner",
+    });
+    const { request, ctx } = makeRequest(["file.pdf"]);
+    const res = await GET(request, ctx);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for authed users in their own household when the file is missing", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 1,
+      userId: "u1",
+      role: "owner",
+    });
+    const { request, ctx } = makeRequest([
+      "households",
+      "1",
+      "definitely-not-there-" + Date.now() + ".pdf",
+    ]);
     const res = await GET(request, ctx);
     expect(res.status).toBe(404);
   });

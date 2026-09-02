@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
-import { isAuthenticated } from "@/lib/auth";
+import { requireHousehold } from "@/lib/session";
+import { householdIdFromStoredPath } from "@/lib/storage";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let householdId: number;
+  try {
+    ({ householdId } = await requireHousehold());
+  } catch {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { path: segments } = await params;
   const pathname = segments.join("/");
+
+  const owner = householdIdFromStoredPath(pathname);
+  if (owner === null || owner !== householdId) {
+    // 404, not 403: a 403 confirms the file exists in someone else's household.
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   try {
     const result = await get(pathname, { access: "private" });

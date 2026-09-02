@@ -6,6 +6,18 @@ vi.mock("@/lib/storage", () => ({
   readStoredFile: vi.fn(async () => Buffer.from("fake-pdf-bytes")),
 }));
 
+// The multipart branch calls requireHousehold() purely to satisfy
+// uploadFile's new householdId-scoped signature (task 5 owns wiring this
+// route to the real Auth.js session); stub it here to keep this suite
+// covering the old shared-password gate on `isAuthenticated` above.
+vi.mock("@/lib/session", () => ({
+  requireHousehold: vi.fn(async () => ({
+    householdId: 1,
+    userId: "u1",
+    role: "owner" as const,
+  })),
+}));
+
 vi.mock("@/lib/parse-pdf", () => ({
   extractApartmentData: vi.fn(async () => ({
     name: "Extracted Apt",
