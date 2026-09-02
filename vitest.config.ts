@@ -35,4 +35,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  ssr: {
+    noExternal: ["next-auth", "@auth/core", "@auth/drizzle-adapter"],
+  },
 });
