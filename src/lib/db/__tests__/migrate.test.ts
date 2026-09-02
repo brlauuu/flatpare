@@ -18,6 +18,17 @@ async function columnNames(
   return res.rows.map((r) => String(r.name));
 }
 
+// Derived from the migrations folder rather than hard-coded, so this stays
+// correct as migrations are added instead of needing a manual bump each time.
+const EXPECTED_MIGRATION_COUNT = (
+  JSON.parse(
+    fs.readFileSync(
+      path.join(process.cwd(), "drizzle", "meta", "_journal.json"),
+      "utf8"
+    )
+  ) as { entries: unknown[] }
+).entries.length;
+
 describe("applyMigrations", () => {
   it("creates full schema on a fresh database", async () => {
     const client = createClient({ url: ":memory:" });
@@ -53,7 +64,7 @@ describe("applyMigrations", () => {
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(11);
+    expect(migrations.rows).toHaveLength(EXPECTED_MIGRATION_COUNT);
   });
 
   it("adds listing_url to a legacy database missing the column", async () => {
@@ -85,7 +96,7 @@ describe("applyMigrations", () => {
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
-    expect(migrations.rows).toHaveLength(11);
+    expect(migrations.rows).toHaveLength(EXPECTED_MIGRATION_COUNT);
   });
 
   it("reconciles a DB that already has has_washing_machine but no 0002 marker", async () => {
@@ -154,7 +165,7 @@ describe("applyMigrations", () => {
       sql: "SELECT COUNT(*) as n FROM __drizzle_migrations",
       args: [],
     });
-    expect(Number(rows.rows[0].n)).toBe(11);
+    expect(Number(rows.rows[0].n)).toBe(EXPECTED_MIGRATION_COUNT);
   });
 
   it("backfills the users table from distinct rating user_names", async () => {
