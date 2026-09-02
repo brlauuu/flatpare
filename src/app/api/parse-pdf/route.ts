@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { uploadFile, readStoredFile } from "@/lib/storage";
+import { uploadFile, readStoredFile, canonicalizePathname } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { UnauthorizedError } from "@/lib/household";
@@ -56,7 +56,13 @@ export async function POST(request: Request) {
         );
       }
       originalFilename = body.filename;
-      pdfUrl = `/api/pdf/${body.pathname}`;
+      // Canonicalize body.pathname (client-supplied) before building the URL
+      // handed back to the client — that value is later POSTed straight to
+      // /api/apartments as pdfUrl, so the string returned here must already
+      // be the same string readStoredFile checks and fetches below, not a
+      // raw echo of client input.
+      const canonicalPath = canonicalizePathname(body.pathname);
+      pdfUrl = `/api/pdf/${canonicalPath}`;
       // readStoredFile rejects if body.pathname (client-supplied) doesn't
       // belong to the caller's own household — this is the actual fix for
       // the cross-household read the JSON branch used to allow.

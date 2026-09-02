@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
 import { requireHousehold } from "@/lib/session";
-import { householdIdFromStoredPath } from "@/lib/storage";
+import {
+  householdIdFromStoredPath,
+  hasResidualPercentEncoding,
+} from "@/lib/storage";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
@@ -18,6 +21,20 @@ export async function GET(
   }
 
   const { path: segments } = await params;
+
+  // Defense in depth, not a live vector here: this route resolves the
+  // stored path with path.resolve, which performs no second decode, so a
+  // double-encoded traversal segment ("%252e%252e") becomes a literal
+  // directory name and 404s rather than escaping UPLOADS_DIR — verified
+  // below by the belt-and-braces prefix check too. /api/pdf/[...path] needs
+  // this guard for real (see hasResidualPercentEncoding in pathname.ts:
+  // @vercel/blob's get() performs exactly the second decode that would make
+  // residual encoding dangerous there); mirrored here so the two sibling
+  // routes stay symmetric instead of the asymmetry reading as an oversight.
+  if (hasResidualPercentEncoding(segments)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const filename = segments.join("/");
 
   const owner = householdIdFromStoredPath(filename);

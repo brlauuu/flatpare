@@ -525,6 +525,54 @@ describe("POST /api/apartments", () => {
     expect(res.status).toBe(500);
     expect(errSpy).toHaveBeenCalled();
   });
+
+  // Finding 2: "the string you check is the string you use" applies to the
+  // write path, not only reads. A raw, non-canonical pdfUrl must never reach
+  // the database — the value persisted must be exactly the canonical form
+  // storedPathHousehold validated.
+  it("persists the canonical form of pdfUrl, not the raw client value", async () => {
+    let captured: Record<string, unknown> | null = null;
+    mockInsert.mockReturnValue({
+      values: vi.fn((v: Record<string, unknown>) => {
+        captured = v;
+        return {
+          returning: vi.fn().mockResolvedValue([{ id: 1, ...v }]),
+        };
+      }),
+    });
+    // A raw space is non-canonical: canonicalizePathname re-serializes it to
+    // %20 via the WHATWG URL parser. The raw string would still pass the
+    // ownership check (space isn't a traversal payload) but must not be
+    // what gets written.
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "x",
+        address: null,
+        pdfUrl: `/api/pdf/households/${HOUSEHOLD_ID}/my listing.pdf`,
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(captured).not.toBeNull();
+    expect(captured!.pdfUrl).toBe(
+      `/api/pdf/households/${HOUSEHOLD_ID}/my%20listing.pdf`
+    );
+  });
+
+  it("rejects a pdfUrl belonging to a different household", async () => {
+    const req = new Request("http://localhost/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "x",
+        address: null,
+        pdfUrl: `/api/pdf/households/${HOUSEHOLD_ID + 1}/listing.pdf`,
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/apartments/[id]", () => {

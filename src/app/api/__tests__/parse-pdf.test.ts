@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("@/lib/storage", () => ({
   uploadFile: vi.fn(async () => "/api/uploads/test.pdf"),
   readStoredFile: vi.fn(async () => Buffer.from("fake-pdf-bytes")),
+  canonicalizePathname: vi.fn((p: string) => p),
 }));
 
 // requireHousehold is now this route's ONLY gate — the legacy

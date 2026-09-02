@@ -29,17 +29,26 @@ const MAX_SHORT_CODE_ATTEMPTS = 5;
 // branch exactly the way readStoredFile does — the cloud branch through the
 // URL parser (a raw-string check and a parsed fetch are two readings of the
 // same text, and that gap was the Task 4 bypass), the local branch through
-// decodeURIComponent. Returns null for anything unrecognized.
-function storedPathHousehold(url: string): number | null {
+// decodeURIComponent. Returns the canonical URL alongside the household so
+// callers persist the exact string that was checked, not the raw input —
+// "the string you check is the string you use" applies to the write path
+// too, not only to reads. Returns null for anything unrecognized.
+function storedPathHousehold(
+  url: string
+): { householdId: number; canonicalUrl: string } | null {
   try {
     if (url.startsWith("/api/pdf/")) {
       const raw = url.slice("/api/pdf/".length);
-      return householdIdFromStoredPath(canonicalizePathname(raw));
+      const key = canonicalizePathname(raw);
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/pdf/${key}` };
     }
     if (url.startsWith("/api/uploads/")) {
-      return householdIdFromStoredPath(
-        decodeURIComponent(url.slice("/api/uploads/".length))
-      );
+      const key = decodeURIComponent(url.slice("/api/uploads/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/uploads/${key}` };
     }
   } catch {
     return null;
@@ -191,6 +200,11 @@ export async function POST(request: Request) {
     // foreign value is not readable — but storing one writes a dangling
     // pointer into another household's namespace, so reject it at write time
     // rather than relying on every future reader to keep checking.
+    //
+    // Persist the canonical form storedPathHousehold resolved, not the raw
+    // body.pdfUrl: the string that was checked must be the string that gets
+    // used, on the write path the same as on every read path.
+    let pdfUrl: string | null = null;
     if (body.pdfUrl != null) {
       if (typeof body.pdfUrl !== "string") {
         return NextResponse.json(
@@ -198,12 +212,14 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (storedPathHousehold(body.pdfUrl) !== householdId) {
+      const resolved = storedPathHousehold(body.pdfUrl);
+      if (resolved === null || resolved.householdId !== householdId) {
         return NextResponse.json(
           { error: "pdfUrl does not belong to this household" },
           { status: 400 }
         );
       }
+      pdfUrl = resolved.canonicalUrl;
     }
 
     const availableFrom: string | null =
@@ -234,7 +250,7 @@ export async function POST(request: Request) {
             numBalconies: body.numBalconies,
             hasWashingMachine: body.hasWashingMachine ?? null,
             rentChf: body.rentChf,
-            pdfUrl: body.pdfUrl,
+            pdfUrl,
             listingUrl: body.listingUrl || null,
             summary: body.summary ?? null,
             availableFrom,

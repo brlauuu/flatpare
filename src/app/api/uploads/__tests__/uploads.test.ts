@@ -87,4 +87,28 @@ describe("GET /api/uploads/[...path]", () => {
     const res = await GET(request, ctx);
     expect(res.status).toBe(404);
   });
+
+  // Finding 4 (symmetry with /api/pdf/[...path]): this route is genuinely
+  // safe without the guard — path.resolve performs no second decode, so a
+  // double-encoded segment becomes a literal directory name and 404s via
+  // the belt-and-braces UPLOADS_DIR prefix check. The explicit
+  // hasResidualPercentEncoding guard added here is defense in depth, but it
+  // must still reject residual encoding up front rather than falling
+  // through to the (also-safe) filesystem path.
+  it("rejects a segment carrying residual percent-encoding with 404", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 1,
+      userId: "u1",
+      role: "owner",
+    });
+    const { request, ctx } = makeRequest([
+      "households",
+      "1",
+      "%2e%2e",
+      "2",
+      "secret.pdf",
+    ]);
+    const res = await GET(request, ctx);
+    expect(res.status).toBe(404);
+  });
 });

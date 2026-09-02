@@ -312,6 +312,65 @@ describe("applyMigrations", () => {
     expect(Number(rows.rows[0].n)).toBe(1);
   });
 
+  // Reproduces the most likely self-hoster upgrade: a default location and
+  // no apartments yet. Before this fix, the preflight counted apartments
+  // only, concluded "fresh database, nothing to check", and let the migrator
+  // hit the raw "Cannot add a NOT NULL column with default value NULL" error
+  // instead of the actionable one.
+  it("refuses to migrate a legacy database with a default location and zero apartments", async () => {
+    const client = createClient({ url: ":memory:" });
+
+    await client.execute({
+      sql: `CREATE TABLE apartments (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        name text NOT NULL,
+        listing_url text
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE TABLE locations_of_interest (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        label text NOT NULL,
+        icon text NOT NULL,
+        address text NOT NULL,
+        sort_order integer NOT NULL
+      )`,
+      args: [],
+    });
+    // migrateLocationsOfInterestBackfill inserts this default row on every
+    // pre-tenancy database, independent of whether any apartments exist.
+    await client.execute({
+      sql: "INSERT INTO locations_of_interest (label, icon, address, sort_order) VALUES ('Train Station', 'Train', 'Basel SBB, Switzerland', 0)",
+      args: [],
+    });
+
+    const err = await applyMigrations(client).catch((e: Error) => e);
+    expect((err as Error).message).toMatch(/requires a fresh database/i);
+    const message = (err as Error).message;
+    for (const table of [
+      "apartments",
+      "ratings",
+      "locations_of_interest",
+      "apartment_distances",
+    ]) {
+      expect(message).toContain(table);
+    }
+    expect(message).toMatch(/untouched/i);
+
+    // Nothing ran: no migration recorded, and the legacy row survives.
+    const applied = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
+      args: [],
+    });
+    expect(applied.rows).toHaveLength(0);
+    const rows = await client.execute({
+      sql: "SELECT COUNT(*) AS n FROM locations_of_interest",
+      args: [],
+    });
+    expect(Number(rows.rows[0].n)).toBe(1);
+  });
+
   it("the preflight does not fire on an already-migrated database", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);
