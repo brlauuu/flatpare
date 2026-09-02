@@ -118,6 +118,84 @@ describe("readStoredFile", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
+  describe("parser-differential bypass (percent-encoded dot segments)", () => {
+    // @vercel/blob's get() string-interpolates the pathname into a URL and
+    // hands it to fetch(), which WHATWG-parses it and collapses
+    // percent-encoded dot segments. A check against the RAW pathname sees
+    // e.g. "%2e%2e" as an opaque filename character, not "..", and passes
+    // — while the request that actually leaves the process resolves to a
+    // different household entirely. Every vector below must be rejected
+    // before get() is ever called, and get() (when it IS called for a
+    // legitimate path) must always receive the exact canonicalized string
+    // that was checked.
+    const vectors = [
+      "households/1/%2e%2e/2/secret.pdf",
+      "households/1/%2E%2E/2/secret.pdf",
+      "households/1/.%2e/2/secret.pdf",
+      "households/1/%2e./2/secret.pdf",
+      "households/x/%2e%2e/%2e%2e/2/secret.pdf",
+    ];
+
+    for (const vector of vectors) {
+      it(`rejects ${JSON.stringify(vector)} without calling get()`, async () => {
+        const mockGet = vi.fn(async () => ({
+          statusCode: 200,
+          stream: new Response(
+            new TextEncoder().encode("household-2-secret").buffer
+          ).body,
+        }));
+
+        vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: mockGet }));
+        vi.doMock("fs/promises", async (importOriginal) => {
+          const actual = await importOriginal<typeof import("fs/promises")>();
+          return { ...actual, default: actual };
+        });
+
+        const { readStoredFile } = await import("../storage");
+        await expect(
+          readStoredFile(`/api/pdf/${vector}`, 1)
+        ).rejects.toThrow(/household/);
+        expect(mockGet).not.toHaveBeenCalled();
+      });
+    }
+
+    it("passes get() the exact canonicalized string that was checked — not the raw input", async () => {
+      let receivedPathname: string | undefined;
+      const mockGet = vi.fn(async (pathname: string) => {
+        receivedPathname = pathname;
+        return {
+          statusCode: 200,
+          stream: new Response(new TextEncoder().encode("own-bytes").buffer)
+            .body,
+        };
+      });
+
+      vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: mockGet }));
+      vi.doMock("fs/promises", async (importOriginal) => {
+        const actual = await importOriginal<typeof import("fs/promises")>();
+        return { ...actual, default: actual };
+      });
+
+      const { readStoredFile, householdIdFromStoredPath } = await import(
+        "../storage"
+      );
+
+      // A raw pathname that is byte-different from its canonical form, but
+      // still resolves to the caller's own household once canonicalized.
+      const rawPathname = "households/1/./listing.pdf";
+      await readStoredFile(`/api/pdf/${rawPathname}`, 1);
+
+      expect(receivedPathname).toBeDefined();
+      // The checked property, not just "it worked": whatever string was
+      // handed to get() is EXACTLY the string householdIdFromStoredPath
+      // would validate — the check and the fetch operated on one string,
+      // not two.
+      expect(householdIdFromStoredPath(receivedPathname!)).toBe(1);
+      expect(receivedPathname).not.toBe(rawPathname);
+      expect(receivedPathname).toBe("households/1/listing.pdf");
+    });
+  });
+
   it("throws when the blob is missing", async () => {
     const mockGet = vi.fn(async () => null);
 

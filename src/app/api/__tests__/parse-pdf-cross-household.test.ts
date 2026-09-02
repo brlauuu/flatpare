@@ -103,6 +103,38 @@ describe("POST /api/parse-pdf — cross-household JSON branch (C1 regression)", 
     expect(mockExtractApartmentData).not.toHaveBeenCalled();
   });
 
+  // Parser-differential bypass (reopened C1, round 2): @vercel/blob's
+  // get() string-interpolates its argument into a URL and hands it to
+  // fetch(), which WHATWG-parses it and collapses percent-encoded dot
+  // segments. A check against the raw pathname sees "%2e%2e" as an opaque
+  // filename character, not "..", and lets it through — while the request
+  // that actually leaves the process resolves to household 2. Each vector
+  // below must 404/error out with no household-2 content in the response.
+  const bypassVectors = [
+    "households/1/%2e%2e/2/secret.pdf",
+    "households/1/%2E%2E/2/secret.pdf",
+    "households/1/.%2e/2/secret.pdf",
+    "households/1/%2e./2/secret.pdf",
+    "households/x/%2e%2e/%2e%2e/2/secret.pdf",
+  ];
+
+  for (const vector of bypassVectors) {
+    it(`rejects the parser-differential vector ${JSON.stringify(vector)}`, async () => {
+      const req = new Request("http://localhost/api/parse-pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pathname: vector, filename: "secret.pdf" }),
+      });
+
+      const res = await POST(req);
+      const body = await res.text();
+
+      expect(body).not.toContain(HOUSEHOLD_2_SECRET);
+      expect(res.status).not.toBe(200);
+      expect(mockExtractApartmentData).not.toHaveBeenCalled();
+    });
+  }
+
   it("still serves the caller's own household's blob on the JSON branch", async () => {
     const req = new Request("http://localhost/api/parse-pdf", {
       method: "POST",
@@ -118,5 +150,43 @@ describe("POST /api/parse-pdf — cross-household JSON branch (C1 regression)", 
     const data = await res.json();
     expect(data.aiAvailable).toBe(true);
     expect(data.extracted.name).toBe("Extracted Apt");
+  });
+
+  it("still serves a household-2 caller's own household-2 blob", async () => {
+    mockRequireHousehold.mockResolvedValue({
+      householdId: 2,
+      userId: "u2",
+      role: "owner" as const,
+    });
+
+    const req = new Request("http://localhost/api/parse-pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        pathname: "households/2/secret.pdf",
+        filename: "secret.pdf",
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.aiAvailable).toBe(true);
+  });
+
+  it("still reads a filename that legitimately contains '..'", async () => {
+    const req = new Request("http://localhost/api/parse-pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        pathname: "households/1/report..final.pdf",
+        filename: "report..final.pdf",
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.aiAvailable).toBe(true);
   });
 });

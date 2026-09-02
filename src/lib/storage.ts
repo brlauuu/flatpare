@@ -18,6 +18,13 @@ export function householdIdFromStoredPath(pathname: string): number | null {
   if (segments[0] !== "households") return null;
   // No leading zeros: "007" must not alias household 7.
   if (!/^[1-9]\d*$/.test(segments[1])) return null;
+  // Reject an encoded slash inside a filename segment. Filenames
+  // legitimately containing "/" don't exist (no OS or browser file picker
+  // allows it), so this costs nothing — but decoding "%2f" later could
+  // fabricate an extra path separator that never went through this check,
+  // which matters if whatever consumes this string next (a storage
+  // backend's own key resolution, say) treats it hierarchically.
+  if (segments.slice(2).some((s) => /%2f/i.test(s))) return null;
   return Number(segments[1]);
 }
 
@@ -64,15 +71,27 @@ export async function readStoredFile(
   expectedHouseholdId: number
 ): Promise<Buffer> {
   if (storedUrl.startsWith("/api/pdf/")) {
-    const pathname = storedUrl.slice("/api/pdf/".length);
-    if (householdIdFromStoredPath(pathname) !== expectedHouseholdId) {
+    const rawPathname = storedUrl.slice("/api/pdf/".length);
+    // Canonicalize BEFORE checking or fetching. @vercel/blob's get()
+    // builds a URL by string-interpolating the pathname and hands it to
+    // fetch(), which WHATWG-parses it and collapses percent-encoded dot
+    // segments ("%2e%2e" -> "..", then resolved away) that a literal
+    // check on the raw string would miss entirely. Checking the raw
+    // string and fetching the raw string are two different operations on
+    // two copies of the same text that a URL parser reads differently —
+    // that gap IS the vulnerability. So: parse once, right here, and use
+    // nothing but the resulting `key` from this point on — the string we
+    // check is required (by construction, it's the same variable) to be
+    // the string we fetch.
+    const key = new URL(`https://x/${rawPathname}`).pathname.slice(1);
+    if (householdIdFromStoredPath(key) !== expectedHouseholdId) {
       throw new Error(
         "Refusing to read a file outside the caller's household"
       );
     }
-    const result = await get(pathname, { access: "private" });
+    const result = await get(key, { access: "private" });
     if (!result || result.statusCode !== 200) {
-      throw new Error(`Blob not found: ${pathname}`);
+      throw new Error(`Blob not found: ${key}`);
     }
     return Buffer.from(await new Response(result.stream).arrayBuffer());
   }
