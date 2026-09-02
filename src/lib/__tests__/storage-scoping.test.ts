@@ -21,6 +21,23 @@ describe("householdIdFromStoredPath", () => {
   it("rejects a non-numeric household segment", () => {
     expect(householdIdFromStoredPath("households/abc/x.pdf")).toBeNull();
   });
+
+  it("does not treat a literal '..' inside a filename as traversal", () => {
+    // Regression for a substring check that would have permanently
+    // 404'd a legitimate filename like "report..final.pdf".
+    expect(
+      householdIdFromStoredPath("households/7/report..final.pdf")
+    ).toBe(7);
+  });
+
+  it("rejects a household segment with a leading zero", () => {
+    // "007" must not alias household 7.
+    expect(householdIdFromStoredPath("households/007/x.pdf")).toBeNull();
+  });
+
+  it("rejects household id 0", () => {
+    expect(householdIdFromStoredPath("households/0/x.pdf")).toBeNull();
+  });
 });
 
 const { mockRequireHousehold } = vi.hoisted(() => ({

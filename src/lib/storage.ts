@@ -10,11 +10,14 @@ const isCloud = !!process.env.BLOB_READ_WRITE_TOKEN;
 // compare this id against the session's household — without it, any member
 // could read another household's listing PDFs by guessing a path.
 export function householdIdFromStoredPath(pathname: string): number | null {
-  if (pathname.includes("..")) return null;
   const segments = pathname.split("/");
+  // Reject ".." as a path SEGMENT, not a substring — a legitimate filename
+  // like "report..final.pdf" must stay readable.
+  if (segments.includes("..")) return null;
   if (segments.length < 3) return null;
   if (segments[0] !== "households") return null;
-  if (!/^\d+$/.test(segments[1])) return null;
+  // No leading zeros: "007" must not alias household 7.
+  if (!/^[1-9]\d*$/.test(segments[1])) return null;
   return Number(segments[1]);
 }
 
@@ -43,9 +46,30 @@ export async function uploadFile(
 // Read a stored PDF back from the URL produced by `uploadFile`. Goes directly
 // to blob/disk — server-side fetch() can't resolve the relative `/api/...`
 // URLs we hand to clients.
-export async function readStoredFile(storedUrl: string): Promise<Buffer> {
+//
+// `expectedHouseholdId` is a required positional parameter, not an optional
+// check left to each caller. Ownership used to be verified only at the two
+// file-serving routes — that per-call-site convention is exactly how a
+// third caller (parse-pdf's JSON branch, which forwards a client-supplied
+// `pathname` straight into this function) slipped through with no check at
+// all. The asymmetry was the tell: the local branch validated the
+// household prefix and the cloud branch didn't, so the same logical
+// operation had different trust properties depending on whether
+// BLOB_READ_WRITE_TOKEN happened to be set. Enforcing the check here, once,
+// on both branches, means every caller goes through it, and a required
+// parameter makes the compiler enumerate every future caller instead of
+// relying on each one to remember.
+export async function readStoredFile(
+  storedUrl: string,
+  expectedHouseholdId: number
+): Promise<Buffer> {
   if (storedUrl.startsWith("/api/pdf/")) {
     const pathname = storedUrl.slice("/api/pdf/".length);
+    if (householdIdFromStoredPath(pathname) !== expectedHouseholdId) {
+      throw new Error(
+        "Refusing to read a file outside the caller's household"
+      );
+    }
     const result = await get(pathname, { access: "private" });
     if (!result || result.statusCode !== 200) {
       throw new Error(`Blob not found: ${pathname}`);
@@ -55,11 +79,17 @@ export async function readStoredFile(storedUrl: string): Promise<Buffer> {
 
   if (storedUrl.startsWith("/api/uploads/")) {
     const rel = decodeURIComponent(storedUrl.slice("/api/uploads/".length));
-    if (householdIdFromStoredPath(rel) === null) {
-      throw new Error("Refusing to read an unscoped upload path");
+    if (householdIdFromStoredPath(rel) !== expectedHouseholdId) {
+      throw new Error(
+        "Refusing to read a file outside the caller's household"
+      );
     }
     const resolved = path.resolve(UPLOADS_DIR, rel);
     if (!resolved.startsWith(path.resolve(UPLOADS_DIR) + path.sep)) {
+      // Unreachable in practice: the household-prefix check above already
+      // rejects any ".." segment, so `resolved` can never leave UPLOADS_DIR.
+      // Kept as defense in depth in case the prefix-parsing logic above
+      // ever changes.
       throw new Error("Path escapes the uploads directory");
     }
     return readFile(resolved);

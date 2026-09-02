@@ -41,7 +41,10 @@ export async function POST(
 
     let pdfBase64: string;
     try {
-      const buf = await readStoredFile(apt.pdfUrl);
+      // The apartment's own recorded householdId is the source of truth
+      // for which household its PDF belongs to — readStoredFile rejects
+      // if apt.pdfUrl doesn't actually match it.
+      const buf = await readStoredFile(apt.pdfUrl, apt.householdId);
       pdfBase64 = buf.toString("base64");
     } catch (err) {
       console.error("[reprocess] PDF read failed:", err);

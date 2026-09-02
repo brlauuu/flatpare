@@ -91,12 +91,31 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
-    const buf = await readStoredFile("/api/pdf/households/7/x.pdf");
+    const buf = await readStoredFile("/api/pdf/households/7/x.pdf", 7);
 
     expect(mockGet).toHaveBeenCalledWith("households/7/x.pdf", {
       access: "private",
     });
     expect(buf.toString()).toBe("blob-bytes");
+  });
+
+  it("rejects a cloud path belonging to another household without calling get()", async () => {
+    const mockGet = vi.fn(async () => ({
+      statusCode: 200,
+      stream: new Response(new TextEncoder().encode("secret").buffer).body,
+    }));
+
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: mockGet }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return { ...actual, default: actual };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(
+      readStoredFile("/api/pdf/households/2/secret.pdf", 1)
+    ).rejects.toThrow(/household/);
+    expect(mockGet).not.toHaveBeenCalled();
   });
 
   it("throws when the blob is missing", async () => {
@@ -110,7 +129,7 @@ describe("readStoredFile", () => {
 
     const { readStoredFile } = await import("../storage");
     await expect(
-      readStoredFile("/api/pdf/households/7/missing.pdf")
+      readStoredFile("/api/pdf/households/7/missing.pdf", 7)
     ).rejects.toThrow(/Blob not found/);
   });
 
@@ -129,7 +148,8 @@ describe("readStoredFile", () => {
 
     const { readStoredFile } = await import("../storage");
     const buf = await readStoredFile(
-      "/api/uploads/households/7/file%20with%20spaces.pdf"
+      "/api/uploads/households/7/file%20with%20spaces.pdf",
+      7
     );
 
     expect(buf.toString()).toBe("disk-bytes");
@@ -148,11 +168,31 @@ describe("readStoredFile", () => {
 
     const { readStoredFile } = await import("../storage");
     await expect(
-      readStoredFile("/api/uploads/apartments/x.pdf")
-    ).rejects.toThrow(/unscoped/);
+      readStoredFile("/api/uploads/apartments/x.pdf", 7)
+    ).rejects.toThrow(/household/);
   });
 
-  it("rejects a local path that escapes the uploads directory", async () => {
+  it("rejects a local path belonging to another household without reading disk", async () => {
+    const mockReadFile = vi.fn(async () => Buffer.from("secret"));
+
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
+    vi.doMock("fs/promises", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("fs/promises")>();
+      return {
+        ...actual,
+        default: { ...actual, readFile: mockReadFile },
+        readFile: mockReadFile,
+      };
+    });
+
+    const { readStoredFile } = await import("../storage");
+    await expect(
+      readStoredFile("/api/uploads/households/2/secret.pdf", 1)
+    ).rejects.toThrow(/household/);
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects a traversal attempt via the household-prefix check (not the containment check)", async () => {
     vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn() }));
     vi.doMock("fs/promises", async (importOriginal) => {
       const actual = await importOriginal<typeof import("fs/promises")>();
@@ -160,9 +200,12 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
+    // householdIdFromStoredPath rejects the ".." segment before the
+    // resolved-path containment check ever runs, so this exercises the
+    // prefix check, not path.resolve() containment.
     await expect(
-      readStoredFile("/api/uploads/households/7/../8/secret.pdf")
-    ).rejects.toThrow(/unscoped/);
+      readStoredFile("/api/uploads/households/7/../8/secret.pdf", 7)
+    ).rejects.toThrow(/household/);
   });
 
   it("throws on an unrecognized URL prefix", async () => {
@@ -173,7 +216,7 @@ describe("readStoredFile", () => {
     });
 
     const { readStoredFile } = await import("../storage");
-    await expect(readStoredFile("https://example.com/x.pdf")).rejects.toThrow(
+    await expect(readStoredFile("https://example.com/x.pdf", 1)).rejects.toThrow(
       /Unrecognized stored URL/
     );
   });
