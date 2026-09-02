@@ -1,8 +1,6 @@
 import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { db } from "@/lib/db";
-import { apiUsage } from "@/lib/db/schema";
 
 export const apartmentExtractionSchema = z.object({
   name: z.string().describe("Listing title or apartment name"),
@@ -91,10 +89,7 @@ function overrideLaundryFromEvidence(
 
 function getModel() {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return {
-      model: google("gemini-2.5-flash"),
-      service: "gemini" as const,
-    };
+    return google("gemini-2.5-flash");
   }
 
   throw new Error("No AI provider configured");
@@ -103,7 +98,7 @@ function getModel() {
 export async function extractApartmentData(
   pdfBase64: string
 ): Promise<ApartmentExtraction> {
-  const { model, service } = getModel();
+  const model = getModel();
 
   const result = await generateText({
     model,
@@ -135,18 +130,6 @@ Return null for any field you cannot determine from the document.`,
       },
     ],
   });
-
-  // Log token usage
-  try {
-    await db.insert(apiUsage).values({
-      service,
-      operation: "parse_pdf",
-      inputTokens: result.usage?.inputTokens ?? null,
-      outputTokens: result.usage?.outputTokens ?? null,
-    });
-  } catch {
-    // Don't fail the parse if logging fails
-  }
 
   if (!result.output) {
     throw new Error("Failed to extract apartment data from PDF");

@@ -19,7 +19,6 @@ const navItems = [
   { href: "/apartments", label: "Apartments" },
   { href: "/apartments/new", label: "Upload" },
   { href: "/compare", label: "Compare" },
-  { href: "/costs", label: "Costs" },
   { href: "/settings", label: "Settings" },
   { href: "/guide", label: "Guide" },
 ];

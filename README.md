@@ -206,7 +206,6 @@ src/
       [id]/_components/           # PagerNav, Actions, MetricBadges, DistanceSection
     compare/page.tsx              # Side-by-side comparison grid
     compare/_components/          # CompareTable, CompareColumnHeader
-    costs/page.tsx                # API cost dashboard
     guide/page.tsx                # In-app user guide (renders src/content/guide.md)
     settings/page.tsx             # Locations of interest + distance recompute
     api/
@@ -217,7 +216,6 @@ src/
       locations/                  # Locations of interest CRUD + reorder
       settings/                   # Recompute per-location distances
       pdf/, uploads/              # Authenticated file streaming
-      costs/                      # API usage stats
   components/                     # Shared UI (shadcn/ui + custom)
   content/guide.md                # User guide source
   lib/
@@ -260,7 +258,6 @@ docs/                             # google-apis.md, security-notes.md
 | `POST` | `/api/locations/[id]/move` | Reorder |
 | `POST` | `/api/geocode/backfill` | Geocode rows missing lat/lng |
 | `POST` | `/api/settings/recompute-distances` | Recompute all per-location distances |
-| `GET` | `/api/costs` | API usage stats + cost estimates |
 
 ## Testing
 

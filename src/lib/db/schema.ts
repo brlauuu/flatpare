@@ -108,20 +108,6 @@ export const ratings = sqliteTable(
   ]
 );
 
-export const apiUsage = sqliteTable("api_usage", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  householdId: integer("household_id").references(() => households.id, {
-    onDelete: "set null",
-  }),
-  service: text("service").notNull(),
-  operation: text("operation").notNull(),
-  inputTokens: integer("input_tokens"),
-  outputTokens: integer("output_tokens"),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-});
-
 export const locationsOfInterest = sqliteTable("locations_of_interest", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   householdId: integer("household_id")

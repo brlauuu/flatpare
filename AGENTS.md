@@ -25,7 +25,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Tests live in co-located `__tests__/` directories next to the source.
 - `npm test` runs once; `npm run test:watch` watches.
 - `npm run typecheck` (`tsc --noEmit`) is enforced in CI alongside lint. `next build` does not typecheck test files, so this is what catches type errors in `__tests__/`.
-- **Coverage thresholds are enforced in CI** via `vitest.config.ts`: lines ≥ 80, statements ≥ 80, functions ≥ 78, branches ≥ 75. New code without tests will fail the build.
+- **Coverage thresholds are enforced in CI** via `vitest.config.ts`: lines ≥ 80, statements ≥ 80, functions ≥ 78, branches ≥ 75. These apply to the covered set — `vitest.config.ts` has no `coverage.all`/`include`, so only files actually imported by a test are counted. A breached floor across that covered set does fail the build; a wholly new file with zero tests isn't pulled into the average and won't trip it on its own.
 - Two paths are excluded from the coverage count: `src/components/ui/**` (shadcn primitives — vendored, re-emitted by the CLI) and `src/lib/db/schema.ts` (Drizzle table declarations, no executable logic). Don't write tests targeting those files.
 
 ## Auth

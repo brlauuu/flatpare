@@ -59,7 +59,12 @@ describe("applyMigrations", () => {
     expect(await columnNames(client, "household_members")).toEqual(
       expect.arrayContaining(["household_id", "user_id", "role"])
     );
-    expect(await columnNames(client, "api_usage")).toContain("service");
+    // 0012 drops api_usage entirely (cost tracking removed).
+    const apiUsageTable = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='api_usage'",
+      args: [],
+    });
+    expect(apiUsageTable.rows).toHaveLength(0);
     // The Auth.js users table, not the legacy name-keyed one.
     expect(await columnNames(client, "users")).toEqual(
       expect.arrayContaining(["id", "name", "email"])

@@ -1,6 +1,3 @@
-import { db } from "@/lib/db";
-import { apiUsage } from "@/lib/db/schema";
-
 // Common postcode shapes, cheapest-first.
 // CH/US/DE: 4–5 digits surrounded by non-digits (or string edges).
 // UK: alphanumeric like "SW1A 1AA" or "EC1A1BB".
@@ -25,14 +22,6 @@ function tryRegex(address: string): string | null {
   return null;
 }
 
-async function logUsage(service: string) {
-  try {
-    await db.insert(apiUsage).values({ service, operation: "geocode" });
-  } catch {
-    // Don't fail the geocode if usage logging fails.
-  }
-}
-
 async function tryGoogleGeocode(address: string): Promise<string | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return null;
@@ -42,7 +31,6 @@ async function tryGoogleGeocode(address: string): Promise<string | null> {
     url.searchParams.set("key", apiKey);
     const res = await fetch(url.toString());
     const data = await res.json();
-    await logUsage("google_maps");
     const components = data.results?.[0]?.address_components ?? [];
     const hit = components.find((c: { types?: string[] }) =>
       c.types?.includes("postal_code")
@@ -63,7 +51,6 @@ async function tryOrsGeocode(address: string): Promise<string | null> {
     url.searchParams.set("size", "1");
     const res = await fetch(url.toString());
     const data = await res.json();
-    await logUsage("openrouteservice");
     const raw = data.features?.[0]?.properties?.postalcode;
     return raw ? normalizePostcode(String(raw)) : null;
   } catch {
@@ -87,7 +74,6 @@ async function tryGoogleGeocodeLatLng(
     url.searchParams.set("key", apiKey);
     const res = await fetch(url.toString());
     const data = await res.json();
-    await logUsage("google_maps");
     const loc = data.results?.[0]?.geometry?.location;
     if (
       loc &&
@@ -123,7 +109,6 @@ async function tryOrsGeocodeLatLng(
     url.searchParams.set("size", "1");
     const res = await fetch(url.toString());
     const data = await res.json();
-    await logUsage("openrouteservice");
     const coords = data.features?.[0]?.geometry?.coordinates;
     if (
       Array.isArray(coords) &&

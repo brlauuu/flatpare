@@ -137,7 +137,6 @@ describe("proxy — protected API routes", () => {
     "/api/locations/3/move",
     "/api/geocode/backfill",
     "/api/settings/recompute-distances",
-    "/api/costs",
     "/api/pdf/some/file.pdf",
     "/api/uploads/some/file.bin",
   ];
@@ -165,7 +164,6 @@ describe("proxy — protected page routes", () => {
     "/apartments/42",
     "/apartments/new",
     "/compare",
-    "/costs",
     "/guide",
     "/settings",
   ];

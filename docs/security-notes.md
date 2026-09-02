@@ -90,9 +90,9 @@ SQLite's opaque "Cannot add a NOT NULL column with default value NULL". Concrete
 **Re-check trigger:** none expected — this is a one-time migration break tied to this
 specific release, not a recurring pattern.
 
-### Accepted: two deployment footguns, found in review and left as documentation
+### Accepted: three deployment footguns, found in review and left as documentation
 
-Both were considered for a code fix and declined — see the reasoning below — so watch
+Each was considered for a code fix and declined — see the reasoning below — so watch
 for them by hand when configuring a deployment.
 
 - **A CLIENT_ID without its CLIENT_SECRET breaks sign-in entirely, silently.**
@@ -110,6 +110,15 @@ for them by hand when configuring a deployment.
   provider's redirect in production. This is inherent to how OAuth works, not
   something this codebase can detect for itself — it's a pre-deploy checklist item,
   not a code fix.
+- **A stale browser tab can hit a 400 on blob upload during the deploy window.**
+  `src/app/api/parse-pdf/upload-token/route.ts` rejects a non-canonical pathname
+  outright (see the comment on `onBeforeGenerateToken`). The current client always
+  sends an already-canonical pathname, so this only bites a tab that is still running
+  the *previous* JS bundle across a deploy — if that old bundle sends a raw pathname
+  for a filename containing a space or a non-ASCII character, the request that used
+  to succeed now gets a 400. It resolves itself on reload (the new bundle canonicalizes
+  before calling upload()) and fails loudly with a visible error rather than silently
+  writing to the wrong place, so it wasn't worth relaxing the server-side check for.
 
 ### Considered and declined: sanitizing the guide page
 

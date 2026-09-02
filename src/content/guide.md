@@ -66,16 +66,6 @@ Travel time is calculated from **Basel SBB** to the apartment address:
 
 If no API key is configured, you can enter distances manually.
 
-### Cost Dashboard
-
-The **Costs** page shows estimated API usage and costs:
-
-- Gemini API calls (PDF parsing) with token counts
-- Google Maps API calls (distance calculations)
-- Estimated cost in USD for the last 30 days
-
-This helps you track spending if you're using paid APIs.
-
 ---
 
 ## Tips
