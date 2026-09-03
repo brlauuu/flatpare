@@ -1,18 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-// Mock the db module
-vi.mock("@/lib/db", () => ({
-  db: {
-    insert: vi.fn(() => ({
-      values: vi.fn(),
-    })),
-  },
-}));
-
-vi.mock("@/lib/db/schema", () => ({
-  apiUsage: {},
-}));
-
 import { calculateDistance } from "../distance";
 
 const ORIGIN = "Basel SBB, Switzerland";

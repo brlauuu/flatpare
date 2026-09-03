@@ -1,18 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock dependencies
-vi.mock("@/lib/db", () => ({
-  db: {
-    insert: vi.fn(() => ({
-      values: vi.fn(),
-    })),
-  },
-}));
-
-vi.mock("@/lib/db/schema", () => ({
-  apiUsage: {},
-}));
-
 vi.mock("ai", () => ({
   generateText: vi.fn(),
   Output: {

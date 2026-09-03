@@ -19,7 +19,9 @@ export interface ApartmentWithRatings {
   createdAt: string | null;
   avgOverall: string | null;
   ratings: {
-    userName: string;
+    userId: string;
+    // Left-joined display label; nullable and not unique — never key on it.
+    userName: string | null;
     kitchen: number;
     balconies: number;
     location: number;

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
-  mockIsAuthenticated,
+  mockRequireHousehold,
+  mockAssertMembership,
   selectMock,
   updateMock,
   insertMock,
@@ -13,7 +14,8 @@ const {
   calcDistanceMock,
   geocodeMock,
 } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => true),
+  mockRequireHousehold: vi.fn(),
+  mockAssertMembership: vi.fn(),
   selectMock: vi.fn(),
   updateMock: vi.fn(),
   insertMock: vi.fn(),
@@ -26,14 +28,16 @@ const {
   geocodeMock: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -45,11 +49,15 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/db/schema", () => ({
-  apartments: { id: "id", address: "address" },
-  apartmentDistances: { apartmentId: "apartment_id" },
+  apartments: { id: "id", address: "address", householdId: "household_id" },
+  apartmentDistances: {
+    apartmentId: "apartment_id",
+    householdId: "household_id",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: vi.fn(),
   eq: vi.fn(),
 }));
 
@@ -81,11 +89,17 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLng: geocodeMock,
 }));
 
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 function withParams(id: string) {
@@ -374,5 +388,59 @@ describe("POST /api/apartments/[id]/reprocess", () => {
       withParams("1")
     );
     expect(res.status).toBe(200);
+  });
+
+  it("hands readStoredFile the SESSION's household, never the row's", async () => {
+    // The row deliberately claims a different household. If the route ever
+    // reads the household off the fetched row again, this fails.
+    selectReturns([
+      { id: 1, pdfUrl: "stored.pdf", householdId: 99, userEditedFields: null },
+    ]);
+    readStoredFileMock.mockResolvedValue(Buffer.from("pdf"));
+    extractMock.mockResolvedValue({
+      name: "X",
+      address: "Same",
+      rentChf: null,
+      sizeM2: null,
+    });
+    updateReturning({ id: 1 });
+
+    await POST(
+      new Request("http://x/api/apartments/1/reprocess", { method: "POST" }),
+      withParams("1")
+    );
+    expect(readStoredFileMock).toHaveBeenCalledWith("stored.pdf", 7);
+  });
+
+  it("returns 401 without a session and touches nothing", async () => {
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    const res = await POST(
+      new Request("http://x/api/apartments/1/reprocess", { method: "POST" }),
+      withParams("1")
+    );
+    expect(res.status).toBe(401);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(readStoredFileMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the database says the member was removed", async () => {
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await POST(
+      new Request("http://x/api/apartments/1/reprocess", { method: "POST" }),
+      withParams("1")
+    );
+    // 404, not 403.
+    expect(res.status).toBe(404);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(extractMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 for a non-numeric id without querying", async () => {
+    const res = await POST(
+      new Request("http://x/api/apartments/abc/reprocess", { method: "POST" }),
+      withParams("abc")
+    );
+    expect(res.status).toBe(404);
+    expect(selectMock).not.toHaveBeenCalled();
   });
 });

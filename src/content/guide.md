@@ -8,7 +8,7 @@ Flatpare helps small groups compare apartments together. Upload PDF listings, ra
 
 ### 1. Log In
 
-Enter the shared password your group agreed on, then pick a display name. Your name appears on ratings so everyone knows who said what.
+Sign in with Google or GitHub, or your group's shared password if that's how your Flatpare is set up. Your account name appears on ratings so everyone knows who said what.
 
 ### 2. Upload an Apartment
 
@@ -65,16 +65,6 @@ Travel time is calculated from **Basel SBB** to the apartment address:
 - **Transit:** public transport time via Google Maps (not available with OpenRouteService)
 
 If no API key is configured, you can enter distances manually.
-
-### Cost Dashboard
-
-The **Costs** page shows estimated API usage and costs:
-
-- Gemini API calls (PDF parsing) with token counts
-- Google Maps API calls (distance calculations)
-- Estimated cost in USD for the last 30 days
-
-This helps you track spending if you're using paid APIs.
 
 ---
 

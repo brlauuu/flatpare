@@ -1,6 +1,10 @@
 export interface Rating {
   id: number;
-  userName: string;
+  userId: string;
+  // Resolved via a left join against `users`; null when the account has no
+  // display name set (some OAuth providers don't supply one) — identity
+  // must be keyed on `userId`, never on this.
+  userName: string | null;
   kitchen: number;
   balconies: number;
   location: number;

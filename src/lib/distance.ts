@@ -1,6 +1,3 @@
-import { db } from "@/lib/db";
-import { apiUsage } from "@/lib/db/schema";
-
 interface DistanceResult {
   bikeMinutes: number | null;
   transitMinutes: number | null;
@@ -36,15 +33,6 @@ async function calculateWithGoogleMaps(
 
     results.bikeMinutes = bikeRes;
     results.transitMinutes = transitRes;
-
-    try {
-      await db.insert(apiUsage).values({
-        service: "google_maps",
-        operation: "calculate_distance",
-      });
-    } catch {
-      // Don't fail distance calc if logging fails
-    }
   } catch {
     // Return nulls on failure
   }
@@ -97,15 +85,6 @@ async function calculateWithOpenRouteService(
     );
     results.bikeMinutes = bikeRes;
     // ORS doesn't support public transit — leave transitMinutes as null
-
-    try {
-      await db.insert(apiUsage).values({
-        service: "openrouteservice",
-        operation: "calculate_distance",
-      });
-    } catch {
-      // Don't fail if logging fails
-    }
   } catch {
     // Return nulls on failure
   }

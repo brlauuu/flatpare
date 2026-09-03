@@ -1,21 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockIsAuthenticated, selectMock, updateMock, geocodeMock } =
+const {
+  mockRequireHousehold,
+  mockAssertMembership,
+  selectMock,
+  updateMock,
+  geocodeMock,
+} =
   vi.hoisted(() => ({
-    mockIsAuthenticated: vi.fn(async () => true),
+    mockRequireHousehold: vi.fn(),
+    mockAssertMembership: vi.fn(),
     selectMock: vi.fn(),
     updateMock: vi.fn(),
     geocodeMock: vi.fn(),
   }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -30,12 +39,14 @@ vi.mock("@/lib/db/schema", () => ({
     address: "address",
     latitude: "latitude",
     longitude: "longitude",
+    householdId: "household_id",
   },
   locationsOfInterest: {
     id: "id",
     address: "address",
     latitude: "latitude",
     longitude: "longitude",
+    householdId: "household_id",
   },
 }));
 
@@ -50,11 +61,17 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLngWithReason: geocodeMock,
 }));
 
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 7,
+    userId: "u1",
+    role: "owner",
+  });
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 function selectReturns(rows: unknown[]) {
@@ -160,5 +177,21 @@ describe("POST /api/geocode/backfill", () => {
     const res = await POST();
     expect(res.status).toBe(500);
     expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("returns 401 without a session and never queries", async () => {
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    const res = await POST();
+    expect(res.status).toBe(401);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(geocodeMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the database says the member was removed", async () => {
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await POST();
+    expect(res.status).toBe(404);
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

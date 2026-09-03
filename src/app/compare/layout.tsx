@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
 
 export default async function CompareLayout({
@@ -6,8 +6,8 @@ export default async function CompareLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const userName = cookieStore.get("flatpare-name")?.value ?? "Unknown";
+  const session = await auth();
+  const userName = session?.user?.name ?? "Unknown";
 
   return (
     <>

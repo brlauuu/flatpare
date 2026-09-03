@@ -2,81 +2,38 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ChevronDown, Plus, User, X } from "lucide-react";
+import { ChevronDown, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { href: "/apartments", label: "Apartments" },
   { href: "/apartments/new", label: "Upload" },
   { href: "/compare", label: "Compare" },
-  { href: "/costs", label: "Costs" },
   { href: "/settings", label: "Settings" },
   { href: "/guide", label: "Guide" },
 ];
 
 export function NavBar({ userName }: { userName: string }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [users, setUsers] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetch("/api/auth/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  async function switchUser(name: string) {
-    if (name === userName) return;
+  async function handleSignOut() {
     if (getUnsavedRating()) {
       const ok = window.confirm(
-        "You have unsaved rating changes. Switch user anyway? Your input will be discarded."
+        "You have unsaved rating changes. Sign out anyway? Your input will be discarded."
       );
       if (!ok) return;
     }
-    await fetch("/api/auth/name", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: name }),
-    });
-    window.dispatchEvent(new Event("flatpare-user-changed"));
-    router.refresh();
-  }
-
-  async function deleteUser(name: string) {
-    if (name === userName && getUnsavedRating()) {
-      const ok = window.confirm(
-        "You have unsaved rating changes. Delete yourself anyway? Your input will be discarded."
-      );
-      if (!ok) return;
-    }
-    const res = await fetch(
-      `/api/auth/users/${encodeURIComponent(name)}`,
-      { method: "DELETE" }
-    );
-    if (!res.ok) return;
-    const data = (await res.json()) as { switchedTo?: string | null };
-    if (data.switchedTo !== undefined) {
-      window.dispatchEvent(new Event("flatpare-user-changed"));
-    }
-    if (data.switchedTo === null) {
-      router.push("/");
-    } else {
-      router.refresh();
-    }
+    await signOut({ callbackUrl: "/" });
   }
 
   return (
@@ -117,50 +74,9 @@ export function NavBar({ userName }: { userName: string }) {
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Users</DropdownMenuLabel>
-                {users.map((name) => (
-                  <DropdownMenuItem
-                    key={name}
-                    onClick={() => switchUser(name)}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <span
-                      className={cn(
-                        "flex-1",
-                        name === userName && "font-medium"
-                      )}
-                    >
-                      {name}
-                      {name === userName && (
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          (you)
-                        </span>
-                      )}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${name}`}
-                      className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteUser(name);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </DropdownMenuItem>
-                ))}
-                {users.length === 0 && (
-                  <DropdownMenuItem disabled>
-                    <span className="text-muted-foreground">No users</span>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/add-user")}>
-                <Plus className="h-3.5 w-3.5" />
-                Add new user
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

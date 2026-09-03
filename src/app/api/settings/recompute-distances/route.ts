@@ -3,15 +3,43 @@ import { db } from "@/lib/db";
 import { apartments, apartmentDistances } from "@/lib/db/schema";
 import { calculateDistance } from "@/lib/distance";
 import { listLocations } from "@/lib/locations";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { eq } from "drizzle-orm";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 
 export async function POST() {
+  let householdId: number;
+  let userId: string;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId, userId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // This rewrites the household's apartment_distances rows, so the
+  // 24h-valid JWT is not trusted on its own.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw e;
+  }
+
+  try {
     const allApartments = await db
       .select({ id: apartments.id, address: apartments.address })
-      .from(apartments);
-    const locations = await listLocations();
+      .from(apartments)
+      .where(eq(apartments.householdId, householdId));
+    const locations = await listLocations(householdId);
 
     let updated = 0;
     let failed = 0;
@@ -35,6 +63,7 @@ export async function POST() {
           await db
             .insert(apartmentDistances)
             .values({
+              householdId,
               apartmentId: apt.id,
               locationId: loc.id,
               bikeMin: bikeMinutes,

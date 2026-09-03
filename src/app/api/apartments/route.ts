@@ -5,8 +5,14 @@ import {
   apartmentDistances,
   ratings,
 } from "@/lib/db/schema";
-import { desc, avg, eq } from "drizzle-orm";
-import { getDisplayName, isAuthenticated, unauthorized } from "@/lib/auth";
+import { desc, avg, eq, and } from "drizzle-orm";
+import {
+  assertMembership,
+  ForbiddenError,
+  UnauthorizedError,
+} from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
+import { householdIdFromStoredPath, canonicalizePathname } from "@/lib/storage";
 import {
   buildShortCode,
   computeShortCodeParts,
@@ -19,6 +25,37 @@ import { geocodeLatLng } from "@/lib/geocode";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
 
+// Resolve the owning household of a stored-file URL, canonicalizing each
+// branch exactly the way readStoredFile does — the cloud branch through the
+// URL parser (a raw-string check and a parsed fetch are two readings of the
+// same text, and that gap was the Task 4 bypass), the local branch through
+// decodeURIComponent. Returns the canonical URL alongside the household so
+// callers persist the exact string that was checked, not the raw input —
+// "the string you check is the string you use" applies to the write path
+// too, not only to reads. Returns null for anything unrecognized.
+function storedPathHousehold(
+  url: string
+): { householdId: number; canonicalUrl: string } | null {
+  try {
+    if (url.startsWith("/api/pdf/")) {
+      const raw = url.slice("/api/pdf/".length);
+      const key = canonicalizePathname(raw);
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/pdf/${key}` };
+    }
+    if (url.startsWith("/api/uploads/")) {
+      const key = decodeURIComponent(url.slice("/api/uploads/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/uploads/${key}` };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function isUniqueConstraintError(err: unknown): boolean {
   return (
     err instanceof Error &&
@@ -27,8 +64,18 @@ function isUniqueConstraintError(err: unknown): boolean {
 }
 
 export async function GET() {
+  let householdId: number;
+  let userId: string;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId, userId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  try {
     const allApartments = await db
       .select({
         id: apartments.id,
@@ -57,11 +104,24 @@ export async function GET() {
         avgOverall: avg(ratings.overallFeeling),
       })
       .from(apartments)
-      .leftJoin(ratings, eq(apartments.id, ratings.apartmentId))
+      // The join predicate is scoped too, not only the outer where: a rating
+      // row carries its own household_id, and averages must never be computed
+      // across tenants even if a stray row ever pointed the wrong way.
+      .leftJoin(
+        ratings,
+        and(
+          eq(apartments.id, ratings.apartmentId),
+          eq(ratings.householdId, householdId)
+        )
+      )
+      .where(eq(apartments.householdId, householdId))
       .groupBy(apartments.id)
       .orderBy(desc(apartments.createdAt));
 
-    const allDistances = await db.select().from(apartmentDistances);
+    const allDistances = await db
+      .select()
+      .from(apartmentDistances)
+      .where(eq(apartmentDistances.householdId, householdId));
     const distancesByApt = new Map<
       number,
       { locationId: number; bikeMin: number | null; transitMin: number | null }[]
@@ -76,19 +136,21 @@ export async function GET() {
       distancesByApt.set(d.apartmentId, list);
     }
 
-    const currentUser = await getDisplayName();
     const myRatingByApt = new Map<number, number>();
-    if (currentUser) {
-      const myRows = await db
-        .select({
-          apartmentId: ratings.apartmentId,
-          overallFeeling: ratings.overallFeeling,
-        })
-        .from(ratings)
-        .where(eq(ratings.userName, currentUser));
-      for (const r of myRows) {
-        myRatingByApt.set(r.apartmentId, r.overallFeeling ?? 0);
-      }
+    const myRows = await db
+      .select({
+        apartmentId: ratings.apartmentId,
+        overallFeeling: ratings.overallFeeling,
+      })
+      .from(ratings)
+      .where(
+        and(
+          eq(ratings.userId, userId),
+          eq(ratings.householdId, householdId)
+        )
+      );
+    for (const r of myRows) {
+      myRatingByApt.set(r.apartmentId, r.overallFeeling ?? 0);
     }
 
     const decorated = allApartments.map((a) => ({
@@ -108,9 +170,57 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let householdId: number;
+  let userId: string;
   try {
-    if (!(await isAuthenticated())) return unauthorized();
+    ({ householdId, userId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  // A create is a write, so the JWT is not trusted on its own: a removed
+  // member's token still names their old household for up to 24h and would
+  // otherwise keep inserting rows into it.
+  try {
+    await assertMembership(householdId, userId);
+  } catch (e) {
+    if (e instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw e;
+  }
+
+  try {
     const body = await request.json();
+
+    // pdfUrl arrives from the client. Both readers re-check ownership, so a
+    // foreign value is not readable — but storing one writes a dangling
+    // pointer into another household's namespace, so reject it at write time
+    // rather than relying on every future reader to keep checking.
+    //
+    // Persist the canonical form storedPathHousehold resolved, not the raw
+    // body.pdfUrl: the string that was checked must be the string that gets
+    // used, on the write path the same as on every read path.
+    let pdfUrl: string | null = null;
+    if (body.pdfUrl != null) {
+      if (typeof body.pdfUrl !== "string") {
+        return NextResponse.json(
+          { error: "pdfUrl must be a string" },
+          { status: 400 }
+        );
+      }
+      const resolved = storedPathHousehold(body.pdfUrl);
+      if (resolved === null || resolved.householdId !== householdId) {
+        return NextResponse.json(
+          { error: "pdfUrl does not belong to this household" },
+          { status: 400 }
+        );
+      }
+      pdfUrl = resolved.canonicalUrl;
+    }
 
     const availableFrom: string | null =
       typeof body.availableFrom === "string" && isIsoDate(body.availableFrom)
@@ -131,6 +241,7 @@ export async function POST(request: Request) {
         const result = await db
           .insert(apartments)
           .values({
+            householdId,
             name: body.name,
             address: body.address,
             sizeM2: body.sizeM2,
@@ -139,7 +250,7 @@ export async function POST(request: Request) {
             numBalconies: body.numBalconies,
             hasWashingMachine: body.hasWashingMachine ?? null,
             rentChf: body.rentChf,
-            pdfUrl: body.pdfUrl,
+            pdfUrl,
             listingUrl: body.listingUrl || null,
             summary: body.summary ?? null,
             availableFrom,
@@ -175,7 +286,12 @@ export async function POST(request: Request) {
           await db
             .update(apartments)
             .set({ latitude: geocoded.lat, longitude: geocoded.lng })
-            .where(eq(apartments.id, created.id));
+            .where(
+              and(
+                eq(apartments.id, created.id),
+                eq(apartments.householdId, householdId)
+              )
+            );
         }
       } catch (err) {
         console.error(
@@ -184,7 +300,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const locations = await listLocations();
+      const locations = await listLocations(householdId);
       for (const loc of locations) {
         try {
           const { bikeMinutes, transitMinutes } = await calculateDistance(
@@ -192,6 +308,7 @@ export async function POST(request: Request) {
             address
           );
           await db.insert(apartmentDistances).values({
+            householdId,
             apartmentId: created.id,
             locationId: loc.id,
             bikeMin: bikeMinutes,

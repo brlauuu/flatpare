@@ -165,7 +165,21 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   });
   const alreadyHasLocations = Number(existing.rows[0]?.n ?? 0) > 0;
 
-  if (!alreadyHasLocations) {
+  // Once `household_id` exists, locations are tenant-scoped and there is no
+  // ownerless default household to attach a fallback row to — this legacy
+  // single-station default-row insertion only applies to pre-tenancy
+  // databases. Everything below this block (copying legacy distances,
+  // dropping the legacy columns, dropping app_settings) is unrelated
+  // cleanup that must keep running unconditionally regardless of tenancy.
+  const locationsCols = await client.execute({
+    sql: "PRAGMA table_info(locations_of_interest)",
+    args: [],
+  });
+  const hasHouseholdId = locationsCols.rows.some(
+    (r) => r.name === "household_id"
+  );
+
+  if (!alreadyHasLocations && !hasHouseholdId) {
     // Determine the default address: prefer app_settings.station_address,
     // fall back to the historical Basel SBB constant.
     let defaultAddress = "Basel SBB, Switzerland";
@@ -232,7 +246,70 @@ async function migrateLocationsOfInterestBackfill(client: Client): Promise<void>
   });
 }
 
+// Migration 0011 adds `household_id NOT NULL` with no default to the four
+// data tables. SQLite permits that only while a table is empty, so a database
+// that still holds pre-tenancy rows aborts mid-chain with
+// "Cannot add a NOT NULL column with default value NULL" — an error that names
+// neither the table, nor the migration, nor what to do about it. The abort is
+// atomic (the whole chain rolls back and the legacy data is untouched), but a
+// self-hoster hitting it at boot has nothing to act on.
+//
+// No data migration is possible here: pre-tenancy rows belong to no household,
+// and inventing a placeholder would hand the first person to sign in someone
+// else's data. So the release genuinely requires a fresh database, and the
+// right thing is to say so before the migrator produces its opaque failure.
+const TENANCY_TABLES = [
+  "apartments",
+  "ratings",
+  "locations_of_interest",
+  "apartment_distances",
+] as const;
+
+async function preflightTenancyMigration(client: Client): Promise<void> {
+  // Check existence of all four tables 0011 touches, not just `apartments`:
+  // a legacy database can hold rows in `locations_of_interest` (the default
+  // "Train Station" backfilled by migrateLocationsOfInterestBackfill on
+  // every pre-tenancy database) while `apartments` is still empty — that
+  // combination is the single most likely self-hoster upgrade, and it must
+  // not slip past this preflight into the migrator's raw SQLite error.
+  const tables = await client.execute({
+    sql: `SELECT name FROM sqlite_master WHERE type='table' AND name IN (${TENANCY_TABLES.map(() => "?").join(",")})`,
+    args: [...TENANCY_TABLES],
+  });
+  const existingTables = new Set(tables.rows.map((r) => String(r.name)));
+  if (existingTables.size === 0) return; // fresh database, nothing to check
+
+  if (existingTables.has("apartments")) {
+    const cols = await client.execute({
+      sql: "PRAGMA table_info(apartments)",
+      args: [],
+    });
+    const alreadyTenanted = cols.rows.some((r) => r.name === "household_id");
+    if (alreadyTenanted) return; // 0011 has already run
+  }
+
+  let total = 0;
+  for (const table of existingTables) {
+    const counted = await client.execute({
+      sql: `SELECT COUNT(*) AS n FROM ${table}`,
+      args: [],
+    });
+    total += Number(counted.rows[0]?.n ?? 0);
+  }
+  if (total === 0) return; // every existing table is empty: 0011 will apply
+
+  throw new Error(
+    "This release introduces per-household data isolation and requires a " +
+      "fresh database. The existing `apartments` table still holds " +
+      "pre-tenancy rows, which belong to no household and cannot be " +
+      "assigned to one automatically. Empty these tables before upgrading: " +
+      "apartments, ratings, locations_of_interest, apartment_distances. " +
+      "No migration has been applied and your data is untouched."
+  );
+}
+
 export async function applyMigrations(client: Client): Promise<void> {
+  await preflightTenancyMigration(client);
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
   // On Vercel the `drizzle/` folder isn't reliably present in the serverless

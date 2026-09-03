@@ -6,7 +6,6 @@ services:
     env_file:
       - .env.local
     environment:
-      - DISABLE_SECURE_COOKIES=true
       # Force local mode in Docker — override any cloud credentials from .env.local
       - TURSO_DATABASE_URL=
       - TURSO_AUTH_TOKEN=
