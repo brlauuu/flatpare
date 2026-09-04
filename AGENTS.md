@@ -63,10 +63,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Grade architectural changes with `enola check --fail-on=cycles`.** Only
   findings that are *new* against the pinned baseline fail, so the accepted cycle
   above passes and a newly introduced one does not.
-- This is a convention, not a gate: `--fail-on` is a flag on `enola check`, and
-  neither `mcp-arch.yaml` nor the session Stop hook is known to carry it. CI does
-  not run enola (the binary is not installed there). If you want hard
-  enforcement, that is the gap to close.
+- The session Stop hook enforces this locally: `~/.claude/hooks/enola-stop-if-changed.sh`
+  runs `enola check --fail-on=cycles` when the findings change, and appends a
+  POLICY VIOLATION notice when a new cycle appears. Verified by introducing a
+  deliberate `src/lib -> src/app` cycle and watching the gate exit 1.
+- **Known limit, measured not assumed:** the cycles explainer only catches cycles
+  between coarse modules. A deliberate file-level loop *within* `src/lib`
+  (`src/lib/db` <-> `src/lib/pathname`) was reported as PASS with no cycle
+  finding. So the gate catches cross-area cycles, not fine-grained ones inside a
+  directory.
+- CI does not run enola (the binary is not installed there), so this is a
+  machine-local gate, not a repository one. That is the remaining gap.
 - Re-pin with `enola baseline pin` after a deliberate structural change, or the
   next run grades against a stale architecture.
 
