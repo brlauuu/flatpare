@@ -67,6 +67,10 @@ export function LoginForm({ providers }: { providers: ProviderId[] }) {
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Outside the credentials block on purpose: an OAuth failure sets
+              this too, and while it lived inside the password form the error
+              was invisible on an OAuth-only deployment. */}
+          {error && <ErrorDisplay headline={error} />}
           {providers.includes("google") && (
             <Button
               type="button"
@@ -103,7 +107,6 @@ export function LoginForm({ providers }: { providers: ProviderId[] }) {
                   autoFocus
                 />
               </div>
-              {error && <ErrorDisplay headline={error} />}
               <Button type="submit" className="h-11 w-full" disabled={loading}>
                 {loading ? "Checking..." : "Continue"}
               </Button>

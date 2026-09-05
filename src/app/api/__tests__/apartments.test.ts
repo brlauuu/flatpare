@@ -59,12 +59,11 @@ vi.mock("drizzle-orm", () => ({
   sql: vi.fn(),
 }));
 
-const mockListLocations = vi.fn().mockResolvedValue([]);
-const mockCalculateDistance = vi.fn().mockResolvedValue({
-  bikeMinutes: null,
-  transitMinutes: null,
-});
-const mockGeocodeLatLng = vi.fn().mockResolvedValue(null);
+// Implementations live in beforeEach, not here: vitest.config.ts sets
+// `mockReset: true`, which resets every mock before each test (see #201).
+const mockListLocations = vi.fn();
+const mockCalculateDistance = vi.fn();
+const mockGeocodeLatLng = vi.fn();
 
 vi.mock("@/lib/locations", () => ({
   listLocations: (...args: unknown[]) => mockListLocations(...args),
@@ -119,6 +118,12 @@ const HOUSEHOLD_ID = 7;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockListLocations.mockResolvedValue([]);
+  mockCalculateDistance.mockResolvedValue({
+  bikeMinutes: null,
+  transitMinutes: null,
+});
+  mockGeocodeLatLng.mockResolvedValue(null);
   mockRequireHousehold.mockResolvedValue({
     householdId: HOUSEHOLD_ID,
     userId: "u1",

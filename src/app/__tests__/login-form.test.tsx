@@ -86,6 +86,33 @@ describe("LoginForm — OAuth buttons", () => {
       });
     });
   });
+
+  it("calls signIn(\"github\", ...) when the GitHub button is clicked", async () => {
+    signInMock.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<LoginForm providers={["github"]} />);
+    await user.click(
+      screen.getByRole("button", { name: /Continue with GitHub/i })
+    );
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith("github", {
+        callbackUrl: "/apartments",
+      });
+    });
+  });
+
+  it("surfaces an error when the provider cannot be reached", async () => {
+    // The catch branch: signIn rejecting rather than resolving with an error.
+    signInMock.mockRejectedValue(new Error("network down"));
+    const user = userEvent.setup();
+    render(<LoginForm providers={["google"]} />);
+    await user.click(
+      screen.getByRole("button", { name: /Continue with Google/i })
+    );
+    expect(
+      await screen.findByText(/Couldn't reach the sign-in provider/i)
+    ).toBeInTheDocument();
+  });
 });
 
 describe("LoginForm — password path", () => {
@@ -127,21 +154,29 @@ describe("LoginForm — password path", () => {
       configurable: true,
       value: { ...originalLocation, assign: assignSpy },
     });
-    signInMock.mockResolvedValue({ error: undefined, ok: true, url: "/apartments" });
-    const user = userEvent.setup();
-    render(<LoginForm providers={["credentials"]} />);
+    // Restored in `finally`: without it, a failing assertion leaves the patched
+    // location in place for every test that runs after this one.
+    try {
+      signInMock.mockResolvedValue({
+        error: undefined,
+        ok: true,
+        url: "/apartments",
+      });
+      const user = userEvent.setup();
+      render(<LoginForm providers={["credentials"]} />);
 
-    await user.type(screen.getByLabelText(/Password/i), "correct");
-    await user.click(screen.getByRole("button", { name: /Continue/i }));
+      await user.type(screen.getByLabelText(/Password/i), "correct");
+      await user.click(screen.getByRole("button", { name: /Continue/i }));
 
-    await waitFor(() => {
-      expect(assignSpy).toHaveBeenCalledWith("/apartments");
-    });
-    expect(screen.queryByText("Wrong password")).not.toBeInTheDocument();
-
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
+      await waitFor(() => {
+        expect(assignSpy).toHaveBeenCalledWith("/apartments");
+      });
+      expect(screen.queryByText("Wrong password")).not.toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 });
