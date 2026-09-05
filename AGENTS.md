@@ -51,6 +51,32 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `theme_color` / `background_color` mirror `--primary` / `--background` from `globals.css`, converted from oklch to hex. Update both together.
 - **There is deliberately no service worker.** Under E2EE an offline shell can't show real data, and a stale cached shell is a hard failure to debug remotely. See `docs/superpowers/specs/2026-09-01-accounts-e2ee-billing-design.md`.
 
+## Architecture checks (enola)
+
+- The baseline is pinned at the E1 merge (`dad02e1`), which **accepts one module
+  cycle**: `src/auth.ts` imports `@/lib/household`, and `src/lib/session.ts`
+  imports `@/auth`. At file level the graph is acyclic — that split exists
+  deliberately, to stop `auth.ts` and `household.ts` importing each other — but
+  at directory-module level `src` and `src/lib` now point both ways. It replaced
+  a pre-existing cycle inside `src/lib`, so it is a lateral trade, and
+  `src/auth.ts` lives at the top level because Auth.js expects it there.
+- **Grade architectural changes with `enola check --fail-on=cycles`.** Only
+  findings that are *new* against the pinned baseline fail, so the accepted cycle
+  above passes and a newly introduced one does not.
+- The session Stop hook enforces this locally: `~/.claude/hooks/enola-stop-if-changed.sh`
+  runs `enola check --fail-on=cycles` when the findings change, and appends a
+  POLICY VIOLATION notice when a new cycle appears. Verified by introducing a
+  deliberate `src/lib -> src/app` cycle and watching the gate exit 1.
+- **Known limit, measured not assumed:** the cycles explainer only catches cycles
+  between coarse modules. A deliberate file-level loop *within* `src/lib`
+  (`src/lib/db` <-> `src/lib/pathname`) was reported as PASS with no cycle
+  finding. So the gate catches cross-area cycles, not fine-grained ones inside a
+  directory.
+- CI does not run enola (the binary is not installed there), so this is a
+  machine-local gate, not a repository one. That is the remaining gap.
+- Re-pin with `enola baseline pin` after a deliberate structural change, or the
+  next run grades against a stale architecture.
+
 ## File uploads
 - Files larger than ~4.5 MB **must** use `src/lib/upload-pdf.ts` (client-direct Vercel Blob upload via `/api/parse-pdf/upload-token`). Multipart-POSTing big bodies through serverless routes hits the body limit.
 - Smaller uploads and the local-disk fallback go through `src/lib/storage.ts`.
