@@ -10,6 +10,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-02-e1-accounts-oauth-design.md`
 
+> **Status (2026-09-05): executed and merged as #209.** Kept as the record of
+> how E1 was built. Three things differ from the plan text below:
+>
+> - **`api_usage` is gone.** Task 1 adds a nullable `household_id` to
+>   `apiUsage`; instead the whole cost feature — table and recorders — was
+>   deleted mid-epic, so nothing in the shipped schema carries that column.
+> - **Ratings key on `user_id`, not `user_name`.** Task 5 as written let the
+>   old name-keyed ratings survive; review caught that it broke the core
+>   feature and the API now left-joins `users` for display names.
+> - **Upload scoping (Task 4) took four rounds, not one.** Each fix checked a
+>   different string than the one it used; the shipped version canonicalises
+>   the pathname once (`src/lib/pathname.ts`) and rejects residual
+>   percent-encoding. The bug class is documented in `docs/security-notes.md`.
+
 The spec sketches five staged commits; this plan uses six, splitting the proxy
 session gate out of "Auth.js wiring" so it carries its own test cycle.
 
