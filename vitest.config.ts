@@ -7,6 +7,16 @@ export default defineConfig({
     setupFiles: ["./src/test-setup.ts"],
     globalSetup: ["./src/test-global-setup.ts"],
     include: ["src/**/__tests__/**/*.test.{ts,tsx}"],
+    // Reset every mock before each test. `clearAllMocks` clears recorded calls
+    // but leaves values queued with `mockReturnValueOnce` in place, so a test
+    // that over-queues — which happens whenever a mocked chain throws part-way
+    // through — silently feeds the surplus to the next test in the file. That
+    // corrupted six unrelated assertions during the accounts epic (#201).
+    //
+    // Consequence to know: a mock's implementation must be set inside
+    // `beforeEach` or the test itself, never at its declaration, or the reset
+    // wipes it.
+    mockReset: true,
     testTimeout: 15000,
     hookTimeout: 15000,
     // The real-database suites (cross-tenant, tenancy, locations) share one

@@ -20,7 +20,6 @@ vi.mock("@/lib/db", () => ({ db: {} }));
 vi.mock("@/lib/db/schema", () => ({
   apartments: {},
   apartmentDistances: {},
-  apiUsage: {},
   locationsOfInterest: {},
   ratings: {},
   households: {},
