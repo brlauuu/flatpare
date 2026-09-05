@@ -22,7 +22,8 @@
 > - **Upload scoping (Task 4) took four rounds, not one.** Each fix checked a
 >   different string than the one it used; the shipped version canonicalises
 >   the pathname once (`src/lib/pathname.ts`) and rejects residual
->   percent-encoding. The bug class is documented in `docs/security-notes.md`.
+>   percent-encoding; `docs/security-notes.md` covers the deploy-time footgun
+>   that canonicalisation introduced.
 
 The spec sketches five staged commits; this plan uses six, splitting the proxy
 session gate out of "Auth.js wiring" so it carries its own test cycle.
