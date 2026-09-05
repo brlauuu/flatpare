@@ -1,17 +1,40 @@
 import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
-import { isAuthenticated } from "@/lib/auth";
+import { requireHousehold } from "@/lib/session";
+import {
+  householdIdFromStoredPath,
+  hasResidualPercentEncoding,
+} from "@/lib/storage";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let householdId: number;
+  try {
+    ({ householdId } = await requireHousehold());
+  } catch {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   const { path: segments } = await params;
+
+  // See hasResidualPercentEncoding in storage.ts: Next has already decoded
+  // each segment once here, so anything still carrying a "%" is either a
+  // double-encoded traversal payload or a filename @vercel/blob's get()
+  // would resolve differently than what we checked. Refuse before either
+  // string is built.
+  if (hasResidualPercentEncoding(segments)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const pathname = segments.join("/");
+
+  const owner = householdIdFromStoredPath(pathname);
+  if (owner === null || owner !== householdId) {
+    // 404, not 403: a 403 confirms the file exists in someone else's household.
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   try {
     const result = await get(pathname, { access: "private" });

@@ -31,6 +31,7 @@ function makeApt(over: Partial<ApartmentWithRatings> = {}): ApartmentWithRatings
 
 const trainStation: LocationOfInterest = {
   id: 7,
+  householdId: 1,
   label: "Train Station",
   icon: "Train",
   address: "Basel SBB",
@@ -229,6 +230,7 @@ describe("CompareTable — user rating sections", () => {
       name: "Apt",
       ratings: [
         {
+          userId: "u-alice",
           userName: "Alice",
           kitchen: 4,
           balconies: 3,
@@ -261,6 +263,7 @@ describe("CompareTable — user rating sections", () => {
       name: "A",
       ratings: [
         {
+          userId: "u-alice",
           userName: "Alice",
           kitchen: 4,
           balconies: 3,
@@ -287,6 +290,78 @@ describe("CompareTable — user rating sections", () => {
     const alicesSection = screen.getByText(/Alice's ratings/i).closest("tr")!;
     expect(alicesSection).toBeInTheDocument();
   });
+
+  it("keeps two members with the same display name as separate sections, grouped by userId", () => {
+    // Regression: grouping used to key on userName, which collapsed
+    // distinct members sharing a first name into one row and made
+    // `.find(r => r.userName === user)` return an arbitrary rating.
+    const a = makeApt({
+      id: 1,
+      name: "Apt",
+      ratings: [
+        {
+          userId: "u1",
+          userName: "Alex",
+          kitchen: 5,
+          balconies: 5,
+          location: 5,
+          floorplan: 5,
+          overallFeeling: 5,
+          comment: "First Alex",
+        },
+        {
+          userId: "u2",
+          userName: "Alex",
+          kitchen: 1,
+          balconies: 1,
+          location: 1,
+          floorplan: 1,
+          overallFeeling: 1,
+          comment: "Second Alex",
+        },
+      ],
+    });
+    render(
+      <CompareTable
+        visible={[a]}
+        sortedVisible={[a]}
+        locations={[]}
+        onHide={() => {}}
+      />
+    );
+    expect(screen.getAllByText(/Alex's ratings/i)).toHaveLength(2);
+    expect(screen.getByText("First Alex")).toBeInTheDocument();
+    expect(screen.getByText("Second Alex")).toBeInTheDocument();
+  });
+
+  it("labels a rating from an account with no display name rather than dropping it", () => {
+    const a = makeApt({
+      id: 1,
+      name: "Apt",
+      ratings: [
+        {
+          userId: "u1",
+          userName: null,
+          kitchen: 3,
+          balconies: 3,
+          location: 3,
+          floorplan: 3,
+          overallFeeling: 3,
+          comment: "Nameless account",
+        },
+      ],
+    });
+    render(
+      <CompareTable
+        visible={[a]}
+        sortedVisible={[a]}
+        locations={[]}
+        onHide={() => {}}
+      />
+    );
+    expect(screen.getByText(/Household member's ratings/i)).toBeInTheDocument();
+    expect(screen.getByText("Nameless account")).toBeInTheDocument();
+  });
 });
 
 describe("CompareTable — average ratings section", () => {
@@ -296,6 +371,7 @@ describe("CompareTable — average ratings section", () => {
       name: "A",
       ratings: [
         {
+          userId: "u-alice",
           userName: "Alice",
           kitchen: 4,
           balconies: 3,
@@ -305,6 +381,7 @@ describe("CompareTable — average ratings section", () => {
           comment: "",
         },
         {
+          userId: "u-bob",
           userName: "Bob",
           kitchen: 2,
           balconies: 3,

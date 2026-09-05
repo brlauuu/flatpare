@@ -24,9 +24,18 @@ export function CompareTable({
   locations,
   onHide,
 }: CompareTableProps) {
-  const allUsers = [
-    ...new Set(visible.flatMap((a) => a.ratings.map((r) => r.userName))),
-  ];
+  // Group by userId — the stable, unique identity — and resolve a display
+  // label separately. userName is a left-joined column: nullable, and not
+  // unique across OAuth accounts, so it can never be the grouping key
+  // (two members sharing a first name, or an account with no name set,
+  // would silently collapse into one row).
+  const userLabels = new Map<string, string | null>();
+  for (const a of visible) {
+    for (const r of a.ratings) {
+      if (!userLabels.has(r.userId)) userLabels.set(r.userId, r.userName);
+    }
+  }
+  const allUserIds = [...userLabels.keys()];
 
   function findBest(key: string, direction: string) {
     const values = visible
@@ -144,57 +153,60 @@ export function CompareTable({
             ))}
           </tr>
 
-          {allUsers.map((user) => (
-            <Fragment key={`user-${user}`}>
-              <tr className="border-b bg-muted/30">
-                <td
-                  colSpan={visible.length + 1}
-                  className="sticky left-0 z-10 bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                >
-                  {user}&apos;s ratings
-                </td>
-              </tr>
-              {ratingKeys.map((rKey) => (
-                <tr key={`${user}-${rKey}`} className="border-b">
+          {allUserIds.map((userId) => {
+            const label = userLabels.get(userId) ?? "Household member";
+            return (
+              <Fragment key={`user-${userId}`}>
+                <tr className="border-b bg-muted/30">
+                  <td
+                    colSpan={visible.length + 1}
+                    className="sticky left-0 z-10 bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {label}&apos;s ratings
+                  </td>
+                </tr>
+                {ratingKeys.map((rKey) => (
+                  <tr key={`${userId}-${rKey}`} className="border-b">
+                    <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
+                      {ratingLabels[rKey]}
+                    </td>
+                    {sortedVisible.map((apt) => {
+                      const rating = apt.ratings.find(
+                        (r) => r.userId === userId
+                      );
+                      return (
+                        <td key={apt.id} className="px-4 py-2">
+                          {rating ? (
+                            <StarRating value={rating[rKey]} readonly size="sm" />
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                <tr key={`${userId}-comment`} className="border-b">
                   <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
-                    {ratingLabels[rKey]}
+                    Comment
                   </td>
                   {sortedVisible.map((apt) => {
                     const rating = apt.ratings.find(
-                      (r) => r.userName === user
+                      (r) => r.userId === userId
                     );
                     return (
-                      <td key={apt.id} className="px-4 py-2">
-                        {rating ? (
-                          <StarRating value={rating[rKey]} readonly size="sm" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                      <td
+                        key={apt.id}
+                        className="max-w-[200px] px-4 py-2 text-xs"
+                      >
+                        {rating?.comment || "—"}
                       </td>
                     );
                   })}
                 </tr>
-              ))}
-              <tr key={`${user}-comment`} className="border-b">
-                <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
-                  Comment
-                </td>
-                {sortedVisible.map((apt) => {
-                  const rating = apt.ratings.find(
-                    (r) => r.userName === user
-                  );
-                  return (
-                    <td
-                      key={apt.id}
-                      className="max-w-[200px] px-4 py-2 text-xs"
-                    >
-                      {rating?.comment || "—"}
-                    </td>
-                  );
-                })}
-              </tr>
-            </Fragment>
-          ))}
+              </Fragment>
+            );
+          })}
 
           <tr className="border-b bg-muted/30">
             <td

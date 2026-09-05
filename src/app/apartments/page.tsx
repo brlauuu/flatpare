@@ -157,18 +157,6 @@ export default function ApartmentsPage() {
     })();
   }, []);
 
-  // Re-fetch when the active user switches so apartment cards show ratings
-  // belonging to the new user, not the previous one.
-  useEffect(() => {
-    function handler() {
-      void (async () => {
-        await reload();
-      })();
-    }
-    window.addEventListener("flatpare-user-changed", handler);
-    return () => window.removeEventListener("flatpare-user-changed", handler);
-  }, []);
-
   const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
 
   if (loading) {

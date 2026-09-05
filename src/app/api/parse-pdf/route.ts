@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { uploadFile, readStoredFile } from "@/lib/storage";
+import { uploadFile, readStoredFile, canonicalizePathname } from "@/lib/storage";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
-import { isAuthenticated, unauthorized } from "@/lib/auth";
+import { UnauthorizedError } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 
 interface BlobUploadBody {
   pathname?: unknown;
@@ -24,7 +25,20 @@ function emptyExtraction(filename: string) {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAuthenticated())) return unauthorized();
+  // The legacy shared-password gate that used to sit here is gone: every data
+  // route now resolves the session household, so this one is no longer the
+  // odd one out. requireHousehold() is both the authentication check and the
+  // tenant scope for readStoredFile/uploadFile.
+  let householdId: number;
+  try {
+    ({ householdId } = await requireHousehold());
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    throw e;
+  }
+
   try {
     const contentType = request.headers.get("content-type") ?? "";
 
@@ -42,8 +56,17 @@ export async function POST(request: Request) {
         );
       }
       originalFilename = body.filename;
-      pdfUrl = `/api/pdf/${body.pathname}`;
-      pdfBuffer = await readStoredFile(pdfUrl);
+      // Canonicalize body.pathname (client-supplied) before building the URL
+      // handed back to the client — that value is later POSTed straight to
+      // /api/apartments as pdfUrl, so the string returned here must already
+      // be the same string readStoredFile checks and fetches below, not a
+      // raw echo of client input.
+      const canonicalPath = canonicalizePathname(body.pathname);
+      pdfUrl = `/api/pdf/${canonicalPath}`;
+      // readStoredFile rejects if body.pathname (client-supplied) doesn't
+      // belong to the caller's own household — this is the actual fix for
+      // the cross-household read the JSON branch used to allow.
+      pdfBuffer = await readStoredFile(pdfUrl, householdId);
     } else {
       // Local/dev path: traditional multipart upload, server writes to disk.
       const formData = await request.formData();
@@ -58,7 +81,7 @@ export async function POST(request: Request) {
 
       originalFilename = file.name;
       const filename = `${Date.now()}-${file.name}`;
-      pdfUrl = await uploadFile(filename, file);
+      pdfUrl = await uploadFile(householdId, filename, file);
       pdfBuffer = Buffer.from(await file.arrayBuffer());
     }
 

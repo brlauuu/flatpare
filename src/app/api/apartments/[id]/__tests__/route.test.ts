@@ -13,23 +13,39 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/db/schema", () => ({
-  apartments: { id: "id", address: "address", userEditedFields: "uef" },
-  apartmentDistances: { apartmentId: "apartment_id" },
-  ratings: { apartmentId: "apartment_id" },
+  apartments: {
+    id: "id",
+    address: "address",
+    userEditedFields: "uef",
+    householdId: "household_id",
+  },
+  apartmentDistances: {
+    apartmentId: "apartment_id",
+    householdId: "household_id",
+  },
+  ratings: { apartmentId: "apartment_id", householdId: "household_id" },
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: vi.fn(),
   eq: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: vi.fn(),
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+const { mockRequireHousehold, mockAssertMembership } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
+  mockAssertMembership: vi.fn(),
 }));
+
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
+}));
+
+vi.mock("@/lib/household", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/household")>(
+    "@/lib/household"
+  );
+  return { ...actual, assertMembership: mockAssertMembership };
+});
 
 vi.mock("@/lib/map-embed", () => ({
   buildMapEmbedUrl: vi.fn(() => "https://maps.example/embed"),
@@ -40,14 +56,29 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLng: (...args: unknown[]) => geocodeMock(...args),
 }));
 
+import { ForbiddenError, UnauthorizedError } from "@/lib/household";
 import { GET, PATCH, DELETE } from "../route";
-import { isAuthenticated } from "@/lib/auth";
 
-const mockedAuth = vi.mocked(isAuthenticated);
+// Kept as a drop-in for the old `mockedAuth`: true = a valid session,
+// false = no session at all.
+const mockedAuth = {
+  mockResolvedValue(authed: boolean) {
+    if (authed) {
+      mockRequireHousehold.mockResolvedValue({
+        householdId: 7,
+        userId: "u1",
+        role: "owner",
+      });
+    } else {
+      mockRequireHousehold.mockRejectedValue(new UnauthorizedError());
+    }
+  },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   geocodeMock.mockReset();
+  mockAssertMembership.mockResolvedValue("owner");
 });
 
 afterEach(() => {
@@ -76,6 +107,18 @@ function selectUnlimited(rows: unknown[]) {
   });
 }
 
+// Ratings are left-joined against `users` for a display name (userId stays
+// the identity key) — see the leftJoin in the route's GET handler.
+function selectRatings(rows: unknown[]) {
+  mockSelect.mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      leftJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(rows),
+      }),
+    }),
+  });
+}
+
 describe("GET /api/apartments/[id]", () => {
   it("returns 401 when not authenticated", async () => {
     mockedAuth.mockResolvedValue(false);
@@ -95,7 +138,7 @@ describe("GET /api/apartments/[id]", () => {
   it("returns the apartment with ratings, distances, and mapEmbedUrl on success", async () => {
     mockedAuth.mockResolvedValue(true);
     selectReturns([{ id: 1, address: "Main St 1", userEditedFields: null }]);
-    selectUnlimited([{ id: 11, kitchen: 4 }]);
+    selectRatings([{ id: 11, userId: "u1", userName: "Ann", kitchen: 4 }]);
     selectUnlimited([
       { locationId: 7, bikeMin: 8, transitMin: 12 },
     ]);
@@ -105,7 +148,9 @@ describe("GET /api/apartments/[id]", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.id).toBe(1);
-    expect(body.ratings).toEqual([{ id: 11, kitchen: 4 }]);
+    expect(body.ratings).toEqual([
+      { id: 11, userId: "u1", userName: "Ann", kitchen: 4 },
+    ]);
     expect(body.distances).toEqual([
       { locationId: 7, bikeMin: 8, transitMin: 12 },
     ]);
@@ -317,7 +362,9 @@ describe("DELETE /api/apartments/[id]", () => {
   it("deletes and returns success", async () => {
     mockedAuth.mockResolvedValue(true);
     mockDelete.mockReturnValueOnce({
-      where: vi.fn().mockResolvedValue(undefined),
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 1 }]),
+      }),
     });
     const req = new Request("http://localhost/api/apartments/1", {
       method: "DELETE",
@@ -337,5 +384,48 @@ describe("DELETE /api/apartments/[id]", () => {
     });
     const res = await DELETE(req, withParams("1"));
     expect(res.status).toBe(500);
+  });
+
+  it("returns 404 when the delete matched no row in this household", async () => {
+    mockedAuth.mockResolvedValue(true);
+    mockDelete.mockReturnValueOnce({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    });
+    const res = await DELETE(
+      new Request("http://localhost/api/apartments/1", { method: "DELETE" }),
+      withParams("1")
+    );
+    // 404, not 403 — the response must not confirm the row exists elsewhere.
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 when the database says the member was removed", async () => {
+    mockedAuth.mockResolvedValue(true);
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await DELETE(
+      new Request("http://localhost/api/apartments/1", { method: "DELETE" }),
+      withParams("1")
+    );
+    expect(res.status).toBe(404);
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH membership re-check", () => {
+  it("returns 404 and writes nothing when the member was removed", async () => {
+    mockedAuth.mockResolvedValue(true);
+    mockAssertMembership.mockRejectedValueOnce(new ForbiddenError());
+    const res = await PATCH(
+      new Request("http://localhost/api/apartments/1", {
+        method: "PATCH",
+        body: JSON.stringify({ name: "x" }),
+      }),
+      withParams("1")
+    );
+    expect(res.status).toBe(404);
+    expect(mockSelect).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

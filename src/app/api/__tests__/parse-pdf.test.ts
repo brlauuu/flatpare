@@ -4,6 +4,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("@/lib/storage", () => ({
   uploadFile: vi.fn(async () => "/api/uploads/test.pdf"),
   readStoredFile: vi.fn(async () => Buffer.from("fake-pdf-bytes")),
+  canonicalizePathname: vi.fn((p: string) => p),
+}));
+
+// requireHousehold is now this route's ONLY gate — the legacy
+// shared-password check is gone — and it supplies the household that scopes
+// uploadFile and readStoredFile.
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
+}));
+
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
 vi.mock("@/lib/parse-pdf", () => ({
@@ -19,24 +31,16 @@ vi.mock("@/lib/parse-pdf", () => ({
   })),
 }));
 
-const { mockIsAuthenticated } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => true),
-}));
-
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
-}));
-
+import { UnauthorizedError } from "@/lib/household";
 import { POST } from "../../api/parse-pdf/route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(true);
+  mockRequireHousehold.mockResolvedValue({
+    householdId: 1,
+    userId: "u1",
+    role: "owner" as const,
+  });
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 });
 
@@ -54,7 +58,7 @@ function createPdfFormData(): FormData {
 
 describe("POST /api/parse-pdf", () => {
   it("returns 401 when not authenticated", async () => {
-    mockIsAuthenticated.mockResolvedValueOnce(false);
+    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const req = new Request("http://localhost/api/parse-pdf", {
       method: "POST",
       body: new FormData(),

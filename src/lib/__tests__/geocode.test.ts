@@ -1,15 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-vi.mock("@/lib/db", () => ({
-  db: {
-    insert: vi.fn(() => ({ values: vi.fn(async () => {}) })),
-  },
-}));
-
-vi.mock("@/lib/db/schema", () => ({
-  apiUsage: {},
-}));
-
 import { extractPostcode, geocodeLatLng } from "../geocode";
 
 beforeEach(() => {

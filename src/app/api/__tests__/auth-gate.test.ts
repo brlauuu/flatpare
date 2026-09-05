@@ -1,20 +1,16 @@
-// Defense-in-depth check: every route handler that gained an in-route
-// isAuthenticated() guard in #153 should return 401 when the auth helper
-// reports unauthenticated, even if the proxy is misconfigured. This file
-// exercises the routes that don't have a dedicated test file of their own.
+// Defense-in-depth check: every data route resolves the session household for
+// itself and answers 401 when there is none, even if the proxy is
+// misconfigured. (This guard was an isAuthenticated() call until Task 5
+// replaced it with requireHousehold(), which is both the authentication check
+// and the tenant scope.)
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockIsAuthenticated } = vi.hoisted(() => ({
-  mockIsAuthenticated: vi.fn(async () => false),
+const { mockRequireHousehold } = vi.hoisted(() => ({
+  mockRequireHousehold: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  isAuthenticated: mockIsAuthenticated,
-  unauthorized: () =>
-    new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    }),
+vi.mock("@/lib/session", () => ({
+  requireHousehold: mockRequireHousehold,
 }));
 
 // Stub every collaborator the imported routes pull in, so importing the
@@ -24,11 +20,15 @@ vi.mock("@/lib/db", () => ({ db: {} }));
 vi.mock("@/lib/db/schema", () => ({
   apartments: {},
   apartmentDistances: {},
-  apiUsage: {},
   locationsOfInterest: {},
+  ratings: {},
+  households: {},
+  householdMembers: {},
 }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(),
+  desc: vi.fn(),
+  avg: vi.fn(),
   and: vi.fn(),
   isNull: vi.fn(),
   isNotNull: vi.fn(),
@@ -55,6 +55,12 @@ vi.mock("@/lib/geocode", () => ({
   geocodeLatLng: vi.fn(),
   geocodeLatLngWithReason: vi.fn(),
 }));
+vi.mock("@/lib/map-embed", () => ({ buildMapEmbedUrl: vi.fn() }));
+vi.mock("@/lib/short-code", () => ({
+  computeShortCodeParts: vi.fn(),
+  buildShortCode: vi.fn(),
+  pickLetters: vi.fn(),
+}));
 
 import { POST as checkListingsPOST } from "../apartments/check-listings/route";
 import { POST as reprocessPOST } from "../apartments/[id]/reprocess/route";
@@ -70,17 +76,28 @@ import {
   DELETE as locationDELETE,
 } from "../locations/[id]/route";
 import { POST as movePOST } from "../locations/[id]/move/route";
+import {
+  GET as apartmentsGET,
+  POST as apartmentsPOST,
+} from "../apartments/route";
+import {
+  GET as apartmentGET,
+  PATCH as apartmentPATCH,
+  DELETE as apartmentDELETE,
+} from "../apartments/[id]/route";
+import { POST as ratingPOST } from "../apartments/[id]/ratings/route";
+import { UnauthorizedError } from "@/lib/household";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAuthenticated.mockResolvedValue(false);
+  mockRequireHousehold.mockRejectedValue(new UnauthorizedError());
 });
 
 function withParams(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-describe("Defense-in-depth: routes return 401 when isAuthenticated() is false", () => {
+describe("Defense-in-depth: routes return 401 when there is no session", () => {
   it("POST /api/apartments/check-listings", async () => {
     const res = await checkListingsPOST();
     expect(res.status).toBe(401);
@@ -145,6 +162,56 @@ describe("Defense-in-depth: routes return 401 when isAuthenticated() is false", 
       body: JSON.stringify({ direction: "up" }),
     });
     const res = await movePOST(req, withParams("1"));
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/apartments", async () => {
+    expect((await apartmentsGET()).status).toBe(401);
+  });
+
+  it("POST /api/apartments", async () => {
+    const req = new Request("http://x/api/apartments", {
+      method: "POST",
+      body: JSON.stringify({ name: "x" }),
+    });
+    expect((await apartmentsPOST(req)).status).toBe(401);
+  });
+
+  it("GET /api/apartments/[id]", async () => {
+    const res = await apartmentGET(
+      new Request("http://x/api/apartments/1"),
+      withParams("1")
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH /api/apartments/[id]", async () => {
+    const res = await apartmentPATCH(
+      new Request("http://x/api/apartments/1", {
+        method: "PATCH",
+        body: JSON.stringify({}),
+      }),
+      withParams("1")
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE /api/apartments/[id]", async () => {
+    const res = await apartmentDELETE(
+      new Request("http://x/api/apartments/1", { method: "DELETE" }),
+      withParams("1")
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/apartments/[id]/ratings", async () => {
+    const res = await ratingPOST(
+      new Request("http://x/api/apartments/1/ratings", {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+      withParams("1")
+    );
     expect(res.status).toBe(401);
   });
 });

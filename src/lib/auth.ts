@@ -1,47 +1,9 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { AUTH_COOKIE, NAME_COOKIE, authCookieMatches, authCookieValue } from "./auth-cookie";
 
-// Defense-in-depth helper for API routes. The proxy already 401s `/api/*`
-// for unauthenticated callers; routes still call this so they fail closed
-// if the proxy is ever misconfigured.
-export function unauthorized(): NextResponse {
-  return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-}
-
-export async function isAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return authCookieMatches(cookieStore.get(AUTH_COOKIE)?.value);
-}
-
-export async function setAuthenticated(): Promise<void> {
-  const value = authCookieValue();
-  if (!value) throw new Error("APP_PASSWORD is not set");
-  const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE, value, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production" && !process.env.DISABLE_SECURE_COOKIES,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
-}
-
-export async function getDisplayName(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get(NAME_COOKIE)?.value ?? null;
-}
-
-export async function setDisplayName(name: string): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(NAME_COOKIE, name, {
-    httpOnly: false, // readable by client JS
-    secure: process.env.NODE_ENV === "production" && !process.env.DISABLE_SECURE_COOKIES,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30,
-  });
-}
-
+// Used only by the self-host credentials provider (src/auth.ts) now that the
+// shared-password + display-name model has been removed. Kept as its own
+// constant-time comparison rather than a plain `===`, which would leak
+// timing information about how many leading bytes matched.
 export function verifyPassword(input: string): boolean {
   const password = process.env.APP_PASSWORD;
   if (!password || !input) return false;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -40,11 +40,6 @@ interface ErrorState {
   details?: ErrorDetails;
 }
 
-function getCookieValue(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
 export default function ApartmentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -65,20 +60,29 @@ export default function ApartmentDetailPage() {
   const [cleanRating, setCleanRating] = useState(EMPTY_RATING);
   const [saving, setSaving] = useState(false);
   const [userName, setUserName] = useState("");
+  const [myId, setMyId] = useState("");
   const [error, setError] = useState<ErrorState | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+  // The signed-in account's id and display name, fetched once from
+  // Auth.js's own session endpoint (there is no more per-browser
+  // display-name cookie to switch, since Task 6 removed that model — one
+  // session is one account). Identity is keyed on `myIdRef` — `userId` is
+  // the only stable, unique field; `users.name` is nullable and not unique
+  // across OAuth accounts, so it's for display only.
+  const myIdRef = useRef<string>("");
+  const myNameRef = useRef<string>("");
 
-  // Shared applier so both the initial effect and event-driven reloads
-  // converge on the same state updates.
+  // Shared applier so both the initial effect and later reloads (after a
+  // save, edit, or reprocess) converge on the same state updates.
   function applyApartmentData(data: ApartmentDetail) {
     setApartment(data);
     setError(null);
-    const name = getCookieValue("flatpare-name") ?? "";
-    setUserName(name);
-    const existing = data.ratings?.find((r) => r.userName === name);
+    setUserName(myNameRef.current);
+    setMyId(myIdRef.current);
+    const existing = data.ratings?.find((r) => r.userId === myIdRef.current);
     const snapshot = existing
       ? {
           kitchen: existing.kitchen,
@@ -118,9 +122,10 @@ export default function ApartmentDetailPage() {
     const url = `/api/apartments/${params.id}`;
     void (async () => {
       try {
-        const [res, locRes] = await Promise.all([
+        const [res, locRes, sessionRes] = await Promise.all([
           fetch(url),
           fetch("/api/locations"),
+          fetch("/api/auth/session"),
         ]);
         if (cancelled) return;
         if (!res.ok) {
@@ -130,6 +135,13 @@ export default function ApartmentDetailPage() {
           });
           setLoading(false);
           return;
+        }
+        if (sessionRes.ok) {
+          const session = (await sessionRes.json()) as {
+            user?: { id?: string; name?: string | null };
+          } | null;
+          myIdRef.current = session?.user?.id ?? "";
+          myNameRef.current = session?.user?.name ?? "";
         }
         const data = (await res.json()) as ApartmentDetail;
         if (cancelled) return;
@@ -164,17 +176,6 @@ export default function ApartmentDetailPage() {
     setUnsavedRating(dirty);
     return () => setUnsavedRating(false);
   }, [myRating, cleanRating]);
-
-  useEffect(() => {
-    function handler() {
-      reloadApartment();
-    }
-    window.addEventListener("flatpare-user-changed", handler);
-    return () => window.removeEventListener("flatpare-user-changed", handler);
-    // reloadApartment is defined in this component scope; keeping deps empty is
-    // intentional (inline closure picks up the latest definition per render).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleDelete() {
     if (!confirm("Delete this apartment? This cannot be undone.")) return;
@@ -335,9 +336,7 @@ export default function ApartmentDetailPage() {
     return null;
   }
 
-  const otherRatings = apartment.ratings.filter(
-    (r) => r.userName !== userName
-  );
+  const otherRatings = apartment.ratings.filter((r) => r.userId !== myId);
 
   return (
     <div className="space-y-6">

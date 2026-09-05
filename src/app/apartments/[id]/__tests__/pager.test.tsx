@@ -78,6 +78,12 @@ beforeEach(() => {
         json: () => Promise.resolve([]),
       } as Response);
     }
+    if (url === "/api/auth/session") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ user: { name: "Alice" } }),
+      } as Response);
+    }
     const match = url.match(/\/api\/apartments\/(\d+)$/);
     if (match) return Promise.resolve(apartmentResponse(Number(match[1])));
     return Promise.reject(new Error(`Unexpected fetch: ${url}`));
