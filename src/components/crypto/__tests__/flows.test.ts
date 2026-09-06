@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import "fake-indexeddb/auto";
-import { clearKeys, loadKeys, seal, open } from "@/lib/crypto";
-import { TEST_KDF_PARAMS } from "@/lib/crypto/__tests__/params";
+import {
+  clearKeys,
+  deriveKek,
+  fromBase64,
+  loadKeys,
+  normalizeRecoveryCode,
+  open,
+  seal,
+  unwrapDataKey,
+  unwrapPrivateKey,
+} from "@/lib/crypto";
+import { TEST_KDF_PARAMS, exportRawBase64 } from "@/lib/crypto/__tests__/params";
 import {
   FlowError,
   fetchStatus,
@@ -35,6 +45,7 @@ const server = {
       memberKeys: this.keys.get(this.me.userId) ?? null,
       wrap: this.wraps.get(this.me.userId) ?? null,
       householdHasWraps: this.wraps.size > 0,
+      othersHaveWraps: [...this.wraps.keys()].some((id) => id !== this.me.userId),
       recovery: this.recovery,
     };
   },
@@ -93,13 +104,24 @@ async function handle(url: string, init?: RequestInit): Promise<Response> {
 
 const opts = { kdfParams: TEST_KDF_PARAMS };
 
+// Every request body the flows send, as sent. T10b asserts no secret ever
+// appears in one.
+const sentBodies: string[] = [];
+
 beforeEach(async () => {
   server.keys.clear();
   server.wraps.clear();
   server.recovery = null;
   server.me = { userId: "o", role: "owner" };
+  sentBodies.length = 0;
   await clearKeys();
-  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => handle(url, init)));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.body) sentBodies.push(String(init.body));
+      return handle(url, init);
+    })
+  );
 });
 
 async function probe(key: CryptoKey) {
@@ -196,6 +218,12 @@ describe("change passphrase / reset", () => {
     await runChangePassphrase(await fetchStatus(), "old passphrase!!", "new passphrase!!", opts);
     expect(server.keys.get("o")!.publicKey).toBe(before);
     await runLock();
+    // The old passphrase must be dead, not merely superseded.
+    await expect(runUnlock(await fetchStatus(), "old passphrase!!")).rejects.toMatchObject({
+      name: "FlowError",
+      code: "wrong-passphrase",
+    });
+    await runLock();
     const keys = await runUnlock(await fetchStatus(), "new passphrase!!");
     expect(keys.dataKey).toBeTruthy();
   });
@@ -246,6 +274,59 @@ describe("recovery", () => {
     await runLock();
     await runRecover(await fetchStatus(), next, "new passphrase!!", opts);
     expect((await loadKeys("o", 1))?.dataKey).toBeTruthy();
+  });
+});
+
+describe("nothing secret crosses the network", () => {
+  it("no request body contains a passphrase, a recovery code, or raw key bytes", async () => {
+    const PASSPHRASES = ["first passphrase!", "second passphrase!", "third passphrase!"];
+
+    const setup = await runSetup(await fetchStatus(), PASSPHRASES[0], opts);
+    const firstCode = setup.recoveryCode!;
+    await runChangePassphrase(await fetchStatus(), PASSPHRASES[0], PASSPHRASES[1], opts);
+
+    // Raw bytes of everything the device holds, obtained from extractable
+    // copies made inside this test only — never persisted, never sent.
+    const secrets = new Set<string>([...PASSPHRASES, firstCode, normalizeRecoveryCode(firstCode)!]);
+    async function collect(passphrase: string) {
+      const s = await fetchStatus();
+      const keys = (await loadKeys("o", 1))!;
+      if (s.wrap) {
+        const dataKey = await unwrapDataKey(s.wrap, keys.privateKey, { extractable: true });
+        secrets.add(await exportRawBase64(dataKey));
+      }
+      const m = s.memberKeys!;
+      const kek = await deriveKek(passphrase, fromBase64(m.kdf.salt), m.kdf);
+      const priv = await unwrapPrivateKey(
+        { wrapped: m.wrappedPrivateKey, iv: m.privateKeyIv },
+        kek,
+        { extractable: true }
+      );
+      secrets.add(await exportRawBase64(priv));
+    }
+    await collect(PASSPHRASES[1]);
+
+    await runLock();
+    const recovered = await runRecover(await fetchStatus(), firstCode, PASSPHRASES[2], opts);
+    secrets.add(recovered.recoveryCode);
+    secrets.add(normalizeRecoveryCode(recovered.recoveryCode)!);
+    await collect(PASSPHRASES[2]);
+
+    const regenerated = await runRegenerateRecovery(
+      await fetchStatus(),
+      (await loadKeys("o", 1))!,
+      opts
+    );
+    secrets.add(regenerated.recoveryCode);
+    secrets.add(normalizeRecoveryCode(regenerated.recoveryCode)!);
+    await collect(PASSPHRASES[2]);
+
+    expect(sentBodies.length).toBeGreaterThan(3);
+    for (const body of sentBodies) {
+      for (const secret of secrets) {
+        expect(body).not.toContain(secret);
+      }
+    }
   });
 });
 

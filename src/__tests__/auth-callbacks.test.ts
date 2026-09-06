@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
 import { households, householdMembers, invitations } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
+import { eq } from "drizzle-orm";
 import { authCallbacks } from "@/auth";
 
 beforeEach(async () => {
@@ -65,6 +66,23 @@ describe("jwt callback", () => {
     const refreshed = await authCallbacks.jwt({ token, user: undefined, trigger: "update" });
     expect(refreshed.householdId).toBe(h2.id);
     expect(refreshed.role).toBe("member");
+  });
+
+  it("gives a removed member a fresh household on trigger=update", async () => {
+    const token = await authCallbacks.jwt({ token: {}, user: { id: "u1" }, trigger: "signIn" });
+    const original = token.householdId as number;
+    expect(typeof original).toBe("number");
+
+    // The member is removed from the household they had (E1's remove-member
+    // route deletes exactly this row) and no invitation is waiting for them.
+    await db
+      .delete(householdMembers)
+      .where(eq(householdMembers.userId, "u1"));
+
+    const refreshed = await authCallbacks.jwt({ token, user: undefined, trigger: "update" });
+    expect(refreshed.householdId).not.toBeNull();
+    expect(refreshed.householdId).not.toBe(original);
+    expect(refreshed.role).toBe("owner");
   });
 });
 
