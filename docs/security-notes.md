@@ -155,3 +155,46 @@ Last reviewed: 2026-05-09 (issue #132).
 **Why we accept:** `npm audit fix --force` would downgrade `next` to `9.3.3` (an 8-year-old release). The advisory only fires when CSS containing attacker-controlled input is round-tripped through postcss's stringifier — we don't do that anywhere. Waiting for Next.js to bump its bundled postcss.
 
 **Re-check trigger:** Next.js patch release that bumps the bundled postcss to ≥ 8.5.10.
+
+## Encryption model — reviewed 2026-09-06 (E2 crypto core)
+
+Spec: `docs/superpowers/specs/2026-09-06-e2-crypto-core-design.md`. What is stored
+server-side is ciphertext or public keys only: the wrapped member private key, the
+household data key wrapped to each member's public key, and the recovery-wrapped data
+key. Passphrases and recovery codes never leave the browser.
+
+### Accepted: the host is honest-but-curious, not actively malicious
+
+A host that substitutes its own public key for a member's during a wrap
+(`POST /api/crypto/wraps` reads the target's public key from `member_keys`) would
+receive the household data key. Any end-to-end scheme without out-of-band key
+verification has this property. The mitigation that would close it — key fingerprints
+shown in the UI for members to compare — is a backlog issue, not part of E2.
+
+### Accepted: XSS can use unlocked keys
+
+Unlocked keys are non-extractable `CryptoKey`s in IndexedDB, so a script on the origin
+can decrypt with them while the device is unlocked but cannot read the key bytes. That
+is the price of once-per-device unlock. *Lock this device* in settings and sign-out both
+clear the store.
+
+### Accepted: removed members keep a usable cached key
+
+Removal deletes the wrap row and membership. A removed member who still has the data key
+in their device store can decrypt ciphertext they can still fetch during the 24h JWT
+window (see the auth section above). E3's ciphertext reads re-check membership against
+the database; rotating the data key on removal is a backlog item.
+
+### Accepted: the encryption mode is a property of the database
+
+`FLATPARE_ENCRYPTION` is stamped into `settings` on first boot and compared on every
+later boot. `on → off` would leave rows the server cannot read; `off → on` would leave
+plaintext the server is supposed to reject. Both are discovered after the deploy, by
+users, so the app refuses to boot instead. Changing mode means a fresh database or, once
+#191 lands, an export and re-import.
+
+### Accepted: recovery is a single point of loss
+
+A sole member who loses both the passphrase and the recovery code has lost the data;
+nobody, including Flatpare, can recover it. The setup screen says so and the recovery
+kit requires an explicit acknowledgement before continuing.
