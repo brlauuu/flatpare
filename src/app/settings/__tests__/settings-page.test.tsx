@@ -7,6 +7,9 @@ import userEvent from "@testing-library/user-event";
 vi.mock("@/components/crypto/encryption-settings", () => ({
   EncryptionSettings: () => null,
 }));
+vi.mock("@/components/household-settings", () => ({
+  HouseholdSettings: () => null,
+}));
 
 import SettingsPage from "../page";
 
