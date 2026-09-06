@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorDisplay } from "@/components/error-display";
+import { EncryptionSettings } from "@/components/crypto/encryption-settings";
 import {
   LocationIconDisplay,
   LocationIconPicker,
@@ -268,6 +269,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Settings</h1>
+      <EncryptionSettings />
 
       {error && <ErrorDisplay headline={error.headline} details={error.details} />}
 

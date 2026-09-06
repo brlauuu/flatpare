@@ -19,6 +19,7 @@ import {
   runUnlock,
   type StatusResponse,
 } from "./flows";
+import { ForgotPassphrase } from "./forgot-passphrase";
 import { RecoveryKit } from "./recovery-kit";
 import { SetupScreen } from "./setup-screen";
 import { UnlockScreen } from "./unlock-screen";
@@ -52,7 +53,8 @@ const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
 const NOTICE_MS = 8_000;
 
-const CryptoContext = createContext<CryptoContextValue | null>(null);
+// Exported so component tests can render consumers under a hand-built value.
+export const CryptoContext = createContext<CryptoContextValue | null>(null);
 
 export function useCrypto(): CryptoContextValue {
   const ctx = useContext(CryptoContext);
@@ -216,7 +218,7 @@ export function CryptoProvider({
         body = <PendingScreen />;
         break;
       case "locked":
-        body = <UnlockScreen />;
+        body = <UnlockScreen extra={<ForgotPassphrase />} />;
         break;
     }
   }
