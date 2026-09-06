@@ -178,19 +178,26 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
   // Fetched and (if applicable) expired outside any transaction: a thrown
   // error inside db.transaction rolls back everything the callback did,
   // which would undo the expiry write we need to persist alongside the 409.
+  // Deliberately not filtered by status here — a row that is already
+  // accepted/revoked still needs to reach the transaction's guarded update
+  // below so a stale accept lands on the "no longer available" 409 rather
+  // than a misleading 404.
   const [inv] = await db
     .select()
     .from(invitations)
-    .where(and(eq(invitations.id, id), eq(invitations.status, "pending")))
+    .where(eq(invitations.id, id))
     .limit(1);
   if (!inv) throw new InvitationError("Invitation not found", 404);
 
-  if (inv.expiresAt.getTime() <= Date.now()) {
-    await db
+  if (inv.status === "pending" && inv.expiresAt.getTime() <= Date.now()) {
+    // Guarded on status too: only flip a row we know is still pending, so a
+    // concurrent revoke/accept that already changed it isn't clobbered.
+    const [expired] = await db
       .update(invitations)
       .set({ status: "expired" })
-      .where(eq(invitations.id, id));
-    throw new InvitationError("This invitation has expired", 409);
+      .where(and(eq(invitations.id, id), eq(invitations.status, "pending")))
+      .returning({ id: invitations.id });
+    if (expired) throw new InvitationError("This invitation has expired", 409);
   }
 
   const [user] = await db
@@ -203,6 +210,20 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
   }
 
   return db.transaction(async (tx) => {
+    // Re-validated here, as the first statement in the transaction: the
+    // pre-checks above ran outside any transaction, so a concurrent accept
+    // or a revokeInvitation() racing this call could have already changed
+    // the row's status. Only a still-pending row is claimed, and the
+    // resulting householdId (not the pre-read one) drives everything below.
+    const [accepted] = await tx
+      .update(invitations)
+      .set({ status: "accepted", acceptedBy: userId })
+      .where(and(eq(invitations.id, id), eq(invitations.status, "pending")))
+      .returning({ householdId: invitations.householdId });
+    if (!accepted) {
+      throw new InvitationError("This invitation is no longer available", 409);
+    }
+
     const [current] = await tx
       .select({ householdId: householdMembers.householdId })
       .from(householdMembers)
@@ -210,7 +231,7 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
       .limit(1);
 
     if (current) {
-      if (current.householdId === inv.householdId) {
+      if (current.householdId === accepted.householdId) {
         throw new InvitationError("You are already a member of this household", 409);
       }
       const [{ members }] = await tx
@@ -236,13 +257,9 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
 
     await tx
       .insert(householdMembers)
-      .values({ householdId: inv.householdId, userId, role: "member" });
-    await tx
-      .update(invitations)
-      .set({ status: "accepted", acceptedBy: userId })
-      .where(eq(invitations.id, id));
+      .values({ householdId: accepted.householdId, userId, role: "member" });
 
-    return inv.householdId;
+    return accepted.householdId;
   });
 }
 

@@ -235,6 +235,23 @@ describe("acceptInvitation", () => {
       .returning();
     await expect(acceptInvitation(inv.id, "ana")).rejects.toMatchObject({ status: 409 });
   });
+
+  it("a revoked invitation cannot be accepted, and stays revoked (409)", async () => {
+    // Simulates the race the transaction's guarded terminal update closes:
+    // the invitation is revoked between acceptInvitation's pre-checks and
+    // its transaction, so the unconditional-update version of this code
+    // would flip a revoked row back to "accepted".
+    await makeUser("o");
+    await makeUser("ana");
+    const hid = await createHouseholdForUser("o");
+    const inv = await createInvitation(hid, "o", "ana@example.com");
+    await revokeInvitation(hid, inv.id);
+
+    await expect(acceptInvitation(inv.id, "ana")).rejects.toMatchObject({ status: 409 });
+    const [row] = await db.select().from(invitations).where(eq(invitations.id, inv.id));
+    expect(row.status).toBe("revoked");
+    expect(row.acceptedBy).toBeNull();
+  });
 });
 
 describe("startOwnHousehold", () => {
