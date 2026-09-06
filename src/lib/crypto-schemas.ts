@@ -43,7 +43,11 @@ export const setupSchema = z.object({
 
 export const wrapsSchema = z.object({
   wraps: z
-    .array(z.object({ userId: z.string().min(1), wrappedKey: base64 }))
+    // `publicKey` is the key the client wrapped against; fulfilWraps rejects
+    // the batch when it no longer matches the target's current public key.
+    .array(
+      z.object({ userId: z.string().min(1), wrappedKey: base64, publicKey: base64 })
+    )
     .min(1)
     .max(50),
 });

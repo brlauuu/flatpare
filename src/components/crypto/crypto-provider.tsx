@@ -53,6 +53,15 @@ const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
 const NOTICE_MS = 8_000;
 
+// A wrap arrived but our private key cannot open it — the wrap was made for a
+// public key we have since replaced (see fulfilWraps' binding check), or it is
+// garbage. This is not a terminal error: the way out is a reset (so somebody
+// can send a fresh wrap) or the recovery kit, both offered on the pending
+// screen, so we land there rather than in `error`.
+const ADOPT_FAILED_MESSAGE =
+  "The key we received could not be opened. Reset your keys so a member can " +
+  "send a new one, or use your recovery kit.";
+
 // Exported so component tests can render consumers under a hand-built value.
 export const CryptoContext = createContext<CryptoContextValue | null>(null);
 
@@ -90,6 +99,7 @@ export function CryptoProvider({
   const [persistent, setPersistent] = useState(true);
   const [kitCode, setKitCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [adoptFailed, setAdoptFailed] = useState(false);
   const sweeping = useRef(false);
 
   const apply = useCallback((s: StatusResponse, k: StoredKeys | null) => {
@@ -103,8 +113,25 @@ export function CryptoProvider({
     try {
       const s = await fetchStatus();
       let k = s.mode === "off" ? null : await loadKeys(s.userId, s.householdId);
-      if (k && !k.dataKey && s.wrap) k = await runAdoptWrap(s, k);
+      if (k && !k.dataKey && s.wrap) {
+        try {
+          k = await runAdoptWrap(s, k);
+        } catch {
+          // Keep the device keys as they are (no data key) and show the
+          // pending screen with its escape hatches instead of the dead-end
+          // error screen. deriveState would say "locked" here, because a wrap
+          // exists — so the state is set by hand.
+          setError(null);
+          setAdoptFailed(true);
+          setStatus(s);
+          setKeys(k);
+          setPersistent(isKeyStorePersistent());
+          setState("pending-wrap");
+          return;
+        }
+      }
       setError(null);
+      setAdoptFailed(false);
       apply(s, k);
     } catch (err) {
       setError(describe(err));
@@ -215,7 +242,13 @@ export function CryptoProvider({
         body = <SetupScreen />;
         break;
       case "pending-wrap":
-        body = <PendingScreen />;
+        body = (
+          <PendingScreen
+            pollMs={PENDING_POLL_MS}
+            problem={adoptFailed ? ADOPT_FAILED_MESSAGE : null}
+            extra={<ForgotPassphrase />}
+          />
+        );
         break;
       case "locked":
         body = <UnlockScreen extra={<ForgotPassphrase />} />;

@@ -6,7 +6,7 @@ import {
   memberKeys,
 } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api-error";
 import type { Role } from "@/lib/household";
 import type {
@@ -31,6 +31,10 @@ export interface CryptoStatus {
   wrap: string | null;
   // Whether anyone in the household holds a wrap — i.e. the data key exists.
   householdHasWraps: boolean;
+  // Whether anyone OTHER than this user holds a wrap. A reset only works if
+  // somebody else can re-wrap the data key to the new public key, so the UI
+  // uses this to decide whether "Reset my keys" is offered at all.
+  othersHaveWraps: boolean;
   recovery: RecoveryMaterial | null;
 }
 
@@ -123,6 +127,23 @@ async function countWraps(conn: Db | Tx, householdId: number): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+async function countOtherWraps(
+  conn: Db | Tx,
+  householdId: number,
+  userId: string
+): Promise<number> {
+  const [row] = await conn
+    .select({ n: sql<number>`count(*)` })
+    .from(householdKeyWraps)
+    .where(
+      and(
+        eq(householdKeyWraps.householdId, householdId),
+        ne(householdKeyWraps.userId, userId)
+      )
+    );
+  return Number(row?.n ?? 0);
+}
+
 async function loadRecovery(
   conn: Db | Tx,
   householdId: number
@@ -192,10 +213,11 @@ export async function getCryptoStatus(
   userId: string,
   role: Role
 ): Promise<CryptoStatus> {
-  const [keys, wrap, wrapCount, recovery] = await Promise.all([
+  const [keys, wrap, wrapCount, otherWrapCount, recovery] = await Promise.all([
     loadMemberKeys(db, userId),
     loadWrap(db, householdId, userId),
     countWraps(db, householdId),
+    countOtherWraps(db, householdId, userId),
     loadRecovery(db, householdId),
   ]);
   return {
@@ -205,6 +227,7 @@ export async function getCryptoStatus(
     memberKeys: keys,
     wrap,
     householdHasWraps: wrapCount > 0,
+    othersHaveWraps: otherWrapCount > 0,
     recovery,
   };
 }
@@ -312,10 +335,17 @@ export async function listPendingWraps(
 
 // A member who already holds a wrap (and therefore the data key) publishes
 // wraps for pending members. All-or-nothing: one bad target rejects the batch.
+//
+// Each item carries the public key it was wrapped against. The client reads
+// that key in one request and posts the wrap in another; in between, the
+// target can reset or recover and install a fresh keypair. A wrap made for
+// the old key is undecryptable garbage that would strand the target, so the
+// binding is re-checked here, inside the same transaction as the pending
+// check, and a mismatch rejects the whole batch.
 export async function fulfilWraps(
   householdId: number,
   byUserId: string,
-  wraps: { userId: string; wrappedKey: string }[]
+  wraps: { userId: string; wrappedKey: string; publicKey: string }[]
 ): Promise<number> {
   return db.transaction(async (tx) => {
     if (!(await loadWrap(tx, householdId, byUserId))) {
@@ -327,6 +357,13 @@ export async function fulfilWraps(
         throw new CryptoStateError(
           `User ${w.userId} is not awaiting a wrap`,
           400
+        );
+      }
+      const target = await loadMemberKeys(tx, w.userId);
+      if (!target || target.publicKey !== w.publicKey) {
+        throw new CryptoStateError(
+          `User ${w.userId}'s public key has changed; refresh and try again`,
+          409
         );
       }
     }

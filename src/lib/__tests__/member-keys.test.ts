@@ -67,8 +67,47 @@ describe("getCryptoStatus", () => {
       memberKeys: null,
       wrap: null,
       householdHasWraps: false,
+      othersHaveWraps: false,
       recovery: null,
     });
+  });
+
+  it("othersHaveWraps ignores the caller's own wrap", async () => {
+    const hid = await makeHousehold("o", "m");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAP_O", recovery },
+    });
+    // Sole key holder: the household has a wrap, but nobody else does.
+    const alone = await getCryptoStatus(hid, "o", "owner");
+    expect(alone.householdHasWraps).toBe(true);
+    expect(alone.othersHaveWraps).toBe(false);
+
+    await setupMemberKeys({ householdId: hid, userId: "m", role: "member", member: member("m") });
+    await fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "WRAP_M", publicKey: "PUBm" }]);
+    expect((await getCryptoStatus(hid, "o", "owner")).othersHaveWraps).toBe(true);
+    expect((await getCryptoStatus(hid, "m", "member")).othersHaveWraps).toBe(true);
+  });
+
+  it("fulfilWraps rejects a wrap made for a public key the target has replaced", async () => {
+    const hid = await makeHousehold("o", "m");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAP_O", recovery },
+    });
+    await setupMemberKeys({ householdId: hid, userId: "m", role: "member", member: member("m") });
+    await resetMemberKeys(hid, "m", member("m-new"));
+
+    await expect(
+      fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "WRAP_M", publicKey: "PUBm" }])
+    ).rejects.toMatchObject({ status: 409 });
+    expect((await getCryptoStatus(hid, "m", "member")).wrap).toBeNull();
   });
 });
 
@@ -190,7 +229,9 @@ describe("listPendingWraps / fulfilWraps", () => {
 
   it("fulfils wraps atomically and records who wrapped", async () => {
     const hid = await seeded();
-    const n = await fulfilWraps(hid, "o", [{ userId: "m1", wrappedKey: "WRAP_M1" }]);
+    const n = await fulfilWraps(hid, "o", [
+      { userId: "m1", wrappedKey: "WRAP_M1", publicKey: "PUBm1" },
+    ]);
     expect(n).toBe(1);
     const s = await getCryptoStatus(hid, "m1", "member");
     expect(s.wrap).toBe("WRAP_M1");
@@ -205,7 +246,7 @@ describe("listPendingWraps / fulfilWraps", () => {
   it("rejects a wrapper who holds no wrap (403)", async () => {
     const hid = await seeded();
     await expect(
-      fulfilWraps(hid, "m1", [{ userId: "m1", wrappedKey: "X" }])
+      fulfilWraps(hid, "m1", [{ userId: "m1", wrappedKey: "X", publicKey: "PUBm1" }])
     ).rejects.toMatchObject({ status: 403 });
   });
 
@@ -213,8 +254,9 @@ describe("listPendingWraps / fulfilWraps", () => {
     const hid = await seeded();
     await expect(
       fulfilWraps(hid, "o", [
-        { userId: "m1", wrappedKey: "WRAP_M1" },
-        { userId: "m2", wrappedKey: "X" }, // m2 has no keys yet
+        { userId: "m1", wrappedKey: "WRAP_M1", publicKey: "PUBm1" },
+        // m2 has no keys yet
+        { userId: "m2", wrappedKey: "X", publicKey: "PUBm2" },
       ])
     ).rejects.toMatchObject({ status: 400 });
     const s = await getCryptoStatus(hid, "m1", "member");
@@ -261,7 +303,7 @@ describe("replaceMemberKeys / resetMemberKeys", () => {
       household: { wrappedKey: "WRAP_O", recovery },
     });
     await setupMemberKeys({ householdId: hid, userId: "m", role: "member", member: member("m") });
-    await fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "WRAP_M" }]);
+    await fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "WRAP_M", publicKey: "PUBm" }]);
 
     await resetMemberKeys(hid, "m", member("m-new"));
     const s = await getCryptoStatus(hid, "m", "member");

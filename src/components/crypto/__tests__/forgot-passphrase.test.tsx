@@ -35,6 +35,7 @@ function ctx(over: Partial<StatusResponse> = {}): CryptoContextValue {
       memberKeys: member,
       wrap: "wrap",
       householdHasWraps: true,
+      othersHaveWraps: true,
       recovery: null,
       ...over,
     },
@@ -70,6 +71,18 @@ describe("ForgotPassphrase", () => {
     await user.click(screen.getByRole("button", { name: /Forgot your passphrase/i }));
     expect(screen.getByRole("button", { name: /Reset my keys/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Use my recovery kit/i })).not.toBeInTheDocument();
+  });
+
+  it("hides Reset when nobody else in the household holds the key", async () => {
+    const user = userEvent.setup();
+    renderWith(ctx({ othersHaveWraps: false, recovery }));
+    await user.click(screen.getByRole("button", { name: /Forgot your passphrase/i }));
+    expect(screen.queryByRole("button", { name: /Reset my keys/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Nobody else in your household holds the key/i)
+    ).toBeInTheDocument();
+    // The recovery kit stays reachable — it is the only way out for this user.
+    expect(screen.getByRole("button", { name: /Use my recovery kit/i })).toBeInTheDocument();
   });
 
   it("reset asks for a new passphrase, calls runResetKeys, and refreshes", async () => {

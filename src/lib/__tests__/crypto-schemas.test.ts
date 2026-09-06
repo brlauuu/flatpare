@@ -53,12 +53,25 @@ describe("wrapsSchema", () => {
     const many = Array.from({ length: 51 }, (_, i) => ({
       userId: `u${i}`,
       wrappedKey: "AAAA",
+      publicKey: "BBBB",
     }));
     expect(wrapsSchema.safeParse({ wraps: many }).success).toBe(false);
     expect(
-      wrapsSchema.safeParse({ wraps: [{ userId: "u1", wrappedKey: "AAAA" }] })
-        .success
+      wrapsSchema.safeParse({
+        wraps: [{ userId: "u1", wrappedKey: "AAAA", publicKey: "BBBB" }],
+      }).success
     ).toBe(true);
+  });
+
+  it("requires the public key the wrap was made for", () => {
+    expect(
+      wrapsSchema.safeParse({ wraps: [{ userId: "u1", wrappedKey: "AAAA" }] }).success
+    ).toBe(false);
+    expect(
+      wrapsSchema.safeParse({
+        wraps: [{ userId: "u1", wrappedKey: "AAAA", publicKey: "not base64!" }],
+      }).success
+    ).toBe(false);
   });
 });
 

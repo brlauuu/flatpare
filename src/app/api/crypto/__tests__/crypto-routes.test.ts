@@ -93,6 +93,23 @@ describe("GET /api/crypto/status", () => {
     expect((await res.json()).mode).toBe("off");
   });
 
+  it("othersHaveWraps is false for a sole key holder and true once a second member is wrapped", async () => {
+    await ownerSetup();
+    await as("o", "owner", hid);
+    const alone = await (await statusGET()).json();
+    expect(alone.householdHasWraps).toBe(true);
+    expect(alone.othersHaveWraps).toBe(false);
+
+    await as("m", "member", hid);
+    await setupPOST(post({ member: member("m") }));
+    await as("o", "owner", hid);
+    await wrapsPOST(post({ wraps: [{ userId: "m", wrappedKey: "WRAPM", publicKey: "PUBm" }] }));
+
+    expect((await (await statusGET()).json()).othersHaveWraps).toBe(true);
+    await as("m", "member", hid);
+    expect((await (await statusGET()).json()).othersHaveWraps).toBe(true);
+  });
+
   it("401 without a session", async () => {
     await as("", "owner", hid);
     const { requireHousehold } = await import("@/lib/session");
@@ -161,7 +178,9 @@ describe("pending-wraps + wraps", () => {
       { userId: "m", name: "m", email: "m@example.com", publicKey: "PUBm" },
     ]);
 
-    const res = await wrapsPOST(post({ wraps: [{ userId: "m", wrappedKey: "WRAPM" }] }));
+    const res = await wrapsPOST(
+      post({ wraps: [{ userId: "m", wrappedKey: "WRAPM", publicKey: "PUBm" }] })
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ fulfilled: 1 });
 
@@ -169,11 +188,31 @@ describe("pending-wraps + wraps", () => {
     expect((await (await statusGET()).json()).wrap).toBe("WRAPM");
   });
 
+  it("409 when the wrap was made for a public key the target has replaced", async () => {
+    await ownerSetup();
+    await as("m", "member", hid);
+    await setupPOST(post({ member: member("m") }));
+    // m resets in the window between the sweep's read and its write.
+    await resetPOST(post(member("m2")));
+
+    await as("o", "owner", hid);
+    const res = await wrapsPOST(
+      post({ wraps: [{ userId: "m", wrappedKey: "WRAPM", publicKey: "PUBm" }] })
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/public key has changed/);
+
+    await as("m", "member", hid);
+    expect((await (await statusGET()).json()).wrap).toBeNull();
+  });
+
   it("403 when the caller holds no wrap", async () => {
     await ownerSetup();
     await as("m", "member", hid);
     await setupPOST(post({ member: member("m") }));
-    const res = await wrapsPOST(post({ wraps: [{ userId: "m", wrappedKey: "X" }] }));
+    const res = await wrapsPOST(
+      post({ wraps: [{ userId: "m", wrappedKey: "X", publicKey: "PUBm" }] })
+    );
     expect(res.status).toBe(403);
   });
 });

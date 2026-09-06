@@ -39,6 +39,8 @@ const member = {
   kdf: { salt: "s", memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 as const },
 };
 
+const recovery = { wrappedKey: "rk", iv: "riv", kdf: member.kdf };
+
 function status(over: Partial<StatusResponse> = {}): StatusResponse {
   return {
     mode: "on",
@@ -48,6 +50,7 @@ function status(over: Partial<StatusResponse> = {}): StatusResponse {
     memberKeys: null,
     wrap: null,
     householdHasWraps: false,
+    othersHaveWraps: false,
     recovery: null,
     ...over,
   };
@@ -218,6 +221,37 @@ describe("CryptoProvider", () => {
       expect(flows.fetchStatus).toHaveBeenCalledTimes(2);
       expect(flows.runAdoptWrap).toHaveBeenCalledWith(expect.objectContaining({ wrap: "wrap" }), keysPending);
       expect(screen.getByText("page:unlocked:has-key")).toBeInTheDocument();
+    });
+
+    it("offers the recovery kit from the pending screen", async () => {
+      const user = userEvent.setup();
+      store.loadKeys.mockResolvedValue(keysPending);
+      flows.fetchStatus.mockResolvedValue(
+        status({ role: "member", memberKeys: member, householdHasWraps: true, recovery })
+      );
+      renderApp();
+      await user.click(
+        await screen.findByRole("button", { name: /Forgot your passphrase/i })
+      );
+      expect(screen.getByRole("button", { name: /Use my recovery kit/i })).toBeInTheDocument();
+      // Nobody else holds the key, so a reset would be a dead end.
+      expect(screen.queryByRole("button", { name: /Reset my keys/i })).not.toBeInTheDocument();
+    });
+
+    it("lands in pending-wrap, not error, when an arrived wrap cannot be opened", async () => {
+      store.loadKeys.mockResolvedValue(keysPending);
+      flows.fetchStatus.mockResolvedValue(
+        status({ role: "member", memberKeys: member, householdHasWraps: true, wrap: "wrap" })
+      );
+      flows.runAdoptWrap.mockRejectedValue(new Error("OperationError"));
+      renderApp();
+      expect(
+        await screen.findByText(/The key we received could not be opened/)
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Try again/i })).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Forgot your passphrase/i })
+      ).toBeInTheDocument();
     });
   });
 

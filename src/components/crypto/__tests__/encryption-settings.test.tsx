@@ -37,6 +37,7 @@ function ctx(over: Partial<CryptoContextValue> = {}, status: Partial<StatusRespo
       memberKeys: member,
       wrap: "wrap",
       householdHasWraps: true,
+      othersHaveWraps: true,
       recovery: { wrappedKey: "rk", iv: "riv", kdf: member.kdf },
       ...status,
     },

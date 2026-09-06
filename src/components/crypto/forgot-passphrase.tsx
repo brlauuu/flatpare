@@ -55,6 +55,15 @@ function NewPassphraseFields({
   );
 }
 
+function menuIntro(canReset: boolean, hasKit: boolean): string {
+  if (!canReset) return "Flatpare cannot reset your passphrase.";
+  const kit = hasKit ? ", or use your recovery kit" : "";
+  return (
+    "Flatpare cannot reset your passphrase. You can start over with new keys " +
+    `and be let back in by someone in your household${kit}.`
+  );
+}
+
 export function ForgotPassphrase() {
   const { status, refresh, showRecoveryKit } = useCrypto();
   const [mode, setMode] = useState<Mode>("closed");
@@ -66,6 +75,10 @@ export function ForgotPassphrase() {
   const [busy, setBusy] = useState(false);
 
   const hasKit = Boolean(status?.recovery);
+  // A reset only helps if somebody else holds the data key and can re-wrap it
+  // to the new public key. For a sole key holder a reset is a one-way trip
+  // into pending-wrap with nobody to wait for, so it is not offered at all.
+  const canReset = Boolean(status?.othersHaveWraps);
 
   async function submitReset(e: React.FormEvent) {
     e.preventDefault();
@@ -112,15 +125,19 @@ export function ForgotPassphrase() {
   if (mode === "menu") {
     return (
       <div className="space-y-3 rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">
-          Flatpare cannot reset your passphrase. You can start over with new
-          keys and be let back in by someone in your household
-          {hasKit ? ", or use your recovery kit" : ""}.
-        </p>
+        <p className="text-sm text-muted-foreground">{menuIntro(canReset, hasKit)}</p>
+        {!canReset && (
+          <p className="text-sm text-muted-foreground">
+            Nobody else in your household holds the key, so a reset could not
+            be completed — use your recovery kit.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => setMode("reset")}>
-            Reset my keys
-          </Button>
+          {canReset && (
+            <Button type="button" variant="outline" onClick={() => setMode("reset")}>
+              Reset my keys
+            </Button>
+          )}
           {hasKit && (
             <Button type="button" variant="outline" onClick={() => setMode("recover")}>
               Use my recovery kit

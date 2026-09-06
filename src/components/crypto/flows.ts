@@ -197,7 +197,13 @@ export async function runFulfilPendingWraps(
   const wraps = [];
   for (const p of pending) {
     const publicKey = await importPublicKey(p.publicKey);
-    wraps.push({ userId: p.userId, wrappedKey: await wrapDataKey(dataKey, publicKey) });
+    // Send back the public key we wrapped against so the server can reject a
+    // wrap made for a key the target has since replaced.
+    wraps.push({
+      userId: p.userId,
+      wrappedKey: await wrapDataKey(dataKey, publicKey),
+      publicKey: p.publicKey,
+    });
   }
   const { fulfilled } = await post<{ fulfilled: number }>("/api/crypto/wraps", { wraps });
   return { count: fulfilled, names: pending.map((p) => p.name ?? p.email) };
