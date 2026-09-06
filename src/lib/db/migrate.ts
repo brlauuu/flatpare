@@ -319,30 +319,71 @@ async function preflightTenancyMigration(client: Client): Promise<void> {
 // rejected by assertEnvelopeMode when "on"). Refusing to start is the only
 // safe response to a mismatch — the operator either fixes the env var or
 // points the deployment at a fresh database.
-export async function stampEncryptionMode(
-  client: Client,
-  mode: EncryptionMode
-): Promise<void> {
+async function readStampedMode(client: Client): Promise<string | null> {
   const res = await client.execute({
     sql: "SELECT value FROM settings WHERE key = ?",
     args: [ENCRYPTION_MODE_SETTING],
   });
-  if (res.rows.length === 0) {
-    await client.execute({
-      sql: "INSERT INTO settings (key, value) VALUES (?, ?)",
-      args: [ENCRYPTION_MODE_SETTING, mode],
-    });
-    return;
-  }
-  const stored = String(res.rows[0].value);
-  if (stored === mode) return;
-  throw new Error(
+  return res.rows.length === 0 ? null : String(res.rows[0].value);
+}
+
+function modeMismatchError(stored: string, mode: EncryptionMode): Error {
+  return new Error(
     `This database was initialised with FLATPARE_ENCRYPTION=${stored} but ` +
       `the process is running with FLATPARE_ENCRYPTION=${mode}. The ` +
       "encryption mode is fixed on first boot and cannot be switched. " +
       `Run this deployment with FLATPARE_ENCRYPTION=${stored}, or point it ` +
       "at a fresh database."
   );
+}
+
+// Taking the one-way encryption decision by default is only safe on a database
+// with nothing to lose. On one that already holds rows, defaulting to "on"
+// silently commits the operator to a mode in which E3 will reject every
+// pre-existing plaintext row — a choice they were never asked to make. So the
+// first stamp on a non-empty database requires the variable to be set by hand.
+async function assertModeChosenForExistingData(client: Client): Promise<void> {
+  const chosen = process.env.FLATPARE_ENCRYPTION;
+  if (chosen !== undefined && chosen !== "") return;
+  const counted = await client.execute({
+    sql: "SELECT COUNT(*) AS n FROM apartments",
+    args: [],
+  });
+  if (Number(counted.rows[0]?.n ?? 0) === 0) return;
+  throw new Error(
+    "This database already holds data, and the encryption mode has never " +
+      "been recorded for it. Set FLATPARE_ENCRYPTION explicitly to `on` or " +
+      "`off` before this boot: `off` keeps the existing rows readable, `on` " +
+      "starts encrypting and makes them unreadable to a later release. The " +
+      "choice is permanent for this database — changing it afterwards means " +
+      "a fresh database, or the export/import path tracked in #191. No " +
+      "encryption mode has been stamped and your data is untouched."
+  );
+}
+
+export async function stampEncryptionMode(
+  client: Client,
+  mode: EncryptionMode
+): Promise<void> {
+  let stored = await readStampedMode(client);
+  if (stored === null) {
+    await assertModeChosenForExistingData(client);
+    // Two cold instances can reach a fresh database at the same moment and
+    // both see no row. ON CONFLICT lets the loser proceed; the re-read below
+    // then decides whether what actually landed agrees with this process.
+    await client.execute({
+      sql: "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING",
+      args: [ENCRYPTION_MODE_SETTING, mode],
+    });
+    stored = await readStampedMode(client);
+    if (stored === null) {
+      throw new Error(
+        "Failed to record the encryption mode in the `settings` table."
+      );
+    }
+  }
+  if (stored === mode) return;
+  throw modeMismatchError(stored, mode);
 }
 
 export async function applyMigrations(

@@ -433,6 +433,54 @@ describe("applyMigrations", () => {
     ).rejects.toThrow(/initialised with FLATPARE_ENCRYPTION=on/);
   });
 
+  it("refuses the first stamp on a non-empty database with FLATPARE_ENCRYPTION unset", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client, { encryptionMode: "off" });
+    // Rewind to the state of a database that predates the mode stamp, then
+    // give it a row so it is no longer a fresh install.
+    await client.execute({
+      sql: "DELETE FROM settings WHERE key = 'encryption_mode'",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'u1@example.com')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO households (id, name, owner_id) VALUES (1, 'H', 'u1')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO apartments (household_id, name) VALUES (1, 'Flat')",
+      args: [],
+    });
+
+    const saved = process.env.FLATPARE_ENCRYPTION;
+    delete process.env.FLATPARE_ENCRYPTION;
+    try {
+      await expect(
+        applyMigrations(client, { encryptionMode: "on" })
+      ).rejects.toThrow(/already holds data[\s\S]*FLATPARE_ENCRYPTION explicitly/);
+      const none = await client.execute({
+        sql: "SELECT value FROM settings WHERE key = 'encryption_mode'",
+        args: [],
+      });
+      expect(none.rows).toHaveLength(0);
+
+      // With the variable set explicitly, the same boot stamps normally.
+      process.env.FLATPARE_ENCRYPTION = "off";
+      await applyMigrations(client, { encryptionMode: "off" });
+      const stamped = await client.execute({
+        sql: "SELECT value FROM settings WHERE key = 'encryption_mode'",
+        args: [],
+      });
+      expect(stamped.rows[0]?.value).toBe("off");
+    } finally {
+      if (saved === undefined) delete process.env.FLATPARE_ENCRYPTION;
+      else process.env.FLATPARE_ENCRYPTION = saved;
+    }
+  });
+
   it("defaults the stamp to on when no option is passed", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);
