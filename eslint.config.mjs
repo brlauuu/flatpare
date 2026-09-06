@@ -10,13 +10,17 @@ const cryptoLayering = {
   files: ["**/*.{ts,tsx,js,jsx,mjs}"],
   ignores: ["src/lib/crypto/**"],
   rules: {
-    "no-restricted-properties": [
+    "no-restricted-syntax": [
       "error",
       {
-        object: "crypto",
-        property: "subtle",
+        selector: "MemberExpression[property.name=\"subtle\"]",
         message:
           "Use the functions exported from @/lib/crypto; crypto.subtle is only allowed under src/lib/crypto/.",
+      },
+      {
+        selector: "ImportExpression[source.value=\"hash-wasm\"]",
+        message:
+          "Use deriveKek from @/lib/crypto; hash-wasm is only imported under src/lib/crypto/.",
       },
     ],
     "no-restricted-imports": [
@@ -31,9 +35,9 @@ const cryptoLayering = {
         ],
         patterns: [
           {
-            group: ["@/lib/crypto/*", "**/lib/crypto/*"],
+            group: ["@/lib/crypto/*", "!@/lib/crypto/__tests__", "**/lib/crypto/*", "!**/lib/crypto/__tests__"],
             message:
-              "Import from @/lib/crypto (the index), not from its submodules.",
+              "Import from @/lib/crypto (the index), not from its submodules (test helpers under __tests__ excepted).",
           },
         ],
       },
