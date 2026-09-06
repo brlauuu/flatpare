@@ -80,22 +80,61 @@ describe("proxy — session gate", () => {
     }
   });
 
-  // The other half of isAuthed: a session can carry a user id without a
-  // household (e.g. mid-provisioning, or a bug that drops the JWT callback's
-  // householdId assignment). Both branches must still fail closed.
-  it("redirects a page request when the session has a user id but no householdId", async () => {
+  // A session can carry a user id without a household: the user signed in
+  // while an invitation was pending and has not chosen yet. They may reach
+  // /invitations and its three API endpoints, nothing else.
+  function signedInWithoutHousehold() {
     mockedAuth.mockResolvedValue({
       user: { id: "u1" },
-      householdId: undefined,
-      role: "owner",
+      householdId: null,
+      role: null,
       expires: new Date(Date.now() + 3600_000).toISOString(),
     } as never);
+  }
+
+  it("sends a household-less user to /invitations instead of a data page", async () => {
+    signedInWithoutHousehold();
     const res = await proxy(makeRequest("/apartments"));
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toMatch(/\/$/);
+    expect(res.headers.get("location")).toContain("/invitations");
   });
 
-  it("returns JSON 401 for an API request when the session has a user id but no householdId", async () => {
+  it("returns JSON 403 for a data API request from a household-less user", async () => {
+    signedInWithoutHousehold();
+    const res = await proxy(makeRequest("/api/apartments"));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "No household" });
+  });
+
+  it("lets a household-less user reach the invitation endpoints", async () => {
+    signedInWithoutHousehold();
+    for (const path of [
+      "/invitations",
+      "/api/invitations/mine",
+      "/api/invitations/decline",
+      "/api/invitations/12/accept",
+    ]) {
+      const res = await proxy(makeRequest(path));
+      expect(res.headers.get("x-middleware-next"), path).toBe("1");
+    }
+  });
+
+  it("does not open the owner-side invitation endpoints to a household-less user", async () => {
+    signedInWithoutHousehold();
+    for (const path of ["/api/invitations", "/api/invitations/12", "/api/household/members"]) {
+      const res = await proxy(makeRequest(path));
+      expect(res.status, path).toBe(403);
+    }
+  });
+
+  it("redirects a household-less user from / to /invitations", async () => {
+    signedInWithoutHousehold();
+    const res = await proxy(makeRequest("/"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/invitations");
+  });
+
+  it("still fails closed on a session with an undefined householdId", async () => {
     mockedAuth.mockResolvedValue({
       user: { id: "u1" },
       householdId: undefined,
@@ -103,8 +142,7 @@ describe("proxy — session gate", () => {
       expires: new Date(Date.now() + 3600_000).toISOString(),
     } as never);
     const res = await proxy(makeRequest("/api/apartments"));
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "Not authenticated" });
+    expect(res.status).toBe(403);
   });
 });
 
