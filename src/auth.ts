@@ -112,14 +112,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id;
         const householdId = await resolveHouseholdForUser(user.id);
         token.householdId = householdId;
-        token.role = await assertMembership(householdId, user.id);
+        token.role =
+          householdId === null ? null : await assertMembership(householdId, user.id);
       }
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.userId as string;
-      session.householdId = token.householdId as number;
-      session.role = token.role as "owner" | "member";
+      session.householdId = (token.householdId as number | null) ?? null;
+      session.role = (token.role as "owner" | "member" | null) ?? null;
       return session;
     },
   },
