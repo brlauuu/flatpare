@@ -4,6 +4,11 @@ import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import * as schema from "./schema";
+import {
+  ENCRYPTION_MODE_SETTING,
+  readEncryptionMode,
+  type EncryptionMode,
+} from "@/lib/encryption-mode";
 
 const MIGRATIONS_FOLDER = path.join(process.cwd(), "drizzle");
 
@@ -308,7 +313,42 @@ async function preflightTenancyMigration(client: Client): Promise<void> {
   );
 }
 
-export async function applyMigrations(client: Client): Promise<void> {
+// The encryption mode is a property of the DATABASE, fixed on first boot:
+// rows written under one mode are unreadable under the other (encrypted
+// envelopes need a key that "off" never creates; plaintext envelopes are
+// rejected by assertEnvelopeMode when "on"). Refusing to start is the only
+// safe response to a mismatch — the operator either fixes the env var or
+// points the deployment at a fresh database.
+export async function stampEncryptionMode(
+  client: Client,
+  mode: EncryptionMode
+): Promise<void> {
+  const res = await client.execute({
+    sql: "SELECT value FROM settings WHERE key = ?",
+    args: [ENCRYPTION_MODE_SETTING],
+  });
+  if (res.rows.length === 0) {
+    await client.execute({
+      sql: "INSERT INTO settings (key, value) VALUES (?, ?)",
+      args: [ENCRYPTION_MODE_SETTING, mode],
+    });
+    return;
+  }
+  const stored = String(res.rows[0].value);
+  if (stored === mode) return;
+  throw new Error(
+    `This database was initialised with FLATPARE_ENCRYPTION=${stored} but ` +
+      `the process is running with FLATPARE_ENCRYPTION=${mode}. The ` +
+      "encryption mode is fixed on first boot and cannot be switched. " +
+      `Run this deployment with FLATPARE_ENCRYPTION=${stored}, or point it ` +
+      "at a fresh database."
+  );
+}
+
+export async function applyMigrations(
+  client: Client,
+  options: { encryptionMode?: EncryptionMode } = {}
+): Promise<void> {
   await preflightTenancyMigration(client);
   await ensureListingUrlColumn(client);
   await reconcileHasWashingMachine(client);
@@ -323,6 +363,12 @@ export async function applyMigrations(client: Client): Promise<void> {
   }
   await backfillShortCodes(client);
   await migrateLocationsOfInterestBackfill(client);
+  // Last, because the `settings` table is created by 0013 above. Reading
+  // the env var here (not at module load) keeps tests able to pass a mode.
+  await stampEncryptionMode(
+    client,
+    options.encryptionMode ?? readEncryptionMode()
+  );
 }
 
 function createDefaultClient(): Client {

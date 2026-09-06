@@ -390,6 +390,58 @@ describe("applyMigrations", () => {
     // rather than a refusal.
     await expect(applyMigrations(client)).resolves.toBeUndefined();
   });
+
+  it("creates the E2 tables and recovery columns", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+
+    expect(await columnNames(client, "member_keys")).toEqual(
+      expect.arrayContaining(["user_id", "public_key", "kdf_salt", "kdf_version"])
+    );
+    expect(await columnNames(client, "household_key_wraps")).toEqual(
+      expect.arrayContaining(["household_id", "user_id", "wrapped_key", "wrapped_by"])
+    );
+    expect(await columnNames(client, "invitations")).toEqual(
+      expect.arrayContaining(["email", "status", "expires_at", "accepted_by"])
+    );
+    expect(await columnNames(client, "households")).toEqual(
+      expect.arrayContaining(["recovery_wrapped_key", "recovery_kdf_version"])
+    );
+    expect(await columnNames(client, "settings")).toEqual(["key", "value"]);
+  });
+
+  it("stamps the encryption mode on first boot and accepts the same mode again", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client, { encryptionMode: "off" });
+    const stored = await client.execute({
+      sql: "SELECT value FROM settings WHERE key = 'encryption_mode'",
+      args: [],
+    });
+    expect(stored.rows[0]?.value).toBe("off");
+
+    await expect(
+      applyMigrations(client, { encryptionMode: "off" })
+    ).resolves.toBeUndefined();
+  });
+
+  it("refuses to boot when the mode differs from the stamped one", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client, { encryptionMode: "on" });
+
+    await expect(
+      applyMigrations(client, { encryptionMode: "off" })
+    ).rejects.toThrow(/initialised with FLATPARE_ENCRYPTION=on/);
+  });
+
+  it("defaults the stamp to on when no option is passed", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    const stored = await client.execute({
+      sql: "SELECT value FROM settings WHERE key = 'encryption_mode'",
+      args: [],
+    });
+    expect(stored.rows[0]?.value).toBe("on");
+  });
 });
 
 describe("runMigrations", () => {
