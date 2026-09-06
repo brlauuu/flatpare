@@ -18,6 +18,11 @@ const cryptoLayering = {
           "Use the functions exported from @/lib/crypto; crypto.subtle is only allowed under src/lib/crypto/.",
       },
       {
+        selector: "MemberExpression[property.name=\"getRandomValues\"]",
+        message:
+          "Use randomSalt/randomIv/generateRecoveryCode from @/lib/crypto; crypto.getRandomValues is only allowed under src/lib/crypto/.",
+      },
+      {
         selector: "ImportExpression[source.value=\"hash-wasm\"]",
         message:
           "Use deriveKek from @/lib/crypto; hash-wasm is only imported under src/lib/crypto/.",
@@ -35,7 +40,20 @@ const cryptoLayering = {
         ],
         patterns: [
           {
-            group: ["@/lib/crypto/*", "!@/lib/crypto/__tests__", "**/lib/crypto/*", "!**/lib/crypto/__tests__"],
+            // `*` does not cross a slash, so `@/lib/crypto/*` alone leaves
+            // `@/lib/crypto/a/b` unrestricted and makes a `__tests__`
+            // negation inert. The pairs below ban every depth and then carve
+            // the test helpers back out.
+            group: [
+              "@/lib/crypto/*",
+              "@/lib/crypto/*/**",
+              "!@/lib/crypto/__tests__",
+              "!@/lib/crypto/__tests__/**",
+              "**/lib/crypto/*",
+              "**/lib/crypto/*/**",
+              "!**/lib/crypto/__tests__",
+              "!**/lib/crypto/__tests__/**",
+            ],
             message:
               "Import from @/lib/crypto (the index), not from its submodules (test helpers under __tests__ excepted).",
           },

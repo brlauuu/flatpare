@@ -51,7 +51,7 @@ function isUniqueConstraintError(e: unknown): boolean {
   return false;
 }
 
-async function expireStale(householdId?: number): Promise<void> {
+async function expireStale(householdId: number): Promise<void> {
   const now = new Date();
   await db
     .update(invitations)
@@ -60,7 +60,7 @@ async function expireStale(householdId?: number): Promise<void> {
       and(
         eq(invitations.status, "pending"),
         lte(invitations.expiresAt, now),
-        householdId === undefined ? undefined : eq(invitations.householdId, householdId)
+        eq(invitations.householdId, householdId)
       )
     );
 }

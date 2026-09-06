@@ -402,7 +402,12 @@ mock `db`.
   invitation rejected.
 - Remove member: wrap and membership gone; owner cannot remove self; removed
   member's next destructive call fails.
-- Cross-household 404 on every new endpoint.
+- Cross-household 404 on every new endpoint. Note: `/api/crypto/*` answers
+  **403**, not 404, and that is correct — those routes take the household from
+  the caller's own session (`requireHousehold` → `assertMembership`), so there
+  is no foreign household id in the request to enumerate; the failure is "you
+  are not a member of your own token's household any more", which is a
+  forbidden, not a not-found.
 - Boot preflight: env `off` against a database stamped `on` throws with both
   values in the message; unset env is treated as `on`; an invalid value
   throws.

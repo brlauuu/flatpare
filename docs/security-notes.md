@@ -198,3 +198,10 @@ users, so the app refuses to boot instead. Changing mode means a fresh database 
 A sole member who loses both the passphrase and the recovery code has lost the data;
 nobody, including Flatpare, can recover it. The setup screen says so and the recovery
 kit requires an explicit acknowledgement before continuing.
+
+Any household member can also regenerate or overwrite that kit through `POST
+/api/crypto/recover` or `PUT /api/crypto/recovery`, and the server cannot verify that
+the submitted material actually derives from the household data key — so a member can
+silently destroy the household's last backup, deliberately or through a broken client.
+Members are trusted under this threat model (they can already delete every row), and
+the alternative would require the server to hold something it must never hold.

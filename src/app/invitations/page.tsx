@@ -104,7 +104,7 @@ export default function InvitationsPage() {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        This page checks for new invitations every 15 seconds.
+        This page checks for new invitations every {POLL_MS / 1000} seconds.
       </p>
     </main>
   );
