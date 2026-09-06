@@ -317,6 +317,58 @@ describe("recoverHousehold / replaceRecovery", () => {
   });
 });
 
+describe("KDF version validation on read", () => {
+  it("round-trips a member_keys row stamped with kdf_version 1", async () => {
+    const hid = await makeHousehold("o");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAP_O", recovery },
+    });
+    const s = await getCryptoStatus(hid, "o", "owner");
+    expect(s.memberKeys?.kdf.version).toBe(1);
+    expect(s.recovery?.kdf.version).toBe(1);
+  });
+
+  it("throws when member_keys.kdf_version is not 1", async () => {
+    const hid = await makeHousehold("o");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAP_O", recovery },
+    });
+    await db
+      .update(memberKeys)
+      .set({ kdfVersion: 2 })
+      .where(eq(memberKeys.userId, "o"));
+    await expect(getCryptoStatus(hid, "o", "owner")).rejects.toMatchObject({
+      status: 409,
+    });
+  });
+
+  it("throws when households.recovery_kdf_version is not 1", async () => {
+    const hid = await makeHousehold("o");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAP_O", recovery },
+    });
+    await db
+      .update(households)
+      .set({ recoveryKdfVersion: 2 })
+      .where(eq(households.id, hid));
+    await expect(getCryptoStatus(hid, "o", "owner")).rejects.toMatchObject({
+      status: 409,
+    });
+  });
+});
+
 describe("CryptoStateError", () => {
   it("carries its status", () => {
     expect(new CryptoStateError("x", 409).status).toBe(409);

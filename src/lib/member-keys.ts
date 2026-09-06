@@ -42,21 +42,40 @@ export interface PendingWrap {
 }
 
 type Db = typeof db;
+// Drizzle does not export the transaction parameter's type directly, so it is
+// derived from the callback signature of `db.transaction` itself.
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-function kdfFromRow(row: {
-  kdfSalt: string;
-  kdfMemoryKib: number;
-  kdfIterations: number;
-  kdfParallelism: number;
-  kdfVersion: number;
-}): KdfParamsRow {
+// The zod schema only ever admits KDF version 1 today (`kdfSchema`'s `version`
+// is `z.literal(1)`), so a persisted value that isn't 1 means the row was
+// written by something other than this schema — corrupt or from a future
+// migration this code doesn't understand yet. Never silently coerce it.
+function assertSupportedKdfVersion(column: string, version: number): 1 {
+  if (version !== 1) {
+    throw new CryptoStateError(
+      `Unsupported ${column} value: ${version}`,
+      409
+    );
+  }
+  return version;
+}
+
+function kdfFromRow(
+  row: {
+    kdfSalt: string;
+    kdfMemoryKib: number;
+    kdfIterations: number;
+    kdfParallelism: number;
+    kdfVersion: number;
+  },
+  column: string
+): KdfParamsRow {
   return {
     salt: row.kdfSalt,
     memoryKib: row.kdfMemoryKib,
     iterations: row.kdfIterations,
     parallelism: row.kdfParallelism,
-    version: 1,
+    version: assertSupportedKdfVersion(column, row.kdfVersion),
   };
 }
 
@@ -74,7 +93,7 @@ async function loadMemberKeys(
     publicKey: row.publicKey,
     wrappedPrivateKey: row.wrappedPrivateKey,
     privateKeyIv: row.privateKeyIv,
-    kdf: kdfFromRow(row),
+    kdf: kdfFromRow(row, "kdf_version"),
   };
 }
 
@@ -120,7 +139,8 @@ async function loadRecovery(
     h.recoveryKdfSalt === null ||
     h.recoveryKdfMemoryKib === null ||
     h.recoveryKdfIterations === null ||
-    h.recoveryKdfParallelism === null
+    h.recoveryKdfParallelism === null ||
+    h.recoveryKdfVersion === null
   ) {
     return null;
   }
@@ -132,7 +152,10 @@ async function loadRecovery(
       memoryKib: h.recoveryKdfMemoryKib,
       iterations: h.recoveryKdfIterations,
       parallelism: h.recoveryKdfParallelism,
-      version: 1,
+      version: assertSupportedKdfVersion(
+        "recovery_kdf_version",
+        h.recoveryKdfVersion
+      ),
     },
   };
 }
@@ -227,6 +250,35 @@ export async function setupMemberKeys(args: {
   });
 }
 
+// Household members who have a member_keys row (published a public key) but
+// no household_key_wraps row (nobody has wrapped the data key to them yet).
+// Shared by listPendingWraps (which needs the display fields) and fulfilWraps
+// (which only needs to validate targets), so the "pending" definition lives
+// in one place.
+async function pendingUserIds(
+  conn: Db | Tx,
+  householdId: number
+): Promise<string[]> {
+  const rows = await conn
+    .select({ userId: memberKeys.userId })
+    .from(householdMembers)
+    .innerJoin(memberKeys, eq(memberKeys.userId, householdMembers.userId))
+    .leftJoin(
+      householdKeyWraps,
+      and(
+        eq(householdKeyWraps.householdId, householdMembers.householdId),
+        eq(householdKeyWraps.userId, householdMembers.userId)
+      )
+    )
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        isNull(householdKeyWraps.userId)
+      )
+    );
+  return rows.map((r) => r.userId);
+}
+
 // Members who have published a public key but hold no wrap yet.
 export async function listPendingWraps(
   householdId: number
@@ -269,27 +321,7 @@ export async function fulfilWraps(
     if (!(await loadWrap(tx, householdId, byUserId))) {
       throw new CryptoStateError("You do not hold the household key", 403);
     }
-    const pending = new Set(
-      (
-        await tx
-          .select({ userId: memberKeys.userId })
-          .from(householdMembers)
-          .innerJoin(memberKeys, eq(memberKeys.userId, householdMembers.userId))
-          .leftJoin(
-            householdKeyWraps,
-            and(
-              eq(householdKeyWraps.householdId, householdMembers.householdId),
-              eq(householdKeyWraps.userId, householdMembers.userId)
-            )
-          )
-          .where(
-            and(
-              eq(householdMembers.householdId, householdId),
-              isNull(householdKeyWraps.userId)
-            )
-          )
-      ).map((r) => r.userId)
-    );
+    const pending = new Set(await pendingUserIds(tx, householdId));
     for (const w of wraps) {
       if (!pending.has(w.userId)) {
         throw new CryptoStateError(
@@ -363,6 +395,10 @@ export async function resetMemberKeys(
 
 // Recovery-code path: the client unwrapped the data key from the kit,
 // generated a fresh keypair, wrapped the data key to it, and made a new kit.
+// No owner/membership role gate here by design: per spec, authorization for
+// recovery is possession of the recovery code itself, not household role —
+// the route handler (Task 6) still asserts the caller is a member of this
+// household before calling in.
 export async function recoverHousehold(
   householdId: number,
   userId: string,
