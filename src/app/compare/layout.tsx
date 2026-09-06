@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
+import { CryptoGate } from "@/components/crypto/crypto-gate";
 
 export default async function CompareLayout({
   children,
@@ -12,7 +13,9 @@ export default async function CompareLayout({
   return (
     <>
       <NavBar userName={userName} />
-      <main className="flex-1 px-4 py-6 pb-20 sm:pb-6">{children}</main>
+      <main className="flex-1 px-4 py-6 pb-20 sm:pb-6">
+        <CryptoGate>{children}</CryptoGate>
+      </main>
     </>
   );
 }

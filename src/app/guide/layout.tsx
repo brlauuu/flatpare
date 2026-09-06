@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
+import { CryptoGate } from "@/components/crypto/crypto-gate";
 
 export default async function GuideLayout({
   children,
@@ -13,7 +14,7 @@ export default async function GuideLayout({
     <>
       <NavBar userName={userName} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-20 sm:pb-6">
-        {children}
+        <CryptoGate>{children}</CryptoGate>
       </main>
     </>
   );

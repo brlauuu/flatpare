@@ -11,12 +11,18 @@ vi.mock("next-auth/react", () => ({
   signOut: (...args: unknown[]) => signOutMock(...args),
 }));
 
+const clearKeysMock = vi.fn(async () => {});
+vi.mock("@/lib/crypto", () => ({
+  clearKeys: () => clearKeysMock(),
+}));
+
 import { NavBar } from "../nav-bar";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 
 beforeEach(() => {
   signOutMock.mockReset();
   signOutMock.mockResolvedValue(undefined);
+  clearKeysMock.mockClear();
 });
 
 afterEach(() => {
@@ -40,6 +46,7 @@ describe("NavBar user menu", () => {
     await waitFor(() => {
       expect(signOutMock).toHaveBeenCalledWith({ callbackUrl: "/" });
     });
+    expect(clearKeysMock).toHaveBeenCalledTimes(1);
   });
 
   it("confirms before signing out when there is an unsaved rating", async () => {
