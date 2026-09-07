@@ -168,4 +168,38 @@ describe("isUniqueConstraintError", () => {
     expect(isUniqueConstraintError(new Error("no such table"))).toBe(false);
     expect(isUniqueConstraintError("nope")).toBe(false);
   });
+
+  it("finds the constraint message on a wrapped error's .cause", () => {
+    // Mirrors DrizzleQueryError: its own .message is just the failed
+    // query text, with the driver's constraint error one level down.
+    const driverError = new Error("UNIQUE constraint failed: apartments.id");
+    const wrapped = new Error("Failed query: insert into apartments ...", { cause: driverError });
+    expect(isUniqueConstraintError(wrapped)).toBe(true);
+  });
+
+  it("finds the constraint message two levels down the cause chain", () => {
+    const driverError = new Error("UNIQUE constraint failed: apartments.id");
+    const middle = new Error("wrapped once", { cause: driverError });
+    const outer = new Error("wrapped twice", { cause: middle });
+    expect(isUniqueConstraintError(outer)).toBe(true);
+  });
+
+  it("returns false when no error in the chain names a constraint", () => {
+    const inner = new Error("connection reset");
+    const outer = new Error("Failed query: select ...", { cause: inner });
+    expect(isUniqueConstraintError(outer)).toBe(false);
+  });
+
+  it("returns false for a non-Error value", () => {
+    expect(isUniqueConstraintError("nope")).toBe(false);
+    expect(isUniqueConstraintError(undefined)).toBe(false);
+    expect(isUniqueConstraintError({ message: "UNIQUE constraint failed" })).toBe(false);
+  });
+
+  it("does not hang on a self-referencing .cause chain", () => {
+    const cyclic = new Error("wraps itself");
+    // @ts-expect-error -- deliberately cyclic cause for the depth-bound test
+    cyclic.cause = cyclic;
+    expect(isUniqueConstraintError(cyclic)).toBe(false);
+  });
 });

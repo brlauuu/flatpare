@@ -84,10 +84,15 @@ export function requireEnvelopeMode(envelope: Envelope): void {
 // in a DrizzleQueryError whose own .message is just the failed query text —
 // the constraint message lives on .cause. Walk the cause chain rather than
 // matching only the top-level message (mirrors the check in
-// src/lib/invitations.ts, which hit the same wrapping).
+// src/lib/invitations.ts, which hit the same wrapping). Bounded, since
+// .cause is `unknown` input and a self-referencing chain would otherwise
+// spin forever — a handful of links is far more than Drizzle's own wrapping
+// ever produces.
+const MAX_CAUSE_CHAIN_DEPTH = 5;
+
 export function isUniqueConstraintError(err: unknown): boolean {
   let cur: unknown = err;
-  while (cur instanceof Error) {
+  for (let depth = 0; depth < MAX_CAUSE_CHAIN_DEPTH && cur instanceof Error; depth++) {
     if (/unique constraint/i.test(cur.message)) return true;
     cur = cur.cause;
   }

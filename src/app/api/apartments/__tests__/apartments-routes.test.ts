@@ -91,6 +91,39 @@ describe("GET /api/apartments", () => {
     currentSession.userId = "x"; // x is not a member of hid
     expect((await listGET()).status).toBe(404);
   });
+
+  it("orders by createdAt, then id as a tiebreak", async () => {
+    const ID_LOW = "10000000-0000-4000-8000-000000000000";
+    const ID_MID_A = "20000000-0000-4000-8000-000000000000";
+    const ID_MID_B = "30000000-0000-4000-8000-000000000000";
+    // Insertion order is deliberately not the expected read order, so the
+    // test can't pass by accident on unordered (e.g. insertion-order) reads.
+    // ID_MID_B and ID_LOW share a createdAt; ID_LOW must sort before
+    // ID_MID_B on the id tiebreak despite being seeded after it.
+    await db.insert(apartments).values({
+      id: ID_MID_B,
+      householdId: hid,
+      envelope: JSON.stringify(v1(ID_MID_B)),
+      createdAt: new Date(2000),
+    });
+    await db.insert(apartments).values({
+      id: ID_MID_A,
+      householdId: hid,
+      envelope: JSON.stringify(v1(ID_MID_A)),
+      createdAt: new Date(1000),
+    });
+    await db.insert(apartments).values({
+      id: ID_LOW,
+      householdId: hid,
+      envelope: JSON.stringify(v1(ID_LOW)),
+      createdAt: new Date(2000),
+    });
+
+    const res = await listGET();
+    expect(res.status).toBe(200);
+    const rows = await res.json();
+    expect(rows.map((r: { id: string }) => r.id)).toEqual([ID_MID_A, ID_LOW, ID_MID_B]);
+  });
 });
 
 describe("POST /api/apartments", () => {
