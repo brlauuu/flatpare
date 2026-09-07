@@ -1,10 +1,4 @@
-interface ListingCheckResult {
-  apartmentId: number;
-  gone: boolean | null;
-}
-
 const REQUEST_TIMEOUT_MS = 10_000;
-const CONCURRENCY = 5;
 
 // Some listing sites encode the expired state in the URL itself (and/or
 // block bot HEAD/GET probes), so a URL match is a stronger signal than the
@@ -73,27 +67,4 @@ export async function checkListingUrl(
   } finally {
     clearTimeout(timer);
   }
-}
-
-export async function checkListings<T extends { id: number; listingUrl: string }>(
-  items: T[],
-  fetchImpl: typeof fetch = fetch,
-  concurrency: number = CONCURRENCY
-): Promise<ListingCheckResult[]> {
-  const results: ListingCheckResult[] = [];
-  let cursor = 0;
-  async function worker() {
-    while (cursor < items.length) {
-      const idx = cursor++;
-      const item = items[idx];
-      const gone = await checkListingUrl(item.listingUrl, fetchImpl);
-      results.push({ apartmentId: item.id, gone });
-    }
-  }
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    () => worker()
-  );
-  await Promise.all(workers);
-  return results;
 }
