@@ -193,7 +193,7 @@ describe("acceptInvitation", () => {
     await makeUser("ana");
     const hid = await createHouseholdForUser("o");
     const solo = await createHouseholdForUser("ana");
-    await db.insert(apartments).values({ householdId: solo, name: "Flat" });
+    await db.insert(apartments).values({ id: crypto.randomUUID(), householdId: solo, envelope: "placeholder" });
     const inv = await createInvitation(hid, "o", "ana@example.com");
 
     await expect(acceptInvitation(inv.id, "ana")).rejects.toMatchObject({ status: 409 });
