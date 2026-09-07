@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// The settings page mounts the encryption and household panels; they have
+// their own tests and need a CryptoProvider, so stub them here.
+vi.mock("@/components/crypto/encryption-settings", () => ({
+  EncryptionSettings: () => null,
+}));
+vi.mock("@/components/household-settings", () => ({
+  HouseholdSettings: () => null,
+}));
+
 import SettingsPage from "../page";
 
 type Loc = {

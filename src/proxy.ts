@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 
+// Reachable by a signed-in user who has no household yet. Everything else
+// needs both a user and a household.
+const NO_HOUSEHOLD_ALLOWED = [
+  /^\/invitations$/,
+  /^\/api\/invitations\/mine$/,
+  /^\/api\/invitations\/decline$/,
+  /^\/api\/invitations\/\d+\/accept$/,
+];
+
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
@@ -9,17 +18,27 @@ export async function proxy(request: NextRequest) {
   if (path.startsWith("/api/auth/")) return NextResponse.next();
 
   const session = await auth();
-  const isAuthed = !!session?.user?.id && !!session.householdId;
+  const userId = session?.user?.id;
+  const hasHousehold = !!userId && !!session?.householdId;
+  const isApi = path.startsWith("/api/");
 
   if (path === "/") {
-    if (isAuthed) return NextResponse.redirect(new URL("/apartments", request.url));
+    if (hasHousehold) return NextResponse.redirect(new URL("/apartments", request.url));
+    if (userId) return NextResponse.redirect(new URL("/invitations", request.url));
     return NextResponse.next();
   }
 
-  if (!isAuthed) {
-    return path.startsWith("/api/")
+  if (!userId) {
+    return isApi
       ? NextResponse.json({ error: "Not authenticated" }, { status: 401 })
       : NextResponse.redirect(new URL("/", request.url));
+  }
+
+  if (!hasHousehold) {
+    if (NO_HOUSEHOLD_ALLOWED.some((re) => re.test(path))) return NextResponse.next();
+    return isApi
+      ? NextResponse.json({ error: "No household" }, { status: 403 })
+      : NextResponse.redirect(new URL("/invitations", request.url));
   }
 
   return NextResponse.next();

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { clearKeys } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -33,6 +34,7 @@ export function NavBar({ userName }: { userName: string }) {
       );
       if (!ok) return;
     }
+    await clearKeys();
     await signOut({ callbackUrl: "/" });
   }
 

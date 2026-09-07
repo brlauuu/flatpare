@@ -13,6 +13,8 @@ import {
 import { verifyPassword } from "@/lib/auth";
 import { resolveHouseholdForUser, assertMembership } from "@/lib/household";
 import { eq } from "drizzle-orm";
+import type { Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 
 const hasOAuth = !!(
   process.env.GOOGLE_CLIENT_ID || process.env.GITHUB_CLIENT_ID
@@ -92,7 +94,55 @@ export const providers = [
       ]),
 ];
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+// Exported so the callbacks can be unit-tested against the real database
+// without standing up Auth.js. The jwt callback re-resolves the household
+// (a) at sign-in, (b) on every request while the token has none — the user
+// is on /invitations deciding — and (c) when a route handler calls
+// `unstable_update({})` after changing membership. Otherwise the claims are
+// left alone for the token's 24h life (see AGENTS.md, session staleness).
+export const authCallbacks = {
+  async jwt({
+    token,
+    user,
+    trigger,
+  }: {
+    token: JWT;
+    user?: { id?: string | null } | null;
+    trigger?: "signIn" | "signUp" | "update";
+  }): Promise<JWT> {
+    if (user?.id) {
+      token.userId = user.id;
+      token.householdId = null;
+      token.role = null;
+    }
+    const userId = token.userId as string | undefined;
+    if (userId && (!token.householdId || trigger === "update")) {
+      const householdId = await resolveHouseholdForUser(userId);
+      if (householdId === null) {
+        token.householdId = null;
+        token.role = null;
+      } else {
+        token.householdId = householdId;
+        token.role = await assertMembership(householdId, userId);
+      }
+    }
+    return token;
+  },
+  async session({
+    session,
+    token,
+  }: {
+    session: Session;
+    token: JWT;
+  }): Promise<Session> {
+    session.user.id = token.userId as string;
+    session.householdId = (token.householdId as number | null) ?? null;
+    session.role = (token.role as "owner" | "member" | null) ?? null;
+    return session;
+  },
+};
+
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
@@ -106,21 +156,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // their token expires, so the window is deliberately short.
     maxAge: 60 * 60 * 24,
   },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user?.id) {
-        token.userId = user.id;
-        const householdId = await resolveHouseholdForUser(user.id);
-        token.householdId = householdId;
-        token.role = await assertMembership(householdId, user.id);
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.userId as string;
-      session.householdId = token.householdId as number;
-      session.role = token.role as "owner" | "member";
-      return session;
-    },
-  },
+  callbacks: authCallbacks,
 });
