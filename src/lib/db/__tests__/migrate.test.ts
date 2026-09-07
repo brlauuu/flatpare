@@ -35,23 +35,24 @@ describe("applyMigrations", () => {
 
     await applyMigrations(client);
 
-    expect(await columnNames(client, "apartments")).toContain("listing_url");
-    expect(await columnNames(client, "apartments")).toContain(
-      "has_washing_machine"
+    // 0014: the plaintext data tables are gone, replaced by envelope tables.
+    expect(await columnNames(client, "apartments")).toEqual(
+      expect.arrayContaining(["id", "household_id", "version", "envelope"])
     );
-    // 0011 replaced the display-name key with the Auth.js user id and added
-    // the tenancy column. Asserting the OLD column is gone as well as the new
-    // ones being present: a migration that only added columns would pass a
-    // "contains user_id" check on its own.
-    expect(await columnNames(client, "ratings")).toContain("user_id");
-    expect(await columnNames(client, "ratings")).toContain("household_id");
-    expect(await columnNames(client, "ratings")).not.toContain("user_name");
-    for (const table of [
-      "apartments",
-      "locations_of_interest",
-      "apartment_distances",
-    ]) {
-      expect(await columnNames(client, table)).toContain("household_id");
+    expect(await columnNames(client, "apartments")).not.toContain("name");
+    expect(await columnNames(client, "ratings")).toEqual(
+      expect.arrayContaining(["household_id", "apartment_id", "user_id", "envelope"])
+    );
+    expect(await columnNames(client, "ratings")).not.toContain("kitchen");
+    expect(await columnNames(client, "locations")).toEqual(
+      expect.arrayContaining(["id", "household_id", "sort_order", "envelope"])
+    );
+    for (const gone of ["locations_of_interest", "apartment_distances", "app_settings", "api_usage"]) {
+      const res = await client.execute({
+        sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        args: [gone],
+      });
+      expect(res.rows, gone).toHaveLength(0);
     }
     expect(await columnNames(client, "households")).toEqual(
       expect.arrayContaining(["id", "name", "owner_id", "tier"])
@@ -59,58 +60,20 @@ describe("applyMigrations", () => {
     expect(await columnNames(client, "household_members")).toEqual(
       expect.arrayContaining(["household_id", "user_id", "role"])
     );
-    // 0012 drops api_usage entirely (cost tracking removed).
-    const apiUsageTable = await client.execute({
-      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='api_usage'",
-      args: [],
-    });
-    expect(apiUsageTable.rows).toHaveLength(0);
-    // The Auth.js users table, not the legacy name-keyed one.
     expect(await columnNames(client, "users")).toEqual(
       expect.arrayContaining(["id", "name", "email"])
     );
-    expect(await columnNames(client, "locations_of_interest")).toEqual(
-      expect.arrayContaining(["label", "icon", "address", "sort_order"])
-    );
-    expect(await columnNames(client, "apartment_distances")).toEqual(
-      expect.arrayContaining(["apartment_id", "location_id", "bike_min", "transit_min"])
-    );
-    expect(await columnNames(client, "apartments")).not.toContain(
-      "distance_bike_min"
-    );
-    expect(await columnNames(client, "apartments")).not.toContain(
-      "distance_transit_min"
-    );
-    const settingsTable = await client.execute({
-      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'",
+    const indexes = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='index' AND name IN ('apartments_household_idx','ratings_household_idx','locations_household_idx')",
       args: [],
     });
-    expect(settingsTable.rows).toHaveLength(0);
+    expect(indexes.rows).toHaveLength(3);
 
     const migrations = await client.execute({
       sql: "SELECT hash FROM __drizzle_migrations",
       args: [],
     });
     expect(migrations.rows).toHaveLength(EXPECTED_MIGRATION_COUNT);
-  });
-
-  it("adds listing_url to a legacy database missing the column", async () => {
-    const client = createClient({ url: ":memory:" });
-
-    // Simulate a pre-PR #23 database: apartments without listing_url.
-    await client.execute({
-      sql: `CREATE TABLE apartments (
-        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        name text NOT NULL
-      )`,
-      args: [],
-    });
-
-    expect(await columnNames(client, "apartments")).not.toContain("listing_url");
-
-    await applyMigrations(client);
-
-    expect(await columnNames(client, "apartments")).toContain("listing_url");
   });
 
   it("is idempotent when run twice on the same database", async () => {
@@ -124,75 +87,6 @@ describe("applyMigrations", () => {
       args: [],
     });
     expect(migrations.rows).toHaveLength(EXPECTED_MIGRATION_COUNT);
-  });
-
-  it("reconciles a DB that already has has_washing_machine but no 0002 marker", async () => {
-    const client = createClient({ url: ":memory:" });
-
-    // Simulate a DB migrated against PR #42's amended 0000: has the column
-    // and a __drizzle_migrations table with 0000/0001 entries, but no 0002.
-    await client.execute({
-      sql: `CREATE TABLE apartments (
-        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        name text NOT NULL,
-        has_washing_machine integer,
-        listing_url text
-      )`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE TABLE ratings (
-        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        apartment_id integer NOT NULL,
-        user_name text NOT NULL,
-        kitchen integer,
-        balconies integer,
-        location integer,
-        floorplan integer,
-        overall_feeling integer,
-        comment text,
-        created_at integer,
-        updated_at integer
-      )`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE UNIQUE INDEX ratings_apartment_user_idx ON ratings (apartment_id, user_name)`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE TABLE api_usage (
-        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        service text NOT NULL,
-        operation text NOT NULL
-      )`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE TABLE users (name text PRIMARY KEY NOT NULL, created_at integer)`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric)`,
-      args: [],
-    });
-    // Insert old 0000 + 0001 markers (timestamps from journal).
-    await client.execute({
-      sql: "INSERT INTO __drizzle_migrations (hash, created_at) VALUES ('x', 1776832975059), ('y', 1776840392526)",
-      args: [],
-    });
-
-    // Should NOT throw (would without the reconcile step because 0002 would
-    // try to re-add has_washing_machine).
-    await applyMigrations(client);
-
-    // 0002 recorded via reconcile + 0003..0010 run normally = 10 total
-    // (0000/0001 were seeded, 0002 stamped by reconcile, 0003..0010 by migrator).
-    const rows = await client.execute({
-      sql: "SELECT COUNT(*) as n FROM __drizzle_migrations",
-      args: [],
-    });
-    expect(Number(rows.rows[0].n)).toBe(EXPECTED_MIGRATION_COUNT);
   });
 
   // Replaces "backfills the users table from distinct rating user_names".
@@ -383,12 +277,82 @@ describe("applyMigrations", () => {
       args: [],
     });
     await client.execute({
-      sql: "INSERT INTO apartments (household_id, name) VALUES (1, 'A')",
+      sql: "INSERT INTO apartments (id, household_id, envelope) VALUES ('a1', 1, '{\"v\":0,\"data\":{}}')",
       args: [],
     });
     // Rows are present, but household_id exists, so re-running is a no-op
     // rather than a refusal.
     await expect(applyMigrations(client)).resolves.toBeUndefined();
+  });
+
+  it("refuses to run 0014 on a tenanted database that still holds plaintext rows", async () => {
+    const client = createClient({ url: ":memory:" });
+    // A database at 0013: tenanted plaintext tables with data.
+    await client.execute({
+      sql: `CREATE TABLE apartments (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        household_id integer NOT NULL,
+        name text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE TABLE locations_of_interest (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        household_id integer NOT NULL,
+        label text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO locations_of_interest (household_id, label) VALUES (1, 'Work')",
+      args: [],
+    });
+
+    await expect(applyMigrations(client)).rejects.toThrow(
+      /client-encrypted envelopes[\s\S]*locations_of_interest[\s\S]*data is untouched/
+    );
+    // Nothing was dropped.
+    expect(await columnNames(client, "apartments")).toContain("name");
+    const rows = await client.execute({
+      sql: "SELECT COUNT(*) AS n FROM locations_of_interest",
+      args: [],
+    });
+    expect(Number(rows.rows[0]?.n)).toBe(1);
+  });
+
+  it("the 0014 preflight names only the tables that hold rows", async () => {
+    const client = createClient({ url: ":memory:" });
+    await client.execute({
+      sql: `CREATE TABLE apartments (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        household_id integer NOT NULL,
+        name text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE TABLE ratings (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        household_id integer NOT NULL,
+        apartment_id integer NOT NULL,
+        user_id text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO apartments (household_id, name) VALUES (1, 'Flat')",
+      args: [],
+    });
+
+    let message = "";
+    try {
+      await applyMigrations(client);
+    } catch (err) {
+      message = (err as Error).message;
+    }
+    expect(message).toMatch(/Empty these tables before upgrading: apartments\./);
+    expect(message).not.toContain("ratings");
   });
 
   it("creates the E2 tables and recovery columns", async () => {
@@ -451,7 +415,7 @@ describe("applyMigrations", () => {
       args: [],
     });
     await client.execute({
-      sql: "INSERT INTO apartments (household_id, name) VALUES (1, 'Flat')",
+      sql: "INSERT INTO apartments (id, household_id, envelope) VALUES ('a1', 1, '{\"v\":0,\"data\":{}}')",
       args: [],
     });
 

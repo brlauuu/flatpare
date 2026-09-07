@@ -99,6 +99,13 @@
       "when": 1788713152476,
       "tag": "0013_e2_crypto_core",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1788782416928,
+      "tag": "0014_e3_encrypted_data_model",
+      "breakpoints": true
     }
   ]
 }

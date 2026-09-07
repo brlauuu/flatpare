@@ -2,7 +2,7 @@ import {
   sqliteTable,
   text,
   integer,
-  real,
+  index,
   uniqueIndex,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
@@ -142,57 +142,44 @@ export type MemberKeyRow = typeof memberKeys.$inferSelect;
 export type HouseholdKeyWrap = typeof householdKeyWraps.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 
-export const apartments = sqliteTable("apartments", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  householdId: integer("household_id")
-    .notNull()
-    .references(() => households.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  address: text("address"),
-  sizeM2: real("size_m2"),
-  numRooms: real("num_rooms"),
-  numBathrooms: integer("num_bathrooms"),
-  numBalconies: integer("num_balconies"),
-  hasWashingMachine: integer("has_washing_machine", { mode: "boolean" }),
-  rentChf: real("rent_chf"),
-  pdfUrl: text("pdf_url"),
-  listingUrl: text("listing_url"),
-  shortCode: text("short_code").unique(),
-  rawExtractedData: text("raw_extracted_data"),
-  userEditedFields: text("user_edited_fields"),
-  summary: text("summary"),
-  availableFrom: text("available_from"),
-  listingGone: integer("listing_gone", { mode: "boolean" }).default(false),
-  listingCheckedAt: integer("listing_checked_at", { mode: "timestamp" }),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-});
+// E3: the three data tables hold one client-sealed envelope per row (see
+// src/lib/crypto/envelope.ts). The server stores, versions and scopes them;
+// it never reads a field inside. Ids are client-minted UUIDs so the client
+// can bind the ciphertext to its row id (AAD) before the row exists.
+export const apartments = sqliteTable(
+  "apartments",
+  {
+    id: text("id").primaryKey(),
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    // Bumped on every write; PUT carries the version it read and loses
+    // with 409 when it is stale.
+    version: integer("version").notNull().default(1),
+    envelope: text("envelope").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [index("apartments_household_idx").on(table.householdId)]
+);
 
 export const ratings = sqliteTable(
   "ratings",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
     householdId: integer("household_id")
       .notNull()
       .references(() => households.id, { onDelete: "cascade" }),
-    apartmentId: integer("apartment_id")
+    apartmentId: text("apartment_id")
       .notNull()
       .references(() => apartments.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    kitchen: integer("kitchen").default(0),
-    balconies: integer("balconies").default(0),
-    location: integer("location").default(0),
-    floorplan: integer("floorplan").default(0),
-    overallFeeling: integer("overall_feeling").default(0),
-    comment: text("comment").default(""),
+    envelope: text("envelope").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).default(
       sql`(unixepoch())`
     ),
@@ -201,57 +188,32 @@ export const ratings = sqliteTable(
     ),
   },
   (table) => [
-    uniqueIndex("ratings_apartment_user_idx").on(
-      table.apartmentId,
-      table.userId
-    ),
+    primaryKey({ columns: [table.apartmentId, table.userId] }),
+    index("ratings_household_idx").on(table.householdId),
   ]
 );
 
-export const locationsOfInterest = sqliteTable("locations_of_interest", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  householdId: integer("household_id")
-    .notNull()
-    .references(() => households.id, { onDelete: "cascade" }),
-  label: text("label").notNull(),
-  icon: text("icon").notNull(),
-  address: text("address").notNull(),
-  sortOrder: integer("sort_order").notNull(),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-});
-
-export const apartmentDistances = sqliteTable(
-  "apartment_distances",
+export const locations = sqliteTable(
+  "locations",
   {
+    id: text("id").primaryKey(),
     householdId: integer("household_id")
       .notNull()
       .references(() => households.id, { onDelete: "cascade" }),
-    apartmentId: integer("apartment_id")
-      .notNull()
-      .references(() => apartments.id, { onDelete: "cascade" }),
-    locationId: integer("location_id")
-      .notNull()
-      .references(() => locationsOfInterest.id, { onDelete: "cascade" }),
-    bikeMin: integer("bike_min"),
-    transitMin: integer("transit_min"),
+    sortOrder: integer("sort_order").notNull(),
+    envelope: text("envelope").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(
       sql`(unixepoch())`
     ),
   },
-  (table) => [
-    primaryKey({ columns: [table.apartmentId, table.locationId] }),
-  ]
+  (table) => [index("locations_household_idx").on(table.householdId)]
 );
 
-export type Apartment = typeof apartments.$inferSelect;
-export type Rating = typeof ratings.$inferSelect;
-export type LocationOfInterest = typeof locationsOfInterest.$inferSelect;
+export type ApartmentRecord = typeof apartments.$inferSelect;
+export type RatingRecord = typeof ratings.$inferSelect;
+export type LocationRecord = typeof locations.$inferSelect;
 
 export { users, accounts, sessions, verificationTokens } from "./schema-auth";
