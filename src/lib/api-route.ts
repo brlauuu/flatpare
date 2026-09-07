@@ -80,11 +80,16 @@ export function requireEnvelopeMode(envelope: Envelope): void {
   }
 }
 
-// libsql reports a primary-key clash as a plain Error; POST handlers turn
-// it into 409 "Duplicate id" instead of 500.
+// libsql reports a primary-key clash as a plain Error, but Drizzle wraps it
+// in a DrizzleQueryError whose own .message is just the failed query text —
+// the constraint message lives on .cause. Walk the cause chain rather than
+// matching only the top-level message (mirrors the check in
+// src/lib/invitations.ts, which hit the same wrapping).
 export function isUniqueConstraintError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    /unique constraint|UNIQUE constraint/i.test(err.message)
-  );
+  let cur: unknown = err;
+  while (cur instanceof Error) {
+    if (/unique constraint/i.test(cur.message)) return true;
+    cur = cur.cause;
+  }
+  return false;
 }

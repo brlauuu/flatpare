@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -322,5 +324,47 @@ describe("storedPathHousehold", () => {
     expect(storedPathHousehold("https://evil.example/x")).toBeNull();
     expect(storedPathHousehold("/api/pdf/other/7/x.pdf")).toBeNull();
     expect(storedPathHousehold("/api/uploads/households/../x")).toBeNull();
+  });
+});
+
+describe("deleteStoredFile", () => {
+  beforeEach(() => {
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+  });
+
+  it("unlinks a local upload that belongs to the household", async () => {
+    const { deleteStoredFile, UPLOADS_DIR } = await import("../storage");
+    const dir = path.join(UPLOADS_DIR, "households", "7");
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, "x.pdf.enc");
+    fs.writeFileSync(file, "x");
+    await deleteStoredFile("/api/uploads/households/7/x.pdf.enc", 7);
+    expect(fs.existsSync(file)).toBe(false);
+  });
+
+  it("leaves a file of another household alone", async () => {
+    const { deleteStoredFile, UPLOADS_DIR } = await import("../storage");
+    const dir = path.join(UPLOADS_DIR, "households", "8");
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, "y.pdf.enc");
+    fs.writeFileSync(file, "y");
+    await deleteStoredFile("/api/uploads/households/8/y.pdf.enc", 7);
+    expect(fs.existsSync(file)).toBe(true);
+    fs.unlinkSync(file);
+  });
+
+  it("calls del() for a cloud path", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "test-token";
+    const mockDel = vi.fn(async () => {});
+    vi.doMock("@vercel/blob", () => ({ put: vi.fn(), get: vi.fn(), del: mockDel }));
+    const { deleteStoredFile } = await import("../storage");
+    await deleteStoredFile("/api/pdf/households/7/x.pdf.enc", 7);
+    expect(mockDel).toHaveBeenCalledWith("households/7/x.pdf.enc");
+  });
+
+  it("resolves for a missing file and for garbage", async () => {
+    const { deleteStoredFile } = await import("../storage");
+    await expect(deleteStoredFile("/api/uploads/households/7/nope.pdf.enc", 7)).resolves.toBeUndefined();
+    await expect(deleteStoredFile("https://evil/x", 7)).resolves.toBeUndefined();
   });
 });
