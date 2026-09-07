@@ -120,3 +120,29 @@ export async function readStoredFile(
 
   throw new Error(`Unrecognized stored URL: ${storedUrl}`);
 }
+
+// Resolves a client-supplied stored-file URL (as written into an
+// apartment's `pdf.path`) to the household that owns it, in canonical form.
+// Route handlers compare the household against the caller's and persist or
+// act on `canonicalUrl`, never the raw input.
+export function storedPathHousehold(
+  url: string
+): { householdId: number; canonicalUrl: string } | null {
+  try {
+    if (url.startsWith("/api/pdf/")) {
+      const key = canonicalizePathname(url.slice("/api/pdf/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/pdf/${key}` };
+    }
+    if (url.startsWith("/api/uploads/")) {
+      const key = decodeURIComponent(url.slice("/api/uploads/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/uploads/${key}` };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}

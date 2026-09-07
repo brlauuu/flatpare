@@ -299,3 +299,28 @@ describe("readStoredFile", () => {
     );
   });
 });
+
+describe("storedPathHousehold", () => {
+  it("resolves the household of a /api/pdf/ path and canonicalizes it", async () => {
+    const { storedPathHousehold } = await import("../storage");
+    expect(storedPathHousehold("/api/pdf/households/7/a/../x.pdf.enc")).toEqual({
+      householdId: 7,
+      canonicalUrl: "/api/pdf/households/7/x.pdf.enc",
+    });
+  });
+
+  it("resolves the household of a /api/uploads/ path", async () => {
+    const { storedPathHousehold } = await import("../storage");
+    expect(storedPathHousehold("/api/uploads/households/3/x.pdf.enc")).toEqual({
+      householdId: 3,
+      canonicalUrl: "/api/uploads/households/3/x.pdf.enc",
+    });
+  });
+
+  it("returns null for foreign shapes", async () => {
+    const { storedPathHousehold } = await import("../storage");
+    expect(storedPathHousehold("https://evil.example/x")).toBeNull();
+    expect(storedPathHousehold("/api/pdf/other/7/x.pdf")).toBeNull();
+    expect(storedPathHousehold("/api/uploads/households/../x")).toBeNull();
+  });
+});
