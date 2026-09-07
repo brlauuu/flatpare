@@ -9443,7 +9443,7 @@ Claude-Session: https://claude.ai/code/session_017Acu2MRuYDm6YjLjiqZYsH"
 - Rewrite tests: `src/app/compare/_components/__tests__/compare-table.test.tsx`, `src/app/compare/__tests__/compare-page.test.tsx`, `src/app/compare/__tests__/error-states.test.tsx`
 
 **Interfaces:**
-- Consumes: `useHouseholdData()` → `status`, `error`, `apartments`, `locations`, `identity`, `dataKey`; `downloadPdf` (Task 10); `compareApartments`, `compareSortOptions`, `COMPARE_SORT_*`, `isSortField`, `isSortDirection` (Task 12, string-id `bikeTo:`/`transitTo:` fields); `ApartmentView`, `LocationView` (Task 4); `errorDetailsFromException` (Task 13).
+- Consumes: `useHouseholdData()` → `status`, `error`, `apartments`, `locations`, `identity`, `dataKey`; `downloadPdf` (Task 10); `compareApartments`, `compareSortOptions`, `SORT_FIELD_STORAGE_KEY`, `SORT_DIRECTION_STORAGE_KEY`, `isSortField`, `isSortDirection` — all from `@/lib/apartment-sort` (Task 12, string-id `bikeTo:`/`transitTo:` fields); `ApartmentView`, `LocationView` (Task 4); `errorDetailsFromException` (Task 13).
 - Produces: `CompareTable({ visible: ApartmentView[]; sortedVisible: ApartmentView[]; locations: LocationView[]; onHide: (id: string) => void; onViewPdf: (apt: ApartmentView) => void })`; `CompareColumnHeader({ apt: ApartmentView; onHide; onViewPdf })`. `metricRows`, `ratingKeys`, `ratingLabels` unchanged.
 
 Spec: "`compare` reads the same cache; hidden-column state stays local". The PDF icon becomes a button (decrypt → `blob:` URL → new tab) because the stored file is ciphertext; the detail-page link, listing link and hide button keep their roles and labels so the existing queries still work.
