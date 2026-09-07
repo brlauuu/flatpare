@@ -53,7 +53,24 @@ describe("sealBytes / openBytes", () => {
 
   it("requires an AAD", async () => {
     await expect(sealBytes(null, bytes(4), "")).rejects.toThrow(
-      "Envelope AAD is required"
+      "AAD is required to seal or open bytes"
     );
+  });
+
+  it("detects tampered ciphertext", async () => {
+    const key = await generateDataKey();
+    const plain = bytes(100);
+    const sealed = await sealBytes(key, plain, AAD);
+    // Flip one bit in the ciphertext
+    sealed.ct[0] ^= 0xff;
+    await expect(openBytes(key, sealed, AAD)).rejects.toThrow();
+  });
+
+  it("round-trips an empty byte array", async () => {
+    const key = await generateDataKey();
+    const plain = new Uint8Array(0);
+    const sealed = await sealBytes(key, plain, AAD);
+    const opened = await openBytes(key, sealed, AAD);
+    expect(opened.length).toBe(0);
   });
 });

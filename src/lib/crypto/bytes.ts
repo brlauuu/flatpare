@@ -13,7 +13,7 @@ export interface SealedBytes {
 const enc = new TextEncoder();
 
 function requireAad(aad: string): Uint8Array<ArrayBuffer> {
-  if (!aad) throw new Error("Envelope AAD is required");
+  if (!aad) throw new Error("AAD is required to seal or open bytes");
   return new Uint8Array(enc.encode(aad));
 }
 
