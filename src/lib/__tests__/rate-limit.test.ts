@@ -2,11 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
 import { households, householdMembers, processUsage } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
-import {
-  consumeRateLimit,
-  processRateLimitPerHour,
-  RateLimitConfigError,
-} from "../rate-limit";
+import { consumeRateLimit, processRateLimitPerHour } from "../rate-limit";
+import { EnvConfigError } from "../env-int";
 
 const ORIGINAL = process.env.PROCESS_RATE_LIMIT_PER_HOUR;
 
@@ -50,7 +47,7 @@ describe("processRateLimitPerHour", () => {
   it("refuses a value that is not a positive integer, rather than guessing", () => {
     for (const bad of ["-1", "0", "abc", "1.5", "1e3", "Infinity"]) {
       process.env.PROCESS_RATE_LIMIT_PER_HOUR = bad;
-      expect(() => processRateLimitPerHour(), bad).toThrow(RateLimitConfigError);
+      expect(() => processRateLimitPerHour(), bad).toThrow(EnvConfigError);
     }
   });
 });

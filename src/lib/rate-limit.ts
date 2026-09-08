@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/api-error";
+import { readOptionalPositiveInt } from "@/lib/env-int";
 
 // Rate limiting for the /api/process/* blind proxies. These endpoints spend
 // the host's Gemini and Maps budget on behalf of any signed-in member, and
@@ -18,16 +19,6 @@ export type ProcessEndpoint = "geocode" | "distance" | "check-listing" | "parse-
 
 const WINDOW_SECONDS = 3600;
 
-export class RateLimitConfigError extends Error {
-  constructor(raw: string) {
-    super(
-      `PROCESS_RATE_LIMIT_PER_HOUR must be a positive integer or unset, got "${raw}". ` +
-        "Unset (or empty) means unlimited, which is the self-hosted default."
-    );
-    this.name = "RateLimitConfigError";
-  }
-}
-
 // null means unlimited. Unset is the self-hoster's default and must stay
 // working with no configuration — `docker compose up` must not start
 // refusing requests. The hosted deployment sets an explicit value.
@@ -35,14 +26,7 @@ export class RateLimitConfigError extends Error {
 // Read per call rather than at module load so tests and a redeploy can change
 // it without a cold start, matching readEncryptionMode's posture.
 export function processRateLimitPerHour(): number | null {
-  const raw = process.env.PROCESS_RATE_LIMIT_PER_HOUR;
-  if (raw === undefined || raw.trim() === "") return null;
-  const trimmed = raw.trim();
-  // Deliberately strict: Number("1e3") and Number(" 1.5 ") both produce
-  // something, and silently accepting them would make the configured ceiling
-  // differ from the one the operator wrote.
-  if (!/^[1-9]\d*$/.test(trimmed)) throw new RateLimitConfigError(raw);
-  return Number(trimmed);
+  return readOptionalPositiveInt("PROCESS_RATE_LIMIT_PER_HOUR");
 }
 
 export function currentWindowStart(now: Date = new Date()): number {
