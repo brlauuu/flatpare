@@ -40,17 +40,18 @@ describe("householdIdFromStoredPath", () => {
   });
 });
 
-const { mockRequireHousehold } = vi.hoisted(() => ({
-  mockRequireHousehold: vi.fn(async () => ({
+const { mockRequireMember } = vi.hoisted(() => ({
+  mockRequireMember: vi.fn(async () => ({
     householdId: 1,
     userId: "u1",
     role: "owner" as const,
   })),
 }));
 
-vi.mock("@/lib/session", () => ({
-  requireHousehold: mockRequireHousehold,
-}));
+vi.mock("@/lib/api-route", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-route")>();
+  return { ...actual, requireMember: mockRequireMember };
+});
 
 vi.mock("@vercel/blob", () => ({
   get: vi.fn(async () => ({
@@ -71,8 +72,8 @@ vi.mock("fs/promises", async (importOriginal) => {
 });
 
 beforeEach(() => {
-  mockRequireHousehold.mockClear();
-  mockRequireHousehold.mockResolvedValue({
+  mockRequireMember.mockClear();
+  mockRequireMember.mockResolvedValue({
     householdId: 1,
     userId: "u1",
     role: "owner" as const,
@@ -115,12 +116,23 @@ describe("GET /api/pdf/[...path] — household scoping", () => {
   });
 
   it("401s when there is no session", async () => {
-    mockRequireHousehold.mockRejectedValueOnce(new Error("no session"));
+    const { UnauthorizedError } = await import("@/lib/household");
+    mockRequireMember.mockRejectedValueOnce(new UnauthorizedError());
     const { GET } = await import("@/app/api/pdf/[...path]/route");
     const res = await GET(new Request("http://localhost/api/pdf/x"), {
       params: Promise.resolve({ path: ["households", "1", "listing.pdf"] }),
     });
     expect(res.status).toBe(401);
+  });
+
+  it("404s when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockRequireMember.mockRejectedValueOnce(new ApiError("Not found", 404));
+    const { GET } = await import("@/app/api/pdf/[...path]/route");
+    const res = await GET(new Request("http://localhost/api/pdf/x"), {
+      params: Promise.resolve({ path: ["households", "1", "listing.pdf"] }),
+    });
+    expect(res.status).toBe(404);
   });
 });
 
@@ -160,11 +172,22 @@ describe("GET /api/uploads/[...path] — household scoping", () => {
   });
 
   it("401s when there is no session", async () => {
-    mockRequireHousehold.mockRejectedValueOnce(new Error("no session"));
+    const { UnauthorizedError } = await import("@/lib/household");
+    mockRequireMember.mockRejectedValueOnce(new UnauthorizedError());
     const { GET } = await import("@/app/api/uploads/[...path]/route");
     const res = await GET(new Request("http://localhost/api/uploads/x"), {
       params: Promise.resolve({ path: ["households", "1", "listing.pdf"] }),
     });
     expect(res.status).toBe(401);
+  });
+
+  it("404s when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockRequireMember.mockRejectedValueOnce(new ApiError("Not found", 404));
+    const { GET } = await import("@/app/api/uploads/[...path]/route");
+    const res = await GET(new Request("http://localhost/api/uploads/x"), {
+      params: Promise.resolve({ path: ["households", "1", "listing.pdf"] }),
+    });
+    expect(res.status).toBe(404);
   });
 });
