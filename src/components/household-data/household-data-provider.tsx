@@ -99,9 +99,12 @@ function isStale(err: unknown): err is ApiClientError {
   return err instanceof ApiClientError && err.status === 409 && err.message === "Stale version";
 }
 
-// The one in-memory copy of the household's plaintext. Mounted by CryptoGate
-// inside CryptoProvider, so it only exists while a usable data key does
-// (or encryption is off); locking unmounts it.
+// The one in-memory copy of the household's plaintext. Each signed-in layout
+// mounts this as a child of <CryptoGate> (inside CryptoProvider), so it only
+// exists while a usable data key does (or encryption is off); locking
+// unmounts it. Not mounted by CryptoGate itself, to avoid a module cycle:
+// this file imports CryptoContext from src/components/crypto, so
+// src/components/crypto must import nothing back from here.
 export function HouseholdDataProvider({
   identity,
   children,
