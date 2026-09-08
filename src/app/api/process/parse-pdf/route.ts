@@ -8,7 +8,10 @@ import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
 // Privacy exception: the client decrypts the PDF and posts the plaintext
 // bytes here for one extraction call. The bytes are held in memory for the
 // request only — never stored, never logged. The encrypted copy the client
-// keeps is the only one on disk.
+// keeps is the only one on disk. A failed extraction is logged by its
+// classified reason and status only, never by the AI provider's raw error
+// message, since that text is not provably free of request-derived content
+// (a content-policy or validation error can echo a snippet of the input).
 export async function POST(req: Request) {
   let phase: "input" | "extract" = "input";
   try {
@@ -32,8 +35,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ extracted, aiAvailable: true });
   } catch (error) {
     if (phase === "input") return apiErrorResponse(error, "process:parse-pdf");
-    console.error("[process:parse-pdf] extraction failed:", error instanceof Error ? error.message : error);
     const classified = classifyParsePdfError(error);
+    console.error(
+      `[process:parse-pdf] extraction failed: reason=${classified.reason} status=${classified.status}`
+    );
     return NextResponse.json(
       { error: classified.message, reason: classified.reason, retryAfterSeconds: classified.retryAfterSeconds },
       { status: classified.status }

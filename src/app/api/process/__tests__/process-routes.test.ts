@@ -5,9 +5,40 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { db } from "@/lib/db";
-import { apartments, households, householdMembers } from "@/lib/db/schema";
-import { users } from "@/lib/db/schema-auth";
+import {
+  apartments,
+  households,
+  householdMembers,
+  settings,
+  memberKeys,
+  householdKeyWraps,
+  invitations,
+  ratings,
+  locations,
+} from "@/lib/db/schema";
+import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
 import { UnauthorizedError } from "@/lib/household";
+
+// Every table either schema module defines — the "touches no table" contract
+// (brief) is only real if a write anywhere, not just to `apartments`, would
+// fail the test.
+async function snapshotRowCounts(): Promise<Record<string, number>> {
+  return {
+    apartments: (await db.select().from(apartments)).length,
+    households: (await db.select().from(households)).length,
+    householdMembers: (await db.select().from(householdMembers)).length,
+    settings: (await db.select().from(settings)).length,
+    memberKeys: (await db.select().from(memberKeys)).length,
+    householdKeyWraps: (await db.select().from(householdKeyWraps)).length,
+    invitations: (await db.select().from(invitations)).length,
+    ratings: (await db.select().from(ratings)).length,
+    locations: (await db.select().from(locations)).length,
+    users: (await db.select().from(users)).length,
+    accounts: (await db.select().from(accounts)).length,
+    sessions: (await db.select().from(sessions)).length,
+    verificationTokens: (await db.select().from(verificationTokens)).length,
+  };
+}
 
 const currentSession = { householdId: 0, userId: "", role: "owner" as "owner" | "member" };
 let signedIn = true;
@@ -53,9 +84,14 @@ const pdf = (bytes = 16, name = "listing.pdf", type = "application/pdf") =>
   new File([new Uint8Array(bytes)], name, { type });
 
 let hid: number;
+let baselineCounts: Record<string, number>;
+
+const ENVELOPE = JSON.stringify({ v: 1, iv: "AAAAAAAAAAAAAAAA", ct: "QUJD" });
 
 beforeEach(async () => {
   signedIn = true;
+  await db.delete(ratings);
+  await db.delete(locations);
   await db.delete(apartments);
   await db.delete(householdMembers);
   await db.delete(households);
@@ -67,16 +103,37 @@ beforeEach(async () => {
   await db.insert(apartments).values({
     id: "11111111-1111-4111-8111-111111111111",
     householdId: hid,
-    envelope: JSON.stringify({ v: 1, iv: "AAAAAAAAAAAAAAAA", ct: "QUJD" }),
+    envelope: ENVELOPE,
+  });
+  // Seeded so a stray write to either table (not just `apartments`) would
+  // actually change a count the "touches no table" assertion can catch.
+  await db.insert(ratings).values({
+    householdId: hid,
+    apartmentId: "11111111-1111-4111-8111-111111111111",
+    userId: "o",
+    envelope: ENVELOPE,
+  });
+  await db.insert(locations).values({
+    id: "22222222-2222-4222-8222-222222222222",
+    householdId: hid,
+    sortOrder: 0,
+    envelope: ENVELOPE,
   });
   currentSession.householdId = hid;
   currentSession.userId = "o";
   currentSession.role = "owner";
+  baselineCounts = await snapshotRowCounts();
 });
 
 afterEach(() => vi.unstubAllEnvs());
 
+// The brief's contract: these routes touch NO table. Compares row counts
+// across every table in both schema modules, not just `apartments` — a
+// write to `ratings`, `settings`, `member_keys`, an auth table, etc. must
+// fail this the same as a write to `apartments` would. The version check is
+// kept alongside it because an in-place UPDATE would not change a row count.
 async function rowsUnchanged() {
+  expect(await snapshotRowCounts()).toEqual(baselineCounts);
   const rows = await db.select().from(apartments);
   expect(rows).toHaveLength(1);
   expect(rows[0].version).toBe(1);
