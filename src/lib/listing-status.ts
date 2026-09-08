@@ -37,6 +37,74 @@ export function urlIndicatesExpired(url: string): boolean {
   );
 }
 
+// One request to one already-validated URL, HEAD with a GET fallback (some
+// listing sites block HEAD outright — the pre-E4 code relied on this too).
+// Returns null when neither method produced a response; the caller turns
+// that into the "could not tell" answer.
+//
+// Split out of checkListingUrl rather than inlined: the redirect walk added
+// enough branching that enola flagged the combined function at cyclomatic
+// complexity 18, and a security-critical function is the wrong place to
+// leave that.
+async function probeOnce(
+  url: URL,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal
+): Promise<Response | null> {
+  for (const method of ["HEAD", "GET"] as const) {
+    try {
+      return await fetchImpl(url, { method, redirect: "manual", signal });
+    } catch {
+      // try the next method
+    }
+  }
+  return null;
+}
+
+// A validated URL, or null when the belt refused it (or it did not parse).
+// Every refusal collapses to null so a blocked URL is indistinguishable from
+// a timeout to the caller.
+async function validated(raw: string, lookup?: LookupFn): Promise<URL | null> {
+  try {
+    return await assertPublicHttpUrl(raw, lookup);
+  } catch {
+    return null;
+  }
+}
+
+// Where a redirect response points, once re-validated.
+//   "expired" — the landing URL itself says the ad is gone
+//   URL       — follow this next
+//   null      — stop, we cannot tell
+type Hop = URL | "expired" | null;
+
+async function resolveRedirect(
+  res: Response,
+  current: URL,
+  lookup?: LookupFn
+): Promise<Hop> {
+  const location = res.headers?.get("location");
+  if (!location) return null;
+  let next: URL;
+  try {
+    next = new URL(location, current);
+  } catch {
+    return null;
+  }
+  // The landing URL may itself signal expiry: immoscout24 redirects gone ads
+  // to a 200 quarter page with ?expired=<id>.
+  if (urlIndicatesExpired(next.toString())) return "expired";
+  return validated(next.toString(), lookup);
+}
+
+// The tri-state the endpoint returns, read off a non-redirect response.
+function classify(res: Response): boolean | null {
+  if (res.url && urlIndicatesExpired(res.url)) return true;
+  if (res.status === 404 || res.status === 410) return true;
+  if (res.status >= 200 && res.status < 400) return false;
+  return null;
+}
+
 // Returns true when the listing is gone, false when it is still up, and null
 // when we could not tell — including every refusal by the SSRF belt, so a
 // blocked URL is indistinguishable from a timeout to the caller.
@@ -56,61 +124,18 @@ export async function checkListingUrl(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    let current: URL;
-    try {
-      current = await assertPublicHttpUrl(url, lookup);
-    } catch {
-      return null;
+    let current = await validated(url, lookup);
+
+    for (let hop = 0; current && hop <= MAX_REDIRECTS; hop++) {
+      const res = await probeOnce(current, fetchImpl, controller.signal);
+      if (!res) return null;
+      if (!REDIRECT_STATUSES.has(res.status)) return classify(res);
+
+      const next = await resolveRedirect(res, current, lookup);
+      if (next === "expired") return true;
+      current = next;
     }
-
-    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      let res: Response;
-      try {
-        res = await fetchImpl(current, {
-          method: "HEAD",
-          redirect: "manual",
-          signal: controller.signal,
-        });
-      } catch {
-        // Some listing sites block HEAD outright; GET is the fallback the
-        // pre-E4 code already relied on.
-        try {
-          res = await fetchImpl(current, {
-            method: "GET",
-            redirect: "manual",
-            signal: controller.signal,
-          });
-        } catch {
-          return null;
-        }
-      }
-
-      if (REDIRECT_STATUSES.has(res.status)) {
-        const location = res.headers?.get("location");
-        if (!location) return null;
-        let next: URL;
-        try {
-          next = new URL(location, current);
-        } catch {
-          return null;
-        }
-        // The landing URL may itself signal expiry (immoscout24 redirects
-        // gone ads to a 200 quarter page with ?expired=<id>).
-        if (urlIndicatesExpired(next.toString())) return true;
-        try {
-          current = await assertPublicHttpUrl(next.toString(), lookup);
-        } catch {
-          return null;
-        }
-        continue;
-      }
-
-      if (res.url && urlIndicatesExpired(res.url)) return true;
-      if (res.status === 404 || res.status === 410) return true;
-      if (res.status >= 200 && res.status < 400) return false;
-      return null;
-    }
-    return null; // too many redirects
+    return null; // refused, or too many redirects
   } catch {
     return null;
   } finally {

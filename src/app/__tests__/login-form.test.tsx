@@ -180,3 +180,29 @@ describe("LoginForm — password path", () => {
     }
   });
 });
+
+// E4: "The privacy exception documented at the endpoint and on the landing
+// page." The endpoint half is a comment in each route; this is the half a
+// user can actually read.
+describe("privacy disclosure", () => {
+  it("states the exception on the landing page", () => {
+    render(<LoginForm providers={["google"]} />);
+    expect(screen.getByText(/What Flatpare can and cannot see/i)).toBeInTheDocument();
+  });
+
+  it("names the third parties and says the data is not stored or logged", () => {
+    render(<LoginForm providers={["google"]} />);
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/Google Maps/);
+    expect(text).toMatch(/Gemini/);
+    expect(text).toMatch(/never written to the database/i);
+    expect(text).toMatch(/never logged/i);
+  });
+
+  it("does not overclaim: it admits the data is unrecoverable", () => {
+    render(<LoginForm providers={["google"]} />);
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/encrypted in your browser/i);
+    expect(text).toMatch(/recovery code/i);
+  });
+});

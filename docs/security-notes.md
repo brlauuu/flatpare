@@ -240,7 +240,8 @@ return the result. They touch no table (each has a test that asserts every row c
 unchanged) and do not log bodies. This is the privacy exception the parent spec
 names, and it is documented at the top of each route. E4 hardens it — per-account
 rate limits, log scrubbing on every code path, the landing-page disclosure — but does
-not remove it: the host cannot geocode what it cannot read.
+not remove it: the host cannot geocode what it cannot read. **E4 has now landed; see
+the section below for what it changed and what it left standing.**
 
 ### Accepted: a removed member can open ciphertext they already fetched
 
@@ -255,3 +256,82 @@ A row whose envelope fails to open or to validate renders as a placeholder marke
 *could not be decrypted* with a Delete button, and is excluded from sorting, search and
 the compare table. Hiding it would let a corrupted or tampered row disappear silently;
 showing it makes tampering visible to every member.
+
+
+## Blind-proxy hardening — reviewed 2026-09-08 (E4)
+
+E4 did not change what `/api/process/*` is for. It closed three ways the exception
+leaked further than it had to.
+
+### Fixed: three log lines carried request content
+
+`geocode.ts` logged the full plaintext address on a no-result, and both of its
+fetch-failure paths logged `err.message` — which for a fetch error *is* the outbound
+URL, carrying the address and `GOOGLE_MAPS_API_KEY` together in the query string.
+`apiErrorResponse` dumped the whole error object for every route, process routes
+included. `scrubbedErrorLine` (`src/lib/log-scrub.ts`) now reduces an error to its
+class plus a numeric status for any `process:` tag; data routes are unchanged, since
+the envelope is opaque to the server and their errors carry nothing sensitive.
+
+`src/app/api/process/__tests__/no-leak.test.ts` drives all four routes on success and
+failure paths with marked plaintext while capturing every console channel, and
+compares every table's row count against a baseline. Its serializer expands an
+Error's message, stack and cause — `JSON.stringify(new Error("secret"))` is `"{}"`,
+so the obvious version of that test asserts nothing.
+
+### Accepted: `reason` strings from Google and ORS reach the client and the log
+
+The geocoder returns the provider's own `status` and `error_message` to the client as
+`reason`, and logs it. This is provider text about the request's *outcome*
+("ZERO_RESULTS", "REQUEST_DENIED"), not an echo of the address. If a provider ever
+starts quoting the input back in that field, the scrub in
+`tryGoogleGeocodeLatLng` is the line to revisit.
+
+### Accepted: `process_usage` is a table the process routes write
+
+E4's own requirement is that no plaintext is persisted at any layer, and the rate
+limiter is a counter, so this is not in tension: `process_usage` holds a household id,
+an endpoint name, an hour bucket and an integer. Nothing in it derives from an
+address, a URL or a PDF. Both the schema comment and a migration test assert the
+column list so a future column is a deliberate decision rather than a drift.
+
+### Accepted: rate limits are unlimited by default
+
+`PROCESS_RATE_LIMIT_PER_HOUR` unset means no limit and no row written. That is the
+self-hoster's default — `docker compose up` must work with no configuration, and a
+self-hoster spends their own Gemini and Maps keys. The hosted deployment sets an
+explicit value. The consequence is that a fresh self-hosted install has no ceiling on
+its own API spend until the operator sets one.
+
+Windows are fixed hours, not sliding. A caller can therefore spend two full
+allowances across a window boundary. That is the standard fixed-window trade and is
+acceptable when the goal is bounding a monthly bill rather than smoothing load.
+
+### Fixed: blind SSRF in the listing probe (#199)
+
+`checkListingUrl` fetched an arbitrary user-supplied URL with no scheme allowlist, no
+private-address block, and `redirect: "follow"`. Before E1 the caller needed the
+shared password; open registration turned it into a port and host oracle against
+whatever the deployment can reach — small on Vercel, not small for a self-hosted
+container on a home LAN. `src/lib/safe-url.ts` now enforces an http(s) allowlist and
+rejects RFC1918, loopback, link-local (cloud metadata), CGNAT, benchmarking,
+TEST-NET, multicast and reserved ranges, IPv6 loopback/link-local/ULA, and
+IPv4-mapped IPv6. Redirects are walked by hand, five hops maximum, each re-validated:
+`follow` only ever checked the URL we started with.
+
+### Accepted: DNS rebinding between the lookup and the fetch
+
+`assertPublicHttpUrl` resolves the hostname and refuses if any answer is private, but
+the connection is made by name a moment later, so a resolver that answers differently
+the second time defeats it. Closing this needs a custom agent that pins the
+connection to the address that was validated, which breaks TLS SNI and name-based
+virtual hosting. The residual is a one-request-per-rebind oracle against an attacker
+who controls a DNS zone — materially harder than the original bug and the same
+posture most HTTP clients take.
+
+### Accepted: an unparseable address counts as private
+
+`isPrivateAddress` answers `true` for anything it cannot parse. A hostname is only
+ever tested after resolution, so this costs nothing in practice; the alternative —
+defaulting to "public" on an input we do not understand — is the wrong way to be
+wrong.
