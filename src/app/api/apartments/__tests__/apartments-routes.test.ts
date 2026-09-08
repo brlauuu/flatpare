@@ -142,6 +142,27 @@ describe("POST /api/apartments", () => {
     expect((await res.json()).error).toBe("Duplicate id");
   });
 
+  // E5: the cap is enforced in the route handler, not only in the UI.
+  it("409s the create that would exceed MAX_APARTMENTS", async () => {
+    process.env.MAX_APARTMENTS = "1";
+    try {
+      expect((await createPOST(json("POST", { id: ID_A, envelope: v1("a") }))).status).toBe(201);
+      const res = await createPOST(json("POST", { id: ID_B, envelope: v1("b") }));
+      expect(res.status).toBe(409);
+      expect((await res.json()).error).toBe("Apartment limit reached");
+      expect(await db.select().from(apartments)).toHaveLength(1);
+    } finally {
+      delete process.env.MAX_APARTMENTS;
+    }
+  });
+
+  it("creates without limit when MAX_APARTMENTS is unset (self-hoster default)", async () => {
+    delete process.env.MAX_APARTMENTS;
+    expect((await createPOST(json("POST", { id: ID_A, envelope: v1("a") }))).status).toBe(201);
+    expect((await createPOST(json("POST", { id: ID_B, envelope: v1("b") }))).status).toBe(201);
+    expect(await db.select().from(apartments)).toHaveLength(2);
+  });
+
   it("400s a plaintext envelope under encryption on, writing nothing", async () => {
     const res = await createPOST(json("POST", { id: ID_A, envelope: v0 }));
     expect(res.status).toBe(400);

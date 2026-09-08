@@ -169,7 +169,7 @@ function renderProvider() {
   const crypto = { keys: { userId: ME.userId, householdId: HID, privateKey: {} as CryptoKey, dataKey } } as unknown as CryptoContextValue;
   return render(
     <CryptoContext.Provider value={crypto}>
-      <HouseholdDataProvider identity={ME}>
+      <HouseholdDataProvider identity={ME} limits={{ maxMembers: null, maxApartments: null }}>
         <Capture />
       </HouseholdDataProvider>
     </CryptoContext.Provider>

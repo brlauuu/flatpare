@@ -3,16 +3,15 @@ import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { apartments } from "@/lib/db/schema";
-import { ApiError } from "@/lib/api-error";
 import {
   apiErrorResponse,
-  isUniqueConstraintError,
   parseBody,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
 import { envelopeSchema } from "@/lib/crypto-schemas";
 import { apartmentRow } from "@/lib/data-rows";
+import { createApartmentRow } from "@/lib/apartments-store";
 
 const createSchema = z.object({ id: z.uuid(), envelope: envelopeSchema });
 
@@ -35,16 +34,12 @@ export async function POST(req: Request) {
     const { householdId } = await requireMember();
     const body = await parseBody(req, createSchema);
     requireEnvelopeMode(body.envelope);
-    let created;
-    try {
-      [created] = await db
-        .insert(apartments)
-        .values({ id: body.id, householdId, envelope: JSON.stringify(body.envelope) })
-        .returning();
-    } catch (err) {
-      if (isUniqueConstraintError(err)) throw new ApiError("Duplicate id", 409);
-      throw err;
-    }
+    // Duplicate-id and MAX_APARTMENTS handling both live in the store, so
+    // the cap is enforced for every caller rather than only this route.
+    const created = await createApartmentRow(householdId, {
+      id: body.id,
+      envelope: JSON.stringify(body.envelope),
+    });
     return NextResponse.json(apartmentRow(created), { status: 201 });
   } catch (e) {
     return apiErrorResponse(e, "apartments:create");

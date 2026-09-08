@@ -56,6 +56,7 @@ export default function ApartmentsPage() {
     enrichmentError,
     retryEnrichment,
     runMaintenance,
+    limits,
   } = useHouseholdData();
   const [view, setView] = usePersistedEnum<ViewMode>(
     VIEW_STORAGE_KEY,
@@ -112,6 +113,11 @@ export default function ApartmentsPage() {
       return name.includes(q) || code.includes(q) || addr.includes(q);
     });
   }, [readableApartments, query]);
+
+  // The server enforces MAX_APARTMENTS regardless (POST /api/apartments
+  // answers 409); this only keeps the UI honest about it.
+  const atApartmentLimit =
+    limits.maxApartments !== null && apartments.length >= limits.maxApartments;
 
   const sortedApartments = useMemo(
     () =>
@@ -228,7 +234,16 @@ export default function ApartmentsPage() {
         )}
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Apartments</h1>
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-2xl font-semibold">Apartments</h1>
+          {/* Only shown when a cap is configured: a self-hoster with no
+              MAX_APARTMENTS must not see a counter implying one exists. */}
+          {limits.maxApartments !== null && (
+            <span className="text-sm text-muted-foreground">
+              {apartments.length} of {limits.maxApartments}
+            </span>
+          )}
+        </div>
         {/* Wraps on phones: the control cluster is ~390px wide and used to
             push the document past the viewport. */}
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
@@ -300,12 +315,25 @@ export default function ApartmentsPage() {
               <ListIcon className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Link
-            href="/apartments/new"
-            className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
-          >
-            Upload New
-          </Link>
+          {atApartmentLimit ? (
+            <span
+              className={cn(
+                buttonVariants({ variant: "secondary" }),
+                "h-11 w-full cursor-not-allowed opacity-60 sm:h-9 sm:w-auto"
+              )}
+              aria-disabled="true"
+              title={`This household is limited to ${limits.maxApartments} apartments`}
+            >
+              Limit reached
+            </span>
+          ) : (
+            <Link
+              href="/apartments/new"
+              className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
+            >
+              Upload New
+            </Link>
+          )}
         </div>
       </div>
 

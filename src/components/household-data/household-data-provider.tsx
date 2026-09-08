@@ -42,6 +42,7 @@ import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/
 import { ApiClientError, getJson, sendJson } from "./api-client";
 import { enrichApartment } from "./enrichment";
 import { checkListing, distanceBetween, geocodeAddress } from "./process-client";
+import type { Limits } from "@/lib/limits";
 
 export interface HouseholdIdentity {
   userId: string;
@@ -52,6 +53,11 @@ export interface HouseholdIdentity {
 export interface HouseholdDataContextValue {
   // Who is signed in and which household this store belongs to.
   identity: HouseholdIdentity;
+  // E5 entitlements, read server-side and passed down the same way as
+  // `identity` — a "use client" file must never read process.env. null on an
+  // axis means unlimited, which is the self-hoster's default; the server
+  // enforces these regardless of what the UI does with them.
+  limits: Limits;
   // The unlocked household data key (null in off mode). Pages that seal or
   // open PDFs themselves (upload, View PDF, reprocess) read it from here so
   // they never touch CryptoContext directly.
@@ -107,9 +113,11 @@ function isStale(err: unknown): err is ApiClientError {
 // src/components/crypto must import nothing back from here.
 export function HouseholdDataProvider({
   identity,
+  limits,
   children,
 }: {
   identity: HouseholdIdentity;
+  limits: Limits;
   children: React.ReactNode;
 }) {
   const { userId, householdId } = identity;
@@ -563,6 +571,7 @@ export function HouseholdDataProvider({
   const value = useMemo<HouseholdDataContextValue>(
     () => ({
       identity,
+      limits,
       dataKey,
       status,
       error,
@@ -582,7 +591,7 @@ export function HouseholdDataProvider({
       runMaintenance,
     }),
     [
-      identity, dataKey, status, error, apartments, locations, enrichmentError, reload,
+      identity, limits, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
       createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance,
     ]

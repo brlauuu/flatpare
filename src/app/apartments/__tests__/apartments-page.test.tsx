@@ -326,3 +326,47 @@ describe("Apartments page — corrupt rows", () => {
     expect(headingOrder()).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
   });
 });
+
+// E5: the UI mirrors MAX_APARTMENTS. The server enforces it regardless
+// (POST /api/apartments answers 409 "Apartment limit reached").
+describe("apartment limit (#187)", () => {
+  const three = [
+    makeApartmentView({ id: "a" }),
+    makeApartmentView({ id: "b" }),
+    makeApartmentView({ id: "c" }),
+  ];
+
+  it("shows no counter when no limit is configured", () => {
+    renderWithHouseholdData(<ApartmentsPage />, { apartments: three });
+    expect(screen.queryByText(/ of \d+$/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upload New" })).toBeInTheDocument();
+  });
+
+  it("shows the count against the cap when one is set", () => {
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: three,
+      limits: { maxMembers: null, maxApartments: 20 },
+    });
+    expect(screen.getByText("3 of 20")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upload New" })).toBeInTheDocument();
+  });
+
+  it("replaces the upload action at the cap", () => {
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: three,
+      limits: { maxMembers: null, maxApartments: 3 },
+    });
+    expect(screen.getByText("3 of 3")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Upload New" })).not.toBeInTheDocument();
+    expect(screen.getByText("Limit reached")).toBeInTheDocument();
+  });
+
+  it("still offers upload when the cap is above the count", () => {
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: three,
+      limits: { maxMembers: null, maxApartments: 4 },
+    });
+    expect(screen.getByRole("link", { name: "Upload New" })).toBeInTheDocument();
+    expect(screen.queryByText("Limit reached")).not.toBeInTheDocument();
+  });
+});
