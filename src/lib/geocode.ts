@@ -1,3 +1,4 @@
+import { scrubbedErrorLine } from "@/lib/log-scrub";
 // Common postcode shapes, cheapest-first.
 // CH/US/DE: 4–5 digits surrounded by non-digits (or string edges).
 // UK: alphanumeric like "SW1A 1AA" or "EC1A1BB".
@@ -86,13 +87,18 @@ async function tryGoogleGeocodeLatLng(
     const errorMessage =
       typeof data.error_message === "string" ? data.error_message : null;
     const reason = errorMessage ? `${status}: ${errorMessage}` : status;
-    console.error(
-      `[geocode:google] no result for "${address}" — ${reason}`
-    );
+    // E4: the address is the user's plaintext and must not reach a log.
+    // `reason` is Google's own status/error_message — provider text about
+    // the request's outcome, not an echo of the input. If a provider ever
+    // starts echoing input there, this is the line to revisit.
+    console.error(`[geocode:google] no result — ${reason}`);
     return { result: null, reason };
   } catch (err) {
     const reason = err instanceof Error ? err.message : "fetch_failed";
-    console.error(`[geocode:google] fetch failed — ${reason}`);
+    // Logged scrubbed, returned intact: `reason` goes to the client, which
+    // already knows its own address, but a fetch error's message is the
+    // outbound URL — address and GOOGLE_MAPS_API_KEY in the query string.
+    console.error(`[geocode:google] fetch failed — ${scrubbedErrorLine(err)}`);
     return { result: null, reason };
   }
 }
@@ -121,7 +127,7 @@ async function tryOrsGeocodeLatLng(
     return { result: null, reason: "ors_no_results" };
   } catch (err) {
     const reason = err instanceof Error ? err.message : "fetch_failed";
-    console.error(`[geocode:ors] fetch failed — ${reason}`);
+    console.error(`[geocode:ors] fetch failed — ${scrubbedErrorLine(err)}`);
     return { result: null, reason };
   }
 }

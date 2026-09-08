@@ -202,3 +202,60 @@ describe("isUniqueConstraintError", () => {
     expect(isUniqueConstraintError(cyclic)).toBe(false);
   });
 });
+
+// E4: /api/process/* handlers see plaintext the user submitted, so a 500 on
+// those routes must not dump the error. A fetch failure's message is the
+// outbound URL, whose query string holds the address AND the API key.
+//
+// NOTE the serializer: JSON.stringify(new Error("secret")) is "{}", so
+// asserting over JSON.stringify(spy.mock.calls) would pass no matter what
+// leaked. A real log drain sees the message and the stack, so the test has
+// to as well.
+function loggedText(calls: unknown[][]): string {
+  return calls
+    .flat()
+    .map((arg) =>
+      arg instanceof Error ? `${arg.name}: ${arg.message}\n${arg.stack ?? ""}` : String(arg)
+    )
+    .join("\n");
+}
+
+describe("apiErrorResponse scrubbing for process routes", () => {
+  const leakyError = () =>
+    new TypeError(
+      "fetch failed: https://maps.googleapis.com/maps/api/geocode/json?address=Bahnhofstrasse+1&key=SECRET"
+    );
+
+  it("logs a process-route 500 without the message or URL", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = apiErrorResponse(leakyError(), "process:geocode");
+    expect(res.status).toBe(500);
+    const logged = loggedText(spy.mock.calls);
+    expect(logged).not.toContain("Bahnhofstrasse");
+    expect(logged).not.toContain("SECRET");
+    expect(logged).not.toContain("maps.googleapis.com");
+    expect(logged).toContain("process:geocode");
+    expect(logged).toContain("TypeError");
+    spy.mockRestore();
+  });
+
+  it("scrubs every process endpoint, not just geocode", () => {
+    for (const tag of ["process:distance", "process:check-listing", "process:parse-pdf"]) {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      apiErrorResponse(leakyError(), tag);
+      const logged = loggedText(spy.mock.calls);
+      expect(logged, tag).not.toContain("Bahnhofstrasse");
+      expect(logged, tag).not.toContain("SECRET");
+      spy.mockRestore();
+    }
+  });
+
+  it("still logs the full error for a non-process route", () => {
+    // Data routes never see plaintext — the envelope is opaque — so their
+    // errors stay debuggable.
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    apiErrorResponse(new Error("ordinary failure"), "apartments:create");
+    expect(loggedText(spy.mock.calls)).toContain("ordinary failure");
+    spy.mockRestore();
+  });
+});

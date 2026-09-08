@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { ApiError } from "@/lib/api-error";
+import { scrubbedErrorLine } from "@/lib/log-scrub";
 import { assertEnvelopeMode, type Envelope } from "@/lib/crypto";
 import { readEncryptionMode } from "@/lib/encryption-mode";
 import { assertMembership, ForbiddenError, UnauthorizedError, type Role } from "@/lib/household";
@@ -24,7 +25,16 @@ export function apiErrorResponse(err: unknown, tag: string): NextResponse {
       { status: 400 }
     );
   }
-  console.error(`[${tag}]`, err);
+  // E4: the /api/process/* routes are the documented privacy exception —
+  // they are handed plaintext the user submitted, and an error thrown from
+  // an outbound fetch carries the request URL (address + API key in the
+  // query string). Log the class only for those. Data routes never see
+  // plaintext, so their errors stay fully debuggable.
+  if (tag.startsWith("process:")) {
+    console.error(`[${tag}] ${scrubbedErrorLine(err)}`);
+  } else {
+    console.error(`[${tag}]`, err);
+  }
   return NextResponse.json({ error: "Internal error" }, { status: 500 });
 }
 
