@@ -8,7 +8,9 @@ const json = (body: unknown, status = 200) =>
 
 describe("process-client", () => {
   it("geocodeAddress posts the address", async () => {
-    const fetchMock = vi.fn(async () => json({ lat: 1, lng: 2, postcode: "8000" }));
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+      async () => json({ lat: 1, lng: 2, postcode: "8000" })
+    );
     vi.stubGlobal("fetch", fetchMock);
     expect(await geocodeAddress("X 1, Zürich")).toEqual({ lat: 1, lng: 2, postcode: "8000" });
     expect(fetchMock.mock.calls[0][0]).toBe("/api/process/geocode");
@@ -16,7 +18,9 @@ describe("process-client", () => {
   });
 
   it("distanceBetween posts from/to", async () => {
-    const fetchMock = vi.fn(async () => json({ bikeMin: 10, transitMin: null }));
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+      async () => json({ bikeMin: 10, transitMin: null })
+    );
     vi.stubGlobal("fetch", fetchMock);
     expect(await distanceBetween("A", "B")).toEqual({ bikeMin: 10, transitMin: null });
     expect(fetchMock.mock.calls[0][0]).toBe("/api/process/distance");
@@ -28,7 +32,9 @@ describe("process-client", () => {
   });
 
   it("parsePdf posts multipart and returns the extraction", async () => {
-    const fetchMock = vi.fn(async () => json({ extracted: { name: "Flat" }, aiAvailable: true }));
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+      async () => json({ extracted: { name: "Flat" }, aiAvailable: true })
+    );
     vi.stubGlobal("fetch", fetchMock);
     const out = await parsePdf(new Uint8Array([1, 2]), "flat.pdf");
     expect(out).toEqual({ extracted: { name: "Flat" }, aiAvailable: true });

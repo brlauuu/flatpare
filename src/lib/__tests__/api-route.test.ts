@@ -198,7 +198,6 @@ describe("isUniqueConstraintError", () => {
 
   it("does not hang on a self-referencing .cause chain", () => {
     const cyclic = new Error("wraps itself");
-    // @ts-expect-error -- deliberately cyclic cause for the depth-bound test
     cyclic.cause = cyclic;
     expect(isUniqueConstraintError(cyclic)).toBe(false);
   });
