@@ -1,24 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockRequireHousehold } = vi.hoisted(() => ({
-  mockRequireHousehold: vi.fn(),
+const { mockRequireMember } = vi.hoisted(() => ({
+  mockRequireMember: vi.fn(),
 }));
 
-vi.mock("@/lib/session", () => ({
-  requireHousehold: mockRequireHousehold,
-}));
+vi.mock("@/lib/api-route", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-route")>();
+  return { ...actual, requireMember: mockRequireMember };
+});
 
 vi.mock("@vercel/blob", () => ({
   get: vi.fn(),
 }));
 
 import { get } from "@vercel/blob";
+import { ApiError } from "@/lib/api-error";
+import { UnauthorizedError } from "@/lib/household";
 import { GET } from "../[...path]/route";
 
 const mockGet = vi.mocked(get);
 
 beforeEach(() => {
-  mockRequireHousehold.mockReset();
+  mockRequireMember.mockReset();
   mockGet.mockReset();
 });
 
@@ -35,15 +38,23 @@ function makeRequest(params: string[]) {
 
 describe("GET /api/pdf/[...path]", () => {
   it("returns 401 when there is no session", async () => {
-    mockRequireHousehold.mockRejectedValue(new Error("no session"));
+    mockRequireMember.mockRejectedValue(new UnauthorizedError());
     const { request, ctx } = makeRequest(["households", "1", "file.pdf"]);
     const res = await GET(request, ctx);
     expect(res.status).toBe(401);
     expect(mockGet).not.toHaveBeenCalled();
   });
 
+  it("returns 404 when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    mockRequireMember.mockRejectedValue(new ApiError("Not found", 404));
+    const { request, ctx } = makeRequest(["households", "1", "file.pdf"]);
+    const res = await GET(request, ctx);
+    expect(res.status).toBe(404);
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
   it("calls get() with access: 'private' and the joined pathname for the caller's own household", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -68,7 +79,7 @@ describe("GET /api/pdf/[...path]", () => {
   });
 
   it("returns 404 when the blob is not found, for the caller's own household", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -80,7 +91,7 @@ describe("GET /api/pdf/[...path]", () => {
   });
 
   it("returns 404, not 403, for a path belonging to another household", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -96,7 +107,7 @@ describe("GET /api/pdf/[...path]", () => {
   });
 
   it("returns 404 for a path with no household prefix", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -108,7 +119,7 @@ describe("GET /api/pdf/[...path]", () => {
   });
 
   it("returns 404 for a traversal attempt", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -145,7 +156,7 @@ describe("GET /api/pdf/[...path]", () => {
 
   for (const [raw, postNextDecode] of doubleEncodedVectors) {
     it(`returns 404 for the double/triple-encoded traversal vector ${JSON.stringify(raw)}`, async () => {
-      mockRequireHousehold.mockResolvedValue({
+      mockRequireMember.mockResolvedValue({
         householdId: 1,
         userId: "u1",
         role: "owner",
@@ -167,7 +178,7 @@ describe("GET /api/pdf/[...path]", () => {
   // contain characters Next had to percent-decode (a space, an accented
   // letter) carry no "%" once decoded, and must keep reading back fine.
   it("still reads back a filename containing a space", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -191,7 +202,7 @@ describe("GET /api/pdf/[...path]", () => {
   });
 
   it("still reads back a filename containing a non-ASCII character", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",

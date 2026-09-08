@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { ApiError } from "@/lib/api-error";
+import { requireMember } from "@/lib/api-route";
 import { UnauthorizedError } from "@/lib/household";
-import { requireHousehold } from "@/lib/session";
 import { canonicalizePathname, householdIdFromStoredPath } from "@/lib/storage";
 
 function notAuthenticated() {
@@ -23,9 +24,10 @@ function blobConfigured(): boolean {
 export async function GET() {
   let householdId: number;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId } = await requireMember());
   } catch (e) {
     if (e instanceof UnauthorizedError) return notAuthenticated();
+    if (e instanceof ApiError) return NextResponse.json({ error: e.message }, { status: e.status });
     throw e;
   }
   // Probe used by the client to decide between direct-upload and multipart
@@ -41,9 +43,10 @@ export async function GET() {
 export async function POST(request: Request) {
   let householdId: number;
   try {
-    ({ householdId } = await requireHousehold());
+    ({ householdId } = await requireMember());
   } catch (e) {
     if (e instanceof UnauthorizedError) return notAuthenticated();
+    if (e instanceof ApiError) return NextResponse.json({ error: e.message }, { status: e.status });
     throw e;
   }
   if (!blobConfigured()) {

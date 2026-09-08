@@ -2,18 +2,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const { mockRequireHousehold } = vi.hoisted(() => ({
-  mockRequireHousehold: vi.fn(),
+const { mockRequireMember } = vi.hoisted(() => ({
+  mockRequireMember: vi.fn(),
 }));
 
-vi.mock("@/lib/session", () => ({
-  requireHousehold: mockRequireHousehold,
-}));
+vi.mock("@/lib/api-route", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-route")>();
+  return { ...actual, requireMember: mockRequireMember };
+});
 
+import { ApiError } from "@/lib/api-error";
+import { UnauthorizedError } from "@/lib/household";
 import { GET } from "../[...path]/route";
 
 beforeEach(() => {
-  mockRequireHousehold.mockReset();
+  mockRequireMember.mockReset();
 });
 
 afterEach(() => {
@@ -29,14 +32,21 @@ function makeRequest(params: string[]) {
 
 describe("GET /api/uploads/[...path]", () => {
   it("returns 401 when there is no session", async () => {
-    mockRequireHousehold.mockRejectedValue(new Error("no session"));
+    mockRequireMember.mockRejectedValue(new UnauthorizedError());
     const { request, ctx } = makeRequest(["households", "1", "file.pdf"]);
     const res = await GET(request, ctx);
     expect(res.status).toBe(401);
   });
 
+  it("returns 404 when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    mockRequireMember.mockRejectedValue(new ApiError("Not found", 404));
+    const { request, ctx } = makeRequest(["households", "1", "file.pdf"]);
+    const res = await GET(request, ctx);
+    expect(res.status).toBe(404);
+  });
+
   it("returns 404, not 403, for a path belonging to another household", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -47,7 +57,7 @@ describe("GET /api/uploads/[...path]", () => {
   });
 
   it("rejects path traversal attempts with 404 for authed users", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -65,7 +75,7 @@ describe("GET /api/uploads/[...path]", () => {
   });
 
   it("returns 404 for a path with no household prefix", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -76,7 +86,7 @@ describe("GET /api/uploads/[...path]", () => {
   });
 
   it("returns 404 for authed users in their own household when the file is missing", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -98,7 +108,7 @@ describe("GET /api/uploads/[...path]", () => {
   // must still reject residual encoding up front rather than falling
   // through to the (also-safe) filesystem path.
   it("rejects a segment carrying residual percent-encoding with 404", async () => {
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -115,7 +125,7 @@ describe("GET /api/uploads/[...path]", () => {
   });
 
   it("serves a .pdf.enc file as application/octet-stream", async () => {
-    mockRequireHousehold.mockResolvedValue({ householdId: 1, userId: "u1", role: "owner" });
+    mockRequireMember.mockResolvedValue({ householdId: 1, userId: "u1", role: "owner" });
     const dir = path.join(process.cwd(), "uploads", "households", "1");
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "enc-test.pdf.enc"), Buffer.from([9, 9]));

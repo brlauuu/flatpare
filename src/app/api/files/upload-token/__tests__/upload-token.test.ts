@@ -7,25 +7,27 @@
 // under the node environment instead.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const { mockHandleUpload, mockRequireHousehold } = vi.hoisted(() => ({
+const { mockHandleUpload, mockRequireMember } = vi.hoisted(() => ({
   mockHandleUpload: vi.fn(),
-  mockRequireHousehold: vi.fn(),
+  mockRequireMember: vi.fn(),
 }));
 
 vi.mock("@vercel/blob/client", () => ({
   handleUpload: mockHandleUpload,
 }));
 
-vi.mock("@/lib/session", () => ({
-  requireHousehold: mockRequireHousehold,
-}));
+vi.mock("@/lib/api-route", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-route")>();
+  return { ...actual, requireMember: mockRequireMember };
+});
 
+import { ApiError } from "@/lib/api-error";
 import { UnauthorizedError } from "@/lib/household";
 import { GET, POST } from "../route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockRequireHousehold.mockResolvedValue({
+  mockRequireMember.mockResolvedValue({
     householdId: 7,
     userId: "u1",
     role: "owner",
@@ -39,7 +41,7 @@ afterEach(() => {
 
 describe("GET /api/files/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
-    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    mockRequireMember.mockRejectedValueOnce(new UnauthorizedError());
     const res = await GET();
     expect(res.status).toBe(401);
   });
@@ -59,17 +61,34 @@ describe("GET /api/files/upload-token", () => {
     expect(data.enabled).toBe(true);
     expect(data.householdId).toBe(7);
   });
+
+  it("returns 404 when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    mockRequireMember.mockRejectedValueOnce(new ApiError("Not found", 404));
+    const res = await GET();
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("POST /api/files/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
-    mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
+    mockRequireMember.mockRejectedValueOnce(new UnauthorizedError());
     const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       body: "{}",
     });
     const res = await POST(req);
     expect(res.status).toBe(401);
+    expect(mockHandleUpload).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the caller is no longer a member (removed member, still-valid JWT)", async () => {
+    mockRequireMember.mockRejectedValueOnce(new ApiError("Not found", 404));
+    const req = new Request("http://localhost/api/files/upload-token", {
+      method: "POST",
+      body: "{}",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(404);
     expect(mockHandleUpload).not.toHaveBeenCalled();
   });
 
@@ -182,7 +201,7 @@ describe("POST /api/files/upload-token — real handleUpload, no mock (guard end
     mockHandleUpload.mockImplementation(realHandleUpload);
 
     process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_teststore1234567890";
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
@@ -215,7 +234,7 @@ describe("POST /api/files/upload-token — real handleUpload, no mock (guard end
     mockHandleUpload.mockImplementation(realHandleUpload);
 
     process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_teststore1234567890";
-    mockRequireHousehold.mockResolvedValue({
+    mockRequireMember.mockResolvedValue({
       householdId: 1,
       userId: "u1",
       role: "owner",
