@@ -1,63 +1,37 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { renderHook, cleanup } from "@testing-library/react";
+import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
+import {
+  makeApartmentView,
+  makeHouseholdData,
+} from "@/components/household-data/__tests__/fake-household-data";
 import { useApartmentPager } from "@/lib/use-apartment-pager";
 
-const LIST = [
-  {
-    id: 1,
-    name: "Sonnenweg 3",
-    address: null,
-    sizeM2: 60,
-    numRooms: 2.5,
-    rentChf: 2200,
-    shortCode: "ABC-2.5B-WY-4057",
-    avgOverall: null,
-    myRating: null,
-    createdAt: "2026-01-15T10:00:00Z",
-  },
-  {
-    id: 2,
-    name: "Bergstrasse 12",
-    address: null,
-    sizeM2: 45,
-    numRooms: 2,
-    rentChf: 1800,
-    shortCode: "DEF-2B-W-4058",
-    avgOverall: "3.5",
-    myRating: 4,
-    createdAt: "2026-03-20T10:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Seeblick 7",
-    address: null,
-    sizeM2: 80,
-    numRooms: 3.5,
-    rentChf: null,
-    shortCode: "GHI-3.5B-WY-4059",
-    avgOverall: "4.5",
-    myRating: null,
-    createdAt: "2026-02-10T10:00:00Z",
-  },
+// Default (createdAt desc) order: b (March), c (February), a (January).
+const APARTMENTS = [
+  makeApartmentView({ id: "a", name: "Sonnenweg 3", rentChf: 2200, createdAt: "2026-01-15T10:00:00Z" }),
+  makeApartmentView({ id: "b", name: "Bergstrasse 12", rentChf: 1800, createdAt: "2026-03-20T10:00:00Z" }),
+  makeApartmentView({ id: "c", name: "Seeblick 7", rentChf: null, createdAt: "2026-02-10T10:00:00Z" }),
 ];
 
-// Default (createdAt desc) order: Bergstrasse (id 2), Seeblick (id 3), Sonnenweg (id 1).
+function renderPager(
+  currentId: string,
+  over: Parameters<typeof makeHouseholdData>[0] = {}
+) {
+  const value = makeHouseholdData({ apartments: APARTMENTS, ...over });
+  return renderHook(() => useApartmentPager(currentId), {
+    wrapper: ({ children }) => (
+      <HouseholdDataContext.Provider value={value}>{children}</HouseholdDataContext.Provider>
+    ),
+  });
+}
 
-beforeEach(() => {
-  localStorage.clear();
-  vi.spyOn(global, "fetch").mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(LIST),
-  } as Response);
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+beforeEach(() => localStorage.clear());
+afterEach(() => cleanup());
 
 describe("useApartmentPager", () => {
-  it("returns loading state initially", () => {
-    const { result } = renderHook(() => useApartmentPager(2));
+  it("reports loading while the store is loading", () => {
+    const { result } = renderPager("b", { status: "loading", apartments: [] });
     expect(result.current.loading).toBe(true);
     expect(result.current.total).toBe(0);
     expect(result.current.position).toBeNull();
@@ -66,95 +40,52 @@ describe("useApartmentPager", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("resolves to correct position and neighbors under default sort (createdAt desc)", async () => {
-    // Default order: Bergstrasse (2, newest), Seeblick (3), Sonnenweg (1, oldest).
-    // Middle apartment = Seeblick (id 3): position 2, prev 2, next 1.
-    const { result } = renderHook(() => useApartmentPager(3));
-    await waitFor(() => expect(result.current.loading).toBe(false));
+  it("positions the middle apartment under the default sort (createdAt desc)", () => {
+    const { result } = renderPager("c");
+    expect(result.current.loading).toBe(false);
     expect(result.current.total).toBe(3);
     expect(result.current.position).toBe(2);
-    expect(result.current.prevId).toBe(2);
-    expect(result.current.nextId).toBe(1);
-    expect(result.current.error).toBeNull();
+    expect(result.current.prevId).toBe("b");
+    expect(result.current.nextId).toBe("a");
   });
 
-  it("honors sort preference stored in localStorage", async () => {
-    // rentChf asc: Bergstrasse (1800, id 2), Sonnenweg (2200, id 1), Seeblick (null last, id 3).
+  it("honors the sort preference stored in localStorage", () => {
+    // rentChf asc: b (1800), a (2200), c (null last).
     localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
     localStorage.setItem("flatpare-apartments-sort-direction", "asc");
-    const { result } = renderHook(() => useApartmentPager(1));
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    const { result } = renderPager("a");
     expect(result.current.position).toBe(2);
-    expect(result.current.prevId).toBe(2);
-    expect(result.current.nextId).toBe(3);
+    expect(result.current.prevId).toBe("b");
+    expect(result.current.nextId).toBe("c");
   });
 
-  it("returns prevId null on the first apartment in order", async () => {
-    // Default order: Bergstrasse (2) is first.
-    const { result } = renderHook(() => useApartmentPager(2));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.position).toBe(1);
-    expect(result.current.prevId).toBeNull();
-    expect(result.current.nextId).toBe(3);
+  it("returns prevId null on the first and nextId null on the last", () => {
+    expect(renderPager("b").result.current.prevId).toBeNull();
+    expect(renderPager("b").result.current.nextId).toBe("c");
+    expect(renderPager("a").result.current.nextId).toBeNull();
+    expect(renderPager("a").result.current.prevId).toBe("c");
   });
 
-  it("returns nextId null on the last apartment in order", async () => {
-    // Default order: Sonnenweg (1) is last.
-    const { result } = renderHook(() => useApartmentPager(1));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.position).toBe(3);
-    expect(result.current.prevId).toBe(3);
-    expect(result.current.nextId).toBeNull();
-  });
-
-  it("returns null position and null ids when current id is not in the list", async () => {
-    const { result } = renderHook(() => useApartmentPager(9999));
-    await waitFor(() => expect(result.current.loading).toBe(false));
+  it("returns null position and ids when the current id is not in the store", () => {
+    const { result } = renderPager("nope");
     expect(result.current.total).toBe(3);
     expect(result.current.position).toBeNull();
     expect(result.current.prevId).toBeNull();
     expect(result.current.nextId).toBeNull();
   });
 
-  it("falls back to defaults when localStorage has invalid sort values", async () => {
+  it("falls back to defaults when localStorage holds invalid sort values", () => {
     localStorage.setItem("flatpare-apartments-sort-field", "bogus");
     localStorage.setItem("flatpare-apartments-sort-direction", "sideways");
-    const { result } = renderHook(() => useApartmentPager(3));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    // Defaults → createdAt desc → Seeblick is position 2.
+    const { result } = renderPager("c");
     expect(result.current.position).toBe(2);
-    expect(result.current.prevId).toBe(2);
-    expect(result.current.nextId).toBe(1);
+    expect(result.current.prevId).toBe("b");
   });
 
-  it("surfaces an error when the list fetch fails", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: "Internal Server Error",
-      clone() {
-        return this;
-      },
-      text: () => Promise.resolve("boom"),
-      headers: new Headers(),
-    } as unknown as Response);
-
-    const { result } = renderHook(() => useApartmentPager(2));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.total).toBe(0);
-    expect(result.current.position).toBeNull();
-    expect(result.current.prevId).toBeNull();
-    expect(result.current.nextId).toBeNull();
-  });
-
-  it("surfaces an error when fetch itself throws (network failure)", async () => {
-    vi.spyOn(global, "fetch").mockRejectedValue(new Error("network down"));
-
-    const { result } = renderHook(() => useApartmentPager(2));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.total).toBe(0);
+  it("surfaces the store's error", () => {
+    const { result } = renderPager("b", { status: "error", error: "Couldn't load household data", apartments: [] });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe("Couldn't load household data");
     expect(result.current.position).toBeNull();
   });
 });

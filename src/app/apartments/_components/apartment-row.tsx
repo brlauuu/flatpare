@@ -3,9 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { GoneBadge, RatedBadge } from "./apartment-badges";
-import type { ApartmentSummary } from "./apartment-summary";
+import type { ApartmentView } from "@/lib/household-data/types";
 
-export function ApartmentRow({ apt }: { apt: ApartmentSummary }) {
+export function ApartmentRow({ apt }: { apt: ApartmentView }) {
   return (
     <Link
       href={`/apartments/${apt.id}`}
@@ -32,12 +32,8 @@ export function ApartmentRow({ apt }: { apt: ApartmentSummary }) {
         {apt.listingGone && <GoneBadge />}
         <RatedBadge myRating={apt.myRating} />
       </div>
-      {apt.avgOverall && (
-        <StarRating
-          value={Math.round(parseFloat(apt.avgOverall))}
-          readonly
-          size="sm"
-        />
+      {apt.avgOverall !== null && (
+        <StarRating value={Math.round(apt.avgOverall)} readonly size="sm" />
       )}
     </Link>
   );

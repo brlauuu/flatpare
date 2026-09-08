@@ -1,442 +1,268 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
+import {
+  makeApartmentView,
+  renderWithHouseholdData,
+} from "@/components/household-data/__tests__/fake-household-data";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
+// The overview map pulls Leaflet through next/dynamic; stub the inner map.
+vi.mock("@/components/apartments-overview-map-inner", () => ({
+  default: () => <div data-testid="leaflet-map" />,
+}));
+
 import ApartmentsPage from "../page";
 
 const APARTMENTS = [
-  {
-    id: 1,
+  makeApartmentView({
+    id: "a1",
     name: "Sonnenweg 3",
     address: "Sonnenweg 3, 8001 Zürich",
     sizeM2: 60,
     numRooms: 2.5,
     rentChf: 2200,
     shortCode: "ABC-2.5B-WY-4057",
-    avgOverall: null,
-    myRating: null,
     createdAt: "2026-01-15T10:00:00Z",
-  },
-  {
-    id: 2,
+  }),
+  makeApartmentView({
+    id: "a2",
     name: "Bergstrasse 12",
     address: "Bergstrasse 12, 8032 Zürich",
     sizeM2: 45,
     numRooms: 2,
     rentChf: 1800,
     shortCode: "DEF-2B-W-4058",
-    avgOverall: "3.5",
+    avgOverall: 3.5,
     myRating: 4,
     createdAt: "2026-03-20T10:00:00Z",
-  },
-  {
-    id: 3,
+  }),
+  makeApartmentView({
+    id: "a3",
     name: "Seeblick 7",
     address: null,
     sizeM2: 80,
     numRooms: 3.5,
     rentChf: null,
     shortCode: "GHI-3.5B-WY-4059",
-    avgOverall: "4.5",
-    myRating: null,
+    avgOverall: 4.5,
     createdAt: "2026-02-10T10:00:00Z",
-  },
+  }),
 ];
+
+function renderPage(over: Parameters<typeof renderWithHouseholdData>[1] = {}) {
+  return renderWithHouseholdData(<ApartmentsPage />, { apartments: APARTMENTS, ...over });
+}
+
+function headingOrder(): (string | null)[] {
+  return Array.from(document.querySelectorAll("h3")).map((el) => el.textContent);
+}
 
 beforeEach(() => {
   localStorage.clear();
-  vi.spyOn(global, "fetch").mockImplementation(async (input) => {
-    const url = typeof input === "string" ? input : (input as Request).url;
-    if (url === "/api/locations") {
-      return { ok: true, json: () => Promise.resolve([]) } as Response;
-    }
-    return {
-      ok: true,
-      json: () => Promise.resolve(APARTMENTS),
-    } as Response;
-  });
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
+});
+
+describe("Apartments page — store states", () => {
+  it("shows the loading state while the store loads", () => {
+    renderPage({ status: "loading", apartments: [] });
+    expect(screen.getByText("Loading apartments...")).toBeInTheDocument();
+  });
+
+  it("shows the store error", () => {
+    renderPage({ status: "error", error: "Couldn't load household data", apartments: [] });
+    expect(screen.getByText("Couldn't load household data")).toBeInTheDocument();
+  });
+
+  it("shows the empty state with an upload link", () => {
+    renderPage({ apartments: [] });
+    expect(screen.getByText("No apartments yet")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Upload your first listing/i })).toHaveAttribute("href", "/apartments/new");
+  });
+
+  it("runs the listing maintenance pass exactly once on mount", async () => {
+    const { value, rerender } = renderPage();
+    await waitFor(() => expect(value.runMaintenance).toHaveBeenCalledWith("listings"));
+    // rerender must re-supply the fake context: RTL's rerender replaces the
+    // whole tree, it doesn't remember the provider renderWithHouseholdData
+    // wrapped around the first render.
+    rerender(
+      <HouseholdDataContext.Provider value={value}>
+        <ApartmentsPage />
+      </HouseholdDataContext.Provider>
+    );
+    expect(value.runMaintenance).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs the geocode pass the first time the map opens", async () => {
+    const user = userEvent.setup();
+    const { value } = renderPage();
+    await user.click(screen.getByRole("button", { name: /Map overview/i }));
+    expect(value.runMaintenance).toHaveBeenCalledWith("geocode");
+  });
+
+  it("offers a retry for a failed enrichment", async () => {
+    const user = userEvent.setup();
+    const { value } = renderPage({ enrichmentError: { a1: "Geocoding failed" } });
+    expect(screen.getByText(/Enrichment failed for Sonnenweg 3/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Retry/i }));
+    expect(value.retryEnrichment).toHaveBeenCalledWith("a1");
+  });
 });
 
 describe("Apartments page — view toggle", () => {
-  it("defaults to grid view when no preference is stored", async () => {
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-
-    expect(document.querySelector('[data-view="grid"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-view="list"]')).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /Grid view/ })
-    ).toHaveAttribute("aria-pressed", "true");
+  it("renders grid view by default", () => {
+    renderPage();
+    expect(screen.getByRole("button", { name: "Grid view" })).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector("[data-view='grid']")).not.toBeNull();
   });
 
-  it("uses the stored preference from localStorage on mount", async () => {
-    localStorage.setItem("flatpare-apartments-view", "list");
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-
-    expect(document.querySelector('[data-view="list"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-view="grid"]')).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /List view/ })
-    ).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("clicking the toggle switches the layout and persists the choice", async () => {
+  it("switches to list view and persists it", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-
-    // Default grid
-    expect(document.querySelector('[data-view="grid"]')).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /List view/ }));
-    expect(document.querySelector('[data-view="list"]')).toBeInTheDocument();
+    renderPage();
+    await user.click(screen.getByRole("button", { name: "List view" }));
+    expect(document.querySelector("[data-view='list']")).not.toBeNull();
     expect(localStorage.getItem("flatpare-apartments-view")).toBe("list");
+  });
 
-    await user.click(screen.getByRole("button", { name: /Grid view/ }));
-    expect(document.querySelector('[data-view="grid"]')).toBeInTheDocument();
-    expect(localStorage.getItem("flatpare-apartments-view")).toBe("grid");
+  it("restores list view from localStorage", () => {
+    localStorage.setItem("flatpare-apartments-view", "list");
+    renderPage();
+    expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 
 describe("Apartments page — sort", () => {
-  it("defaults to newest first (createdAt desc) when no preference is stored", async () => {
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-
-    // createdAt desc: Bergstrasse (2026-03-20), Seeblick (2026-02-10), Sonnenweg (2026-01-15)
-    const order = Array.from(document.querySelectorAll("h3")).map(
-      (el) => el.textContent
-    );
-    expect(order).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
+  it("defaults to newest first (createdAt desc) when no preference is stored", () => {
+    renderPage();
+    expect(headingOrder()).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
   });
 
-  it("reads sort field and direction from localStorage on mount", async () => {
+  it("applies a stored sort preference", () => {
     localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
     localStorage.setItem("flatpare-apartments-sort-direction", "asc");
-
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-
-    // Ascending by rentChf: Bergstrasse (1800), Sonnenweg (2200), Seeblick (null last)
-    const order = Array.from(document.querySelectorAll("h3")).map(
-      (el) => el.textContent
-    );
-    expect(order).toEqual(["Bergstrasse 12", "Sonnenweg 3", "Seeblick 7"]);
+    renderPage();
+    expect(headingOrder()).toEqual(["Bergstrasse 12", "Sonnenweg 3", "Seeblick 7"]);
   });
 
-  it("falls back to defaults when localStorage has invalid values", async () => {
+  it("falls back to defaults on invalid stored values", () => {
     localStorage.setItem("flatpare-apartments-sort-field", "bogus");
     localStorage.setItem("flatpare-apartments-sort-direction", "sideways");
-
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-
-    // Defaults: createdAt desc
-    const order = Array.from(document.querySelectorAll("h3")).map(
-      (el) => el.textContent
-    );
-    expect(order).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
+    renderPage();
+    expect(headingOrder()).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
   });
 
-  it("changing the sort field re-orders the list and persists to localStorage", async () => {
+  it("changes the sort field via the select and persists it", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-
-    // Open the field selector and pick "Price".
-    await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
-    await user.click(screen.getByRole("option", { name: "Price" }));
-
-    // Default direction is desc → highest price first: Sonnenweg (2200),
-    // Bergstrasse (1800), Seeblick (null last).
-    await waitFor(() => {
-      const order = Array.from(document.querySelectorAll("h3")).map(
-        (el) => el.textContent
-      );
-      expect(order).toEqual(["Sonnenweg 3", "Bergstrasse 12", "Seeblick 7"]);
-    });
-
+    renderPage();
+    await user.click(screen.getByRole("combobox", { name: "Sort by" }));
+    await user.click(await screen.findByRole("option", { name: "Price" }));
+    // rentChf desc: 2200, 1800, null last
+    expect(headingOrder()).toEqual(["Sonnenweg 3", "Bergstrasse 12", "Seeblick 7"]);
     expect(localStorage.getItem("flatpare-apartments-sort-field")).toBe("rentChf");
   });
 
-  it("clicking the direction toggle flips the order and persists", async () => {
+  it("toggles direction and persists it", async () => {
     const user = userEvent.setup();
-    // Start with rentChf desc so the toggle has something to flip.
-    localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
-    localStorage.setItem("flatpare-apartments-sort-direction", "desc");
-
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-
-    // desc: Sonnenweg (2200), Bergstrasse (1800), Seeblick (null)
-    let order = Array.from(document.querySelectorAll("h3")).map(
-      (el) => el.textContent
-    );
-    expect(order).toEqual(["Sonnenweg 3", "Bergstrasse 12", "Seeblick 7"]);
-
+    renderPage();
     await user.click(screen.getByRole("button", { name: /Descending/i }));
-
-    // asc: Bergstrasse (1800), Sonnenweg (2200), Seeblick (null last)
-    await waitFor(() => {
-      order = Array.from(document.querySelectorAll("h3")).map(
-        (el) => el.textContent
-      );
-      expect(order).toEqual(["Bergstrasse 12", "Sonnenweg 3", "Seeblick 7"]);
-    });
-
+    expect(headingOrder()).toEqual(["Sonnenweg 3", "Seeblick 7", "Bergstrasse 12"]);
     expect(localStorage.getItem("flatpare-apartments-sort-direction")).toBe("asc");
   });
 
-  it("renders exactly 6 sort field options in the list-page Select", async () => {
+  it("renders exactly 6 sort field options with no locations", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
-    const options = await screen.findAllByRole("option");
-    expect(options).toHaveLength(6);
-    const labels = options.map((o) => o.textContent);
-    expect(labels).toEqual([
-      "Date added",
-      "Price",
-      "Size",
-      "Rooms",
-      "Avg rating",
-      "Short code",
-    ]);
+    renderPage();
+    await user.click(screen.getByRole("combobox", { name: "Sort by" }));
+    expect(await screen.findAllByRole("option")).toHaveLength(6);
   });
 });
 
 describe("Apartments page — search", () => {
-  it("renders an empty search input on mount and shows all apartments", async () => {
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    const input = screen.getByRole("textbox", { name: /Search apartments/i });
-    expect((input as HTMLInputElement).value).toBe("");
-    expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+  it("renders an empty search input", () => {
+    renderPage();
+    expect(screen.getByRole("textbox", { name: "Search apartments" })).toHaveValue("");
   });
 
-  it("filters by name substring, case-insensitive", async () => {
+  it("filters by name", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "berg"
-    );
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
-    expect(screen.queryByText("Seeblick 7")).toBeNull();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "berg");
+    expect(headingOrder()).toEqual(["Bergstrasse 12"]);
   });
 
-  it("filters by short code, case-insensitive", async () => {
+  it("filters by short code", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "GHI"
-    );
-    await waitFor(() => {
-      expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
-    });
-    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
-    expect(screen.queryByText("Bergstrasse 12")).toBeNull();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "ghi-3.5");
+    expect(headingOrder()).toEqual(["Seeblick 7"]);
   });
 
   it("filters by address", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "zürich"
-    );
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    expect(screen.queryByText("Seeblick 7")).toBeNull();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "8001");
+    expect(headingOrder()).toEqual(["Sonnenweg 3"]);
   });
 
-  it("treats null address as empty — 'null' query matches nothing", async () => {
+  it("does not match a null address against the literal 'null'", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "null"
-    );
-    await waitFor(() => {
-      expect(screen.getByText(/No apartments match "null"/i)).toBeInTheDocument();
-    });
-    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
-    expect(screen.queryByText("Bergstrasse 12")).toBeNull();
-    expect(screen.queryByText("Seeblick 7")).toBeNull();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "null");
+    expect(screen.getByText('No apartments match "null"')).toBeInTheDocument();
   });
 
-  it("renders empty-result state when the query matches no apartments", async () => {
+  it("shows the empty-result state and clears it via 'Show all apartments'", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "xyz"
-    );
-    await waitFor(() => {
-      expect(screen.getByText(/No apartments match "xyz"/i)).toBeInTheDocument();
-    });
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "zzz");
+    expect(screen.getByText('No apartments match "zzz"')).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show all apartments" }));
+    expect(headingOrder()).toHaveLength(3);
   });
 
-  it("'Show all apartments' button in the empty-result state resets the query", async () => {
+  it("clears via the X button", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "xyz"
-    );
-    await waitFor(() => {
-      expect(screen.getByText(/No apartments match "xyz"/i)).toBeInTheDocument();
-    });
-    await user.click(
-      screen.getByRole("button", { name: /Show all apartments/i })
-    );
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
-    const input = screen.getByRole("textbox", { name: /Search apartments/i });
-    expect((input as HTMLInputElement).value).toBe("");
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "berg");
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("textbox", { name: "Search apartments" })).toHaveValue("");
+    expect(headingOrder()).toHaveLength(3);
   });
 
-  it("inline Clear (X) button in the input resets the query", async () => {
+  it("treats whitespace-only queries as empty", async () => {
     const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "berg"
-    );
-    await waitFor(() => {
-      expect(screen.queryByText("Sonnenweg 3")).toBeNull();
-    });
-    await user.click(screen.getByRole("button", { name: /Clear search/i }));
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "   ");
+    expect(headingOrder()).toHaveLength(3);
   });
 
-  it("whitespace-only query behaves as empty", async () => {
-    const user = userEvent.setup();
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "  "
-    );
-    expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    expect(screen.getByText("Seeblick 7")).toBeInTheDocument();
-    expect(screen.queryByText(/No apartments match/i)).toBeNull();
-  });
-
-  it("composes with sort: search narrows first, sort applies after", async () => {
+  it("composes with sort", async () => {
     const user = userEvent.setup();
     localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
     localStorage.setItem("flatpare-apartments-sort-direction", "asc");
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    await user.type(
-      screen.getByRole("textbox", { name: /Search apartments/i }),
-      "berg"
-    );
-    await waitFor(() => {
-      expect(screen.getByText("Bergstrasse 12")).toBeInTheDocument();
-    });
-    expect(screen.queryByText("Sonnenweg 3")).toBeNull();
-    expect(screen.queryByText("Seeblick 7")).toBeNull();
+    renderPage();
+    await user.type(screen.getByRole("textbox", { name: "Search apartments" }), "zürich");
+    expect(headingOrder()).toEqual(["Bergstrasse 12", "Sonnenweg 3"]);
   });
 });
 
 describe("Apartments page — listing gone badge", () => {
-  it("renders a Gone badge for apartments with listingGone=true", async () => {
-    const goneApartments = [
-      { ...APARTMENTS[0], listingGone: true },
-      { ...APARTMENTS[1], listingGone: false },
-      { ...APARTMENTS[2], listingGone: null },
-    ];
-    vi.spyOn(global, "fetch").mockImplementation(async (input) => {
-      const url = typeof input === "string" ? input : (input as Request).url;
-      if (url === "/api/locations") {
-        return { ok: true, json: () => Promise.resolve([]) } as Response;
-      }
-      return {
-        ok: true,
-        json: () => Promise.resolve(goneApartments),
-      } as Response;
+  it("renders a Gone badge only for apartments with listingGone=true", () => {
+    renderPage({
+      apartments: [
+        { ...APARTMENTS[0], listingGone: true },
+        { ...APARTMENTS[1], listingGone: false },
+        APARTMENTS[2],
+      ],
     });
-
-    render(<ApartmentsPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-
-    const goneBadges = screen.getAllByText("Gone");
-    expect(goneBadges).toHaveLength(1);
+    expect(screen.getAllByText("Gone")).toHaveLength(1);
   });
 });

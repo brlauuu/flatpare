@@ -5,9 +5,9 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { GoneBadge, RatedBadge } from "./apartment-badges";
-import type { ApartmentSummary } from "./apartment-summary";
+import type { ApartmentView } from "@/lib/household-data/types";
 
-export function ApartmentCard({ apt }: { apt: ApartmentSummary }) {
+export function ApartmentCard({ apt }: { apt: ApartmentView }) {
   return (
     <Link href={`/apartments/${apt.id}`}>
       <Card className="transition-shadow hover:shadow-md">
@@ -21,12 +21,8 @@ export function ApartmentCard({ apt }: { apt: ApartmentSummary }) {
           </div>
           <div className="flex items-start justify-between">
             <h3 className="font-medium leading-tight">{apt.name}</h3>
-            {apt.avgOverall && (
-              <StarRating
-                value={Math.round(parseFloat(apt.avgOverall))}
-                readonly
-                size="sm"
-              />
+            {apt.avgOverall !== null && (
+              <StarRating value={Math.round(apt.avgOverall)} readonly size="sm" />
             )}
           </div>
           {apt.address && (
