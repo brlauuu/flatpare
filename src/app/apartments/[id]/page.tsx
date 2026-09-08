@@ -1,229 +1,176 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { ApartmentMap } from "@/components/apartment-map";
+import { ApartmentLocationMap } from "@/components/apartment-location-map";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   formFromApartment,
-  formToPayload,
+  formFromExtracted,
+  formToFields,
   type ApartmentForm,
 } from "@/components/apartment-form-fields";
 import { ApartmentEditForm } from "@/components/apartment-edit-form";
 import {
   MyRatingPanel,
   OtherRatingPanel,
+  type RatingState,
 } from "@/components/apartment-rating-panel";
-import {
-  type ErrorDetails,
-  fetchErrorFromResponse,
-  fetchErrorFromException,
-} from "@/lib/fetch-error";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { downloadPdf } from "@/components/household-data/pdf-files";
+import { parsePdf } from "@/components/household-data/process-client";
+import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import { applyExtraction, mergeUserEdit } from "@/lib/edited-fields";
 import { useApartmentPager } from "@/components/household-data/use-apartment-pager";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 import { formatSwissDate } from "@/lib/iso-date";
+import type { RatingView } from "@/lib/household-data/types";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
-import type {
-  ApartmentDetail,
-  LocationLite,
-} from "./_components/types";
 
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
 }
 
+const EMPTY_RATING: RatingState = {
+  kitchen: 0,
+  balconies: 0,
+  location: 0,
+  floorplan: 0,
+  overallFeeling: 0,
+  comment: "",
+};
+
+function snapshotOf(rating: RatingView | null): RatingState {
+  return rating
+    ? {
+        kitchen: rating.kitchen,
+        balconies: rating.balconies,
+        location: rating.location,
+        floorplan: rating.floorplan,
+        overallFeeling: rating.overallFeeling,
+        comment: rating.comment || "",
+      }
+    : EMPTY_RATING;
+}
+
+function isSameRating(a: RatingState, b: RatingState): boolean {
+  return (
+    a.kitchen === b.kitchen &&
+    a.balconies === b.balconies &&
+    a.location === b.location &&
+    a.floorplan === b.floorplan &&
+    a.overallFeeling === b.overallFeeling &&
+    a.comment === b.comment
+  );
+}
+
 export default function ApartmentDetailPage() {
   const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
-  const pager = useApartmentPager(Number(params.id));
-  const [apartment, setApartment] = useState<ApartmentDetail | null>(null);
-  const [locations, setLocations] = useState<LocationLite[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    status,
+    error: loadError,
+    apartments,
+    locations,
+    identity,
+    dataKey,
+    updateApartment,
+    deleteApartment,
+    rateApartment,
+  } = useHouseholdData();
+  const pager = useApartmentPager(id);
+  const apartment = apartments.find((a) => a.id === id) ?? null;
+
   const [deleting, setDeleting] = useState(false);
-  const EMPTY_RATING = {
-    kitchen: 0,
-    balconies: 0,
-    location: 0,
-    floorplan: 0,
-    overallFeeling: 0,
-    comment: "",
-  };
-  const [myRating, setMyRating] = useState(EMPTY_RATING);
-  const [cleanRating, setCleanRating] = useState(EMPTY_RATING);
+  const [myRating, setMyRating] = useState<RatingState>(EMPTY_RATING);
+  const [cleanRating, setCleanRating] = useState<RatingState>(EMPTY_RATING);
   const [saving, setSaving] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [myId, setMyId] = useState("");
   const [error, setError] = useState<ErrorState | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
-  // The signed-in account's id and display name, fetched once from
-  // Auth.js's own session endpoint (there is no more per-browser
-  // display-name cookie to switch, since Task 6 removed that model — one
-  // session is one account). Identity is keyed on `myIdRef` — `userId` is
-  // the only stable, unique field; `users.name` is nullable and not unique
-  // across OAuth accounts, so it's for display only.
-  const myIdRef = useRef<string>("");
-  const myNameRef = useRef<string>("");
 
-  // Shared applier so both the initial effect and later reloads (after a
-  // save, edit, or reprocess) converge on the same state updates.
-  function applyApartmentData(data: ApartmentDetail) {
-    setApartment(data);
-    setError(null);
-    setUserName(myNameRef.current);
-    setMyId(myIdRef.current);
-    const existing = data.ratings?.find((r) => r.userId === myIdRef.current);
-    const snapshot = existing
-      ? {
-          kitchen: existing.kitchen,
-          balconies: existing.balconies,
-          location: existing.location,
-          floorplan: existing.floorplan,
-          overallFeeling: existing.overallFeeling,
-          comment: existing.comment || "",
-        }
-      : EMPTY_RATING;
+  // My stored rating, if any. The draft is re-seeded from it whenever the
+  // stored copy changes (first load, after a save) — keyed on id + updatedAt
+  // so typing a draft is not clobbered by unrelated store updates. Adjusted
+  // during render (React's documented pattern for "reset state when a prop
+  // changes") rather than in an effect, which would set state synchronously
+  // on every render of that effect and trigger a cascading extra render.
+  const storedRating = apartment?.ratings.find((r) => r.userId === identity.userId) ?? null;
+  const storedRatingStamp = storedRating?.updatedAt ?? null;
+  const ratingResetKey = `${id}:${storedRatingStamp ?? ""}`;
+  const [seenRatingKey, setSeenRatingKey] = useState<string | null>(null);
+  if (seenRatingKey !== ratingResetKey) {
+    setSeenRatingKey(ratingResetKey);
+    const snapshot = snapshotOf(storedRating);
     setMyRating(snapshot);
     setCleanRating(snapshot);
   }
 
-  async function reloadApartment() {
-    const url = `/api/apartments/${params.id}`;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't load apartment",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        return;
-      }
-      applyApartmentData(await res.json());
-    } catch (err) {
-      setError({
-        headline: "Couldn't load apartment",
-        details: fetchErrorFromException(err, url),
-      });
-    }
-  }
-
+  const isRatingDirty = !isSameRating(myRating, cleanRating);
   useEffect(() => {
-    let cancelled = false;
-    const url = `/api/apartments/${params.id}`;
-    void (async () => {
-      try {
-        const [res, locRes, sessionRes] = await Promise.all([
-          fetch(url),
-          fetch("/api/locations"),
-          fetch("/api/auth/session"),
-        ]);
-        if (cancelled) return;
-        if (!res.ok) {
-          setError({
-            headline: "Couldn't load apartment",
-            details: await fetchErrorFromResponse(res, url),
-          });
-          setLoading(false);
-          return;
-        }
-        if (sessionRes.ok) {
-          const session = (await sessionRes.json()) as {
-            user?: { id?: string; name?: string | null };
-          } | null;
-          myIdRef.current = session?.user?.id ?? "";
-          myNameRef.current = session?.user?.name ?? "";
-        }
-        const data = (await res.json()) as ApartmentDetail;
-        if (cancelled) return;
-        applyApartmentData(data);
-        if (locRes.ok) {
-          setLocations((await locRes.json()) as LocationLite[]);
-        }
-        setLoading(false);
-      } catch (err) {
-        if (cancelled) return;
-        setError({
-          headline: "Couldn't load apartment",
-          details: fetchErrorFromException(err, url),
-        });
-        setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
-
-  useEffect(() => {
-    const dirty =
-      myRating.kitchen !== cleanRating.kitchen ||
-      myRating.balconies !== cleanRating.balconies ||
-      myRating.location !== cleanRating.location ||
-      myRating.floorplan !== cleanRating.floorplan ||
-      myRating.overallFeeling !== cleanRating.overallFeeling ||
-      myRating.comment !== cleanRating.comment;
-    setUnsavedRating(dirty);
+    setUnsavedRating(isRatingDirty);
     return () => setUnsavedRating(false);
-  }, [myRating, cleanRating]);
+  }, [isRatingDirty]);
 
   async function handleDelete() {
     if (!confirm("Delete this apartment? This cannot be undone.")) return;
     setDeleting(true);
-    const url = `/api/apartments/${params.id}`;
     try {
-      const res = await fetch(url, { method: "DELETE" });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't delete apartment",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setDeleting(false);
-        return;
-      }
+      await deleteApartment(id);
       router.push("/apartments");
     } catch (err) {
       setError({
         headline: "Couldn't delete apartment",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
       setDeleting(false);
     }
   }
 
+  async function handleViewPdf() {
+    if (!apartment?.pdf) return;
+    try {
+      const bytes = await downloadPdf(dataKey, identity.householdId, apartment.id, apartment.pdf);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      window.open(url, "_blank", "noopener");
+      // The tab has the bytes now; release the URL after it has had time to load.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
+    }
+  }
+
   async function handleReprocess() {
-    if (!apartment?.pdfUrl) return;
+    if (!apartment?.pdf) return;
     const ok = window.confirm(
       "Reprocess this apartment? Fields you haven't edited will be refreshed from the PDF. Fields you've edited will stay."
     );
     if (!ok) return;
     setReprocessing(true);
-    const url = `/api/apartments/${params.id}/reprocess`;
+    setError(null);
     try {
-      const res = await fetch(url, { method: "POST" });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't reprocess apartment",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setReprocessing(false);
-        return;
-      }
-      await reloadApartment();
+      const bytes = await downloadPdf(dataKey, identity.householdId, apartment.id, apartment.pdf);
+      const { extracted } = await parsePdf(bytes, `${apartment.id}.pdf`);
+      // Coerce through the form helpers so the extraction lands as typed
+      // Apartment fields, then keep whatever the user edited by hand.
+      const fields = formToFields(formFromExtracted(extracted));
+      await updateApartment(apartment.id, (current) => applyExtraction(current, fields, extracted));
     } catch (err) {
       setError({
         headline: "Couldn't reprocess apartment",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
     } finally {
       setReprocessing(false);
@@ -243,35 +190,22 @@ export default function ApartmentDetailPage() {
   }
 
   async function handleSaveEdit() {
-    if (!editForm) return;
+    if (!editForm || !apartment) return;
     if (!editForm.name.trim()) {
       setError({ headline: "Name is required" });
       return;
     }
     setSavingEdit(true);
-    const url = `/api/apartments/${params.id}`;
+    const fields = formToFields(editForm);
     try {
-      const res = await fetch(url, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formToPayload(editForm)),
-      });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't save changes",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setSavingEdit(false);
-        return;
-      }
-      await reloadApartment();
+      await updateApartment(apartment.id, (current) => mergeUserEdit(current, fields));
       setEditing(false);
       setEditForm(null);
       setSavingEdit(false);
     } catch (err) {
       setError({
         headline: "Couldn't save changes",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
       setSavingEdit(false);
     }
@@ -281,42 +215,21 @@ export default function ApartmentDetailPage() {
     setMyRating(cleanRating);
   }
 
-  const isRatingDirty =
-    myRating.kitchen !== cleanRating.kitchen ||
-    myRating.balconies !== cleanRating.balconies ||
-    myRating.location !== cleanRating.location ||
-    myRating.floorplan !== cleanRating.floorplan ||
-    myRating.overallFeeling !== cleanRating.overallFeeling ||
-    myRating.comment !== cleanRating.comment;
-
   async function handleSaveRating() {
     setSaving(true);
-    const url = `/api/apartments/${params.id}/ratings`;
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(myRating),
-      });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't save rating",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setSaving(false);
-        return;
-      }
+      await rateApartment(id, myRating);
       router.push("/apartments");
     } catch (err) {
       setError({
         headline: "Couldn't save rating",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
       setSaving(false);
     }
   }
 
-  if (loading) {
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading...</p>
@@ -324,19 +237,42 @@ export default function ApartmentDetailPage() {
     );
   }
 
-  if (error && !apartment) {
+  if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={error.headline} details={error.details} />
+        <ErrorDisplay headline={loadError ?? "Couldn't load apartment"} />
       </div>
     );
   }
 
   if (!apartment) {
-    return null;
+    return (
+      <div className="py-8">
+        <ErrorDisplay headline="Apartment not found" />
+      </div>
+    );
   }
 
-  const otherRatings = apartment.ratings.filter((r) => r.userId !== myId);
+  if (apartment.corrupt) {
+    return (
+      <div className="space-y-4 py-8">
+        <ErrorDisplay
+          headline="This apartment could not be decrypted"
+          details={{
+            message:
+              "The stored record could not be opened with the household key. It can only be deleted.",
+            timestamp: new Date().toISOString(),
+          }}
+        />
+        {error && <ErrorDisplay headline={error.headline} details={error.details} />}
+        <Button variant="destructive" size="sm" disabled={deleting} onClick={handleDelete}>
+          {deleting ? "Deleting..." : "Delete"}
+        </Button>
+      </div>
+    );
+  }
+
+  const otherRatings = apartment.ratings.filter((r) => r.userId !== identity.userId);
 
   return (
     <div className="space-y-6">
@@ -345,28 +281,26 @@ export default function ApartmentDetailPage() {
         nextId={pager.nextId}
         position={pager.position}
         total={pager.total}
-        onNavigate={(id) => router.push(`/apartments/${id}`)}
+        onNavigate={(nextId) => router.push(`/apartments/${nextId}`)}
       />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <ShortCode code={apartment.shortCode} size="lg" />
           <h1 className="text-2xl font-semibold">{apartment.name}</h1>
           {apartment.address && (
-            <AddressLink
-              address={apartment.address}
-              className="text-muted-foreground"
-            />
+            <AddressLink address={apartment.address} className="text-muted-foreground" />
           )}
         </div>
         <ApartmentActions
-          pdfUrl={apartment.pdfUrl}
+          hasPdf={apartment.pdf !== null}
           listingUrl={apartment.listingUrl}
           editing={editing}
           reprocessing={reprocessing}
           deleting={deleting}
           onEdit={startEdit}
-          onReprocess={handleReprocess}
-          onDelete={handleDelete}
+          onViewPdf={() => void handleViewPdf()}
+          onReprocess={() => void handleReprocess()}
+          onDelete={() => void handleDelete()}
         />
       </div>
 
@@ -378,11 +312,8 @@ export default function ApartmentDetailPage() {
         </Card>
       )}
 
-      {error && (
-        <ErrorDisplay headline={error.headline} details={error.details} />
-      )}
+      {error && <ErrorDisplay headline={error.headline} details={error.details} />}
 
-      {/* Apartment metrics or edit form */}
       {editing && editForm ? (
         <ApartmentEditForm
           form={editForm}
@@ -391,11 +322,9 @@ export default function ApartmentDetailPage() {
             setEditForm((prev) => (prev ? { ...prev, [field]: value } : prev))
           }
           onWashingMachineChange={(v) =>
-            setEditForm((prev) =>
-              prev ? { ...prev, hasWashingMachine: v } : prev
-            )
+            setEditForm((prev) => (prev ? { ...prev, hasWashingMachine: v } : prev))
           }
-          onSave={handleSaveEdit}
+          onSave={() => void handleSaveEdit()}
           onCancel={cancelEdit}
         />
       ) : (
@@ -416,24 +345,27 @@ export default function ApartmentDetailPage() {
         />
       )}
 
-      <ApartmentMap embedUrl={apartment.mapEmbedUrl} title={apartment.name} />
+      <ApartmentLocationMap
+        latitude={apartment.latitude}
+        longitude={apartment.longitude}
+        label={apartment.shortCode ?? apartment.name}
+      />
 
       <Separator />
 
       <MyRatingPanel
-        userName={userName}
+        userName={identity.userName}
         rating={myRating}
         saving={saving}
         dirty={isRatingDirty}
         onChange={setMyRating}
-        onSave={handleSaveRating}
+        onSave={() => void handleSaveRating()}
         onCancel={handleCancelRating}
       />
 
       {otherRatings.map((rating) => (
-        <OtherRatingPanel key={rating.id} rating={rating} />
+        <OtherRatingPanel key={rating.userId} rating={rating} />
       ))}
     </div>
   );
 }
-

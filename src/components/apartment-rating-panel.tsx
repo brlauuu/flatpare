@@ -91,7 +91,6 @@ export function OtherRatingPanel({
   // only — it is nullable (some OAuth accounts have no name) and not unique
   // across accounts, so it must never be used to key anything.
   rating: {
-    id: number;
     userId: string;
     userName: string | null;
     comment: string;

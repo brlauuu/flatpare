@@ -1,11 +1,11 @@
 import { WashingMachine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { ApartmentDetail } from "./types";
+import type { Apartment } from "@/lib/household-data/types";
 
 export function ApartmentMetricBadges({
   apartment,
 }: {
-  apartment: ApartmentDetail;
+  apartment: Apartment;
 }) {
   return (
     <div className="flex flex-wrap gap-2">

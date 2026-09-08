@@ -1,13 +1,10 @@
 import { iconComponentFor } from "@/lib/location-icons";
+import type { ApartmentDistance } from "@/lib/household-data/types";
 import type { LocationLite } from "./types";
 
 interface DistanceSectionProps {
   locations: LocationLite[];
-  distances: {
-    locationId: number;
-    bikeMin: number | null;
-    transitMin: number | null;
-  }[];
+  distances: Record<string, ApartmentDistance>;
   apartmentAddress: string | null;
 }
 
@@ -16,7 +13,6 @@ export function DistanceSection({
   distances,
   apartmentAddress,
 }: DistanceSectionProps) {
-  const distancesByLoc = new Map(distances.map((d) => [d.locationId, d]));
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -25,7 +21,7 @@ export function DistanceSection({
       <div className="space-y-1.5">
         {locations.map((loc) => {
           const Icon = iconComponentFor(loc.icon);
-          const d = distancesByLoc.get(loc.id);
+          const d = distances[loc.id];
           const bike = d?.bikeMin;
           const transit = d?.transitMin;
           const mapsUrl = apartmentAddress
