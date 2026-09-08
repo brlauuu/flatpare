@@ -355,6 +355,121 @@ describe("applyMigrations", () => {
     expect(message).not.toContain("ratings");
   });
 
+  it("creates the unique index on users.email", async () => {
+    const client = createClient({ url: ":memory:" });
+
+    await applyMigrations(client);
+
+    const index = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='index' AND name='users_email_unique'",
+      args: [],
+    });
+    expect(index.rows).toHaveLength(1);
+
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'self-hosted@flatpare.local')",
+      args: [],
+    });
+    await expect(
+      client.execute({
+        sql: "INSERT INTO users (id, email) VALUES ('u2', 'self-hosted@flatpare.local')",
+        args: [],
+      })
+    ).rejects.toThrow(/UNIQUE constraint failed/i);
+  });
+
+  it("the users.email index is case-sensitive, so OAuth keeps its account-linking path", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'alice@example.com')",
+      args: [],
+    });
+    // Must NOT throw: Auth.js's getUserByEmail is a case-sensitive lookup,
+    // so a NOCASE index would turn this into an opaque constraint failure
+    // instead of the clean OAuthAccountNotLinked response.
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u2', 'Alice@example.com')",
+      args: [],
+    });
+    const rows = await client.execute({
+      sql: "SELECT COUNT(*) AS n FROM users",
+      args: [],
+    });
+    expect(Number(rows.rows[0]?.n)).toBe(2);
+  });
+
+  it("refuses to run 0015 on a database that already holds duplicate user emails", async () => {
+    const client = createClient({ url: ":memory:" });
+    // A database at 0014: users exists, no unique index, two raced rows.
+    await client.execute({
+      sql: `CREATE TABLE users (
+        id text PRIMARY KEY NOT NULL,
+        name text,
+        email text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'self-hosted@flatpare.local')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u2', 'self-hosted@flatpare.local')",
+      args: [],
+    });
+
+    await expect(applyMigrations(client)).rejects.toThrow(
+      /unique index on `users\.email`[\s\S]*self-hosted@flatpare\.local[\s\S]*u1[\s\S]*u2[\s\S]*data is untouched/
+    );
+    // Both rows survive: the operator, not the migrator, picks a survivor.
+    const rows = await client.execute({
+      sql: "SELECT COUNT(*) AS n FROM users",
+      args: [],
+    });
+    expect(Number(rows.rows[0]?.n)).toBe(2);
+  });
+
+  it("the 0015 preflight passes on a database whose user emails are all distinct", async () => {
+    const client = createClient({ url: ":memory:" });
+    await client.execute({
+      sql: `CREATE TABLE users (
+        id text PRIMARY KEY NOT NULL,
+        name text,
+        email text NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'a@example.com')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u2', 'b@example.com')",
+      args: [],
+    });
+
+    await expect(applyMigrations(client)).resolves.toBeUndefined();
+    const index = await client.execute({
+      sql: "SELECT name FROM sqlite_master WHERE type='index' AND name='users_email_unique'",
+      args: [],
+    });
+    expect(index.rows).toHaveLength(1);
+  });
+
+  it("the 0015 preflight does not fire on an already-migrated database", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('u1', 'a@example.com')",
+      args: [],
+    });
+
+    // The index exists, so the duplicate scan is skipped entirely.
+    await expect(applyMigrations(client)).resolves.toBeUndefined();
+  });
+
   it("creates the E2 tables and recovery columns", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);

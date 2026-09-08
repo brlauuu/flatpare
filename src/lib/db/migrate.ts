@@ -126,6 +126,57 @@ export async function preflightEncryptedModelMigration(
   );
 }
 
+// Migration 0015 adds a unique index on `users.email`. A database that
+// already raced two rows onto the same address (the select-then-insert in
+// the credentials provider, before #200) cannot have that index created:
+// SQLite aborts with "UNIQUE constraint failed: users.email", which names
+// neither the offending rows nor the fact that a whole household hangs off
+// each of them.
+//
+// Deduplicating automatically is not possible. Each duplicate user resolves
+// to its own household with its own apartments, ratings and member keys, and
+// picking a survivor silently would destroy one person's data. So the
+// preflight reports exactly which addresses collided and which user ids hold
+// them, and leaves the choice to the operator.
+export async function preflightDuplicateUserEmails(
+  client: Client
+): Promise<void> {
+  const tables = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name = 'users'",
+    args: [],
+  });
+  if (tables.rows.length === 0) return; // fresh database
+
+  const indexes = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='index' AND name = 'users_email_unique'",
+    args: [],
+  });
+  if (indexes.rows.length > 0) return; // 0015 has already run
+
+  const dupes = await client.execute({
+    sql: `SELECT email, COUNT(*) AS n, GROUP_CONCAT(id) AS ids
+            FROM users
+           GROUP BY email
+          HAVING n > 1
+           ORDER BY email`,
+    args: [],
+  });
+  if (dupes.rows.length === 0) return;
+
+  const detail = dupes.rows
+    .map((r) => `${String(r.email)} (${Number(r.n)} rows: ${String(r.ids)})`)
+    .join("; ");
+  throw new Error(
+    "This release adds a unique index on `users.email`, and this database " +
+      "holds more than one user row for the same address: " +
+      detail +
+      ". Each of those users owns a separate household, so they cannot be " +
+      "merged automatically — decide which user id to keep, move or discard " +
+      "the other household's data, delete the surplus `users` rows, and " +
+      "restart. No migration has been applied and your data is untouched."
+  );
+}
+
 // The encryption mode is a property of the DATABASE, fixed on first boot:
 // rows written under one mode are unreadable under the other (encrypted
 // envelopes need a key that "off" never creates; plaintext envelopes are
@@ -205,6 +256,7 @@ export async function applyMigrations(
 ): Promise<void> {
   await preflightTenancyMigration(client);
   await preflightEncryptedModelMigration(client);
+  await preflightDuplicateUserEmails(client);
   // On Vercel the `drizzle/` folder isn't reliably present in the serverless
   // file trace, so SQL migrations are applied at build time via `drizzle-kit
   // migrate` (see package.json `vercel-build`). Skip the runtime drizzle
