@@ -1,176 +1,84 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-
-const pushMock = vi.fn();
+import { renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock("@/components/household-data/process-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/household-data/process-client")>()),
+  parsePdf: vi.fn(),
+}));
+vi.mock("@/components/household-data/pdf-files", () => ({
+  encryptAndUploadPdf: vi.fn(),
+  downloadPdf: vi.fn(),
 }));
 
 import UploadPage from "../page";
-import { _resetBlobModeProbeForTests } from "@/lib/upload-pdf";
+import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
+import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 
 function makePdfFile(name = "listing.pdf"): File {
-  const blob = new Blob(["%PDF-1.4\n...\n"], { type: "application/pdf" });
-  return new File([blob], name, { type: "application/pdf" });
-}
-
-function successResponse() {
-  return {
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        pdfUrl: "https://blob.example/listing.pdf",
-        extracted: {
-          name: "Parsed Apartment",
-          address: null,
-          sizeM2: null,
-          numRooms: null,
-          numBathrooms: null,
-          numBalconies: null,
-          hasWashingMachine: null,
-          rentChf: null,
-          listingUrl: null,
-        },
-        aiAvailable: true,
-      }),
-  } as Response;
-}
-
-function errorResponse(status: number, body: Record<string, unknown>) {
-  const res = {
-    ok: false,
-    status,
-    statusText: "Error",
-    json: () => Promise.resolve(body),
-    text: () => Promise.resolve(JSON.stringify(body)),
-    clone() {
-      return res;
-    },
-  };
-  return res as unknown as Response;
+  return new File([new Blob(["%PDF-1.4\n"], { type: "application/pdf" })], name, {
+    type: "application/pdf",
+  });
 }
 
 async function dropPdf(user: ReturnType<typeof userEvent.setup>, file: File) {
-  const input = document.querySelector(
-    'input[type="file"]'
-  ) as HTMLInputElement;
-  expect(input).toBeTruthy();
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
   await user.upload(input, file);
 }
 
-function probeResponse(enabled: boolean) {
-  return {
-    ok: enabled,
-    status: enabled ? 200 : 404,
-    json: () => Promise.resolve({ enabled }),
-  } as Response;
-}
-
-// Mocks fetch so the upload-token probe always reports "not configured"
-// (forcing the multipart fallback path), and parse-pdf calls get the
-// supplied responses in order.
-function mockParsePdf(...responses: Response[]) {
-  let i = 0;
-  return vi
-    .spyOn(global, "fetch")
-    .mockImplementation(async (input: RequestInfo | URL) => {
-      const url = typeof input === "string" ? input : input.toString();
-      if (url.includes("/api/parse-pdf/upload-token")) {
-        return probeResponse(false);
-      }
-      const next = responses[i++];
-      if (!next) throw new Error(`No mocked response for fetch #${i} to ${url}`);
-      return next;
-    });
-}
-
 beforeEach(() => {
-  pushMock.mockReset();
-  _resetBlobModeProbeForTests();
+  vi.mocked(encryptAndUploadPdf).mockResolvedValue({ path: "/p", iv: null });
 });
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
+afterEach(() => cleanup());
 
-describe("Upload page — retry", () => {
-  it("renders a Retry button and the parsed message on a quota error", async () => {
-    mockParsePdf(
-      errorResponse(429, {
-        error: "AI quota exceeded — try again in 34s.",
-        reason: "quota",
-        retryAfterSeconds: 34,
-      })
-    );
+describe("upload retry", () => {
+  it("shows the quota message with retry-after and a Retry button", async () => {
     const user = userEvent.setup();
-    render(<UploadPage />);
+    vi.mocked(parsePdf).mockRejectedValueOnce(
+      new ParsePdfError("AI quota exhausted", "quota", 429, 30)
+    );
+    renderWithHouseholdData(<UploadPage />);
     await dropPdf(user, makePdfFile());
-    await waitFor(() => {
-      expect(screen.getByText(/AI quota exceeded.*34s/i)).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: /Retry/i })).toBeEnabled();
+    expect(await screen.findByText(/AI quota exhausted/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument();
   });
 
-  it("re-submits the same file on Retry and transitions to done", async () => {
+  it("shows the invalid-PDF message with a Retry button", async () => {
     const user = userEvent.setup();
-    const fetchSpy = mockParsePdf(
-      errorResponse(429, {
-        error: "AI quota exceeded — try again in 34s.",
-        reason: "quota",
-        retryAfterSeconds: 34,
-      }),
-      successResponse()
+    vi.mocked(parsePdf).mockRejectedValueOnce(
+      new ParsePdfError("Could not read this PDF", "invalid_pdf", 400)
     );
-    render(<UploadPage />);
-    await dropPdf(user, makePdfFile("listing.pdf"));
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole("button", { name: /Retry/i }));
-    await waitFor(() => {
-      expect(screen.getByText("Parsed Apartment")).toBeInTheDocument();
-    });
-    const parsePdfCalls = fetchSpy.mock.calls.filter(
-      (c) => String(c[0]) === "/api/parse-pdf"
-    );
-    expect(parsePdfCalls).toHaveLength(2);
-    const body = parsePdfCalls[1][1]?.body as FormData;
-    expect((body.get("file") as File).name).toBe("listing.pdf");
+    renderWithHouseholdData(<UploadPage />);
+    await dropPdf(user, makePdfFile());
+    expect(await screen.findByText(/Could not read this PDF/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument();
   });
 
-  it("shows the Retry button on an invalid_pdf error", async () => {
-    mockParsePdf(
-      errorResponse(400, {
-        error:
-          "Couldn't read this PDF. It may be corrupted or an unsupported format.",
-        reason: "invalid_pdf",
-      })
-    );
+  it("maps a non-ParsePdfError failure to reason 'unknown' and still offers Retry", async () => {
     const user = userEvent.setup();
-    render(<UploadPage />);
+    vi.mocked(parsePdf).mockRejectedValueOnce(new Error("network down"));
+    renderWithHouseholdData(<UploadPage />);
     await dropPdf(user, makePdfFile());
-    await waitFor(() => {
-      expect(screen.getByText(/Couldn't read this PDF/i)).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: /Retry/i })).toBeEnabled();
+    expect(await screen.findByText(/network down/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Retry/i })).toBeInTheDocument();
   });
 
-  it("shows the Retry button on an unknown error", async () => {
-    mockParsePdf(
-      errorResponse(500, {
-        error: "Parsing failed: ECONNRESET",
-        reason: "unknown",
-      })
-    );
+  it("re-runs parse and upload on Retry and transitions to done", async () => {
     const user = userEvent.setup();
-    render(<UploadPage />);
+    vi.mocked(parsePdf)
+      .mockRejectedValueOnce(new ParsePdfError("AI quota exhausted", "quota", 429, 5))
+      .mockResolvedValueOnce({ extracted: { name: "Parsed Apartment" }, aiAvailable: true });
+    renderWithHouseholdData(<UploadPage />);
     await dropPdf(user, makePdfFile());
-    await waitFor(() => {
-      expect(screen.getByText(/Parsing failed.*ECONNRESET/i)).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: /Retry/i })).toBeEnabled();
+    await user.click(await screen.findByRole("button", { name: /Retry/i }));
+    expect(await screen.findByText("Parsed Apartment")).toBeInTheDocument();
+    expect(parsePdf).toHaveBeenCalledTimes(2);
+    expect(encryptAndUploadPdf).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Retry/i })).toBeNull());
   });
 });

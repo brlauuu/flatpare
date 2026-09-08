@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  type ApartmentForm,
+  apartmentFromForm,
   emptyApartmentForm,
   formFromExtracted,
-  formToPayload,
-  type ApartmentForm,
 } from "@/components/apartment-form-fields";
-import {
-  type ErrorDetails,
-  fetchErrorFromResponse,
-  fetchErrorFromException,
-} from "@/lib/fetch-error";
-import { uploadAndParsePdf } from "@/lib/upload-pdf";
+import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
+import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
+import { newRowId } from "@/lib/household-data/ids";
 import { UploadStep } from "./_components/upload-step";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
@@ -25,12 +24,14 @@ interface ErrorState {
   details?: ErrorDetails;
 }
 
+const PDF_STORE_WARNING =
+  "PDF could not be stored — the apartment will be saved without it";
+
 export default function UploadPage() {
   const router = useRouter();
+  const { createApartment, dataKey, identity } = useHouseholdData();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
-  const [step, setStep] = useState<
-    "upload" | "processing" | "review" | "single"
-  >("upload");
+  const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
   const [singleForm, setSingleForm] = useState<ApartmentForm>(emptyApartmentForm);
   const [saving, setSaving] = useState(false);
@@ -39,25 +40,21 @@ export default function UploadPage() {
   const fileMapRef = useRef<Map<string, File>>(new Map());
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
-    );
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 
   function updateItemForm(id: string, field: keyof ApartmentForm, value: string) {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id
-          ? { ...item, form: { ...item.form, [field]: value } }
-          : item
+        item.id === id ? { ...item, form: { ...item.form, [field]: value } } : item
       )
     );
   }
 
   function updateItemWashingMachine(id: string, value: boolean | null) {
     setItems((prev) =>
-      prev.map((it) =>
-        it.id === id ? { ...it, form: { ...it.form, hasWashingMachine: value } } : it
+      prev.map((item) =>
+        item.id === id ? { ...item, form: { ...item.form, hasWashingMachine: value } } : item
       )
     );
   }
@@ -67,99 +64,65 @@ export default function UploadPage() {
     updateItem(id, { discarded: true });
   }
 
+  // Parse (blind proxy) and encrypt+upload run concurrently on the same
+  // bytes. The item id is the future apartment id, so the file lands at its
+  // final path before the row exists.
   async function parseOne(itemId: string, file: File) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, status: "uploading" } : item
-      )
-    );
-
+    updateItem(itemId, {
+      status: "uploading",
+      error: undefined,
+      errorReason: undefined,
+      errorRetryAfterSeconds: undefined,
+      pdfWarning: undefined,
+    });
+    let bytes: Uint8Array<ArrayBuffer>;
     try {
-      const res = await uploadAndParsePdf(file);
-
-      if (!res.ok) {
-        let parsed: {
-          error?: string;
-          reason?: "quota" | "invalid_pdf" | "unknown";
-          retryAfterSeconds?: number;
-        } = {};
-        try {
-          parsed = await res.clone().json();
-        } catch {
-          // Non-JSON error (e.g. platform-level 413 HTML page). Fall through to
-          // the shared parser so the user sees status + body excerpt.
-        }
-        const fallback = await fetchErrorFromResponse(res, "/api/parse-pdf");
-        setItems((prev) =>
-          prev.map((i) =>
-            i.id === itemId
-              ? {
-                  ...i,
-                  status: "error",
-                  error: parsed.error ?? fallback.message ?? "Parsing failed",
-                  errorReason: parsed.reason ?? "unknown",
-                  errorRetryAfterSeconds: parsed.retryAfterSeconds,
-                }
-              : i
-          )
-        );
-        return;
-      }
-
-      const { pdfUrl, extracted } = await res.json();
-      const form = formFromExtracted(extracted, pdfUrl);
-
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, status: "done", form } : item
-        )
-      );
+      bytes = new Uint8Array(await file.arrayBuffer());
     } catch (err) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId
-            ? {
-                ...item,
-                status: "error",
-                error: err instanceof Error ? err.message : "Failed",
-                errorReason: "unknown",
-              }
-            : item
-        )
-      );
+      updateItem(itemId, {
+        status: "error",
+        error: err instanceof Error ? err.message : "Could not read file",
+        errorReason: "unknown",
+      });
+      return;
     }
+
+    const [parsed, uploaded] = await Promise.allSettled([
+      parsePdf(bytes, file.name),
+      encryptAndUploadPdf(dataKey, identity.householdId, itemId, bytes),
+    ]);
+
+    if (parsed.status === "rejected") {
+      const err: unknown = parsed.reason;
+      const known = err instanceof ParsePdfError ? err : null;
+      updateItem(itemId, {
+        status: "error",
+        error: err instanceof Error ? err.message : "Parsing failed",
+        errorReason: known?.reason ?? "unknown",
+        errorRetryAfterSeconds: known?.retryAfterSeconds,
+      });
+      return;
+    }
+
+    updateItem(itemId, {
+      status: "done",
+      form: formFromExtracted(parsed.value.extracted),
+      pdf: uploaded.status === "fulfilled" ? uploaded.value : null,
+      pdfWarning: uploaded.status === "rejected" ? PDF_STORE_WARNING : undefined,
+    });
   }
 
   async function retryItem(itemId: string) {
     const file = fileMapRef.current.get(itemId);
     if (!file) {
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === itemId
-            ? {
-                ...i,
-                status: "error",
-                error: "File reference lost — please re-upload",
-                errorReason: "unknown",
-                errorRetryAfterSeconds: undefined,
-              }
-            : i
-        )
-      );
+      updateItem(itemId, {
+        status: "error",
+        error: "File reference lost — please re-upload",
+        errorReason: "unknown",
+        errorRetryAfterSeconds: undefined,
+      });
       return;
     }
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === itemId
-          ? {
-              ...i,
-              error: undefined,
-              errorReason: undefined,
-              errorRetryAfterSeconds: undefined,
-            }
-          : i
-      )
-    );
     await parseOne(itemId, file);
   }
 
@@ -171,51 +134,45 @@ export default function UploadPage() {
     }
 
     const newItems: UploadItem[] = pdfFiles.map((file) => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: newRowId(),
       fileName: file.name,
       status: "queued" as const,
       form: emptyApartmentForm,
+      pdf: null,
       expanded: false,
       saved: false,
       discarded: false,
     }));
-
-    pdfFiles.forEach((file, i) => {
-      fileMapRef.current.set(newItems[i].id, file);
-    });
+    pdfFiles.forEach((file, i) => fileMapRef.current.set(newItems[i].id, file));
 
     setItems(newItems);
     setStep("processing");
     setError(null);
     processingRef.current = true;
 
-    // Process sequentially to avoid overwhelming the API
+    // Sequential across files: each file already runs two requests.
     for (let i = 0; i < pdfFiles.length; i++) {
       if (!processingRef.current) break;
-      const file = pdfFiles[i];
-      const itemId = newItems[i].id;
-      await parseOne(itemId, file);
+      await parseOne(newItems[i].id, pdfFiles[i]);
     }
 
     setStep("review");
+    // parseOne reads dataKey/identity from the closure; both are stable for
+    // the life of the provider.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFiles = useCallback(
     (fileList: FileList) => {
-      processFiles(Array.from(fileList));
+      void processFiles(Array.from(fileList));
     },
     [processFiles]
   );
 
   async function handleSaveAll() {
     const toSave = items.filter(
-      (item) =>
-        item.status === "done" &&
-        !item.saved &&
-        !item.discarded &&
-        item.form.name.trim()
+      (item) => item.status === "done" && !item.saved && !item.discarded && item.form.name.trim()
     );
-
     if (toSave.length === 0) {
       setError({ headline: "No apartments to save" });
       return;
@@ -226,21 +183,9 @@ export default function UploadPage() {
 
     for (const item of toSave) {
       try {
-        const res = await fetch("/api/apartments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formToPayload(item.form)),
-        });
-
-        if (res.ok) {
-          fileMapRef.current.delete(item.id);
-          updateItem(item.id, { saved: true });
-        } else {
-          updateItem(item.id, {
-            status: "error",
-            error: "Failed to save",
-          });
-        }
+        await createApartment(item.id, apartmentFromForm(item.form, item.pdf));
+        fileMapRef.current.delete(item.id);
+        updateItem(item.id, { saved: true });
       } catch {
         updateItem(item.id, { status: "error", error: "Failed to save" });
       }
@@ -250,9 +195,7 @@ export default function UploadPage() {
 
     // If all saved, redirect to list
     setItems((prev) => {
-      const allDone = prev.every(
-        (i) => i.saved || i.discarded || i.status === "error"
-      );
+      const allDone = prev.every((i) => i.saved || i.discarded || i.status === "error");
       if (allDone) {
         setTimeout(() => router.push("/apartments"), 500);
       }
@@ -266,33 +209,15 @@ export default function UploadPage() {
       setError({ headline: "Name is required" });
       return;
     }
-
     setSaving(true);
     setError(null);
-
-    const url = "/api/apartments";
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formToPayload(singleForm)),
-      });
-
-      if (!res.ok) {
-        setError({
-          headline: "Failed to save apartment",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setSaving(false);
-        return;
-      }
-
-      const apartment = await res.json();
-      router.push(`/apartments/${apartment.id}`);
+      const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
+      router.push(`/apartments/${created.id}`);
     } catch (err) {
       setError({
         headline: "Failed to save apartment",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
       setSaving(false);
     }
@@ -312,9 +237,7 @@ export default function UploadPage() {
   }
 
   if (step === "processing") {
-    const doneCount = items.filter(
-      (i) => i.status === "done" || i.status === "error"
-    ).length;
+    const doneCount = items.filter((i) => i.status === "done" || i.status === "error").length;
     return (
       <div className="mx-auto max-w-lg space-y-6">
         <h1 className="text-2xl font-semibold">
@@ -343,8 +266,10 @@ export default function UploadPage() {
         error={error}
         onSaveAll={handleSaveAll}
         onUploadMore={() => {
+          processingRef.current = false;
           setItems([]);
           setStep("upload");
+          setError(null);
         }}
         onRetry={retryItem}
         onUpdateItem={updateItem}
@@ -361,15 +286,12 @@ export default function UploadPage() {
       saving={saving}
       error={error}
       onSubmit={handleSaveSingle}
-      onChange={(field, value) =>
-        setSingleForm((prev) => ({ ...prev, [field]: value }))
-      }
-      onWashingMachineChange={(v) =>
-        setSingleForm((prev) => ({ ...prev, hasWashingMachine: v }))
-      }
+      onChange={(field, value) => setSingleForm((f) => ({ ...f, [field]: value }))}
+      onWashingMachineChange={(v) => setSingleForm((f) => ({ ...f, hasWashingMachine: v }))}
       onCancel={() => {
         setSingleForm(emptyApartmentForm);
         setStep("upload");
+        setError(null);
       }}
     />
   );

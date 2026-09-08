@@ -4,6 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  emptyApartment,
+  type Apartment,
+  type ApartmentPdf,
+} from "@/lib/household-data/types";
 
 export type ApartmentForm = {
   name: string;
@@ -14,7 +19,6 @@ export type ApartmentForm = {
   numBalconies: string;
   hasWashingMachine: boolean | null;
   rentChf: string;
-  pdfUrl: string;
   listingUrl: string;
   summary: string;
   availableFrom: string;
@@ -30,37 +34,26 @@ export const emptyApartmentForm: ApartmentForm = {
   numBalconies: "",
   hasWashingMachine: null,
   rentChf: "",
-  pdfUrl: "",
   listingUrl: "",
   summary: "",
   availableFrom: "",
   rawExtractedData: null,
 };
 
-export function formFromExtracted(
-  extracted: Record<string, unknown>,
-  pdfUrl: string
-): ApartmentForm {
+export function formFromExtracted(extracted: Record<string, unknown>): ApartmentForm {
   return {
     name: (extracted.name as string) || "",
     address: (extracted.address as string) || "",
     sizeM2: extracted.sizeM2 != null ? String(extracted.sizeM2) : "",
     numRooms: extracted.numRooms != null ? String(extracted.numRooms) : "",
-    numBathrooms:
-      extracted.numBathrooms != null ? String(extracted.numBathrooms) : "",
-    numBalconies:
-      extracted.numBalconies != null ? String(extracted.numBalconies) : "",
+    numBathrooms: extracted.numBathrooms != null ? String(extracted.numBathrooms) : "",
+    numBalconies: extracted.numBalconies != null ? String(extracted.numBalconies) : "",
     hasWashingMachine:
-      typeof extracted.hasWashingMachine === "boolean"
-        ? extracted.hasWashingMachine
-        : null,
+      typeof extracted.hasWashingMachine === "boolean" ? extracted.hasWashingMachine : null,
     rentChf: extracted.rentChf != null ? String(extracted.rentChf) : "",
-    pdfUrl,
     listingUrl: (extracted.listingUrl as string) || "",
-    summary:
-      typeof extracted.summary === "string" ? extracted.summary : "",
-    availableFrom:
-      typeof extracted.availableFrom === "string" ? extracted.availableFrom : "",
+    summary: typeof extracted.summary === "string" ? extracted.summary : "",
+    availableFrom: typeof extracted.availableFrom === "string" ? extracted.availableFrom : "",
     rawExtractedData: extracted,
   };
 }
@@ -74,15 +67,13 @@ export type ApartmentLike = {
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
   rentChf: number | null;
-  pdfUrl: string | null;
   listingUrl: string | null;
   summary: string | null;
   availableFrom: string | null;
 };
 
 export function formFromApartment(apt: ApartmentLike): ApartmentForm {
-  const numOrEmpty = (v: number | null | undefined) =>
-    v != null ? String(v) : "";
+  const numOrEmpty = (v: number | null | undefined) => (v != null ? String(v) : "");
   return {
     name: apt.name,
     address: apt.address ?? "",
@@ -92,7 +83,6 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
     numBalconies: numOrEmpty(apt.numBalconies),
     hasWashingMachine: apt.hasWashingMachine,
     rentChf: numOrEmpty(apt.rentChf),
-    pdfUrl: apt.pdfUrl ?? "",
     listingUrl: apt.listingUrl ?? "",
     summary: apt.summary ?? "",
     availableFrom: apt.availableFrom ?? "",
@@ -100,7 +90,24 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
   };
 }
 
-export function formToPayload(form: ApartmentForm) {
+export type ApartmentFieldValues = Pick<
+  Apartment,
+  | "name"
+  | "address"
+  | "sizeM2"
+  | "numRooms"
+  | "numBathrooms"
+  | "numBalconies"
+  | "hasWashingMachine"
+  | "rentChf"
+  | "listingUrl"
+  | "summary"
+  | "availableFrom"
+>;
+
+// The user-editable fields, coerced from form strings. Callers merge this
+// into an existing Apartment (edit) or into emptyApartment (create).
+export function formToFields(form: ApartmentForm): ApartmentFieldValues {
   return {
     name: form.name,
     address: form.address || null,
@@ -110,11 +117,18 @@ export function formToPayload(form: ApartmentForm) {
     numBalconies: form.numBalconies ? parseInt(form.numBalconies) : null,
     hasWashingMachine: form.hasWashingMachine,
     rentChf: form.rentChf ? parseFloat(form.rentChf) : null,
-    pdfUrl: form.pdfUrl || null,
     listingUrl: form.listingUrl || null,
     summary: form.summary || null,
     availableFrom: form.availableFrom || null,
+  };
+}
+
+export function apartmentFromForm(form: ApartmentForm, pdf: ApartmentPdf | null): Apartment {
+  return {
+    ...emptyApartment(form.name),
+    ...formToFields(form),
     rawExtractedData: form.rawExtractedData,
+    pdf,
   };
 }
 
