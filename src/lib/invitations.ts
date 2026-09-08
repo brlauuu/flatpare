@@ -13,6 +13,7 @@ import { users } from "@/lib/db/schema-auth";
 import { and, eq, gt, lte, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api-error";
 import { createHouseholdForUser } from "@/lib/household";
+import { readLimits } from "@/lib/limits";
 import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
 export const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -53,6 +54,38 @@ async function expireStale(householdId: number): Promise<void> {
     );
 }
 
+// E5: MAX_MEMBERS at send time. Counts members plus still-pending
+// invitations, because an outstanding invitation is a member-in-waiting —
+// checking members alone would let four members plus ten invitations become
+// fourteen. Call AFTER expireStale so a lapsed invitation does not hold a
+// slot. Unset means unlimited (the self-hoster default).
+//
+// This is a courtesy check, not the enforcement point: it stops an owner
+// sending invitations that are guaranteed to fail. acceptInvitation re-checks
+// at the moment a member actually appears.
+async function assertMemberSlotAvailable(householdId: number): Promise<void> {
+  const { maxMembers } = readLimits();
+  if (maxMembers === null) return;
+
+  const [{ members }] = await db
+    .select({ members: sql<number>`count(*)` })
+    .from(householdMembers)
+    .where(eq(householdMembers.householdId, householdId));
+  const [{ pending }] = await db
+    .select({ pending: sql<number>`count(*)` })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.householdId, householdId),
+        eq(invitations.status, "pending")
+      )
+    );
+
+  if (Number(members) + Number(pending) >= maxMembers) {
+    throw new InvitationError("Member limit reached", 409);
+  }
+}
+
 export async function createInvitation(
   householdId: number,
   invitedBy: string,
@@ -79,6 +112,7 @@ export async function createInvitation(
   }
 
   await expireStale(householdId);
+  await assertMemberSlotAvailable(householdId);
   try {
     const [created] = await db
       .insert(invitations)
@@ -210,6 +244,22 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
       .returning({ householdId: invitations.householdId });
     if (!accepted) {
       throw new InvitationError("This invitation is no longer available", 409);
+    }
+
+    // E5: the enforcement point. Time passes between sending and accepting,
+    // so the send-time count can be stale — a slot may have been filled by
+    // another accept, or the operator may have lowered the cap. Throwing here
+    // rolls back the status update above, so the invitation stays pending and
+    // the invitee can retry once a slot frees.
+    const { maxMembers } = readLimits();
+    if (maxMembers !== null) {
+      const [{ members }] = await tx
+        .select({ members: sql<number>`count(*)` })
+        .from(householdMembers)
+        .where(eq(householdMembers.householdId, accepted.householdId));
+      if (Number(members) >= maxMembers) {
+        throw new InvitationError("Member limit reached", 409);
+      }
     }
 
     const [current] = await tx

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { db } from "@/lib/db";
 import {
   apartments,
@@ -264,5 +264,136 @@ describe("startOwnHousehold", () => {
     await makeUser("ana");
     await createHouseholdForUser("ana");
     await expect(startOwnHousehold("ana")).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+// E5: MAX_MEMBERS. Enforced at BOTH moments on purpose — accept alone is the
+// only correct place (it is when a member appears), but it lets an owner send
+// invitations guaranteed to fail and pushes the error onto the invitee; send
+// alone enforces nothing, since 4 members plus 10 pending is 14 members.
+describe("MAX_MEMBERS (#187)", () => {
+  const ORIGINAL = process.env.MAX_MEMBERS;
+
+  beforeEach(() => {
+    delete process.env.MAX_MEMBERS;
+  });
+
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env.MAX_MEMBERS;
+    else process.env.MAX_MEMBERS = ORIGINAL;
+  });
+
+  async function ownerHousehold() {
+    await makeUser("o");
+    return createHouseholdForUser("o");
+  }
+
+  // The self-hoster default, called out in #187 as a must-not-regress.
+  it("allows unlimited invitations when MAX_MEMBERS is unset", async () => {
+    const hid = await ownerHousehold();
+    for (let i = 0; i < 12; i++) {
+      await expect(createInvitation(hid, "o", `p${i}@example.com`)).resolves.toBeTruthy();
+    }
+    expect(await listInvitations(hid)).toHaveLength(12);
+  });
+
+  it("counts pending invitations against the cap at send time", async () => {
+    const hid = await ownerHousehold();
+    process.env.MAX_MEMBERS = "3"; // the owner plus two more
+    await createInvitation(hid, "o", "a@example.com");
+    await createInvitation(hid, "o", "b@example.com");
+    await expect(createInvitation(hid, "o", "c@example.com")).rejects.toMatchObject({
+      status: 409,
+      message: "Member limit reached",
+    });
+  });
+
+  it("counts existing members against the cap, not just invitations", async () => {
+    const hid = await ownerHousehold();
+    await makeUser("m");
+    await db.insert(householdMembers).values({ householdId: hid, userId: "m", role: "member" });
+    process.env.MAX_MEMBERS = "2"; // both slots already taken
+    await expect(createInvitation(hid, "o", "a@example.com")).rejects.toMatchObject({
+      status: 409,
+      message: "Member limit reached",
+    });
+  });
+
+  it("frees a slot when a pending invitation is revoked", async () => {
+    const hid = await ownerHousehold();
+    process.env.MAX_MEMBERS = "2";
+    const inv = await createInvitation(hid, "o", "a@example.com");
+    await expect(createInvitation(hid, "o", "b@example.com")).rejects.toMatchObject({
+      status: 409,
+    });
+    await revokeInvitation(hid, inv.id);
+    await expect(createInvitation(hid, "o", "b@example.com")).resolves.toBeTruthy();
+  });
+
+  it("does not count an expired invitation against the cap", async () => {
+    const hid = await ownerHousehold();
+    const inv = await createInvitation(hid, "o", "a@example.com");
+    await db
+      .update(invitations)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invitations.id, inv.id));
+    process.env.MAX_MEMBERS = "2";
+    // expireStale runs first, so the stale row must not occupy the slot.
+    await expect(createInvitation(hid, "o", "b@example.com")).resolves.toBeTruthy();
+  });
+
+  it("refuses an accept that would exceed the cap, even though the send passed", async () => {
+    const hid = await ownerHousehold();
+    await makeUser("a");
+    await makeUser("b");
+    const invA = await createInvitation(hid, "o", "a@example.com");
+    const invB = await createInvitation(hid, "o", "b@example.com");
+
+    await acceptInvitation(invA.id, "a"); // owner + a = 2 members
+    process.env.MAX_MEMBERS = "2";
+
+    await expect(acceptInvitation(invB.id, "b")).rejects.toMatchObject({
+      status: 409,
+      message: "Member limit reached",
+    });
+  });
+
+  it("leaves the invitation pending when an accept is refused by the cap", async () => {
+    const hid = await ownerHousehold();
+    await makeUser("a");
+    const inv = await createInvitation(hid, "o", "a@example.com");
+    process.env.MAX_MEMBERS = "1"; // the owner already fills it
+
+    await expect(acceptInvitation(inv.id, "a")).rejects.toMatchObject({ status: 409 });
+
+    // The invitee must be able to retry once a slot frees, so the row must
+    // NOT have been flipped to accepted, and no membership written.
+    const [row] = await db.select().from(invitations).where(eq(invitations.id, inv.id));
+    expect(row.status).toBe("pending");
+    expect(row.acceptedBy).toBeNull();
+    const members = await db
+      .select()
+      .from(householdMembers)
+      .where(eq(householdMembers.householdId, hid));
+    expect(members).toHaveLength(1);
+  });
+
+  it("lets the accept through once a slot frees", async () => {
+    const hid = await ownerHousehold();
+    await makeUser("a");
+    const inv = await createInvitation(hid, "o", "a@example.com");
+    process.env.MAX_MEMBERS = "1";
+    await expect(acceptInvitation(inv.id, "a")).rejects.toMatchObject({ status: 409 });
+
+    process.env.MAX_MEMBERS = "2";
+    await expect(acceptInvitation(inv.id, "a")).resolves.toBe(hid);
+    expect(await assertMembership(hid, "a")).toBe("member");
+  });
+
+  it("allows an accept with no cap configured", async () => {
+    const hid = await ownerHousehold();
+    await makeUser("a");
+    const inv = await createInvitation(hid, "o", "a@example.com");
+    await expect(acceptInvitation(inv.id, "a")).resolves.toBe(hid);
   });
 });
