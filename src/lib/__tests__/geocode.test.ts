@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { extractPostcode, geocodeLatLng } from "../geocode";
+import { extractPostcode, geocodeLatLng, geocodeLatLngWithReason } from "../geocode";
 
 beforeEach(() => {
   delete process.env.GOOGLE_MAPS_API_KEY;
@@ -163,5 +163,44 @@ describe("geocodeLatLng", () => {
     expect(await geocodeLatLng("")).toBeNull();
     expect(await geocodeLatLng(null)).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+// E4's first requirement: no request bodies in logs, on any path including
+// errors. The geocoder is the documented privacy exception — it is handed a
+// plaintext address — so the address must not survive into a log line.
+describe("geocode logging (E4 privacy exception)", () => {
+  const ADDRESS = "Bahnhofstrasse 1, 8001 Zurich";
+
+  it("does not log the address when Google returns no result", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ status: "ZERO_RESULTS", results: [] }), {
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    await geocodeLatLngWithReason(ADDRESS);
+
+    const logged = JSON.stringify(spy.mock.calls);
+    expect(logged).not.toContain("Bahnhofstrasse");
+    expect(logged).not.toContain("test-key");
+  });
+
+  it("does not log the address when the geocode fetch throws", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(global, "fetch").mockRejectedValue(
+      new TypeError(
+        "fetch failed: https://maps.googleapis.com/maps/api/geocode/json?address=Bahnhofstrasse+1&key=test-key"
+      )
+    );
+
+    await geocodeLatLngWithReason(ADDRESS);
+
+    const logged = JSON.stringify(spy.mock.calls);
+    expect(logged).not.toContain("Bahnhofstrasse");
+    expect(logged).not.toContain("test-key");
   });
 });

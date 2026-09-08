@@ -15,6 +15,7 @@ import {
   invitations,
   ratings,
   locations,
+  processUsage,
 } from "@/lib/db/schema";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
 import { UnauthorizedError } from "@/lib/household";
@@ -33,6 +34,10 @@ async function snapshotRowCounts(): Promise<Record<string, number>> {
     invitations: (await db.select().from(invitations)).length,
     ratings: (await db.select().from(ratings)).length,
     locations: (await db.select().from(locations)).length,
+    // E4's rate limiter is the ONE table a process route may write, and
+    // only when PROCESS_RATE_LIMIT_PER_HOUR is set. These tests run with
+    // it unset, so this count must stay at zero like every other.
+    processUsage: (await db.select().from(processUsage)).length,
     users: (await db.select().from(users)).length,
     accounts: (await db.select().from(accounts)).length,
     sessions: (await db.select().from(sessions)).length,
@@ -90,6 +95,7 @@ const ENVELOPE = JSON.stringify({ v: 1, iv: "AAAAAAAAAAAAAAAA", ct: "QUJD" });
 
 beforeEach(async () => {
   signedIn = true;
+  await db.delete(processUsage);
   await db.delete(ratings);
   await db.delete(locations);
   await db.delete(apartments);
@@ -249,5 +255,61 @@ describe("POST /api/process/parse-pdf", () => {
     const res = await parsePdfPOST(multipart(pdf(16)));
     expect(res.status).toBe(429);
     expect(await res.json()).toMatchObject({ reason: "quota", retryAfterSeconds: 30 });
+  });
+});
+
+// E4: "Rate limited per account — these endpoints spend the host's money."
+describe("rate limiting (#186)", () => {
+  const ORIGINAL = process.env.PROCESS_RATE_LIMIT_PER_HOUR;
+  afterEach(async () => {
+    if (ORIGINAL === undefined) delete process.env.PROCESS_RATE_LIMIT_PER_HOUR;
+    else process.env.PROCESS_RATE_LIMIT_PER_HOUR = ORIGINAL;
+    await db.delete(processUsage);
+  });
+
+  it("answers 429 once the household's hourly allowance is spent", async () => {
+    process.env.PROCESS_RATE_LIMIT_PER_HOUR = "2";
+    currentSession.householdId = hid;
+    currentSession.userId = "o";
+    geocodeLatLngWithReason.mockResolvedValue({ result: { lat: 1, lng: 2 } });
+    extractPostcode.mockResolvedValue("8001");
+
+    for (let i = 0; i < 2; i++) {
+      const ok = await geocodePOST(json({ address: "Bahnhofstrasse 1" }));
+      expect(ok.status, `call ${i + 1}`).toBe(200);
+    }
+    const limited = await geocodePOST(json({ address: "Bahnhofstrasse 1" }));
+    expect(limited.status).toBe(429);
+    expect(await limited.json()).toEqual({ error: "Rate limit exceeded" });
+  });
+
+  it("does not call the third-party provider once limited", async () => {
+    process.env.PROCESS_RATE_LIMIT_PER_HOUR = "1";
+    currentSession.householdId = hid;
+    currentSession.userId = "o";
+    geocodeLatLngWithReason.mockResolvedValue({ result: { lat: 1, lng: 2 } });
+    extractPostcode.mockResolvedValue("8001");
+
+    await geocodePOST(json({ address: "Bahnhofstrasse 1" }));
+    geocodeLatLngWithReason.mockClear();
+    const limited = await geocodePOST(json({ address: "Bahnhofstrasse 1" }));
+
+    expect(limited.status).toBe(429);
+    // The point of the limit is spend, so the refusal must come BEFORE the
+    // outbound call, not after it.
+    expect(geocodeLatLngWithReason).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing to process_usage when no limit is configured", async () => {
+    delete process.env.PROCESS_RATE_LIMIT_PER_HOUR;
+    currentSession.householdId = hid;
+    currentSession.userId = "o";
+    geocodeLatLngWithReason.mockResolvedValue({ result: { lat: 1, lng: 2 } });
+    extractPostcode.mockResolvedValue("8001");
+
+    for (let i = 0; i < 5; i++) {
+      expect((await geocodePOST(json({ address: "Bahnhofstrasse 1" }))).status).toBe(200);
+    }
+    expect(await db.select().from(processUsage)).toHaveLength(0);
   });
 });

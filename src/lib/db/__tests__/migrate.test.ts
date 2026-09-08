@@ -470,6 +470,28 @@ describe("applyMigrations", () => {
     await expect(applyMigrations(client)).resolves.toBeUndefined();
   });
 
+  it("creates the E4 process_usage table with no content columns", async () => {
+    const client = createClient({ url: ":memory:" });
+
+    await applyMigrations(client);
+
+    // The column list is the assertion: rate-limit state must stay free of
+    // anything derived from a request body (E4, "no plaintext persisted at
+    // any layer"). A new column here should be a deliberate decision.
+    expect((await columnNames(client, "process_usage")).sort()).toEqual([
+      "count",
+      "endpoint",
+      "household_id",
+      "window_start",
+    ]);
+
+    const pk = await client.execute({
+      sql: "SELECT name FROM pragma_index_list('process_usage') WHERE origin='pk'",
+      args: [],
+    });
+    expect(pk.rows).toHaveLength(1);
+  });
+
   it("creates the E2 tables and recovery columns", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { apiErrorResponse, parseBody, requireMember } from "@/lib/api-route";
 import { calculateDistance } from "@/lib/distance";
 import { distanceRequestSchema } from "@/lib/process-schemas";
@@ -7,7 +8,8 @@ import { distanceRequestSchema } from "@/lib/process-schemas";
 // logged, nothing written.
 export async function POST(req: Request) {
   try {
-    await requireMember();
+    const { householdId } = await requireMember();
+    await consumeRateLimit(householdId, "distance");
     const { from, to } = await parseBody(req, distanceRequestSchema);
     const result = await calculateDistance(from, to);
     return NextResponse.json({
