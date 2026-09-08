@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, BarChart3 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
-import {
-  type ErrorDetails,
-  fetchErrorFromResponse,
-  fetchErrorFromException,
-} from "@/lib/fetch-error";
+import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
 import {
   compareApartments,
   compareSortOptions,
@@ -21,8 +17,10 @@ import {
   type SortDirection,
   type SortField,
 } from "@/lib/apartment-sort";
-import type { LocationOfInterest } from "@/lib/db/schema";
 import { usePersistedEnum } from "@/lib/use-persisted-enum";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { downloadPdf } from "@/components/household-data/pdf-files";
+import type { ApartmentView } from "@/lib/household-data/types";
 import {
   Select,
   SelectContent,
@@ -31,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CompareTable } from "./_components/compare-table";
-import type { ApartmentWithRatings } from "./_components/compare-types";
 
 interface ErrorState {
   headline: string;
@@ -39,10 +36,9 @@ interface ErrorState {
 }
 
 export default function ComparePage() {
-  const [apartments, setApartments] = useState<ApartmentWithRatings[]>([]);
-  const [locations, setLocations] = useState<LocationOfInterest[]>([]);
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const { status, error: loadError, apartments, locations, identity, dataKey } =
+    useHouseholdData();
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<ErrorState | null>(null);
   const [sortField, setSortField] = usePersistedEnum<SortField>(
     COMPARE_SORT_FIELD_STORAGE_KEY,
@@ -57,65 +53,33 @@ export default function ComparePage() {
     isSortDirection
   );
 
-  useEffect(() => {
-    async function load() {
-      const listUrl = "/api/apartments";
-      try {
-        const [res, locRes] = await Promise.all([
-          fetch(listUrl),
-          fetch("/api/locations"),
-        ]);
-        if (!res.ok) {
-          setError({
-            headline: "Couldn't load comparison data",
-            details: await fetchErrorFromResponse(res, listUrl),
-          });
-          setLoading(false);
-          return;
-        }
-        const list = (await res.json()) as { id: number }[];
-
-        const details: ApartmentWithRatings[] = [];
-        for (const apt of list) {
-          const detailUrl = `/api/apartments/${apt.id}`;
-          const r = await fetch(detailUrl);
-          if (!r.ok) {
-            setError({
-              headline: "Couldn't load comparison data",
-              details: await fetchErrorFromResponse(r, detailUrl),
-            });
-            setLoading(false);
-            return;
-          }
-          details.push(await r.json());
-        }
-
-        setApartments(details);
-        if (locRes.ok) {
-          setLocations((await locRes.json()) as LocationOfInterest[]);
-        }
-        setLoading(false);
-      } catch (err) {
-        setError({
-          headline: "Couldn't load comparison data",
-          details: fetchErrorFromException(err, listUrl),
-        });
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
   const sortOptions = useMemo(() => compareSortOptions(locations), [locations]);
 
-  const visible = apartments.filter((a) => !hiddenIds.has(a.id));
-  const sortedVisible = useMemo(() => {
-    return [...visible].sort((a, b) =>
-      compareApartments(a, b, sortField, sortDirection)
-    );
-  }, [visible, sortField, sortDirection]);
+  // Corrupt rows have no plaintext to compare; the list page is where they
+  // surface (with a delete action).
+  const readable = useMemo(() => apartments.filter((a) => !a.corrupt), [apartments]);
+  const visible = useMemo(
+    () => readable.filter((a) => !hiddenIds.has(a.id)),
+    [readable, hiddenIds]
+  );
+  const sortedVisible = useMemo(
+    () => [...visible].sort((a, b) => compareApartments(a, b, sortField, sortDirection)),
+    [visible, sortField, sortDirection]
+  );
 
-  if (loading) {
+  async function handleViewPdf(apt: ApartmentView) {
+    if (!apt.pdf) return;
+    try {
+      const bytes = await downloadPdf(dataKey, identity.householdId, apt.id, apt.pdf);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      window.open(url, "_blank", "noopener");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
+    }
+  }
+
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading comparison...</p>
@@ -123,15 +87,18 @@ export default function ComparePage() {
     );
   }
 
-  if (error) {
+  if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={error.headline} details={error.details} />
+        <ErrorDisplay
+          headline="Couldn't load comparison data"
+          details={{ message: loadError ?? undefined, timestamp: new Date().toISOString() }}
+        />
       </div>
     );
   }
 
-  if (apartments.length === 0) {
+  if (readable.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <div className="rounded-full bg-muted p-4">
@@ -178,9 +145,7 @@ export default function ComparePage() {
             variant="outline"
             size="sm"
             aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
-            onClick={() =>
-              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-            }
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
             className="h-11 w-11 p-0 sm:h-8 sm:w-8"
           >
             {sortDirection === "asc" ? (
@@ -190,22 +155,21 @@ export default function ComparePage() {
             )}
           </Button>
           {hiddenIds.size > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHiddenIds(new Set())}
-            >
+            <Button variant="outline" size="sm" onClick={() => setHiddenIds(new Set())}>
               Show all ({hiddenIds.size} hidden)
             </Button>
           )}
         </div>
       </div>
 
+      {error && <ErrorDisplay headline={error.headline} details={error.details} />}
+
       <CompareTable
         visible={visible}
         sortedVisible={sortedVisible}
         locations={locations}
         onHide={(id) => setHiddenIds((prev) => new Set([...prev, id]))}
+        onViewPdf={(apt) => void handleViewPdf(apt)}
       />
     </div>
   );

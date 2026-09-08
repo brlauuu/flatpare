@@ -2,34 +2,25 @@ import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/star-rating";
 import { iconComponentFor } from "@/lib/location-icons";
-import type { LocationOfInterest } from "@/lib/db/schema";
+import type { ApartmentView, LocationView } from "@/lib/household-data/types";
 import { CompareColumnHeader } from "./compare-column-header";
-import {
-  metricRows,
-  ratingKeys,
-  ratingLabels,
-  type ApartmentWithRatings,
-} from "./compare-types";
+import { metricRows, ratingKeys, ratingLabels } from "./compare-types";
 
 interface CompareTableProps {
-  visible: ApartmentWithRatings[];
-  sortedVisible: ApartmentWithRatings[];
-  locations: LocationOfInterest[];
-  onHide: (id: number) => void;
+  visible: ApartmentView[];
+  sortedVisible: ApartmentView[];
+  locations: LocationView[];
+  onHide: (id: string) => void;
+  onViewPdf: (apt: ApartmentView) => void;
 }
 
-export function CompareTable({
-  visible,
-  sortedVisible,
-  locations,
-  onHide,
-}: CompareTableProps) {
+export function CompareTable({ visible, sortedVisible, locations, onHide, onViewPdf }: CompareTableProps) {
   // Group by userId — the stable, unique identity — and resolve a display
   // label separately. userName is a left-joined column: nullable, and not
   // unique across OAuth accounts, so it can never be the grouping key
   // (two members sharing a first name, or an account with no name set,
   // would silently collapse into one row).
-  const userLabels = new Map<string, string | null>();
+  const userLabels = new Map<string, string>();
   for (const a of visible) {
     for (const r of a.ratings) {
       if (!userLabels.has(r.userId)) userLabels.set(r.userId, r.userName);
@@ -57,7 +48,7 @@ export function CompareTable({
               &nbsp;
             </th>
             {sortedVisible.map((apt) => (
-              <CompareColumnHeader key={apt.id} apt={apt} onHide={onHide} />
+              <CompareColumnHeader key={apt.id} apt={apt} onHide={onHide} onViewPdf={onViewPdf} />
             ))}
           </tr>
         </thead>
@@ -101,9 +92,7 @@ export function CompareTable({
                   <Icon className="h-4 w-4" aria-label={loc.label} />
                 </td>
                 {sortedVisible.map((apt) => {
-                  const d = apt.distances.find(
-                    (x) => x.locationId === loc.id
-                  );
+                  const d = apt.distances[loc.id];
                   const bike = d?.bikeMin ?? null;
                   const transit = d?.transitMin ?? null;
                   return (
@@ -154,7 +143,7 @@ export function CompareTable({
           </tr>
 
           {allUserIds.map((userId) => {
-            const label = userLabels.get(userId) ?? "Household member";
+            const label = userLabels.get(userId) || "Household member";
             return (
               <Fragment key={`user-${userId}`}>
                 <tr className="border-b bg-muted/30">
