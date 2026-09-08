@@ -72,6 +72,28 @@ describe("downloadPdf", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(tampered, { status: 200 })));
     await expect(downloadPdf(key, 7, APT, pdf)).rejects.toThrow();
   });
+
+  // The AAD is the only thing binding a ciphertext to the row it belongs to.
+  // Without it, a stored PDF could be copied onto another apartment's (or
+  // another household's) pdf field and would still decrypt cleanly — these
+  // pin that pdfAad includes both the apartment id and the household id, and
+  // would fail if either were dropped.
+  it("rejects opening a stored PDF against a different apartment id", async () => {
+    const key = await generateDataKey();
+    const pdf = await encryptAndUploadPdf(key, 7, APT, plain);
+    const [uploaded] = mockUploadEncryptedFile.mock.calls[0] as [Uint8Array<ArrayBuffer>];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(uploaded, { status: 200 })));
+    const otherApt = "44444444-4444-4444-8444-444444444444";
+    await expect(downloadPdf(key, 7, otherApt, pdf)).rejects.toThrow();
+  });
+
+  it("rejects opening a stored PDF against a different household id", async () => {
+    const key = await generateDataKey();
+    const pdf = await encryptAndUploadPdf(key, 7, APT, plain);
+    const [uploaded] = mockUploadEncryptedFile.mock.calls[0] as [Uint8Array<ArrayBuffer>];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(uploaded, { status: 200 })));
+    await expect(downloadPdf(key, 8, APT, pdf)).rejects.toThrow();
+  });
 });
 
 // Sanity: fromBase64 is the decoder the module uses for the stored iv.
