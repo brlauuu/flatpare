@@ -144,9 +144,19 @@ written to the database.
 
 ## E5 — Entitlements
 
+> **Partially superseded as built (2026-09-08, #187).** The two env vars, the
+> unset-means-unlimited rule and the server-side enforcement all shipped as
+> written. The **tier lift did not**: there is no free tier. Everyone on the
+> hosted deployment pays from day one, and self-hosters set whatever they like,
+> so E5 ships two env vars with no tier dimension and does **not** read
+> `households.tier` — that column is billing state for E6, not an entitlement
+> input. Ignore the "5 and 20 / lifted to 10 and 100" sentence below; it
+> describes a model that was not adopted. See
+> `docs/superpowers/plans/2026-09-08-e5-tier-limits.md`.
+
 `MAX_MEMBERS` and `MAX_APARTMENTS` env vars. **Unset means unlimited** — that is
-the self-hoster's default and must not regress. The hosted deployment sets 5 and
-20; a paid account is lifted to 10 and 100.
+the self-hoster's default and must not regress. ~~The hosted deployment sets 5 and
+20; a paid account is lifted to 10 and 100.~~
 
 Enforced server-side on row counts, which requires no decryption. Enforcement
 belongs in the route handlers, not only the UI.
