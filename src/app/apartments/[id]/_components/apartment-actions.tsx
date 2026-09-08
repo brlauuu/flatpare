@@ -3,40 +3,41 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface ApartmentActionsProps {
-  pdfUrl: string | null;
+  hasPdf: boolean;
   listingUrl: string | null;
   editing: boolean;
   reprocessing: boolean;
   deleting: boolean;
   onEdit: () => void;
+  onViewPdf: () => void;
   onReprocess: () => void;
   onDelete: () => void;
 }
 
 export function ApartmentActions({
-  pdfUrl,
+  hasPdf,
   listingUrl,
   editing,
   reprocessing,
   deleting,
   onEdit,
+  onViewPdf,
   onReprocess,
   onDelete,
 }: ApartmentActionsProps) {
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-      {pdfUrl && (
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "h-11 w-full sm:h-7 sm:w-auto"
-          )}
+      {hasPdf && (
+        // A button, not a link: the stored file is ciphertext, so the page
+        // decrypts it and opens a blob: URL.
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onViewPdf}
+          className="h-11 w-full sm:h-7 sm:w-auto"
         >
           View PDF
-        </a>
+        </Button>
       )}
       {listingUrl ? (
         <a
@@ -71,7 +72,7 @@ export function ApartmentActions({
       <Button
         variant="outline"
         size="sm"
-        disabled={reprocessing || editing || !pdfUrl}
+        disabled={reprocessing || editing || !hasPdf}
         onClick={onReprocess}
         className="h-11 w-full sm:h-7 sm:w-auto"
       >

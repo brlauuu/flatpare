@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,6 @@ import {
 } from "@/components/ui/select";
 import { ErrorDisplay } from "@/components/error-display";
 import { cn } from "@/lib/utils";
-import {
-  type ErrorDetails,
-  fetchErrorFromResponse,
-  fetchErrorFromException,
-} from "@/lib/fetch-error";
 import { usePersistedEnum } from "@/lib/use-persisted-enum";
 import {
   compareApartments,
@@ -39,16 +34,10 @@ import {
   type SortDirection,
   type SortField,
 } from "@/lib/apartment-sort";
-import type { LocationOfInterest } from "@/lib/db/schema";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { ApartmentsOverviewMap } from "@/components/apartments-overview-map";
 import { ApartmentCard } from "./_components/apartment-card";
 import { ApartmentRow } from "./_components/apartment-row";
-import type { ApartmentSummary } from "./_components/apartment-summary";
-
-interface ErrorState {
-  headline: string;
-  details?: ErrorDetails;
-}
 
 type ViewMode = "grid" | "list";
 const VIEW_STORAGE_KEY = "flatpare-apartments-view";
@@ -58,19 +47,22 @@ function isViewMode(v: string): v is ViewMode {
   return v === "grid" || v === "list";
 }
 
-
 export default function ApartmentsPage() {
-  const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
-  const [locations, setLocations] = useState<LocationOfInterest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ErrorState | null>(null);
+  const {
+    status,
+    error,
+    apartments,
+    locations,
+    enrichmentError,
+    retryEnrichment,
+    runMaintenance,
+  } = useHouseholdData();
   const [view, setView] = usePersistedEnum<ViewMode>(
     VIEW_STORAGE_KEY,
     VIEW_CHANGE_EVENT,
     "grid",
     isViewMode
   );
-
   const [sortField, setSortField] = usePersistedEnum<SortField>(
     SORT_FIELD_STORAGE_KEY,
     SORT_CHANGE_EVENT,
@@ -83,83 +75,68 @@ export default function ApartmentsPage() {
     "desc",
     isSortDirection
   );
-
   const [query, setQuery] = useState("");
+
+  // Listing-status check runs once per mount (spec: "on list-page mount"),
+  // not on every store refresh.
+  const listingsCheckedRef = useRef(false);
+  useEffect(() => {
+    if (listingsCheckedRef.current) return;
+    listingsCheckedRef.current = true;
+    void runMaintenance("listings").catch(() => {
+      // best-effort background pass; failures are per-row and already
+      // surfaced through the store's enrichment errors
+    });
+  }, [runMaintenance]);
+
+  // Corrupt rows render as placeholders (below) rather than as ordinary
+  // apartments, and — per docs/security-notes.md — are excluded from search
+  // and sorting: they carry no real name, address or sortable fields, only a
+  // "could not be decrypted" state and a delete action.
+  const readableApartments = useMemo(
+    () => apartments.filter((apt) => !apt.corrupt),
+    [apartments]
+  );
+  const corruptApartments = useMemo(
+    () => apartments.filter((apt) => apt.corrupt),
+    [apartments]
+  );
 
   const filteredApartments = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === "") return apartments;
-    return apartments.filter((apt) => {
-      const name = apt.name?.toLowerCase() ?? "";
+    if (q === "") return readableApartments;
+    return readableApartments.filter((apt) => {
+      const name = apt.name.toLowerCase();
       const code = apt.shortCode?.toLowerCase() ?? "";
       const addr = apt.address?.toLowerCase() ?? "";
       return name.includes(q) || code.includes(q) || addr.includes(q);
     });
-  }, [apartments, query]);
+  }, [readableApartments, query]);
 
-  const sortedApartments = useMemo(() => {
-    return [...filteredApartments].sort((a, b) =>
-      compareApartments(a, b, sortField, sortDirection)
-    );
-  }, [filteredApartments, sortField, sortDirection]);
-
-  // Fetches apartments + locations. The optional listing-status check only
-  // runs on the initial mount — re-fetches triggered by user switching just
-  // need fresh ratings, not another network probe.
-  async function reload(opts?: { runListingCheck?: boolean }) {
-    const url = "/api/apartments";
-    try {
-      const [aptRes, locRes] = await Promise.all([
-        fetch(url),
-        fetch("/api/locations"),
-      ]);
-      if (!aptRes.ok) {
-        setError({
-          headline: "Couldn't load apartments",
-          details: await fetchErrorFromResponse(aptRes, url),
-        });
-        setLoading(false);
-        return;
-      }
-      setApartments((await aptRes.json()) as ApartmentSummary[]);
-      if (locRes.ok) {
-        setLocations((await locRes.json()) as LocationOfInterest[]);
-      }
-      setLoading(false);
-
-      if (opts?.runListingCheck) {
-        try {
-          const checkRes = await fetch("/api/apartments/check-listings", {
-            method: "POST",
-          });
-          if (checkRes.ok) {
-            const refreshed = await fetch(url);
-            if (refreshed.ok) {
-              setApartments((await refreshed.json()) as ApartmentSummary[]);
-            }
-          }
-        } catch {
-          // background check failure is non-fatal
-        }
-      }
-    } catch (err) {
-      setError({
-        headline: "Couldn't load apartments",
-        details: fetchErrorFromException(err, url),
-      });
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void (async () => {
-      await reload({ runListingCheck: true });
-    })();
-  }, []);
+  const sortedApartments = useMemo(
+    () =>
+      [...filteredApartments].sort((a, b) =>
+        compareApartments(a, b, sortField, sortDirection)
+      ),
+    [filteredApartments, sortField, sortDirection]
+  );
 
   const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
 
-  if (loading) {
+  // Corrupt placeholders show up during normal browsing but drop out while
+  // a search is active — they have no real name/address/code to match, so
+  // showing them alongside a search's results would be misleading.
+  const visibleCorruptApartments = useMemo(
+    () => (query.trim() === "" ? corruptApartments : []),
+    [corruptApartments, query]
+  );
+
+  const failedEnrichments = useMemo(
+    () => apartments.filter((apt) => enrichmentError[apt.id] !== undefined),
+    [apartments, enrichmentError]
+  );
+
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Loading apartments...</p>
@@ -167,10 +144,10 @@ export default function ApartmentsPage() {
     );
   }
 
-  if (error) {
+  if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={error.headline} details={error.details} />
+        <ErrorDisplay headline={error ?? "Couldn't load apartments"} />
       </div>
     );
   }
@@ -194,30 +171,39 @@ export default function ApartmentsPage() {
     );
   }
 
-  async function refreshAfterBackfill() {
-    try {
-      const [aptRes, locRes] = await Promise.all([
-        fetch("/api/apartments"),
-        fetch("/api/locations"),
-      ]);
-      if (aptRes.ok) {
-        setApartments((await aptRes.json()) as ApartmentSummary[]);
-      }
-      if (locRes.ok) {
-        setLocations((await locRes.json()) as LocationOfInterest[]);
-      }
-    } catch {
-      // best-effort refresh
-    }
-  }
-
   return (
     <div className="space-y-6">
       <ApartmentsOverviewMap
         apartments={apartments}
         locations={locations}
-        onBackfillComplete={refreshAfterBackfill}
+        onOpen={() => {
+          void runMaintenance("geocode").catch(() => {
+            // best-effort
+          });
+        }}
       />
+      {failedEnrichments.length > 0 && (
+        <div
+          role="status"
+          className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+        >
+          {failedEnrichments.map((apt) => (
+            <div key={apt.id} className="flex items-center justify-between gap-2">
+              <span>
+                Enrichment failed for {apt.name}: {enrichmentError[apt.id]}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void retryEnrichment(apt.id)}
+              >
+                Retry
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -345,6 +331,9 @@ export default function ApartmentsPage() {
           {sortedApartments.map((apt) => (
             <ApartmentCard key={apt.id} apt={apt} />
           ))}
+          {visibleCorruptApartments.map((apt) => (
+            <ApartmentCard key={apt.id} apt={apt} />
+          ))}
         </div>
       ) : (
         <div
@@ -352,6 +341,9 @@ export default function ApartmentsPage() {
           className="divide-y overflow-hidden rounded-lg border"
         >
           {sortedApartments.map((apt) => (
+            <ApartmentRow key={apt.id} apt={apt} />
+          ))}
+          {visibleCorruptApartments.map((apt) => (
             <ApartmentRow key={apt.id} apt={apt} />
           ))}
         </div>

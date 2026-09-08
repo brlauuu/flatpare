@@ -1,201 +1,99 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, lt, desc, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-  locationsOfInterest,
-  type LocationOfInterest,
-} from "@/lib/db/schema";
-import {
-  isLocationIconName,
-  MAX_LOCATIONS,
-} from "@/lib/location-icons";
-import { geocodeLatLng } from "@/lib/geocode";
+import { locations, type LocationRecord } from "@/lib/db/schema";
+import { HouseholdError } from "@/lib/household";
+import { MAX_LOCATIONS } from "@/lib/location-icons";
 
-type LocationInput = {
-  label: string;
-  icon: string;
-  address: string;
-};
-
-// Every function here takes the caller's household as its FIRST parameter and
-// filters on it. It is required, not optional, so the compiler enumerates any
-// future call site instead of relying on each one to remember — the same
-// reasoning as `readStoredFile`'s required `expectedHouseholdId`.
-//
-// A row belonging to another household is indistinguishable from a row that
-// does not exist: lookups return null / throw "not found", never a distinct
-// "forbidden". A 403 would confirm the id exists somewhere else.
-
-function normalizeInput(input: LocationInput): LocationInput {
-  const label = input.label.trim();
-  const icon = input.icon.trim();
-  const address = input.address.trim();
-  if (label === "") throw new Error("Label cannot be empty");
-  if (address === "") throw new Error("Address cannot be empty");
-  if (!isLocationIconName(icon)) {
-    throw new Error(`Unknown icon: ${icon}`);
-  }
-  return { label, icon, address };
-}
-
-function scoped(householdId: number, id: number) {
-  return and(
-    eq(locationsOfInterest.id, id),
-    eq(locationsOfInterest.householdId, householdId)
-  );
-}
-
-export async function listLocations(
-  householdId: number
-): Promise<LocationOfInterest[]> {
+export async function listLocations(householdId: number): Promise<LocationRecord[]> {
   return db
     .select()
-    .from(locationsOfInterest)
-    .where(eq(locationsOfInterest.householdId, householdId))
-    .orderBy(asc(locationsOfInterest.sortOrder), asc(locationsOfInterest.id));
-}
-
-export async function getLocation(
-  householdId: number,
-  id: number
-): Promise<LocationOfInterest | null> {
-  const rows = await db
-    .select()
-    .from(locationsOfInterest)
-    .where(scoped(householdId, id))
-    .limit(1);
-  return rows[0] ?? null;
+    .from(locations)
+    .where(eq(locations.householdId, householdId))
+    .orderBy(asc(locations.sortOrder), asc(locations.id));
 }
 
 export async function createLocation(
   householdId: number,
-  input: LocationInput
-): Promise<LocationOfInterest> {
-  const normalized = normalizeInput(input);
-
-  const existing = await listLocations(householdId);
-  if (existing.length >= MAX_LOCATIONS) {
-    throw new Error(`Cannot have more than ${MAX_LOCATIONS} locations`);
-  }
-  const nextSortOrder = existing.length === 0
-    ? 0
-    : Math.max(...existing.map((l) => l.sortOrder)) + 1;
-
-  const [created] = await db
-    .insert(locationsOfInterest)
-    .values({ ...normalized, householdId, sortOrder: nextSortOrder })
-    .returning();
-
-  try {
-    const coords = await geocodeLatLng(created.address);
-    if (coords) {
-      const [withCoords] = await db
-        .update(locationsOfInterest)
-        .set({ latitude: coords.lat, longitude: coords.lng })
-        .where(scoped(householdId, created.id))
-        .returning();
-      return withCoords ?? created;
+  input: { id: string; envelope: string }
+): Promise<LocationRecord> {
+  return db.transaction(async (tx) => {
+    const [{ count, maxOrder }] = await tx
+      .select({
+        count: sql<number>`count(*)`,
+        maxOrder: sql<number | null>`max(${locations.sortOrder})`,
+      })
+      .from(locations)
+      .where(eq(locations.householdId, householdId));
+    if (count >= MAX_LOCATIONS) {
+      throw new HouseholdError("Too many locations", 409);
     }
-  } catch (err) {
-    console.error(`[locations:create] geocode failed loc=${created.id}:`, err);
-  }
-  return created;
+    const [created] = await tx
+      .insert(locations)
+      .values({
+        id: input.id,
+        householdId,
+        sortOrder: maxOrder === null ? 0 : maxOrder + 1,
+        envelope: input.envelope,
+      })
+      .returning();
+    return created;
+  });
 }
 
 export async function updateLocation(
   householdId: number,
-  id: number,
-  input: Partial<LocationInput>
-): Promise<LocationOfInterest> {
-  const updates: Partial<LocationInput> = {};
-  if (input.label !== undefined) {
-    const trimmed = input.label.trim();
-    if (trimmed === "") throw new Error("Label cannot be empty");
-    updates.label = trimmed;
-  }
-  if (input.address !== undefined) {
-    const trimmed = input.address.trim();
-    if (trimmed === "") throw new Error("Address cannot be empty");
-    updates.address = trimmed;
-  }
-  if (input.icon !== undefined) {
-    const trimmed = input.icon.trim();
-    if (!isLocationIconName(trimmed)) {
-      throw new Error(`Unknown icon: ${trimmed}`);
-    }
-    updates.icon = trimmed;
-  }
-
-  const previous = await getLocation(householdId, id);
-  const addressChanged =
-    updates.address !== undefined &&
-    previous !== null &&
-    updates.address !== previous.address;
-
+  id: string,
+  envelope: string
+): Promise<LocationRecord | null> {
   const [updated] = await db
-    .update(locationsOfInterest)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(scoped(householdId, id))
+    .update(locations)
+    .set({ envelope, updatedAt: new Date() })
+    .where(and(eq(locations.id, id), eq(locations.householdId, householdId)))
     .returning();
-  if (!updated) throw new Error(`Location ${id} not found`);
-
-  if (addressChanged) {
-    try {
-      const coords = await geocodeLatLng(updated.address);
-      const [withCoords] = await db
-        .update(locationsOfInterest)
-        .set({
-          latitude: coords?.lat ?? null,
-          longitude: coords?.lng ?? null,
-        })
-        .where(scoped(householdId, id))
-        .returning();
-      return withCoords ?? updated;
-    } catch (err) {
-      console.error(`[locations:update] geocode failed loc=${id}:`, err);
-    }
-  }
-
-  return updated;
+  return updated ?? null;
 }
 
-// Returns false when the id does not exist in this household, so the route can
-// answer 404 instead of reporting success for a row it never touched.
-export async function deleteLocation(
-  householdId: number,
-  id: number
-): Promise<boolean> {
+export async function deleteLocation(householdId: number, id: string): Promise<boolean> {
   const deleted = await db
-    .delete(locationsOfInterest)
-    .where(scoped(householdId, id))
-    .returning({ id: locationsOfInterest.id });
+    .delete(locations)
+    .where(and(eq(locations.id, id), eq(locations.householdId, householdId)))
+    .returning({ id: locations.id });
   return deleted.length > 0;
 }
 
+// Swaps sortOrder with the nearest neighbour in `direction`. Returns false
+// when the row is missing or already first/last. Locations carry no
+// version column: the last write wins, and the client reloads the order
+// the server returns.
 export async function moveLocation(
   householdId: number,
-  id: number,
+  id: string,
   direction: "up" | "down"
-): Promise<void> {
-  const all = await listLocations(householdId);
-  const idx = all.findIndex((l) => l.id === id);
-  if (idx === -1) throw new Error(`Location ${id} not found`);
-  const swapWith = direction === "up" ? all[idx - 1] : all[idx + 1];
-  if (!swapWith) return; // already at boundary
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ sortOrder: locations.sortOrder })
+      .from(locations)
+      .where(and(eq(locations.id, id), eq(locations.householdId, householdId)));
+    if (!row) return false;
 
-  const current = all[idx];
-  // Two updates with a temporary order to dodge any uniqueness on sort_order
-  // (we don't have one, but it's defensive against future indexes).
-  const tempOrder = -Math.abs(current.sortOrder) - 1;
-  await db
-    .update(locationsOfInterest)
-    .set({ sortOrder: tempOrder })
-    .where(scoped(householdId, current.id));
-  await db
-    .update(locationsOfInterest)
-    .set({ sortOrder: current.sortOrder })
-    .where(scoped(householdId, swapWith.id));
-  await db
-    .update(locationsOfInterest)
-    .set({ sortOrder: swapWith.sortOrder })
-    .where(scoped(householdId, current.id));
+    const [neighbour] = await tx
+      .select({ id: locations.id, sortOrder: locations.sortOrder })
+      .from(locations)
+      .where(
+        and(
+          eq(locations.householdId, householdId),
+          direction === "up"
+            ? lt(locations.sortOrder, row.sortOrder)
+            : gt(locations.sortOrder, row.sortOrder)
+        )
+      )
+      .orderBy(direction === "up" ? desc(locations.sortOrder) : asc(locations.sortOrder))
+      .limit(1);
+    if (!neighbour) return false;
+
+    await tx.update(locations).set({ sortOrder: neighbour.sortOrder }).where(eq(locations.id, id));
+    await tx.update(locations).set({ sortOrder: row.sortOrder }).where(eq(locations.id, neighbour.id));
+    return true;
+  });
 }

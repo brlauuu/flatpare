@@ -39,3 +39,4 @@ export {
   type Envelope,
 } from "./envelope";
 export { clearKeys, isKeyStorePersistent, loadKeys, saveKeys, type StoredKeys } from "./store";
+export { openBytes, sealBytes, type SealedBytes } from "./bytes";

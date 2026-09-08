@@ -64,6 +64,19 @@ export const recoverSchema = z.object({
   recovery: recoverySchema,
 });
 
+// An apartment's ciphertext carries rawExtractedData, so it is far larger
+// than a wrapped key. 2 000 000 base64 chars ≈ 1.5 MB of plaintext.
+const ciphertext = z
+  .string()
+  .min(1)
+  .max(2_000_000)
+  .regex(/^[A-Za-z0-9+/]+={0,2}$/, "must be base64");
+
+export const envelopeSchema = z.discriminatedUnion("v", [
+  z.object({ v: z.literal(1), iv: base64, ct: ciphertext }),
+  z.object({ v: z.literal(0), data: z.unknown() }),
+]);
+
 export type KdfParamsRow = z.infer<typeof kdfSchema>;
 export type MemberKeyMaterial = z.infer<typeof memberKeySchema>;
 export type RecoveryMaterial = z.infer<typeof recoverySchema>;

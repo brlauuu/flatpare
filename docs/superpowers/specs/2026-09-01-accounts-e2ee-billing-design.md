@@ -119,6 +119,15 @@ to.
 
 The production database is wiped as part of this epic. There is no migration.
 
+> **Note, 2026-09-07 (E3 spec):** as built, E3 deviates from the paragraph above in
+> four dated ways, recorded in
+> `docs/superpowers/specs/2026-09-07-e3-encrypted-data-model-design.md`
+> (*Deviations from the parent spec*): the short code lives inside the encrypted blob
+> rather than as a plaintext column; the `(ciphertext, iv)` pair is one `envelope`
+> column holding E2's `Envelope` JSON; the `/api/process/*` blind proxies ship in E3
+> as thin conversions of the existing lib functions (E4 hardens them); and stored PDFs
+> are encrypted client-side before upload.
+
 ## E4 — Blind-proxy processing
 
 `/api/process/*` endpoints accept plaintext, call Gemini or Google Maps with the

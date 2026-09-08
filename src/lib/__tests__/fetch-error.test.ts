@@ -3,6 +3,7 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
   serializeErrorDetails,
+  errorDetailsFromException,
 } from "@/lib/fetch-error";
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -104,5 +105,22 @@ describe("serializeErrorDetails", () => {
     });
     expect(text).toContain("Stack:");
     expect(text).toContain("at foo.ts:1");
+  });
+});
+
+describe("errorDetailsFromException", () => {
+  it("captures message and stack, and a numeric status when the error carries one", () => {
+    const err = Object.assign(new Error("Stale version"), { status: 409 });
+    const d = errorDetailsFromException(err);
+    expect(d.message).toBe("Stale version");
+    expect(d.status).toBe(409);
+    expect(d.stack).toContain("Stale version");
+    expect(d.url).toBeUndefined();
+    expect(typeof d.timestamp).toBe("string");
+  });
+
+  it("leaves status undefined for a plain Error and stringifies non-Errors", () => {
+    expect(errorDetailsFromException(new Error("x")).status).toBeUndefined();
+    expect(errorDetailsFromException("boom").message).toBe("boom");
   });
 });

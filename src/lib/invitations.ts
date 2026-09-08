@@ -1,12 +1,11 @@
 import { db } from "@/lib/db";
 import {
   apartments,
-  apartmentDistances,
   households,
   householdMembers,
   householdKeyWraps,
   invitations,
-  locationsOfInterest,
+  locations,
   ratings,
   type Invitation,
 } from "@/lib/db/schema";
@@ -246,9 +245,8 @@ export async function acceptInvitation(id: number, userId: string): Promise<numb
         throw new InvitationError("You already belong to a household", 409);
       }
       const old = current.householdId;
-      await tx.delete(apartmentDistances).where(eq(apartmentDistances.householdId, old));
       await tx.delete(ratings).where(eq(ratings.householdId, old));
-      await tx.delete(locationsOfInterest).where(eq(locationsOfInterest.householdId, old));
+      await tx.delete(locations).where(eq(locations.householdId, old));
       await tx.delete(invitations).where(eq(invitations.householdId, old));
       await tx.delete(householdKeyWraps).where(eq(householdKeyWraps.householdId, old));
       await tx.delete(householdMembers).where(eq(householdMembers.householdId, old));

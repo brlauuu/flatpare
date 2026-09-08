@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { ApiError } from "@/lib/api-error";
+import { assertEnvelopeMode, type Envelope } from "@/lib/crypto";
 import { readEncryptionMode } from "@/lib/encryption-mode";
-import { ForbiddenError, UnauthorizedError } from "@/lib/household";
+import { assertMembership, ForbiddenError, UnauthorizedError, type Role } from "@/lib/household";
+import { requireHousehold } from "@/lib/session";
 
 // Single error → response mapping for the E2 route handlers. `tag` names the
 // route in the 500 log line, e.g. "crypto:setup".
@@ -47,4 +49,52 @@ export function requireEncryptionOn(): void {
   if (readEncryptionMode() === "off") {
     throw new ApiError("Encryption is off for this deployment", 409);
   }
+}
+
+// The session's householdId is a JWT claim that can outlive a membership by
+// up to 24h. Every E3 data route re-checks the database, and a non-member
+// gets 404 — the same answer as a row that never existed — so that a
+// removed member's probes cannot tell "gone" from "not yours".
+export async function requireMember(): Promise<{
+  householdId: number;
+  userId: string;
+  role: Role;
+}> {
+  const { householdId, userId } = await requireHousehold();
+  try {
+    const role = await assertMembership(householdId, userId);
+    return { householdId, userId, role };
+  } catch (err) {
+    if (err instanceof ForbiddenError) throw new ApiError("Not found", 404);
+    throw err;
+  }
+}
+
+// A client that sends a v0 envelope to an encrypted deployment (or v1 to an
+// unencrypted one) has a bug; the row must not be written.
+export function requireEnvelopeMode(envelope: Envelope): void {
+  try {
+    assertEnvelopeMode(envelope, readEncryptionMode());
+  } catch (err) {
+    throw new ApiError(err instanceof Error ? err.message : "Bad envelope", 400);
+  }
+}
+
+// libsql reports a primary-key clash as a plain Error, but Drizzle wraps it
+// in a DrizzleQueryError whose own .message is just the failed query text —
+// the constraint message lives on .cause. Walk the cause chain rather than
+// matching only the top-level message (mirrors the check in
+// src/lib/invitations.ts, which hit the same wrapping). Bounded, since
+// .cause is `unknown` input and a self-referencing chain would otherwise
+// spin forever — a handful of links is far more than Drizzle's own wrapping
+// ever produces.
+const MAX_CAUSE_CHAIN_DEPTH = 5;
+
+export function isUniqueConstraintError(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let depth = 0; depth < MAX_CAUSE_CHAIN_DEPTH && cur instanceof Error; depth++) {
+    if (/unique constraint/i.test(cur.message)) return true;
+    cur = cur.cause;
+  }
+  return false;
 }

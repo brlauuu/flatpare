@@ -4,8 +4,8 @@ import { DistanceSection } from "../distance-section";
 import type { LocationLite } from "../types";
 
 const locations: LocationLite[] = [
-  { id: 1, label: "Train Station", icon: "Train", address: "Basel SBB" },
-  { id: 2, label: "Work", icon: "Briefcase", address: "Zurich HQ" },
+  { id: "loc-1", label: "Train Station", icon: "Train", address: "Basel SBB" },
+  { id: "loc-2", label: "Work", icon: "Briefcase", address: "Zurich HQ" },
 ];
 
 afterEach(() => {
@@ -17,10 +17,10 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={locations}
-        distances={[
-          { locationId: 1, bikeMin: 12, transitMin: 25 },
-          { locationId: 2, bikeMin: 18, transitMin: 32 },
-        ]}
+        distances={{
+          "loc-1": { bikeMin: 12, transitMin: 25 },
+          "loc-2": { bikeMin: 18, transitMin: 32 },
+        }}
         apartmentAddress="Sonnenweg 3, 8001 Zurich"
       />
     );
@@ -34,9 +34,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[
-          { locationId: 1, bikeMin: null, transitMin: 25 },
-        ]}
+        distances={{ "loc-1": { bikeMin: null, transitMin: 25 } }}
         apartmentAddress="Sonnenweg 3"
       />
     );
@@ -47,9 +45,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[
-          { locationId: 1, bikeMin: null, transitMin: null },
-        ]}
+        distances={{ "loc-1": { bikeMin: null, transitMin: null } }}
         apartmentAddress="Sonnenweg 3"
       />
     );
@@ -60,7 +56,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[]}
+        distances={{}}
         apartmentAddress="Sonnenweg 3"
       />
     );
@@ -71,7 +67,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[{ locationId: 1, bikeMin: 12, transitMin: 25 }]}
+        distances={{ "loc-1": { bikeMin: 12, transitMin: 25 } }}
         apartmentAddress="Sonnenweg 3, 8001 Zurich"
       />
     );
@@ -95,7 +91,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[{ locationId: 1, bikeMin: 12, transitMin: 25 }]}
+        distances={{ "loc-1": { bikeMin: 12, transitMin: 25 } }}
         apartmentAddress={null}
       />
     );
@@ -111,7 +107,7 @@ describe("DistanceSection", () => {
     render(
       <DistanceSection
         locations={[locations[0]]}
-        distances={[{ locationId: 1, bikeMin: 12, transitMin: 25 }]}
+        distances={{ "loc-1": { bikeMin: 12, transitMin: 25 } }}
         apartmentAddress="Sonnenweg 3"
       />
     );
@@ -124,7 +120,7 @@ describe("DistanceSection", () => {
     const { container } = render(
       <DistanceSection
         locations={[]}
-        distances={[]}
+        distances={{}}
         apartmentAddress="Sonnenweg 3"
       />
     );

@@ -6,7 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 interface ApartmentPin {
-  id: number;
+  id: string;
   shortCode: string | null;
   name: string;
   latitude: number;
@@ -14,7 +14,7 @@ interface ApartmentPin {
 }
 
 interface LocationPin {
-  id: number;
+  id: string;
   label: string;
   latitude: number;
   longitude: number;

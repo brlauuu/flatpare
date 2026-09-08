@@ -6,7 +6,8 @@ import {
   emptyApartmentForm,
   formFromExtracted,
   formFromApartment,
-  formToPayload,
+  formToFields,
+  apartmentFromForm,
 } from "../apartment-form-fields";
 
 afterEach(() => cleanup());
@@ -105,27 +106,24 @@ describe("WashingMachineToggle", () => {
 
 describe("apartment-form-fields helpers", () => {
   it("formFromExtracted maps AI extraction to form-shape strings, defaulting null → ''", () => {
-    const form = formFromExtracted(
-      {
-        name: "Pretty Place",
-        address: "Sonnenweg 3",
-        sizeM2: 60,
-        numRooms: 2.5,
-        numBathrooms: 1,
-        numBalconies: null,
-        hasWashingMachine: true,
-        rentChf: 2400,
-        listingUrl: null,
-      },
-      "https://blob.example/x.pdf"
-    );
+    const form = formFromExtracted({
+      name: "Pretty Place",
+      address: "Sonnenweg 3",
+      sizeM2: 60,
+      numRooms: 2.5,
+      numBathrooms: 1,
+      numBalconies: null,
+      hasWashingMachine: true,
+      rentChf: 2400,
+      listingUrl: null,
+    });
     expect(form.name).toBe("Pretty Place");
     expect(form.rentChf).toBe("2400");
     expect(form.sizeM2).toBe("60");
     expect(form.numBalconies).toBe("");
     expect(form.hasWashingMachine).toBe(true);
-    expect(form.pdfUrl).toBe("https://blob.example/x.pdf");
     expect(form.listingUrl).toBe("");
+    expect(form.rawExtractedData).toEqual(expect.objectContaining({ name: "Pretty Place" }));
   });
 
   it("formFromApartment maps a stored apartment back into form fields", () => {
@@ -138,7 +136,6 @@ describe("apartment-form-fields helpers", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
-      pdfUrl: null,
       listingUrl: null,
       summary: "Nice flat",
       availableFrom: "2026-05-01",
@@ -148,8 +145,8 @@ describe("apartment-form-fields helpers", () => {
     expect(form.rentChf).toBe("");
   });
 
-  it("formToPayload coerces strings back to numbers (or null) and preserves summary", () => {
-    const payload = formToPayload({
+  it("formToFields coerces strings back to numbers (or null) and preserves summary", () => {
+    const fields = formToFields({
       ...emptyApartmentForm,
       name: "X",
       rentChf: "2400",
@@ -158,23 +155,36 @@ describe("apartment-form-fields helpers", () => {
       numBathrooms: "1",
       summary: "keeps content",
     });
-    expect(payload.rentChf).toBe(2400);
-    expect(payload.sizeM2).toBeNull();
-    expect(payload.numRooms).toBe(2.5);
-    expect(payload.numBathrooms).toBe(1);
-    expect(payload.summary).toBe("keeps content");
+    expect(fields.rentChf).toBe(2400);
+    expect(fields.sizeM2).toBeNull();
+    expect(fields.numRooms).toBe(2.5);
+    expect(fields.numBathrooms).toBe(1);
+    expect(fields.summary).toBe("keeps content");
   });
 
-  it("formToPayload returns null summary when the field is the empty string", () => {
-    const payload = formToPayload({ ...emptyApartmentForm, summary: "" });
-    expect(payload.summary).toBeNull();
+  it("formToFields coerces empty optional strings to null", () => {
+    const fields = formToFields(emptyApartmentForm);
+    expect(fields.summary).toBeNull();
+    expect(fields.address).toBeNull();
+    expect(fields.listingUrl).toBeNull();
+    expect(fields.availableFrom).toBeNull();
+    expect("pdf" in fields).toBe(false);
+    expect("rawExtractedData" in fields).toBe(false);
   });
 
-  it("formToPayload coerces empty optional strings to null (address, listingUrl, availableFrom)", () => {
-    const payload = formToPayload(emptyApartmentForm);
-    expect(payload.address).toBeNull();
-    expect(payload.listingUrl).toBeNull();
-    expect(payload.availableFrom).toBeNull();
-    expect(payload.pdfUrl).toBeNull();
+  it("apartmentFromForm builds a full Apartment with defaults, raw data and the pdf", () => {
+    const pdf = { path: "/api/uploads/households/7/x.pdf.enc", iv: "AAAA" };
+    const apt = apartmentFromForm(
+      { ...emptyApartmentForm, name: "X", rentChf: "1000", rawExtractedData: { name: "X" } },
+      pdf
+    );
+    expect(apt.name).toBe("X");
+    expect(apt.rentChf).toBe(1000);
+    expect(apt.pdf).toEqual(pdf);
+    expect(apt.rawExtractedData).toEqual({ name: "X" });
+    expect(apt.userEditedFields).toEqual([]);
+    expect(apt.distances).toEqual({});
+    expect(apt.shortCode).toBeNull();
+    expect(apt.listingGone).toBe(false);
   });
 });

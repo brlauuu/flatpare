@@ -2,11 +2,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PagerNavProps {
-  prevId: number | null;
-  nextId: number | null;
+  prevId: string | null;
+  nextId: string | null;
   position: number | null;
   total: number;
-  onNavigate: (id: number) => void;
+  onNavigate: (id: string) => void;
 }
 
 export function ApartmentPagerNav({

@@ -205,3 +205,53 @@ the submitted material actually derives from the household data key — so a mem
 silently destroy the household's last backup, deliberately or through a broken client.
 Members are trusted under this threat model (they can already delete every row), and
 the alternative would require the server to hold something it must never hold.
+
+## Encrypted data — reviewed 2026-09-07 (E3 encrypted data model)
+
+Spec: `docs/superpowers/specs/2026-09-07-e3-encrypted-data-model-design.md`. Apartments,
+ratings and locations are stored as E2 envelopes sealed with the household data key;
+the server scopes, orders and versions rows but never reads them. PDFs are encrypted
+client-side before upload. Below are the limits that were accepted, not oversights.
+
+### Accepted: the server sees metadata
+
+Ids, `household_id`, `created_at`/`updated_at`, `version`, a location's `sort_order`,
+and `(apartment_id, user_id)` on ratings are plaintext because the server needs them to
+scope, order and upsert. So the host can see how many apartments a household has, when
+each was created and last edited, which member rated which apartment and when, how many
+locations of interest exist and their order, and the byte size of each stored PDF. None
+of it says *what* an apartment is. The short code was moved inside the envelope for
+exactly this reason — it encodes rooms, bathrooms, washing machine and postcode.
+
+### Accepted: whole-row last-write-wins after one retry
+
+An apartment envelope is one value. Two members editing the same apartment at once
+race on `version`; the loser gets `409 Stale version`, the store refetches, re-applies
+its mutator on the fresh plaintext and retries once. A second conflict in a row
+surfaces as an error to the user. Field-level merging would need the server to read the
+row; it cannot. Ratings have one writer per row and locations are at most five, so
+they carry no version at all.
+
+### Accepted: process endpoints see plaintext in memory
+
+`/api/process/{geocode,distance,check-listing,parse-pdf}` receive one address, one
+URL or one PDF per call, forward it to Google or Gemini with the host's keys, and
+return the result. They touch no table (each has a test that asserts every row count is
+unchanged) and do not log bodies. This is the privacy exception the parent spec
+names, and it is documented at the top of each route. E4 hardens it — per-account
+rate limits, log scrubbing on every code path, the landing-page disclosure — but does
+not remove it: the host cannot geocode what it cannot read.
+
+### Accepted: a removed member can open ciphertext they already fetched
+
+`requireMember()` re-checks the database on every data read, so a removed member's
+still-valid JWT stops returning rows immediately. But ciphertext they fetched *before*
+removal, and the data key cached in their device store, remain usable offline. Closing
+this needs data-key rotation on removal, tracked as #219.
+
+### Accepted: corrupt rows are shown, not hidden
+
+A row whose envelope fails to open or to validate renders as a placeholder marked
+*could not be decrypted* with a Delete button, and is excluded from sorting, search and
+the compare table. Hiding it would let a corrupted or tampered row disappear silently;
+showing it makes tampering visible to every member.

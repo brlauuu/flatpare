@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
-import { requireHousehold } from "@/lib/session";
+import { ApiError } from "@/lib/api-error";
+import { requireMember } from "@/lib/api-route";
+import { UnauthorizedError } from "@/lib/household";
 import {
   householdIdFromStoredPath,
   hasResidualPercentEncoding,
@@ -12,9 +14,17 @@ export async function GET(
 ) {
   let householdId: number;
   try {
-    ({ householdId } = await requireHousehold());
-  } catch {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    ({ householdId } = await requireMember());
+  } catch (e) {
+    // requireMember() 404s a removed member the same as a foreign path
+    // below — "gone" and "not yours" must read identically.
+    if (e instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    if (e instanceof ApiError) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
+    throw e;
   }
 
   const { path: segments } = await params;

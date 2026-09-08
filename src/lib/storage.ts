@@ -1,11 +1,11 @@
-import { put, get } from "@vercel/blob";
-import { writeFile, mkdir, readFile } from "fs/promises";
+import { put, get, del } from "@vercel/blob";
+import { writeFile, mkdir, readFile, unlink } from "fs/promises";
 import path from "path";
 import { canonicalizePathname } from "@/lib/pathname";
 
 export { canonicalizePathname, hasResidualPercentEncoding } from "@/lib/pathname";
 
-const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+export const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
 const isCloud = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -119,4 +119,55 @@ export async function readStoredFile(
   }
 
   throw new Error(`Unrecognized stored URL: ${storedUrl}`);
+}
+
+// Resolves a client-supplied stored-file URL (as written into an
+// apartment's `pdf.path`) to the household that owns it, in canonical form.
+// Route handlers compare the household against the caller's and persist or
+// act on `canonicalUrl`, never the raw input.
+export function storedPathHousehold(
+  url: string
+): { householdId: number; canonicalUrl: string } | null {
+  try {
+    if (url.startsWith("/api/pdf/")) {
+      const key = canonicalizePathname(url.slice("/api/pdf/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/pdf/${key}` };
+    }
+    if (url.startsWith("/api/uploads/")) {
+      const key = decodeURIComponent(url.slice("/api/uploads/".length));
+      const householdId = householdIdFromStoredPath(key);
+      if (householdId === null) return null;
+      return { householdId, canonicalUrl: `/api/uploads/${key}` };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+// Best-effort removal of an apartment's stored file when the row is
+// deleted. A path that does not resolve to `expectedHouseholdId` is ignored
+// (the route already answered 400 for it); a missing file is not an error.
+export async function deleteStoredFile(
+  storedUrl: string,
+  expectedHouseholdId: number
+): Promise<void> {
+  const resolved = storedPathHousehold(storedUrl);
+  if (!resolved || resolved.householdId !== expectedHouseholdId) return;
+  try {
+    if (resolved.canonicalUrl.startsWith("/api/pdf/")) {
+      await del(resolved.canonicalUrl.slice("/api/pdf/".length));
+      return;
+    }
+    const key = resolved.canonicalUrl.slice("/api/uploads/".length);
+    const filePath = path.resolve(UPLOADS_DIR, key);
+    if (!filePath.startsWith(path.resolve(UPLOADS_DIR) + path.sep)) return;
+    await unlink(filePath);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") return;
+    console.warn("[storage] deleteStoredFile failed", storedUrl, err);
+  }
 }

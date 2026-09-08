@@ -1,55 +1,35 @@
 import { NextResponse } from "next/server";
-import { moveLocation } from "@/lib/locations";
-import {
-  assertMembership,
-  ForbiddenError,
-  UnauthorizedError,
-} from "@/lib/household";
-import { requireHousehold } from "@/lib/session";
+import { z } from "zod";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { locations } from "@/lib/db/schema";
+import { ApiError } from "@/lib/api-error";
+import { apiErrorResponse, parseBody, requireMember } from "@/lib/api-route";
+import { locationRow } from "@/lib/data-rows";
+import { listLocations, moveLocation } from "@/lib/locations";
 
-const notFound = () =>
-  NextResponse.json({ error: "Not found" }, { status: 404 });
+type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  let householdId: number;
-  let userId: string;
+const moveSchema = z.object({ direction: z.enum(["up", "down"]) });
+
+export async function POST(req: Request, ctx: Ctx) {
   try {
-    ({ householdId, userId } = await requireHousehold());
-  } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const { householdId } = await requireMember();
+    const { id } = await ctx.params;
+    if (!z.uuid().safeParse(id).success) throw new ApiError("Not found", 404);
+    const body = await parseBody(req, moveSchema);
+
+    const moved = await moveLocation(householdId, id, body.direction);
+    if (!moved) {
+      // Distinguish "at the edge" (fine, return the order) from "not ours".
+      const [row] = await db
+        .select({ id: locations.id })
+        .from(locations)
+        .where(and(eq(locations.id, id), eq(locations.householdId, householdId)));
+      if (!row) throw new ApiError("Not found", 404);
     }
-    throw e;
-  }
-
-  try {
-    await assertMembership(householdId, userId);
+    return NextResponse.json((await listLocations(householdId)).map(locationRow));
   } catch (e) {
-    if (e instanceof ForbiddenError) return notFound();
-    throw e;
-  }
-
-  try {
-    const { id } = await params;
-    const body = (await request.json()) as { direction?: unknown };
-    if (body.direction !== "up" && body.direction !== "down") {
-      return NextResponse.json(
-        { error: "direction must be 'up' or 'down'" },
-        { status: 400 }
-      );
-    }
-    await moveLocation(householdId, parseInt(id), body.direction);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed";
-    const isValidation = /not found/i.test(message);
-    console.error("[locations/id/move:POST] Error:", error);
-    return NextResponse.json(
-      { error: message },
-      { status: isValidation ? 404 : 500 }
-    );
+    return apiErrorResponse(e, "locations:move");
   }
 }

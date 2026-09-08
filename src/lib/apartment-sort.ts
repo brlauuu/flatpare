@@ -1,3 +1,5 @@
+import type { ApartmentDistance } from "@/lib/household-data/types";
+
 type StaticSortField =
   | "createdAt"
   | "rentChf"
@@ -10,7 +12,7 @@ type StaticSortField =
 
 // `bikeTo:<locationId>` and `transitTo:<locationId>` are generated at runtime
 // from the user's configured locations of interest.
-type LocationSortField = `bikeTo:${number}` | `transitTo:${number}`;
+export type LocationSortField = `bikeTo:${string}` | `transitTo:${string}`;
 
 export type SortField = StaticSortField | LocationSortField;
 
@@ -27,61 +29,49 @@ const STATIC_FIELDS: StaticSortField[] = [
 
 export type SortDirection = "asc" | "desc";
 
-type ApartmentDistance = {
-  locationId: number;
-  bikeMin: number | null;
-  transitMin: number | null;
-};
-
 export interface SortableApartment {
-  id: number;
+  id: string;
   rentChf: number | null;
   sizeM2: number | null;
   numRooms: number | null;
   numBathrooms: number | null;
   numBalconies: number | null;
-  distances: ApartmentDistance[];
-  avgOverall: string | null;
+  distances: Record<string, ApartmentDistance>;
+  avgOverall: number | null;
   shortCode: string | null;
   createdAt: string | null;
 }
 
-function parseLocationSortField(
+export function parseLocationSortField(
   field: string
-): { mode: "bike" | "transit"; locationId: number } | null {
-  const m = /^(bikeTo|transitTo):(\d+)$/.exec(field);
+): { mode: "bike" | "transit"; locationId: string } | null {
+  const m = /^(bikeTo|transitTo):(.+)$/.exec(field);
   if (!m) return null;
-  return {
-    mode: m[1] === "bikeTo" ? "bike" : "transit",
-    locationId: parseInt(m[2]),
-  };
+  return { mode: m[1] === "bikeTo" ? "bike" : "transit", locationId: m[2] };
 }
 
 function extract(apt: SortableApartment, field: SortField): number | string | null {
+  const loc = parseLocationSortField(field);
+  if (loc) {
+    const d = apt.distances[loc.locationId];
+    if (!d) return null;
+    return loc.mode === "bike" ? d.bikeMin : d.transitMin;
+  }
   switch (field) {
-    case "rentChf":
-      return apt.rentChf;
-    case "sizeM2":
-      return apt.sizeM2;
-    case "numRooms":
-      return apt.numRooms;
-    case "numBathrooms":
-      return apt.numBathrooms;
-    case "numBalconies":
-      return apt.numBalconies;
+    case "createdAt": {
+      if (apt.createdAt === null) return null;
+      const t = Date.parse(apt.createdAt);
+      return Number.isNaN(t) ? null : t;
+    }
     case "avgOverall":
-      return apt.avgOverall === null ? null : parseFloat(apt.avgOverall);
-    case "createdAt":
-      return apt.createdAt === null ? null : Date.parse(apt.createdAt);
+      return apt.avgOverall;
     case "shortCode":
       return apt.shortCode;
-    default: {
-      const parsed = parseLocationSortField(field);
-      if (!parsed) return null;
-      const d = apt.distances.find((x) => x.locationId === parsed.locationId);
-      if (!d) return null;
-      return parsed.mode === "bike" ? d.bikeMin : d.transitMin;
-    }
+    default:
+      // `field` is a StaticSortField here: the location-scoped fields were
+      // handled by the `loc` branch above, but that's a runtime check the
+      // type checker can't see through.
+      return apt[field as StaticSortField];
   }
 }
 
@@ -107,7 +97,10 @@ const STATIC_LIST_SORT_FIELDS: StaticSortField[] = [
   "shortCode",
 ];
 
-type LocationLite = { id: number; label: string };
+export interface LocationLite {
+  id: string;
+  label: string;
+}
 
 type SortFieldOption = { id: SortField; label: string };
 
@@ -174,7 +167,7 @@ export function compareApartments(
   }
   const createdCmp = compareValues(extract(a, "createdAt"), extract(b, "createdAt"));
   if (createdCmp !== 0) return -createdCmp;
-  return a.id - b.id;
+  return a.id.localeCompare(b.id);
 }
 
 export const SORT_FIELD_STORAGE_KEY = "flatpare-apartments-sort-field";

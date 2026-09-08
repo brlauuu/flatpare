@@ -107,6 +107,11 @@ export function ReviewStep({
                           .filter(Boolean)
                           .join(" · ") || item.fileName}
                       </p>
+                      {item.pdfWarning && (
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          {item.pdfWarning}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

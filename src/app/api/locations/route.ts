@@ -1,88 +1,44 @@
 import { NextResponse } from "next/server";
-import { createLocation, listLocations } from "@/lib/locations";
+import { z } from "zod";
+import { ApiError } from "@/lib/api-error";
 import {
-  assertMembership,
-  ForbiddenError,
-  UnauthorizedError,
-} from "@/lib/household";
-import { requireHousehold } from "@/lib/session";
+  apiErrorResponse,
+  isUniqueConstraintError,
+  parseBody,
+  requireEnvelopeMode,
+  requireMember,
+} from "@/lib/api-route";
+import { envelopeSchema } from "@/lib/crypto-schemas";
+import { locationRow } from "@/lib/data-rows";
+import { createLocation, listLocations } from "@/lib/locations";
+
+const createSchema = z.object({ id: z.uuid(), envelope: envelopeSchema });
 
 export async function GET() {
-  let householdId: number;
   try {
-    ({ householdId } = await requireHousehold());
+    const { householdId } = await requireMember();
+    return NextResponse.json((await listLocations(householdId)).map(locationRow));
   } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    throw e;
-  }
-
-  try {
-    const locations = await listLocations(householdId);
-    return NextResponse.json(locations);
-  } catch (error) {
-    console.error("[locations:GET] Error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed" },
-      { status: 500 }
-    );
+    return apiErrorResponse(e, "locations:list");
   }
 }
 
-export async function POST(request: Request) {
-  let householdId: number;
-  let userId: string;
+export async function POST(req: Request) {
   try {
-    ({ householdId, userId } = await requireHousehold());
+    const { householdId } = await requireMember();
+    const body = await parseBody(req, createSchema);
+    requireEnvelopeMode(body.envelope);
+    try {
+      const created = await createLocation(householdId, {
+        id: body.id,
+        envelope: JSON.stringify(body.envelope),
+      });
+      return NextResponse.json(locationRow(created), { status: 201 });
+    } catch (err) {
+      if (isUniqueConstraintError(err)) throw new ApiError("Duplicate id", 409);
+      throw err;
+    }
   } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    throw e;
-  }
-
-  // A create is a write: a removed member's token still names their old
-  // household for up to 24h and would otherwise keep inserting into it.
-  try {
-    await assertMembership(householdId, userId);
-  } catch (e) {
-    if (e instanceof ForbiddenError) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    throw e;
-  }
-
-  try {
-    const body = (await request.json()) as {
-      label?: unknown;
-      icon?: unknown;
-      address?: unknown;
-    };
-    if (
-      typeof body.label !== "string" ||
-      typeof body.icon !== "string" ||
-      typeof body.address !== "string"
-    ) {
-      return NextResponse.json(
-        { error: "label, icon, and address are required strings" },
-        { status: 400 }
-      );
-    }
-    const created = await createLocation(householdId, {
-      label: body.label,
-      icon: body.icon,
-      address: body.address,
-    });
-    return NextResponse.json(created, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed";
-    const isValidation =
-      /more than|empty|icon/i.test(message);
-    console.error("[locations:POST] Error:", error);
-    return NextResponse.json(
-      { error: message },
-      { status: isValidation ? 400 : 500 }
-    );
+    return apiErrorResponse(e, "locations:create");
   }
 }

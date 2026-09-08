@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 const STORAGE_KEY = "flatpare-overview-map-open";
 
 export interface OverviewApartment {
-  id: number;
+  id: string;
   shortCode: string | null;
   name: string;
   latitude: number | null;
@@ -16,7 +16,7 @@ export interface OverviewApartment {
 }
 
 export interface OverviewLocation {
-  id: number;
+  id: string;
   label: string;
   latitude: number | null;
   longitude: number | null;
@@ -25,7 +25,9 @@ export interface OverviewLocation {
 interface Props {
   apartments: OverviewApartment[];
   locations: OverviewLocation[];
-  onBackfillComplete?: () => void;
+  // Fired once, the first time the panel is open in this mount. The list
+  // page uses it to kick off the geocode maintenance pass.
+  onOpen?: () => void;
 }
 
 const LeafletMap = dynamic(() => import("./apartments-overview-map-inner"), {
@@ -37,35 +39,24 @@ const LeafletMap = dynamic(() => import("./apartments-overview-map-inner"), {
   ),
 });
 
-export function ApartmentsOverviewMap({
-  apartments,
-  locations,
-  onBackfillComplete,
-}: Props) {
+export function ApartmentsOverviewMap({ apartments, locations, onOpen }: Props) {
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
-  const backfilledRef = useRef(false);
-  const onBackfillCompleteRef = useRef(onBackfillComplete);
+  const openedRef = useRef(false);
+  const onOpenRef = useRef(onOpen);
   useEffect(() => {
-    onBackfillCompleteRef.current = onBackfillComplete;
-  }, [onBackfillComplete]);
+    onOpenRef.current = onOpen;
+  }, [onOpen]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
     }
-    if (!open || backfilledRef.current) return;
-    backfilledRef.current = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/geocode/backfill", { method: "POST" });
-        if (res.ok) onBackfillCompleteRef.current?.();
-      } catch {
-        // backfill is best-effort
-      }
-    })();
+    if (!open || openedRef.current) return;
+    openedRef.current = true;
+    onOpenRef.current?.();
   }, [open]);
 
   const apartmentPins = useMemo(
@@ -116,9 +107,9 @@ export function ApartmentsOverviewMap({
             <LeafletMap apartments={apartmentPins} locations={locationPins} />
           ) : (
             <div className="flex h-[200px] items-center justify-center px-4 text-center text-sm text-muted-foreground">
-              No geocoded apartments or locations yet. New entries are
-              geocoded on save; existing ones will appear here as soon as
-              backfill finishes.
+              No geocoded apartments or locations yet. Apartments and locations
+              are geocoded when saved; anything still missing coordinates is
+              filled in when this panel opens.
             </div>
           )}
         </div>

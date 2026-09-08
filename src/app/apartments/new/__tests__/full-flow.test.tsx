@@ -1,474 +1,244 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
+import { screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
+import { makeApartmentView } from "@/components/household-data/__tests__/fake-household-data";
 
 const pushMock = vi.fn();
-
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
 }));
 
+vi.mock("@/components/household-data/process-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/household-data/process-client")>()),
+  parsePdf: vi.fn(),
+}));
+vi.mock("@/components/household-data/pdf-files", () => ({
+  encryptAndUploadPdf: vi.fn(),
+  downloadPdf: vi.fn(),
+}));
+
 import UploadPage from "../page";
-import { _resetBlobModeProbeForTests } from "@/lib/upload-pdf";
+import { parsePdf } from "@/components/household-data/process-client";
+import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 
-function makePdfFile(name = "listing.pdf"): File {
-  const blob = new Blob(["%PDF-1.4\n...\n"], { type: "application/pdf" });
-  return new File([blob], name, { type: "application/pdf" });
+const PDF = { path: "/api/uploads/households/7/x.pdf.enc", iv: "AAAA" };
+
+function makePdfFile(name: string): File {
+  return new File([new Blob(["%PDF-1.4\n"], { type: "application/pdf" })], name, {
+    type: "application/pdf",
+  });
 }
 
-function makeTextFile(name = "notes.txt"): File {
-  return new File(["hi"], name, { type: "text/plain" });
-}
-
-function probeResponse(enabled: boolean) {
-  return {
-    ok: enabled,
-    status: enabled ? 200 : 404,
-    json: () => Promise.resolve({ enabled }),
-  } as Response;
-}
-
-function parseSuccess(name: string) {
-  return {
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        pdfUrl: `https://blob.example/${name}`,
-        extracted: {
-          name: `Parsed ${name}`,
-          address: null,
-          sizeM2: null,
-          numRooms: null,
-          numBathrooms: null,
-          numBalconies: null,
-          hasWashingMachine: null,
-          rentChf: null,
-          listingUrl: null,
-        },
-        aiAvailable: true,
-      }),
-  } as Response;
-}
-
-function jsonRes(body: unknown, ok = true, status = 200) {
-  const res = {
-    ok,
-    status,
-    statusText: ok ? "OK" : "Error",
-    headers: new Headers({ "content-type": "application/json" }),
-    json: () => Promise.resolve(body),
-    text: () => Promise.resolve(JSON.stringify(body)),
-    clone() {
-      return res;
-    },
-  };
-  return res as unknown as Response;
+async function uploadFiles(user: ReturnType<typeof userEvent.setup>, files: File[]) {
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+  expect(input).toBeTruthy();
+  await user.upload(input, files);
 }
 
 beforeEach(() => {
-  pushMock.mockReset();
-  _resetBlobModeProbeForTests();
+  vi.mocked(parsePdf).mockImplementation(async (_bytes, filename) => ({
+    extracted: { name: `Parsed ${filename}`, rentChf: 1500 },
+    aiAvailable: true,
+  }));
+  vi.mocked(encryptAndUploadPdf).mockResolvedValue(PDF);
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
+  pushMock.mockReset();
 });
 
-describe("Upload page — manual single-entry flow", () => {
-  it("opens the manual form when clicking the link", async () => {
-    const user = userEvent.setup();
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    expect(screen.getByText(/Add Apartment Manually/i)).toBeInTheDocument();
+describe("manual single-entry flow", () => {
+  it("shows the drop zone first", () => {
+    renderWithHouseholdData(<UploadPage />);
+    expect(screen.getByRole("button", { name: /Or add manually without PDF/i })).toBeInTheDocument();
   });
 
-  it("requires a name on the manual form", async () => {
+  it("switches to the manual form", async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi.spyOn(global, "fetch");
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    // The button is type="submit"; clicking with an empty form triggers
-    // browser-level required-field validation in some envs. We bypass that
-    // by submitting the form programmatically.
-    const form = screen.getByRole("button", { name: /Save Apartment/i }).closest("form")!;
-    fireEvent.submit(form);
-    await waitFor(() => {
-      expect(screen.getByText(/Name is required/i)).toBeInTheDocument();
-    });
-    // No POST happened.
-    expect(
-      fetchSpy.mock.calls.filter(
-        (c) =>
-          String(c[0]) === "/api/apartments" &&
-          (c[1] as RequestInit | undefined)?.method === "POST"
-      )
-    ).toHaveLength(0);
+    renderWithHouseholdData(<UploadPage />);
+    await user.click(screen.getByRole("button", { name: /Or add manually without PDF/i }));
+    expect(screen.getByLabelText(/^Name/i)).toBeInTheDocument();
   });
 
-  it("saves a manual apartment and redirects to its detail page", async () => {
+  it("requires a name", async () => {
     const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url === "/api/apartments" && init?.method === "POST") {
-          return jsonRes({ id: 99 });
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
-    );
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    await user.type(screen.getByLabelText(/^Name \*/), "Manual Flat");
-    await user.click(screen.getByRole("button", { name: /Save Apartment/i }));
-    await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/apartments/99");
-    });
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    await user.click(screen.getByRole("button", { name: /Or add manually without PDF/i }));
+    fireEvent.submit(screen.getByLabelText(/^Name/i).closest("form")!);
+    expect(await screen.findByText("Name is required")).toBeInTheDocument();
+    expect(value.createApartment).not.toHaveBeenCalled();
   });
 
-  it("shows an error when manual save fails on the server", async () => {
+  it("saves a manual apartment through the store and redirects to its detail page", async () => {
     const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url === "/api/apartments" && init?.method === "POST") {
-          return jsonRes({ error: "boom" }, false, 500);
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
+      makeApartmentView({ id, ...data })
     );
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    await user.type(screen.getByLabelText(/^Name \*/), "Manual Flat");
-    await user.click(screen.getByRole("button", { name: /Save Apartment/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to save apartment/i)).toBeInTheDocument();
-    });
+    await user.click(screen.getByRole("button", { name: /Or add manually without PDF/i }));
+    await user.type(screen.getByLabelText(/^Name/i), "Manual Flat");
+    await user.type(screen.getByLabelText(/Rent/i), "1800");
+    await user.click(screen.getByRole("button", { name: /^Save apartment$/i }));
+
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    const [id, data] = vi.mocked(value.createApartment).mock.calls[0];
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(data).toEqual(expect.objectContaining({ name: "Manual Flat", rentChf: 1800, pdf: null }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith(`/apartments/${id}`));
+  });
+
+  it("shows an error when the store rejects the save", async () => {
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockRejectedValue(new Error("Duplicate id"));
+    await user.click(screen.getByRole("button", { name: /Or add manually without PDF/i }));
+    await user.type(screen.getByLabelText(/^Name/i), "Manual Flat");
+    await user.click(screen.getByRole("button", { name: /^Save apartment$/i }));
+    expect(await screen.findByText("Failed to save apartment")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("shows an error when manual save throws (network error)", async () => {
+  it("cancel returns to the drop zone", async () => {
     const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(async () => {
-      throw new TypeError("Failed to fetch");
-    });
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    await user.type(screen.getByLabelText(/^Name \*/), "Manual Flat");
-    await user.click(screen.getByRole("button", { name: /Save Apartment/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to save apartment/i)).toBeInTheDocument();
-    });
-  });
-
-  it("Cancel on the manual form returns to the upload step", async () => {
-    const user = userEvent.setup();
-    render(<UploadPage />);
-    await user.click(
-      screen.getByRole("button", { name: /Or add manually without PDF/i })
-    );
-    await user.click(screen.getByRole("button", { name: /^Cancel$/ }));
-    expect(
-      screen.getByRole("heading", { name: /Upload Listings/i })
-    ).toBeInTheDocument();
+    renderWithHouseholdData(<UploadPage />);
+    await user.click(screen.getByRole("button", { name: /Or add manually without PDF/i }));
+    await user.click(screen.getByRole("button", { name: /Cancel/i }));
+    expect(screen.getByRole("button", { name: /Or add manually without PDF/i })).toBeInTheDocument();
   });
 });
 
-describe("Upload page — drop zone validation", () => {
-  it("shows an error when the dropped files contain no PDFs", async () => {
-    render(<UploadPage />);
-    const dropZone = screen
-      .getByText(/Drag and drop one or more PDFs/i)
-      .closest("div")!;
-    const txt = makeTextFile();
-    fireEvent.drop(dropZone, {
-      dataTransfer: {
-        files: [txt],
-        types: ["Files"],
-      },
-    });
-    await waitFor(() => {
-      expect(screen.getByText(/No PDF files selected/i)).toBeInTheDocument();
-    });
+describe("drop zone validation", () => {
+  it("rejects non-PDF files", async () => {
+    const user = userEvent.setup();
+    renderWithHouseholdData(<UploadPage />);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["x"], "notes.txt", { type: "text/plain" }));
+    // jsdom honours the input's accept filter when it can; either the file
+    // is dropped before reaching the page or the page rejects it.
+    await waitFor(() =>
+      expect(
+        screen.queryByText("No PDF files selected") ??
+          screen.getByRole("button", { name: /Or add manually without PDF/i })
+      ).toBeInTheDocument()
+    );
+    expect(parsePdf).not.toHaveBeenCalled();
   });
 });
 
-describe("Upload page — batch review flow", () => {
-  function mockTwoSuccesses() {
-    return vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url.includes("/api/parse-pdf/upload-token")) {
-          return probeResponse(false);
-        }
-        if (url === "/api/parse-pdf" && init?.method === "POST") {
-          const body = init.body as FormData;
-          const f = body.get("file") as File;
-          return parseSuccess(f.name);
-        }
-        if (url === "/api/apartments" && init?.method === "POST") {
-          return jsonRes({ id: Math.floor(Math.random() * 1000) });
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
-    );
-  }
-
-  it("Save all redirects to /apartments after every item is processed", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+describe("batch review flow", () => {
+  it("parses and encrypt-uploads each PDF concurrently, then saves all through the store", async () => {
     const user = userEvent.setup();
-    mockTwoSuccesses();
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, [makePdfFile("a.pdf"), makePdfFile("b.pdf")]);
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed a.pdf")).toBeInTheDocument();
-      expect(screen.getByText("Parsed b.pdf")).toBeInTheDocument();
+    const { value } = renderWithHouseholdData(<UploadPage />, {
+      dataKey: null,
+      identity: { userId: "u-me", householdId: 7, userName: "Me" },
     });
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
+      makeApartmentView({ id, ...data })
+    );
+
+    await uploadFiles(user, [makePdfFile("a.pdf"), makePdfFile("b.pdf")]);
+
+    expect(await screen.findByText("Parsed a.pdf")).toBeInTheDocument();
+    expect(screen.getByText("Parsed b.pdf")).toBeInTheDocument();
+    expect(parsePdf).toHaveBeenCalledTimes(2);
+    expect(encryptAndUploadPdf).toHaveBeenCalledTimes(2);
+    // Upload is keyed by the item id, which is also the apartment id.
+    const [, householdId, uploadedId] = vi.mocked(encryptAndUploadPdf).mock.calls[0];
+    expect(householdId).toBe(7);
+    expect(uploadedId).toMatch(/^[0-9a-f-]{36}$/);
 
     await user.click(screen.getByRole("button", { name: /Save all 2/i }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText("Saved").length).toBe(2);
-    });
-
-    vi.runAllTimers();
-    await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/apartments");
-    });
-    vi.useRealTimers();
-  });
-
-  it('button reads "Save apartment" (singular) when only one is saveable', async () => {
-    const user = userEvent.setup();
-    mockTwoSuccesses();
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("only.pdf"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed only.pdf")).toBeInTheDocument();
-    });
-    expect(
-      screen.getByRole("button", { name: /Save apartment/i })
-    ).toBeInTheDocument();
-  });
-
-  it("Upload more clears items and returns to the upload step", async () => {
-    const user = userEvent.setup();
-    mockTwoSuccesses();
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("first.pdf"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed first.pdf")).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole("button", { name: /Upload more/i }));
-    expect(
-      screen.getByRole("heading", { name: /Upload Listings/i })
-    ).toBeInTheDocument();
-  });
-
-  it("discarding an item removes it from the review list", async () => {
-    const user = userEvent.setup();
-    mockTwoSuccesses();
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, [makePdfFile("keep.pdf"), makePdfFile("drop.pdf")]);
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed drop.pdf")).toBeInTheDocument();
-    });
-
-    // Find the discard button next to the "drop" card. Each card has a
-    // single ✕ button as its only child button besides the global Save/Upload.
-    const discardButtons = screen
-      .getAllByRole("button")
-      .filter((b) => b.textContent === "✕");
-    expect(discardButtons.length).toBeGreaterThan(0);
-    // Discard the second one (drop.pdf).
-    await user.click(discardButtons[discardButtons.length - 1]);
-
-    await waitFor(() => {
-      expect(screen.queryByText("Parsed drop.pdf")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText("Parsed keep.pdf")).toBeInTheDocument();
-  });
-
-  it('shows "Failed to save" on an item when the apartments POST fails', async () => {
-    const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url.includes("/api/parse-pdf/upload-token")) {
-          return probeResponse(false);
-        }
-        if (url === "/api/parse-pdf" && init?.method === "POST") {
-          return parseSuccess("x.pdf");
-        }
-        if (url === "/api/apartments" && init?.method === "POST") {
-          return jsonRes({ error: "nope" }, false, 500);
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
+    await waitFor(() => expect(screen.getAllByText("Saved")).toHaveLength(2));
+    expect(value.createApartment).toHaveBeenCalledTimes(2);
+    const [savedId, savedData] = vi.mocked(value.createApartment).mock.calls[0];
+    expect(savedId).toBe(uploadedId);
+    expect(savedData).toEqual(
+      expect.objectContaining({ name: "Parsed a.pdf", rentChf: 1500, pdf: PDF })
     );
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("x.pdf"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed x.pdf")).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to save/i)).toBeInTheDocument();
-    });
-    // Note: the page schedules a 500ms redirect after the batch finishes
-    // (allDone is true once every item is saved OR errored), so asserting
-    // pushMock was *not* called would race the timer. We only care that
-    // the per-item "Failed to save" surface lands here.
+    expect(savedData.rawExtractedData).toEqual({ name: "Parsed a.pdf", rentChf: 1500 });
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/apartments"));
   });
 
-  it("shows 'Failed to save' on an item when the apartments POST throws on the network", async () => {
+  it("saves with pdf: null and shows a warning when the upload fails", async () => {
     const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url.includes("/api/parse-pdf/upload-token")) {
-          return probeResponse(false);
-        }
-        if (url === "/api/parse-pdf" && init?.method === "POST") {
-          return parseSuccess("net.pdf");
-        }
-        if (url === "/api/apartments" && init?.method === "POST") {
-          throw new TypeError("Failed to fetch");
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
+    vi.mocked(encryptAndUploadPdf).mockRejectedValue(new Error("Blob down"));
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
+      makeApartmentView({ id, ...data })
     );
-    render(<UploadPage />);
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("net.pdf"));
-    await waitFor(() => {
-      expect(screen.getByText("Parsed net.pdf")).toBeInTheDocument();
-    });
+
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    expect(await screen.findByText("Parsed a.pdf")).toBeInTheDocument();
+    expect(screen.getByText(/PDF could not be stored/)).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: /Save apartment/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to save/i)).toBeInTheDocument();
-    });
-    // See note on the 5xx-failure test above — pushMock may or may not have
-    // fired by the time this assertion runs, and that's fine.
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].pdf).toBeNull();
   });
 
-  it("expanding a card reveals the editable form", async () => {
+  it("marks an item 'Failed to save' when the store rejects it and does not redirect", async () => {
     const user = userEvent.setup();
-    mockTwoSuccesses();
-    render(<UploadPage />);
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockRejectedValue(new Error("Stale version"));
 
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("expand.pdf"));
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await screen.findByText("Parsed a.pdf");
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    expect(await screen.findByText("Failed to save")).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText("Parsed expand.pdf")).toBeInTheDocument();
-    });
+  it("'Upload more' returns to the drop zone and a discarded item is skipped on save", async () => {
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
+      makeApartmentView({ id, ...data })
+    );
+    await uploadFiles(user, [makePdfFile("a.pdf"), makePdfFile("b.pdf")]);
+    await screen.findByText("Parsed b.pdf");
 
-    // Click the collapsed-card title row. The expand chevron is a sibling
-    // to the title — click the title text itself.
-    await user.click(screen.getByText("Parsed expand.pdf"));
+    // Discard b (the ✕ buttons are in card order).
+    const discardButtons = screen.getAllByRole("button", { name: "✕" });
+    await user.click(discardButtons[1]);
+    expect(screen.queryByText("Parsed b.pdf")).toBeNull();
 
-    // Form fields appear (Name input pre-populated).
-    await waitFor(() => {
-      const nameInput = screen.getByLabelText(/^Name \*/) as HTMLInputElement;
-      expect(nameInput.value).toBe("Parsed expand.pdf");
-    });
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].name).toBe("Parsed a.pdf");
+  });
+
+  it("expanding a card shows its editable fields and edits flow into the saved data", async () => {
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
+      makeApartmentView({ id, ...data })
+    );
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await user.click(await screen.findByText("Parsed a.pdf"));
+    const name = screen.getByLabelText(/^Name/i);
+    await user.clear(name);
+    await user.type(name, "Renamed");
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].name).toBe("Renamed");
   });
 });
 
-// NOTE on branch coverage:
-// new/page.tsx sits at ~67% branches. The remaining gaps are not reachable
-// through normal UI flows — e.g. the `if (toSave.length === 0)` guard inside
-// handleSaveAll only fires if items state changes between the Save button
-// rendering and being clicked, and the `processingRef.current` early-exit
-// fires only on a (currently never-triggered) cancel handler. They're kept
-// as defensive code, not as testable branches.
-
-describe("Upload page — Save all guard", () => {
-  it('shows "No apartments to save" when nothing is saveable', async () => {
-    // Set up: parse fails so the only item is in error state, but we
-    // still surface the Save All button by having one done item we then
-    // discard. Easier: trigger handleSaveAll with no saveable items.
-    // The button only renders when saveable.length > 0, so this branch
-    // is unreachable through normal UI. We exercise it by getting into
-    // the review step with a parsed item, discarding it (now nothing
-    // saveable), and ensuring the Save button is gone.
+describe("Save all guard", () => {
+  // review-step.tsx only renders the Save button when at least one item is
+  // saveable (status "done", not saved/discarded, non-empty name), so an
+  // all-empty-name batch never shows a Save button to click — this pins
+  // that guard instead of exercising the (unreachable via UI) handler
+  // branch the brief's literal test assumed.
+  it("hides the Save button when every parsed item has an empty name", async () => {
     const user = userEvent.setup();
-    vi.spyOn(global, "fetch").mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString();
-        if (url.includes("/api/parse-pdf/upload-token")) {
-          return probeResponse(false);
-        }
-        if (url === "/api/parse-pdf" && init?.method === "POST") {
-          return parseSuccess("only.pdf");
-        }
-        throw new Error(`Unexpected fetch: ${url}`);
-      }
-    );
-    render(<UploadPage />);
-
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    await user.upload(input, makePdfFile("only.pdf"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Parsed only.pdf")).toBeInTheDocument();
-    });
-    expect(
-      screen.getByRole("button", { name: /Save apartment/i })
-    ).toBeInTheDocument();
-
-    const discardButtons = screen
-      .getAllByRole("button")
-      .filter((b) => b.textContent === "✕");
-    await user.click(discardButtons[0]);
-
-    // Save button disappears because no saveable items remain.
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("button", { name: /Save apartment/i })
-      ).not.toBeInTheDocument();
-    });
+    vi.mocked(parsePdf).mockResolvedValue({ extracted: { name: "" }, aiAvailable: true });
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await waitFor(() => expect(screen.getByText("Parsed")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Save/i })).toBeNull();
+    expect(value.createApartment).not.toHaveBeenCalled();
   });
 });

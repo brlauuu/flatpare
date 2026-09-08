@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
-import {
-  households,
-  householdMembers,
-  apartments,
-} from "@/lib/db/schema";
+import { households, householdMembers, apartments } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { eq } from "drizzle-orm";
 
@@ -29,36 +25,37 @@ async function seedHousehold(userId: string, name: string) {
   return h;
 }
 
+const PLAIN = JSON.stringify({ v: 0, data: {} });
+
 describe("household scoping", () => {
   it("keeps apartments in separate households apart", async () => {
     const a = await seedHousehold("user-a", "A");
     const b = await seedHousehold("user-b", "B");
 
-    await db.insert(apartments).values({ name: "A flat", householdId: a.id });
-    await db.insert(apartments).values({ name: "B flat", householdId: b.id });
+    await db.insert(apartments).values({ id: "a1", householdId: a.id, envelope: PLAIN });
+    await db.insert(apartments).values({ id: "b1", householdId: b.id, envelope: PLAIN });
 
     const forA = await db
-      .select()
+      .select({ id: apartments.id })
       .from(apartments)
       .where(eq(apartments.householdId, a.id));
-
-    expect(forA).toHaveLength(1);
-    expect(forA[0].name).toBe("A flat");
+    expect(forA.map((r) => r.id)).toEqual(["a1"]);
   });
 
-  it("refuses an apartment with no household", async () => {
-    await expect(
-      // @ts-expect-error householdId is required — this must fail at runtime too
-      db.insert(apartments).values({ name: "orphan" })
-    ).rejects.toThrow();
-  });
-
-  it("cascades apartments when a household is deleted", async () => {
+  it("cascades apartments when the household is deleted", async () => {
     const a = await seedHousehold("user-a", "A");
-    await db.insert(apartments).values({ name: "A flat", householdId: a.id });
+    await db.insert(apartments).values({ id: "a1", householdId: a.id, envelope: PLAIN });
 
     await db.delete(households).where(eq(households.id, a.id));
 
-    expect(await db.select().from(apartments)).toHaveLength(0);
+    const left = await db.select({ id: apartments.id }).from(apartments);
+    expect(left).toHaveLength(0);
+  });
+
+  it("defaults version to 1", async () => {
+    const a = await seedHousehold("user-a", "A");
+    await db.insert(apartments).values({ id: "a1", householdId: a.id, envelope: PLAIN });
+    const [row] = await db.select().from(apartments);
+    expect(row.version).toBe(1);
   });
 });

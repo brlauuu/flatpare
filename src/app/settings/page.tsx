@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,20 +12,11 @@ import {
   LocationIconDisplay,
   LocationIconPicker,
 } from "@/components/location-icon-picker";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { newRowId } from "@/lib/household-data/ids";
+import type { LocationView } from "@/lib/household-data/types";
 import { MAX_LOCATIONS, type LocationIconName } from "@/lib/location-icons";
-import {
-  type ErrorDetails,
-  fetchErrorFromResponse,
-  fetchErrorFromException,
-} from "@/lib/fetch-error";
-
-interface Location {
-  id: number;
-  label: string;
-  icon: string;
-  address: string;
-  sortOrder: number;
-}
+import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
 
 interface ErrorState {
   headline: string;
@@ -36,7 +27,7 @@ type Editing =
   | { kind: "create"; label: string; icon: string; address: string }
   | {
       kind: "edit";
-      id: number;
+      id: string;
       label: string;
       icon: string;
       address: string;
@@ -44,77 +35,29 @@ type Editing =
     };
 
 export default function SettingsPage() {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const {
+    status,
+    error: loadError,
+    locations,
+    createLocation,
+    updateLocation,
+    deleteLocation,
+    moveLocation,
+    runMaintenance,
+  } = useHouseholdData();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
+  const [recomputeProgress, setRecomputeProgress] = useState<[number, number] | null>(null);
   const [recomputeResult, setRecomputeResult] = useState<string | null>(null);
   const [error, setError] = useState<ErrorState | null>(null);
 
-  async function loadLocations() {
-    const url = "/api/locations";
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't load locations",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        return;
-      }
-      setLocations((await res.json()) as Location[]);
-      setLoaded(true);
-    } catch (err) {
-      setError({
-        headline: "Couldn't load locations",
-        details: fetchErrorFromException(err, url),
-      });
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const url = "/api/locations";
-      try {
-        const res = await fetch(url);
-        if (cancelled) return;
-        if (!res.ok) {
-          setError({
-            headline: "Couldn't load locations",
-            details: await fetchErrorFromResponse(res, url),
-          });
-          return;
-        }
-        const data = (await res.json()) as Location[];
-        if (cancelled) return;
-        setLocations(data);
-        setLoaded(true);
-      } catch (err) {
-        if (cancelled) return;
-        setError({
-          headline: "Couldn't load locations",
-          details: fetchErrorFromException(err, url),
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   function startCreate() {
-    setEditing({
-      kind: "create",
-      label: "",
-      icon: "Train",
-      address: "",
-    });
+    setEditing({ kind: "create", label: "", icon: "Train", address: "" });
   }
 
-  function startEdit(loc: Location) {
+  function startEdit(loc: LocationView) {
     setEditing({
       kind: "edit",
       id: loc.id,
@@ -131,130 +74,84 @@ export default function SettingsPage() {
 
   async function handleSave() {
     if (!editing) return;
-    const trimmedLabel = editing.label.trim();
-    const trimmedAddress = editing.address.trim();
-    if (trimmedLabel === "" || trimmedAddress === "") return;
+    const label = editing.label.trim();
+    const address = editing.address.trim();
+    if (label === "" || address === "") return;
 
     setSaving(true);
     try {
-      const url =
-        editing.kind === "create"
-          ? "/api/locations"
-          : `/api/locations/${editing.id}`;
-      const method = editing.kind === "create" ? "POST" : "PUT";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label: trimmedLabel,
+      if (editing.kind === "create") {
+        // Coordinates are null here; the store geocodes the address and
+        // computes distances before the row is persisted.
+        await createLocation(newRowId(), {
+          label,
           icon: editing.icon,
-          address: trimmedAddress,
-        }),
-      });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't save location",
-          details: await fetchErrorFromResponse(res, url),
+          address,
+          latitude: null,
+          longitude: null,
         });
-        setSaving(false);
-        return;
+      } else {
+        const icon = editing.icon;
+        await updateLocation(editing.id, (current) => ({ ...current, label, icon, address }));
       }
       setEditing(null);
       setError(null);
-      await loadLocations();
     } catch (err) {
       setError({
         headline: "Couldn't save location",
-        details: fetchErrorFromException(err, "/api/locations"),
+        details: errorDetailsFromException(err),
       });
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(id: number, label: string) {
-    if (!confirm(`Delete "${label}"? Apartments will lose this distance.`))
-      return;
-    const url = `/api/locations/${id}`;
+  async function handleDelete(id: string, label: string) {
+    if (!confirm(`Delete "${label}"? Apartments will lose this distance.`)) return;
     try {
-      const res = await fetch(url, { method: "DELETE" });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't delete location",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        return;
-      }
-      await loadLocations();
+      await deleteLocation(id);
     } catch (err) {
       setError({
         headline: "Couldn't delete location",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
     }
   }
 
-  async function handleMove(id: number, direction: "up" | "down") {
-    const url = `/api/locations/${id}/move`;
+  async function handleMove(id: string, direction: "up" | "down") {
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ direction }),
-      });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't reorder",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        return;
-      }
-      await loadLocations();
+      await moveLocation(id, direction);
     } catch (err) {
-      setError({
-        headline: "Couldn't reorder",
-        details: fetchErrorFromException(err, url),
-      });
+      setError({ headline: "Couldn't reorder", details: errorDetailsFromException(err) });
     }
   }
 
   async function handleRecompute() {
     setRecomputing(true);
+    setRecomputeProgress(null);
     setRecomputeResult(null);
-    const url = "/api/settings/recompute-distances";
     try {
-      const res = await fetch(url, { method: "POST" });
-      if (!res.ok) {
-        setError({
-          headline: "Couldn't recompute distances",
-          details: await fetchErrorFromResponse(res, url),
-        });
-        setRecomputing(false);
-        return;
-      }
-      const data = (await res.json()) as {
-        totalApartments: number;
-        totalLocations: number;
-        updated: number;
-        failed: number;
-        skipped: number;
-      };
+      const report = await runMaintenance("distances", (done, total) =>
+        setRecomputeProgress([done, total])
+      );
       setRecomputeResult(
-        `Recomputed ${data.updated} pairs across ${data.totalApartments} apartments × ${data.totalLocations} locations` +
-          (data.failed > 0 ? ` (${data.failed} failed)` : "") +
-          (data.skipped > 0 ? ` (${data.skipped} skipped — no address)` : "")
+        `Recomputed ${report.updated} apartments` +
+          (report.failed.length > 0 ? ` (${report.failed.length} failed)` : "") +
+          (report.skipped > 0 ? ` (${report.skipped} skipped — no address)` : "")
       );
       setError(null);
     } catch (err) {
       setError({
         headline: "Couldn't recompute distances",
-        details: fetchErrorFromException(err, url),
+        details: errorDetailsFromException(err),
       });
     } finally {
       setRecomputing(false);
+      setRecomputeProgress(null);
     }
   }
 
+  const loaded = status === "ready";
   const canAdd = locations.length < MAX_LOCATIONS;
   const editingDirty =
     editing?.kind === "create"
@@ -273,6 +170,12 @@ export default function SettingsPage() {
       <EncryptionSettings />
       <HouseholdSettings />
 
+      {status === "error" && (
+        <ErrorDisplay
+          headline="Couldn't load locations"
+          details={{ message: loadError ?? undefined, timestamp: new Date().toISOString() }}
+        />
+      )}
       {error && <ErrorDisplay headline={error.headline} details={error.details} />}
 
       <section className="space-y-3">
@@ -301,19 +204,14 @@ export default function SettingsPage() {
 
         <div className="divide-y rounded-md border">
           {locations.map((loc, i) => (
-            <div
-              key={loc.id}
-              className="flex items-center gap-3 px-3 py-3 sm:px-4"
-            >
+            <div key={loc.id} className="flex items-center gap-3 px-3 py-3 sm:px-4">
               <LocationIconDisplay
                 name={loc.icon}
                 className="h-5 w-5 shrink-0 text-muted-foreground"
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{loc.label}</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {loc.address}
-                </div>
+                <div className="truncate text-xs text-muted-foreground">{loc.address}</div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <Button
@@ -321,7 +219,7 @@ export default function SettingsPage() {
                   size="sm"
                   className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                   aria-label={`Move ${loc.label} up`}
-                  onClick={() => handleMove(loc.id, "up")}
+                  onClick={() => void handleMove(loc.id, "up")}
                   disabled={i === 0}
                 >
                   <ArrowUp className="h-4 w-4" />
@@ -331,7 +229,7 @@ export default function SettingsPage() {
                   size="sm"
                   className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                   aria-label={`Move ${loc.label} down`}
-                  onClick={() => handleMove(loc.id, "down")}
+                  onClick={() => void handleMove(loc.id, "down")}
                   disabled={i === locations.length - 1}
                 >
                   <ArrowDown className="h-4 w-4" />
@@ -350,7 +248,7 @@ export default function SettingsPage() {
                   size="sm"
                   className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
                   aria-label={`Delete ${loc.label}`}
-                  onClick={() => handleDelete(loc.id, loc.label)}
+                  onClick={() => void handleDelete(loc.id, loc.label)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -369,9 +267,7 @@ export default function SettingsPage() {
               <Input
                 id="loc-label"
                 value={editing.label}
-                onChange={(e) =>
-                  setEditing({ ...editing, label: e.target.value })
-                }
+                onChange={(e) => setEditing({ ...editing, label: e.target.value })}
                 placeholder="Work, Home, Gym, …"
               />
             </div>
@@ -380,9 +276,7 @@ export default function SettingsPage() {
               <Input
                 id="loc-address"
                 value={editing.address}
-                onChange={(e) =>
-                  setEditing({ ...editing, address: e.target.value })
-                }
+                onChange={(e) => setEditing({ ...editing, address: e.target.value })}
                 placeholder="Street, postcode, city"
               />
             </div>
@@ -401,7 +295,7 @@ export default function SettingsPage() {
               </Button>
             </div>
             <div className="flex items-center gap-2 pt-2">
-              <Button onClick={handleSave} disabled={!editingDirty || saving}>
+              <Button onClick={() => void handleSave()} disabled={!editingDirty || saving}>
                 {saving ? "Saving…" : "Save"}
               </Button>
               <Button variant="outline" onClick={cancelEdit} disabled={saving}>
@@ -420,16 +314,18 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={handleRecompute}
+            onClick={() => void handleRecompute()}
             className="h-11 sm:h-8"
             disabled={recomputing || locations.length === 0}
           >
-            {recomputing ? "Recomputing…" : "Recompute all"}
+            {recomputing
+              ? recomputeProgress
+                ? `Recomputing… ${recomputeProgress[0]} of ${recomputeProgress[1]}`
+                : "Recomputing…"
+              : "Recompute all"}
           </Button>
           {recomputeResult && (
-            <span className="text-sm text-muted-foreground">
-              {recomputeResult}
-            </span>
+            <span className="text-sm text-muted-foreground">{recomputeResult}</span>
           )}
         </div>
       </section>

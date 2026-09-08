@@ -6,7 +6,7 @@ import {
   householdMembers,
   householdKeyWraps,
   invitations,
-  locationsOfInterest,
+  locations,
   memberKeys,
 } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
@@ -25,7 +25,7 @@ import {
 
 beforeEach(async () => {
   await db.delete(apartments);
-  await db.delete(locationsOfInterest);
+  await db.delete(locations);
   await db.delete(invitations);
   await db.delete(householdKeyWraps);
   await db.delete(memberKeys);
@@ -169,12 +169,11 @@ describe("acceptInvitation", () => {
       wrappedKey: "W",
       wrappedBy: "ana",
     });
-    await db.insert(locationsOfInterest).values({
+    await db.insert(locations).values({
+      id: crypto.randomUUID(),
       householdId: solo,
-      label: "Work",
-      icon: "briefcase",
-      address: "x",
       sortOrder: 0,
+      envelope: "placeholder",
     });
     const inv = await createInvitation(hid, "o", "ana@example.com");
 
@@ -184,7 +183,7 @@ describe("acceptInvitation", () => {
       await db.select().from(householdKeyWraps).where(eq(householdKeyWraps.householdId, solo))
     ).toHaveLength(0);
     expect(
-      await db.select().from(locationsOfInterest).where(eq(locationsOfInterest.householdId, solo))
+      await db.select().from(locations).where(eq(locations.householdId, solo))
     ).toHaveLength(0);
     expect(await assertMembership(hid, "ana")).toBe("member");
   });
@@ -194,7 +193,7 @@ describe("acceptInvitation", () => {
     await makeUser("ana");
     const hid = await createHouseholdForUser("o");
     const solo = await createHouseholdForUser("ana");
-    await db.insert(apartments).values({ householdId: solo, name: "Flat" });
+    await db.insert(apartments).values({ id: crypto.randomUUID(), householdId: solo, envelope: "placeholder" });
     const inv = await createInvitation(hid, "o", "ana@example.com");
 
     await expect(acceptInvitation(inv.id, "ana")).rejects.toMatchObject({ status: 409 });

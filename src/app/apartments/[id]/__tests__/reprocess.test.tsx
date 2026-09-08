@@ -1,165 +1,109 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import {
+  renderWithHouseholdData,
+  makeApartmentView,
+} from "@/components/household-data/__tests__/fake-household-data";
 
 const push = vi.fn();
-const refresh = vi.fn();
-
+let currentParamsId = "a1";
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "42" }),
-  useRouter: () => ({ push, refresh }),
+  useParams: () => ({ id: currentParamsId }),
+  useRouter: () => ({ push, refresh: vi.fn() }),
+}));
+vi.mock("@/components/apartment-location-map", () => ({
+  ApartmentLocationMap: ({ label }: { label: string }) => <div data-testid="pin-map">{label}</div>,
+}));
+vi.mock("@/components/household-data/pdf-files", () => ({
+  encryptAndUploadPdf: vi.fn(),
+  downloadPdf: vi.fn(),
+}));
+vi.mock("@/components/household-data/process-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/household-data/process-client")>()),
+  parsePdf: vi.fn(),
 }));
 
 import ApartmentDetailPage from "../page";
 
-const APT_WITH_PDF = {
-  id: 42,
-  name: "Sonnenweg 3",
-  address: "Sonnenweg 3, 8001 Zürich",
-  sizeM2: 60,
-  numRooms: 2.5,
-  numBathrooms: 1,
-  numBalconies: 1,
-  hasWashingMachine: false,
-  rentChf: 2200,
-  pdfUrl: "https://blob.example/sonnenweg.pdf" as string | null,
-  listingUrl: null,
-  shortCode: "ABC-2.5B-WY-4057",
-  summary: "Original AI summary.",
-  availableFrom: null,
-  userEditedFields: null,
-  ratings: [],
-  distances: [] as { locationId: number; bikeMin: number | null; transitMin: number | null }[],
-};
-
-const APT_WITH_PDF_REFRESHED = {
-  ...APT_WITH_PDF,
-  summary: "Refreshed summary after reprocess.",
-};
-
-const APT_NO_PDF = { ...APT_WITH_PDF, pdfUrl: null };
-
-let fetchCalls: { url: string; init: RequestInit }[] = [];
-let detailResponse: typeof APT_WITH_PDF = APT_WITH_PDF;
-let reprocessResponse: { ok: boolean; status: number; body: unknown } = {
-  ok: true,
-  status: 200,
-  body: APT_WITH_PDF_REFRESHED,
-};
-
-beforeEach(() => {
-  push.mockReset();
-  refresh.mockReset();
-  fetchCalls = [];
-  detailResponse = APT_WITH_PDF;
-  reprocessResponse = {
-    ok: true,
-    status: 200,
-    body: APT_WITH_PDF_REFRESHED,
-  };
-
-  vi.spyOn(global, "fetch").mockImplementation(((
-    input: RequestInfo,
-    init?: RequestInit
-  ) => {
-    const url = typeof input === "string" ? input : (input as Request).url;
-    fetchCalls.push({ url, init: init ?? {} });
-    const method = init?.method ?? "GET";
-
-    if (url === "/api/apartments" && method === "GET") {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([]),
-      } as Response);
-    }
-    if (url === "/api/auth/session" && method === "GET") {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ user: { name: "Alice" } }),
-      } as Response);
-    }
-    if (url.endsWith("/api/apartments/42/reprocess") && method === "POST") {
-      const body = reprocessResponse.body;
-      return Promise.resolve({
-        ok: reprocessResponse.ok,
-        status: reprocessResponse.status,
-        json: () => Promise.resolve(body),
-      } as Response);
-    }
-    if (url.endsWith("/api/apartments/42") && method === "GET") {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(detailResponse),
-      } as Response);
-    }
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response);
-  }) as typeof fetch);
-
-  vi.stubGlobal("confirm", () => true);
-});
-
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
+  push.mockReset();
   vi.unstubAllGlobals();
 });
 
+import { downloadPdf } from "@/components/household-data/pdf-files";
+import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
+
+const PDF = { path: "/api/pdf/households/7/a1.pdf.enc", iv: "AAAA" };
+const A1 = makeApartmentView({
+  id: "a1",
+  name: "Sonnenweg 3",
+  rentChf: 2200,
+  summary: "Original AI summary.",
+  userEditedFields: ["rentChf"],
+  pdf: PDF,
+});
+
+function setup(apartment = A1) {
+  currentParamsId = "a1";
+  vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
+  const rendered = renderWithHouseholdData(<ApartmentDetailPage />, {
+    apartments: [apartment],
+    dataKey: null,
+  });
+  vi.mocked(rendered.value.updateApartment).mockImplementation(async (id, mutate) =>
+    makeApartmentView({ ...mutate(apartment), id })
+  );
+  return rendered;
+}
+
+beforeEach(() => {
+  vi.mocked(downloadPdf).mockResolvedValue(new Uint8Array([1, 2, 3]));
+  vi.mocked(parsePdf).mockResolvedValue({
+    extracted: { name: "Sonnenweg 3", rentChf: 2500, summary: "Refreshed summary after reprocess." },
+    aiAvailable: true,
+  });
+});
+
 describe("Apartment detail — reprocess", () => {
-  it("clicking Reprocess calls the endpoint and reloads the apartment", async () => {
+  it("decrypts the PDF, parses it and applies the extraction to un-edited fields only", async () => {
     const user = userEvent.setup();
-    render(<ApartmentDetailPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    expect(screen.getByText("Original AI summary.")).toBeInTheDocument();
+    const { value } = setup();
+    await user.click(screen.getByRole("button", { name: /^Reprocess$/ }));
 
-    detailResponse = APT_WITH_PDF_REFRESHED;
-
-    await user.click(screen.getByRole("button", { name: /Reprocess/i }));
-
-    await waitFor(() => {
-      const reprocessCall = fetchCalls.find((c) =>
-        c.url.endsWith("/api/apartments/42/reprocess")
-      );
-      expect(reprocessCall).toBeDefined();
-      expect(reprocessCall!.init.method).toBe("POST");
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByText("Refreshed summary after reprocess.")
-      ).toBeInTheDocument();
-    });
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
+    expect(downloadPdf).toHaveBeenCalledWith(null, 7, "a1", PDF);
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf");
+    const next = vi.mocked(value.updateApartment).mock.calls[0][1](A1);
+    expect(next.summary).toBe("Refreshed summary after reprocess.");
+    expect(next.rentChf).toBe(2200); // user-edited: kept
+    expect(next.rawExtractedData).toEqual(expect.objectContaining({ rentChf: 2500 }));
   });
 
-  it("Reprocess button is disabled when the apartment has no pdfUrl", async () => {
-    detailResponse = APT_NO_PDF;
-    render(<ApartmentDetailPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: /Reprocess/i })).toBeDisabled();
+  it("Reprocess is disabled when the apartment has no pdf", () => {
+    setup(makeApartmentView({ ...A1, pdf: null }));
+    expect(screen.getByRole("button", { name: /^Reprocess$/ })).toBeDisabled();
   });
 
-  it("renders an error when reprocess returns a quota error", async () => {
-    reprocessResponse = {
-      ok: false,
-      status: 429,
-      body: {
-        error: "AI quota exceeded — try again in 34s.",
-        reason: "quota",
-        retryAfterSeconds: 34,
-      },
-    };
-    const user = userEvent.setup();
-    render(<ApartmentDetailPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Sonnenweg 3")).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole("button", { name: /Reprocess/i }));
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Couldn't reprocess apartment/i)
-      ).toBeInTheDocument();
-    });
+  it("does nothing when the user cancels the confirm", async () => {
+    const { value } = setup();
+    vi.stubGlobal("confirm", vi.fn().mockReturnValue(false));
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
+    expect(downloadPdf).not.toHaveBeenCalled();
+    expect(value.updateApartment).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a ParsePdfError message and leaves the apartment untouched", async () => {
+    vi.mocked(parsePdf).mockRejectedValue(new ParsePdfError("AI quota exhausted", "quota", 429, 30));
+    const { value } = setup();
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
+    expect(await screen.findByText(/Couldn't reprocess apartment/)).toBeInTheDocument();
+    // The message appears both in the visible "Message:" line and inside the
+    // collapsed stack trace <pre> (the Error's own stack includes its
+    // message) — assert at least one match rather than a single element.
+    expect(screen.getAllByText(/AI quota exhausted/).length).toBeGreaterThan(0);
+    expect(value.updateApartment).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /^Reprocess$/ })).toBeEnabled();
   });
 });

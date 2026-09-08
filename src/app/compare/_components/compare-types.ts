@@ -1,36 +1,3 @@
-export interface ApartmentWithRatings {
-  id: number;
-  name: string;
-  address: string | null;
-  sizeM2: number | null;
-  numRooms: number | null;
-  numBathrooms: number | null;
-  numBalconies: number | null;
-  hasWashingMachine: boolean | null;
-  rentChf: number | null;
-  distances: {
-    locationId: number;
-    bikeMin: number | null;
-    transitMin: number | null;
-  }[];
-  pdfUrl: string | null;
-  listingUrl: string | null;
-  shortCode: string | null;
-  createdAt: string | null;
-  avgOverall: string | null;
-  ratings: {
-    userId: string;
-    // Left-joined display label; nullable and not unique — never key on it.
-    userName: string | null;
-    kitchen: number;
-    balconies: number;
-    location: number;
-    floorplan: number;
-    overallFeeling: number;
-    comment: string;
-  }[];
-}
-
 export const metricRows = [
   {
     key: "rentChf",

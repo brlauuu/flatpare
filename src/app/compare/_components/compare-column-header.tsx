@@ -2,14 +2,16 @@ import { ExternalLink, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import type { ApartmentWithRatings } from "./compare-types";
+import type { ApartmentView } from "@/lib/household-data/types";
 
 export function CompareColumnHeader({
   apt,
   onHide,
+  onViewPdf,
 }: {
-  apt: ApartmentWithRatings;
-  onHide: (id: number) => void;
+  apt: ApartmentView;
+  onHide: (id: string) => void;
+  onViewPdf: (apt: ApartmentView) => void;
 }) {
   return (
     <th className="min-w-[160px] px-4 py-3 text-left font-medium">
@@ -24,16 +26,17 @@ export function CompareColumnHeader({
             >
               {apt.name}
             </a>
-            {apt.pdfUrl && (
-              <a
-                href={apt.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            {apt.pdf && (
+              // The stored file is ciphertext; the page decrypts and opens
+              // it, so this is a button rather than a link.
+              <button
+                type="button"
                 aria-label={`View PDF for ${apt.name}`}
                 className="tap-target text-muted-foreground hover:text-foreground"
+                onClick={() => onViewPdf(apt)}
               >
                 <FileText className="h-3.5 w-3.5" />
-              </a>
+              </button>
             )}
             {apt.listingUrl && (
               <a
