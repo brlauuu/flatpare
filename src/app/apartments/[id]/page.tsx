@@ -23,7 +23,7 @@ import {
   fetchErrorFromResponse,
   fetchErrorFromException,
 } from "@/lib/fetch-error";
-import { useApartmentPager } from "@/lib/use-apartment-pager";
+import { useApartmentPager } from "@/components/household-data/use-apartment-pager";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 import { formatSwissDate } from "@/lib/iso-date";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";

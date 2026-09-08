@@ -5,7 +5,7 @@ import {
   makeApartmentView,
   makeHouseholdData,
 } from "@/components/household-data/__tests__/fake-household-data";
-import { useApartmentPager } from "@/lib/use-apartment-pager";
+import { useApartmentPager } from "@/components/household-data/use-apartment-pager";
 
 // Default (createdAt desc) order: b (March), c (February), a (January).
 const APARTMENTS = [
