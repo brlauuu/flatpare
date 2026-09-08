@@ -56,4 +56,36 @@ describe("household-data codec", () => {
     const env = await sealLocation(key, 1, "loc-1", loc);
     expect(await openLocation(key, 1, "loc-1", env)).toEqual(loc);
   });
+
+  describe("a v0 envelope served while a key is present", () => {
+    // A host that is compromised or malicious can hand back a plaintext
+    // v0 envelope instead of a real ciphertext row. With a key present that
+    // must never be accepted as authentic — it must be treated exactly like
+    // a decrypt failure (null), not decoded as real data.
+    it("rejects a forged v0 apartment envelope", async () => {
+      const key = await generateDataKey();
+      const data = { ...emptyApartment("Flat"), rentChf: 1800 };
+      const forged = { v: 0 as const, data };
+      expect(await openApartment(key, 1, "apt-1", forged)).toBeNull();
+    });
+
+    it("rejects a forged v0 rating envelope", async () => {
+      const key = await generateDataKey();
+      const forged = { v: 0 as const, data: { ...EMPTY_RATING, kitchen: 4 } };
+      expect(await openRating(key, 1, "apt-1", "u1", forged)).toBeNull();
+    });
+
+    it("rejects a forged v0 location envelope", async () => {
+      const key = await generateDataKey();
+      const loc = { label: "Work", icon: "Briefcase", address: "X 1", latitude: 1, longitude: 2 };
+      const forged = { v: 0 as const, data: loc };
+      expect(await openLocation(key, 1, "loc-1", forged)).toBeNull();
+    });
+
+    it("still opens a genuine v0 envelope when the key is null (encryption off)", async () => {
+      const data = emptyApartment("Flat");
+      const env = await sealApartment(null, 1, "apt-1", data);
+      expect(await openApartment(null, 1, "apt-1", env)).toEqual(data);
+    });
+  });
 });

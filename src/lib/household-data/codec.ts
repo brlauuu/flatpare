@@ -24,6 +24,14 @@ async function openRow<T>(
   schema: ZodType<T>
 ): Promise<T | null> {
   try {
+    // A v0 (plaintext) envelope is only genuine when the caller has no key,
+    // i.e. encryption is actually off. When a key is present, a v0 envelope
+    // can only mean a compromised/malicious host serving unauthenticated
+    // plaintext in place of a real ciphertext row — reject it the same as a
+    // decrypt failure rather than rendering it as authentic. The AAD binding
+    // that protects v1 rows never runs for v0, so this check is the only
+    // thing standing between a forged row and the UI.
+    if (key !== null && envelope.v === 0) return null;
     const value = await open(key, envelope, aad);
     const parsed = schema.safeParse(value);
     return parsed.success ? parsed.data : null;
