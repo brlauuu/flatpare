@@ -53,7 +53,9 @@ export async function GET(
     const buffer = await readFile(filePath);
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type": filePath.endsWith(".enc")
+          ? "application/octet-stream"
+          : "application/pdf",
         "Content-Disposition": `inline; filename="${path.basename(filePath)}"`,
       },
     });

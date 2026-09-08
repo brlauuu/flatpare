@@ -9,8 +9,10 @@ function notAuthenticated() {
 }
 
 // Server route that mints short-lived client tokens so the browser can upload
-// PDFs directly to Vercel Blob — bypassing the 4.5 MB serverless body limit
-// that would otherwise reject anything over a few pages.
+// encrypted PDFs directly to Vercel Blob — bypassing the serverless body
+// limit. The bytes are opaque to the server (E3): AES-GCM ciphertext when
+// encryption is on, the raw PDF when it is off, stored either way as
+// application/octet-stream under households/<id>/<apartmentId>.pdf.enc.
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
 
@@ -105,14 +107,13 @@ export async function POST(request: Request) {
           );
         }
         return {
-          allowedContentTypes: ["application/pdf"],
+          allowedContentTypes: ["application/octet-stream", "application/pdf"],
           maximumSizeInBytes: MAX_PDF_BYTES,
           addRandomSuffix: false,
         };
       },
       onUploadCompleted: async () => {
-        // No-op: /api/parse-pdf reads the blob back when the client posts the
-        // pathname for AI extraction.
+        // No-op: the client records the returned pathname inside the apartment's envelope.
       },
     });
     return NextResponse.json(result);

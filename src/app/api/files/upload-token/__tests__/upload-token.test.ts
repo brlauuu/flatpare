@@ -37,7 +37,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("GET /api/parse-pdf/upload-token", () => {
+describe("GET /api/files/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
     mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
     const res = await GET();
@@ -61,10 +61,10 @@ describe("GET /api/parse-pdf/upload-token", () => {
   });
 });
 
-describe("POST /api/parse-pdf/upload-token", () => {
+describe("POST /api/files/upload-token", () => {
   it("returns 401 when not authenticated", async () => {
     mockRequireHousehold.mockRejectedValueOnce(new UnauthorizedError());
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       body: "{}",
     });
@@ -74,7 +74,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
   });
 
   it("returns 503 when blob storage is not configured", async () => {
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ type: "blob.generate-client-token" }),
@@ -91,7 +91,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
       clientToken: "tok_123",
     });
 
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ type: "blob.generate-client-token" }),
@@ -109,7 +109,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
       null,
       false
     );
-    expect(tokenOpts.allowedContentTypes).toEqual(["application/pdf"]);
+    expect(tokenOpts.allowedContentTypes).toEqual(["application/octet-stream", "application/pdf"]);
     expect(tokenOpts.maximumSizeInBytes).toBe(50 * 1024 * 1024);
     expect(tokenOpts.addRandomSuffix).toBe(false);
   });
@@ -121,7 +121,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
       clientToken: "tok_123",
     });
 
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ type: "blob.generate-client-token" }),
@@ -160,7 +160,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
       clientToken: "tok_123",
     });
 
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ type: "blob.generate-client-token" }),
@@ -174,7 +174,7 @@ describe("POST /api/parse-pdf/upload-token", () => {
   });
 });
 
-describe("POST /api/parse-pdf/upload-token — real handleUpload, no mock (guard end-to-end)", () => {
+describe("POST /api/files/upload-token — real handleUpload, no mock (guard end-to-end)", () => {
   it("refuses to mint a token for another household's prefix", async () => {
     const { handleUpload: realHandleUpload } = await vi.importActual<
       typeof import("@vercel/blob/client")
@@ -188,14 +188,14 @@ describe("POST /api/parse-pdf/upload-token — real handleUpload, no mock (guard
       role: "owner",
     });
 
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         type: "blob.generate-client-token",
         payload: {
           pathname: "households/2/secret.pdf",
-          callbackUrl: "http://localhost/api/parse-pdf/upload-token",
+          callbackUrl: "http://localhost/api/files/upload-token",
           clientPayload: null,
           multipart: false,
         },
@@ -221,14 +221,14 @@ describe("POST /api/parse-pdf/upload-token — real handleUpload, no mock (guard
       role: "owner",
     });
 
-    const req = new Request("http://localhost/api/parse-pdf/upload-token", {
+    const req = new Request("http://localhost/api/files/upload-token", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         type: "blob.generate-client-token",
         payload: {
           pathname: "households/1/listing.pdf",
-          callbackUrl: "http://localhost/api/parse-pdf/upload-token",
+          callbackUrl: "http://localhost/api/files/upload-token",
           clientPayload: null,
           multipart: false,
         },

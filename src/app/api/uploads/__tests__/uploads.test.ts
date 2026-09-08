@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 
 const { mockRequireHousehold } = vi.hoisted(() => ({
   mockRequireHousehold: vi.fn(),
@@ -110,5 +112,20 @@ describe("GET /api/uploads/[...path]", () => {
     ]);
     const res = await GET(request, ctx);
     expect(res.status).toBe(404);
+  });
+
+  it("serves a .pdf.enc file as application/octet-stream", async () => {
+    mockRequireHousehold.mockResolvedValue({ householdId: 1, userId: "u1", role: "owner" });
+    const dir = path.join(process.cwd(), "uploads", "households", "1");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "enc-test.pdf.enc"), Buffer.from([9, 9]));
+    try {
+      const { request, ctx } = makeRequest(["households", "1", "enc-test.pdf.enc"]);
+      const res = await GET(request, ctx);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Type")).toBe("application/octet-stream");
+    } finally {
+      fs.rmSync(path.join(dir, "enc-test.pdf.enc"), { force: true });
+    }
   });
 });
