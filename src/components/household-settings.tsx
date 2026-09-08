@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "@/components/crypto/crypto-provider";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
 
 interface Member {
   userId: string;
@@ -33,6 +34,7 @@ async function readError(res: Response): Promise<string> {
 
 export function HouseholdSettings() {
   const { state } = useCrypto();
+  const { limits } = useHouseholdData();
   const encryptionOn = state !== "off";
   const [members, setMembers] = useState<Member[]>([]);
   const [me, setMe] = useState<{ userId: string; role: "owner" | "member" } | null>(null);
@@ -42,6 +44,11 @@ export function HouseholdSettings() {
   const [busy, setBusy] = useState(false);
 
   const isOwner = me?.role === "owner";
+  // Pending invitations occupy a slot: the server counts them the same way
+  // at send time, so the UI must not offer an invite that would 409.
+  const atMemberLimit =
+    limits.maxMembers !== null &&
+    members.length + invitations.length >= limits.maxMembers;
 
   const loadMembers = useCallback(async () => {
     const res = await fetch("/api/household/members", { cache: "no-store" });
@@ -119,7 +126,16 @@ export function HouseholdSettings() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold">Household</h2>
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-lg font-semibold">Household</h2>
+        {/* Only when a cap is configured — a self-hoster must not see a
+            counter implying a limit that does not exist. */}
+        {limits.maxMembers !== null && (
+          <span className="text-sm text-muted-foreground">
+            {members.length + invitations.length} of {limits.maxMembers}
+          </span>
+        )}
+      </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <ul className="divide-y rounded-md border">
@@ -155,13 +171,17 @@ export function HouseholdSettings() {
                 placeholder="name@example.com"
               />
             </div>
-            <Button type="submit" disabled={busy || email.trim().length === 0}>
+            <Button
+              type="submit"
+              disabled={busy || email.trim().length === 0 || atMemberLimit}
+            >
               Invite
             </Button>
           </form>
           <p className="text-sm text-muted-foreground">
-            No email is sent. Tell them to sign in with that address; the
-            invitation is waiting for them there for 7 days.
+            {atMemberLimit
+              ? `This household is limited to ${limits.maxMembers} members. Remove a member or revoke a pending invitation to invite someone else.`
+              : "No email is sent. Tell them to sign in with that address; the invitation is waiting for them there for 7 days."}
           </p>
           {invitations.length > 0 && (
             <ul className="divide-y rounded-md border">

@@ -3,6 +3,9 @@ import { render, screen, cleanup, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-provider";
 import { HouseholdSettings } from "../household-settings";
+import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
+import { makeHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
+import type { Limits } from "@/lib/limits";
 
 const fetchMock = vi.fn();
 
@@ -36,7 +39,11 @@ function cryptoValue(state: CryptoContextValue["state"]): CryptoContextValue {
   };
 }
 
-function renderAs(me: { userId: string; role: "owner" | "member" }, state: CryptoContextValue["state"] = "unlocked") {
+function renderAs(
+  me: { userId: string; role: "owner" | "member" },
+  state: CryptoContextValue["state"] = "unlocked",
+  limits: Limits = { maxMembers: null, maxApartments: null }
+) {
   fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     if (url === "/api/household/members") return jsonRes({ members, me });
@@ -54,7 +61,9 @@ function renderAs(me: { userId: string; role: "owner" | "member" }, state: Crypt
   });
   return render(
     <CryptoContext.Provider value={cryptoValue(state)}>
-      <HouseholdSettings />
+      <HouseholdDataContext.Provider value={makeHouseholdData({ limits })}>
+        <HouseholdSettings />
+      </HouseholdDataContext.Provider>
     </CryptoContext.Provider>
   );
 }
@@ -133,5 +142,45 @@ describe("HouseholdSettings", () => {
         expect.objectContaining({ method: "DELETE" })
       )
     );
+  });
+});
+
+// E5: the UI mirrors MAX_MEMBERS. The server enforces it regardless — these
+// tests are about not offering an action that is guaranteed to 409.
+describe("member limit (#187)", () => {
+  it("shows no counter when no limit is configured", async () => {
+    renderAs({ userId: "o", role: "owner" });
+    await screen.findByText("Household");
+    expect(screen.queryByText(/ of \d+$/)).not.toBeInTheDocument();
+  });
+
+  it("counts members plus pending invitations against the cap", async () => {
+    // The fixture has 2 members and 1 pending invitation.
+    renderAs({ userId: "o", role: "owner" }, "unlocked", {
+      maxMembers: 5,
+      maxApartments: null,
+    });
+    expect(await screen.findByText("3 of 5")).toBeInTheDocument();
+  });
+
+  it("disables Invite at the cap and says why", async () => {
+    renderAs({ userId: "o", role: "owner" }, "unlocked", {
+      maxMembers: 3,
+      maxApartments: null,
+    });
+    await screen.findByText("3 of 3");
+    expect(screen.getByRole("button", { name: "Invite" })).toBeDisabled();
+    expect(screen.getByText(/limited to 3 members/i)).toBeInTheDocument();
+  });
+
+  it("leaves Invite usable below the cap", async () => {
+    renderAs({ userId: "o", role: "owner" }, "unlocked", {
+      maxMembers: 9,
+      maxApartments: null,
+    });
+    await screen.findByText("3 of 9");
+    const email = screen.getByLabelText("Email");
+    await userEvent.type(email, "new@example.com");
+    expect(screen.getByRole("button", { name: "Invite" })).toBeEnabled();
   });
 });
