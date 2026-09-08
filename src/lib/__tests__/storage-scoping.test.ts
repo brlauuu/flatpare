@@ -7,6 +7,24 @@ describe("householdIdFromStoredPath", () => {
     expect(householdIdFromStoredPath("households/7/abc.pdf")).toBe(7);
   });
 
+  // #207: the encoded-separator belt. %2f was already rejected; %5c is the
+  // same class of trick for a backend that treats "\\" as a separator.
+  it("rejects an encoded slash in a filename segment", () => {
+    expect(householdIdFromStoredPath("households/7/a%2fb.pdf")).toBeNull();
+    expect(householdIdFromStoredPath("households/7/a%2Fb.pdf")).toBeNull();
+  });
+
+  it("rejects an encoded backslash in a filename segment", () => {
+    expect(householdIdFromStoredPath("households/7/a%5cb.pdf")).toBeNull();
+    expect(householdIdFromStoredPath("households/7/a%5Cb.pdf")).toBeNull();
+  });
+
+  it("still accepts ordinary filenames, including a literal percent", () => {
+    expect(householdIdFromStoredPath("households/7/report final.pdf")).toBe(7);
+    expect(householdIdFromStoredPath("households/7/50%25 off.pdf")).toBe(7);
+    expect(householdIdFromStoredPath("households/7/report..final.pdf")).toBe(7);
+  });
+
   it("rejects a path with no household prefix", () => {
     expect(householdIdFromStoredPath("apartments/abc.pdf")).toBeNull();
   });

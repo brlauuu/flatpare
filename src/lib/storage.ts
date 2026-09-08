@@ -21,13 +21,16 @@ export function householdIdFromStoredPath(pathname: string): number | null {
   if (segments[0] !== "households") return null;
   // No leading zeros: "007" must not alias household 7.
   if (!/^[1-9]\d*$/.test(segments[1])) return null;
-  // Reject an encoded slash inside a filename segment. Filenames
+  // Reject an encoded separator inside a filename segment. Filenames
   // legitimately containing "/" don't exist (no OS or browser file picker
   // allows it), so this costs nothing — but decoding "%2f" later could
   // fabricate an extra path separator that never went through this check,
   // which matters if whatever consumes this string next (a storage
-  // backend's own key resolution, say) treats it hierarchically.
-  if (segments.slice(2).some((s) => /%2f/i.test(s))) return null;
+  // backend's own key resolution, say) treats it hierarchically. %5c
+  // (backslash) is the same trick against a backend that treats "\\" as a
+  // separator: no live vector today, since Vercel Blob is flat-keyed and
+  // URL-path-addressed, but the character class costs nothing (#207).
+  if (segments.slice(2).some((s) => /%2f|%5c/i.test(s))) return null;
   return Number(segments[1]);
 }
 
