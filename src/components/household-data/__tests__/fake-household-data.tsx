@@ -38,6 +38,9 @@ export function makeLocationView(over: Partial<LocationView> & { id: string }): 
 export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {}): HouseholdDataContextValue {
   return {
     identity: { userId: "u-me", householdId: 7, userName: "Me" },
+    // Unlimited by default so every existing page test keeps its current
+    // behaviour: a test that cares about a cap passes `limits` explicitly.
+    limits: { maxMembers: null, maxApartments: null },
     dataKey: null,
     status: "ready",
     error: null,
