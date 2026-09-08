@@ -80,21 +80,8 @@ export function requireEnvelopeMode(envelope: Envelope): void {
   }
 }
 
-// libsql reports a primary-key clash as a plain Error, but Drizzle wraps it
-// in a DrizzleQueryError whose own .message is just the failed query text —
-// the constraint message lives on .cause. Walk the cause chain rather than
-// matching only the top-level message (mirrors the check in
-// src/lib/invitations.ts, which hit the same wrapping). Bounded, since
-// .cause is `unknown` input and a self-referencing chain would otherwise
-// spin forever — a handful of links is far more than Drizzle's own wrapping
-// ever produces.
-const MAX_CAUSE_CHAIN_DEPTH = 5;
-
-export function isUniqueConstraintError(err: unknown): boolean {
-  let cur: unknown = err;
-  for (let depth = 0; depth < MAX_CAUSE_CHAIN_DEPTH && cur instanceof Error; depth++) {
-    if (/unique constraint/i.test(cur.message)) return true;
-    cur = cur.cause;
-  }
-  return false;
-}
+// Re-exported from a leaf module so `src/auth.ts` can use the same check
+// without importing this file, which reaches back to `@/auth` through
+// `@/lib/session`. Kept exported here because every data route already
+// imports it alongside `parseBody` / `requireMember`.
+export { isUniqueConstraintError } from "@/lib/unique-constraint";

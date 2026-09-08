@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/schema-auth";
 import { verifyPassword } from "@/lib/auth";
 import { resolveHouseholdForUser, assertMembership } from "@/lib/household";
+import { isUniqueConstraintError } from "@/lib/unique-constraint";
 import { eq } from "drizzle-orm";
 import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
@@ -29,6 +30,39 @@ export const enabledProviderIds: Array<"google" | "github" | "credentials"> = [
   ...(process.env.GITHUB_CLIENT_ID ? (["github"] as const) : []),
   ...(hasOAuth ? [] : (["credentials"] as const)),
 ];
+
+const SELF_HOSTED_EMAIL = "self-hosted@flatpare.local";
+
+async function selectSelfHostedUser() {
+  const rows = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, SELF_HOSTED_EMAIL))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+// Exported for tests: the race it closes cannot be reproduced through the
+// Credentials provider without standing up Auth.js.
+export async function findOrCreateSelfHostedUser() {
+  const existing = await selectSelfHostedUser();
+  if (existing) return existing;
+
+  try {
+    const [created] = await db
+      .insert(users)
+      .values({ email: SELF_HOSTED_EMAIL, name: "Self-hosted" })
+      .returning();
+    return created;
+  } catch (err) {
+    if (!isUniqueConstraintError(err)) throw err;
+    // Someone else inserted the row between our select and our insert.
+    // Their row is the account; return it rather than failing the sign-in.
+    const winner = await selectSelfHostedUser();
+    if (winner) return winner;
+    throw err;
+  }
+}
 
 // Self-hosters get a password path so `docker compose up` works with no
 // third-party setup. When OAuth is configured the credentials provider is
@@ -72,23 +106,17 @@ export const providers = [
         Credentials({
           name: "Shared password",
           credentials: { password: { label: "Password", type: "password" } },
+          // Every self-hoster shares one account, so two people typing the
+          // password at the same time both reach this path. A plain
+          // select-then-insert raced two `users` rows onto the same address,
+          // each resolving to its own household — a permanent split with no
+          // merge UI (#200). The unique index on `users.email` (migration
+          // 0015) is what makes the race lose loudly instead of silently;
+          // this handler turns that loss into the row the winner inserted.
           async authorize(creds) {
             const password = String(creds?.password ?? "");
             if (!verifyPassword(password)) return null;
-
-            const email = "self-hosted@flatpare.local";
-            const existing = await db
-              .select()
-              .from(users)
-              .where(eq(users.email, email))
-              .limit(1);
-            if (existing.length > 0) return existing[0];
-
-            const [created] = await db
-              .insert(users)
-              .values({ email, name: "Self-hosted" })
-              .returning();
-            return created;
+            return findOrCreateSelfHostedUser();
           },
         }),
       ]),

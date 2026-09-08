@@ -1,16 +1,35 @@
-import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  primaryKey,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 // Owned by @auth/drizzle-adapter. `accounts` here means OAuth provider links,
 // NOT the tenancy unit — that is `households` in schema.ts.
-export const users = sqliteTable("users", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name"),
-  email: text("email").notNull(),
-  emailVerified: integer("email_verified", { mode: "timestamp_ms" }),
-  image: text("image"),
-});
+export const users = sqliteTable(
+  "users",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name"),
+    email: text("email").notNull(),
+    emailVerified: integer("email_verified", { mode: "timestamp_ms" }),
+    image: text("image"),
+  },
+  // One row per address. Auth.js already assumes this — its OAuth flow looks
+  // a user up by email before creating one, and answers OAuthAccountNotLinked
+  // when it finds a match — but nothing enforced it, so the credentials
+  // provider's select-then-insert could race two rows into existence and
+  // split a self-hosted deployment into two households with no way to merge
+  // them (#200). Case-sensitive on purpose: Auth.js's getUserByEmail is a
+  // case-sensitive lookup, so a NOCASE index would turn a case-differing
+  // second provider into an opaque constraint failure instead of the clean
+  // OAuthAccountNotLinked path.
+  (user) => [uniqueIndex("users_email_unique").on(user.email)]
+);
 
 export const accounts = sqliteTable(
   "accounts",

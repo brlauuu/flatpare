@@ -106,6 +106,13 @@
       "when": 1788782416928,
       "tag": "0014_e3_encrypted_data_model",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1788865587138,
+      "tag": "0015_users_email_unique",
+      "breakpoints": true
     }
   ]
 }

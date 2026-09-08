@@ -13,6 +13,7 @@ import { users } from "@/lib/db/schema-auth";
 import { and, eq, gt, lte, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api-error";
 import { createHouseholdForUser } from "@/lib/household";
+import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
 export const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -36,18 +37,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
-}
-
-function isUniqueConstraintError(e: unknown): boolean {
-  let cur: unknown = e;
-  while (cur && typeof cur === "object") {
-    const message = (cur as { message?: unknown }).message;
-    if (typeof message === "string" && /UNIQUE constraint failed/.test(message)) {
-      return true;
-    }
-    cur = (cur as { cause?: unknown }).cause;
-  }
-  return false;
 }
 
 async function expireStale(householdId: number): Promise<void> {
