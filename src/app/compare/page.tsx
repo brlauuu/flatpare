@@ -74,6 +74,7 @@ export default function ComparePage() {
       const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       window.open(url, "_blank", "noopener");
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setError(null);
     } catch (err) {
       setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
     }

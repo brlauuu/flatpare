@@ -147,6 +147,7 @@ export default function ApartmentDetailPage() {
       window.open(url, "_blank", "noopener");
       // The tab has the bytes now; release the URL after it has had time to load.
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setError(null);
     } catch (err) {
       setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
     }

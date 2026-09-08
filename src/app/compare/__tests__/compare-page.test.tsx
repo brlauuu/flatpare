@@ -189,4 +189,23 @@ describe("Compare page — column header links", () => {
     expect(screen.getAllByTitle(/Bike \+ transit to Work/i).length).toBe(1);
     expect(screen.getByText(/12.*25 min/)).toBeInTheDocument();
   });
+
+  it("clears a stale error banner once a later View PDF click succeeds", async () => {
+    vi.mocked(downloadPdf).mockRejectedValueOnce(new Error("Could not decrypt file"));
+    setup();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /View PDF for Sonnenweg 3/i }));
+    expect(await screen.findByText(/Couldn't open PDF/)).toBeInTheDocument();
+
+    const createObjectURL = vi.fn().mockReturnValue("blob:pdf-2");
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = vi.fn();
+    vi.stubGlobal("open", vi.fn());
+    vi.mocked(downloadPdf).mockResolvedValueOnce(new Uint8Array([0x25, 0x50, 0x44, 0x46]));
+
+    await user.click(screen.getByRole("button", { name: /View PDF for Sonnenweg 3/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Couldn't open PDF/)).not.toBeInTheDocument();
+    });
+  });
 });
