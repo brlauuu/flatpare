@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { apiErrorResponse, parseBody, requireMember } from "@/lib/api-route";
 import { extractPostcode, geocodeLatLngWithReason } from "@/lib/geocode";
 import { geocodeRequestSchema } from "@/lib/process-schemas";
@@ -9,7 +10,8 @@ import { geocodeRequestSchema } from "@/lib/process-schemas";
 // result inside its envelope.
 export async function POST(req: Request) {
   try {
-    await requireMember();
+    const { householdId } = await requireMember();
+    await consumeRateLimit(householdId, "geocode");
     const { address } = await parseBody(req, geocodeRequestSchema);
     const [attempt, postcode] = await Promise.all([
       geocodeLatLngWithReason(address),

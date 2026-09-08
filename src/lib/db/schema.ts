@@ -212,8 +212,36 @@ export const locations = sqliteTable(
   (table) => [index("locations_household_idx").on(table.householdId)]
 );
 
+// E4 rate limiting for the /api/process/* blind proxies, which spend the
+// host's Gemini and Maps budget. Fixed one-hour windows: the point is
+// bounding spend, not smoothing traffic, and a fixed window is one atomic
+// upsert with no read-modify-write race.
+//
+// This table holds NO request content — a household id, an endpoint name,
+// the hour bucket, and a count. E4's "no plaintext persisted at any layer"
+// requirement invites the opposite reading, so it is worth stating: nothing
+// here is derived from an address, a URL, or a PDF.
+export const processUsage = sqliteTable(
+  "process_usage",
+  {
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    // Unix seconds, truncated to the hour.
+    windowStart: integer("window_start").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.householdId, table.endpoint, table.windowStart],
+    }),
+  ]
+);
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;
+export type ProcessUsageRecord = typeof processUsage.$inferSelect;
 
 export { users, accounts, sessions, verificationTokens } from "./schema-auth";

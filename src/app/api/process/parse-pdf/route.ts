@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ApiError } from "@/lib/api-error";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { apiErrorResponse, requireMember } from "@/lib/api-route";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
@@ -15,7 +16,8 @@ import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
 export async function POST(req: Request) {
   let phase: "input" | "extract" = "input";
   try {
-    await requireMember();
+    const { householdId } = await requireMember();
+    await consumeRateLimit(householdId, "parse-pdf");
     const formData = await req.formData();
     const file = formData.get("file");
     if (!(file instanceof File) || file.type !== "application/pdf") {
