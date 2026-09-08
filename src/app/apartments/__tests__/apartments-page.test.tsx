@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
 import {
   makeApartmentView,
+  makeHouseholdData,
   renderWithHouseholdData,
 } from "@/components/household-data/__tests__/fake-household-data";
 
@@ -264,5 +265,64 @@ describe("Apartments page — listing gone badge", () => {
       ],
     });
     expect(screen.getAllByText("Gone")).toHaveLength(1);
+  });
+});
+
+describe("Apartments page — corrupt rows", () => {
+  const CORRUPT = makeApartmentView({
+    id: "a-corrupt",
+    name: "Unreadable apartment",
+    corrupt: true,
+  });
+
+  it("renders a corrupt row as a placeholder, not a normal card", () => {
+    renderPage({ apartments: [...APARTMENTS, CORRUPT] });
+    expect(
+      screen.getByText("This apartment could not be decrypted")
+    ).toBeInTheDocument();
+    // Never rendered as an ordinary apartment card/heading.
+    expect(headingOrder()).not.toContain("Unreadable apartment");
+  });
+
+  it("renders a corrupt row as a placeholder in list view too", () => {
+    localStorage.setItem("flatpare-apartments-view", "list");
+    renderPage({ apartments: [...APARTMENTS, CORRUPT] });
+    expect(
+      screen.getByText("This apartment could not be decrypted")
+    ).toBeInTheDocument();
+  });
+
+  it("its delete button calls the store's deleteApartment", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const value = makeHouseholdData({ apartments: [...APARTMENTS, CORRUPT] });
+    render(
+      <HouseholdDataContext.Provider value={value}>
+        <ApartmentsPage />
+      </HouseholdDataContext.Provider>
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(value.deleteApartment).toHaveBeenCalledWith("a-corrupt");
+    confirmSpy.mockRestore();
+  });
+
+  it("is excluded from search results", async () => {
+    const user = userEvent.setup();
+    renderPage({ apartments: [...APARTMENTS, CORRUPT] });
+    await user.type(
+      screen.getByRole("textbox", { name: "Search apartments" }),
+      "Unreadable"
+    );
+    expect(
+      screen.queryByText("This apartment could not be decrypted")
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('No apartments match "Unreadable"')).toBeInTheDocument();
+  });
+
+  it("is excluded from sorting and does not shift readable rows' order", () => {
+    renderPage({ apartments: [CORRUPT, ...APARTMENTS] });
+    // The three readable apartments still sort by their own field, unaffected
+    // by the corrupt row's position in the underlying array.
+    expect(headingOrder()).toEqual(["Bergstrasse 12", "Seeblick 7", "Sonnenweg 3"]);
   });
 });

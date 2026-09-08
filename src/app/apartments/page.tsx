@@ -89,16 +89,29 @@ export default function ApartmentsPage() {
     });
   }, [runMaintenance]);
 
+  // Corrupt rows render as placeholders (below) rather than as ordinary
+  // apartments, and — per docs/security-notes.md — are excluded from search
+  // and sorting: they carry no real name, address or sortable fields, only a
+  // "could not be decrypted" state and a delete action.
+  const readableApartments = useMemo(
+    () => apartments.filter((apt) => !apt.corrupt),
+    [apartments]
+  );
+  const corruptApartments = useMemo(
+    () => apartments.filter((apt) => apt.corrupt),
+    [apartments]
+  );
+
   const filteredApartments = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === "") return apartments;
-    return apartments.filter((apt) => {
+    if (q === "") return readableApartments;
+    return readableApartments.filter((apt) => {
       const name = apt.name.toLowerCase();
       const code = apt.shortCode?.toLowerCase() ?? "";
       const addr = apt.address?.toLowerCase() ?? "";
       return name.includes(q) || code.includes(q) || addr.includes(q);
     });
-  }, [apartments, query]);
+  }, [readableApartments, query]);
 
   const sortedApartments = useMemo(
     () =>
@@ -109,6 +122,14 @@ export default function ApartmentsPage() {
   );
 
   const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
+
+  // Corrupt placeholders show up during normal browsing but drop out while
+  // a search is active — they have no real name/address/code to match, so
+  // showing them alongside a search's results would be misleading.
+  const visibleCorruptApartments = useMemo(
+    () => (query.trim() === "" ? corruptApartments : []),
+    [corruptApartments, query]
+  );
 
   const failedEnrichments = useMemo(
     () => apartments.filter((apt) => enrichmentError[apt.id] !== undefined),
@@ -310,6 +331,9 @@ export default function ApartmentsPage() {
           {sortedApartments.map((apt) => (
             <ApartmentCard key={apt.id} apt={apt} />
           ))}
+          {visibleCorruptApartments.map((apt) => (
+            <ApartmentCard key={apt.id} apt={apt} />
+          ))}
         </div>
       ) : (
         <div
@@ -317,6 +341,9 @@ export default function ApartmentsPage() {
           className="divide-y overflow-hidden rounded-lg border"
         >
           {sortedApartments.map((apt) => (
+            <ApartmentRow key={apt.id} apt={apt} />
+          ))}
+          {visibleCorruptApartments.map((apt) => (
             <ApartmentRow key={apt.id} apt={apt} />
           ))}
         </div>

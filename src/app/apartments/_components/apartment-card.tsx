@@ -5,9 +5,11 @@ import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
 import { GoneBadge, RatedBadge } from "./apartment-badges";
+import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
 export function ApartmentCard({ apt }: { apt: ApartmentView }) {
+  if (apt.corrupt) return <ApartmentCorruptCard apt={apt} />;
   return (
     <Link href={`/apartments/${apt.id}`}>
       <Card className="transition-shadow hover:shadow-md">

@@ -3,9 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { GoneBadge, RatedBadge } from "./apartment-badges";
+import { ApartmentCorruptRow } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
 export function ApartmentRow({ apt }: { apt: ApartmentView }) {
+  if (apt.corrupt) return <ApartmentCorruptRow apt={apt} />;
   return (
     <Link
       href={`/apartments/${apt.id}`}
