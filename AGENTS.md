@@ -118,6 +118,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - **Not yet implemented.** E5's caps count *current rows* (`createApartmentRow`), which is not the same thing: delete-and-re-add currently resets the count. A lifetime quota needs a counter that never decreases — a schema change, tracked with E6 (#188).
   - **The hosted deployment must set `MAX_MEMBERS=10` and `MAX_APARTMENTS=40`** to match the *active* cap. Those are env vars (E5) and unset means *unlimited*, so forgetting them does not fail loudly — it silently gives paying customers more than the page sells, and makes the page a false statement. Change the numbers in `src/app/_components/landing.tsx`, its test, and the deployment env together.
 
+## Apartment credits (E6, partial)
+
+- **Two ceilings apply to adding an apartment, and they mean different things:**
+  - `MAX_APARTMENTS` (E5) — how many rows you may **hold** at once.
+  - Credits (`households.apartment_credits_granted` vs `apartments_ever_added`) — how many you may **ever add**. `apartments_ever_added` is **monotonic and never decremented by a delete**, because adding is what costs money (a Gemini extraction, a geocode, two distance elements per saved location) while holding costs a few hundred bytes of ciphertext. The landing page sells exactly this; `src/lib/__tests__/billing.test.ts` pins it.
+- **Billing is off unless `STRIPE_SECRET_KEY` is set** (`billingEnabled()`, `src/lib/billing.ts`). A deployment that cannot take money must not enforce a paywall — there would be no way to lift it. With billing off, `apartments_ever_added` is not even incremented, so enabling billing later does not present a self-hoster with a bill for their history.
+- **A credit is consumed BEFORE the insert**, by a guarded single-statement `UPDATE ... WHERE apartments_ever_added < apartment_credits_granted`, and refunded in a `finally` when no row was produced (duplicate id, active-row cap, unexpected failure). Consuming after a successful insert would be simpler but lets two concurrent adds overspend the last credit; an 8-way concurrency test asserts exactly 3 succeed with 3 credits. **Do not wrap this in `db.transaction`** — see #225.
+- **Not yet built:** the Stripe side. `grantApartmentCredits()` exists and is tested, but nothing calls it in production yet; the webhook will be its only caller. Design: `docs/superpowers/specs/2026-09-09-e6-stripe-one-time-design.md`.
+
 ## PWA
 - `src/app/manifest.ts` is the web app manifest (Next's `MetadataRoute.Manifest`, served at `/manifest.webmanifest`) — not a static file in `public/`.
 - Icons in `public/` are generated from `public/flatpare_logo.svg` by cropping the square mark out of the wordmark. `icon-maskable-512.png` keeps the mark inside Android's safe zone; `apple-touch-icon.png` exists because iOS ignores the manifest's icons.

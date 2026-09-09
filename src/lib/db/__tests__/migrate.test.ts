@@ -470,6 +470,34 @@ describe("applyMigrations", () => {
     await expect(applyMigrations(client)).resolves.toBeUndefined();
   });
 
+  it("creates the E6 apartment credit counters on households", async () => {
+    const client = createClient({ url: ":memory:" });
+
+    await applyMigrations(client);
+
+    const cols = await columnNames(client, "households");
+    expect(cols).toEqual(
+      expect.arrayContaining(["apartment_credits_granted", "apartments_ever_added"])
+    );
+
+    // Both default to 0, so an existing household is neither granted free
+    // credits nor billed for apartments it added before the quota existed.
+    await client.execute({
+      sql: "INSERT INTO users (id, email) VALUES ('o', 'o@example.com')",
+      args: [],
+    });
+    await client.execute({
+      sql: "INSERT INTO households (name, owner_id) VALUES ('H', 'o')",
+      args: [],
+    });
+    const row = await client.execute({
+      sql: "SELECT apartment_credits_granted, apartments_ever_added FROM households",
+      args: [],
+    });
+    expect(Number(row.rows[0]?.apartment_credits_granted)).toBe(0);
+    expect(Number(row.rows[0]?.apartments_ever_added)).toBe(0);
+  });
+
   it("creates the E4 process_usage table with no content columns", async () => {
     const client = createClient({ url: ":memory:" });
 
