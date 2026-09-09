@@ -1,6 +1,17 @@
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Say which database this process is talking to, before anything touches
+  // it. `.env.local` sets TURSO_DATABASE_URL, so `npm run dev` writes to
+  // production unless it is explicitly cleared, and the local
+  // data/flatpare.db file on disk suggests otherwise (#195). One line at boot
+  // makes that obvious in the first second rather than several steps later.
+  const { resolveDbTarget, dbTargetWarning } = await import("@/lib/db/target");
+  const target = resolveDbTarget();
+  console.log(`[db] ${target.label}`);
+  const warning = dbTargetWarning(target);
+  if (warning) console.warn(`[db] WARNING: ${warning}`);
+
   const { runMigrations } = await import("@/lib/db/migrate");
   try {
     await runMigrations();

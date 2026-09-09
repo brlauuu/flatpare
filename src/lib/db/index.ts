@@ -1,22 +1,17 @@
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import * as schema from "./schema";
+import { resolveDbTarget } from "./target";
 
-const isCloud = !!process.env.TURSO_DATABASE_URL;
-
-// LOCAL_DB_URL lets tests point at a separate sqlite file so they don't
-// trample the dev DB. Falls back to the default local file otherwise.
-const localUrl = process.env.LOCAL_DB_URL ?? "file:./data/flatpare.db";
+// Resolved through ./target so the connection opened here and the line
+// logged at boot by src/instrumentation.ts come from the same value and
+// cannot drift (#195).
+const target = resolveDbTarget();
 
 const client = createClient(
-  isCloud
-    ? {
-        url: process.env.TURSO_DATABASE_URL!,
-        authToken: process.env.TURSO_AUTH_TOKEN,
-      }
-    : {
-        url: localUrl,
-      }
+  target.kind === "cloud"
+    ? { url: target.url, authToken: target.authToken }
+    : { url: target.url }
 );
 
 export const db = drizzle(client, { schema });
