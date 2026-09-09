@@ -1,19 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
-import { configure } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-// testing-library's waitFor/findBy ceiling. 2000ms rather than the 1000ms
-// default — not to mask a race (#227 removed the three that existed), but
-// because CI runners are slower and more contended than a 16-core dev box and
-// 1000ms is tight for a component that renders after a decrypt.
+// testing-library's waitFor/findBy ceiling, left at the 1000ms default.
 //
-// This is no longer load-bearing: the flakes it was introduced to hide were
-// a DOM/effect observation split, an uncancelled navigation timer leaking
-// across tests, and two synchronous queries against asynchronously-opened
-// popovers. All three are fixed at the source, so lowering this back to the
-// default should now be a no-op rather than a way to reintroduce them.
-configure({ asyncUtilTimeout: 2000 });
+// It was raised to 5000ms in #226 to hide flakes, then to 2000ms as a comfort
+// margin. #227 removed the three actual races — a DOM/effect observation
+// split, an uncancelled navigation timer leaking across tests, and two
+// synchronous queries against asynchronously-opened popovers — so the margin
+// should not be needed. Returned to the default deliberately, to prove that.
+//
+// If this starts flaking again, the answer is NOT to raise it: find the
+// pending work the assertion is racing and give it an anchor. See AGENTS.md,
+// Tests, for the two shapes that caused it last time.
 
 // Give this test file its own database (#202).
 //
