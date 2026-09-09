@@ -3,13 +3,19 @@ import path from "node:path";
 import { configure } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
+// TEMPORARY, tracked by #227 — this masks a race rather than fixing it.
+//
 // testing-library's waitFor/findBy default to a 1000ms ceiling, which was
 // comfortable when test files ran one at a time and is not when 16 run at
 // once under v8 coverage instrumentation. One run of
-// household-data-provider.test.tsx failed that way (a waitFor resolved late
-// enough that the assertion after it saw pre-load state) in 1 of 7 coverage
-// runs; 0 of 6 plain runs. Raising the ceiling weakens no assertion — an
-// expectation that is never going to hold still fails, just later.
+// household-data-provider.test.tsx failed in 1 of 7 coverage runs (0 of 6
+// plain runs, 0 of 5 in isolation).
+//
+// The underlying defect is that that harness waits on the DOM but asserts on
+// a variable populated by a useEffect, so the value can be one render stale
+// when the wait resolves — widening the timeout only makes the window harder
+// to hit. Once #227 closes the two channels, this should be reconsidered on
+// its own merits rather than kept as load-bearing.
 configure({ asyncUtilTimeout: 5000 });
 
 // Give this test file its own database (#202).
