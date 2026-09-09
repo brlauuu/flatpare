@@ -68,7 +68,8 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
             it is stored, with a key the server never holds.
           </p>
           <p className="text-sm text-muted-foreground">
-            $5 once — not a subscription. Or free forever if you run it yourself.
+            CHF 5 once — not a subscription. Or free forever if you run it
+            yourself.
           </p>
         </div>
 
@@ -170,7 +171,7 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
               <div className="flex items-center gap-2">
                 <Server className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                 <h3 className="font-medium">
-                  Hosted by us — <span className="whitespace-nowrap">$5 once</span>
+                  Hosted by us — <span className="whitespace-nowrap">CHF 5 once</span>
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground text-pretty">
@@ -182,8 +183,8 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
                 <strong className="font-medium text-foreground">
                   40 apartments
                 </strong>{" "}
-                in one household. When you have used your 40, another $5 adds
-                another 40.
+                in one household. When you have used your 40, another CHF 5
+                adds another 40.
               </p>
               <p className="text-sm text-muted-foreground text-pretty">
                 The 40 counts apartments you{" "}

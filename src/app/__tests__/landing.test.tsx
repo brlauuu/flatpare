@@ -75,10 +75,18 @@ describe("Landing", () => {
     // One price, stated in both the hero and the hosting section. If these
     // drift apart the page contradicts itself, which on a pricing page is
     // worse than saying nothing.
-    it("quotes $5 once in the hero and the hosting section", () => {
+    it("quotes CHF 5 once in the hero and the hosting section", () => {
       renderLanding();
-      const matches = pageText().match(/\$5 once/g) ?? [];
+      const matches = pageText().match(/CHF 5 once/g) ?? [];
       expect(matches.length).toBeGreaterThanOrEqual(2);
+    });
+
+    // The Checkout session is created in CHF. A page advertising a dollar
+    // sign while Stripe charges francs is a complaint waiting to happen, so
+    // the currency is asserted rather than assumed to stay in sync.
+    it("does not quote a dollar price anywhere", () => {
+      renderLanding();
+      expect(pageText()).not.toMatch(/\$\s?\d/);
     });
 
     // A one-time payment described as a subscription (or vice versa) is the
@@ -98,9 +106,9 @@ describe("Landing", () => {
       expect(text).toMatch(/does not give the credit back/i);
     });
 
-    it("explains that another $5 adds another 40", () => {
+    it("explains that another CHF 5 adds another 40", () => {
       renderLanding();
-      expect(pageText()).toMatch(/another \$5 adds\s*another 40/i);
+      expect(pageText()).toMatch(/another CHF 5\s*adds another 40/i);
     });
 
     // These are the numbers a paying customer is buying. They must match the
