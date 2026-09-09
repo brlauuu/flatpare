@@ -103,6 +103,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Reaching the client:** `limits` travels the same path as `identity` — `readLimits()` in the four signed-in layouts (server components), passed as a prop to `HouseholdDataProvider`, exposed as `useHouseholdData().limits`. **Never read `process.env.MAX_*` in a `"use client"` file.** The test fixture defaults both axes to `null`, so a page test only passes `limits` when it cares.
 - **UI counters render only when a limit is configured** (`src/app/apartments/page.tsx`, `src/components/household-settings.tsx`). A self-hoster with no vars set must not see a counter implying a cap that does not exist; both have a test asserting its absence.
 
+## Landing page (E7)
+
+- **`/` is the landing page** (`src/app/page.tsx` composing `src/app/_components/landing.tsx`, with `LoginForm` passed in as the `signIn` slot). No routing change was needed: `src/proxy.ts` already redirects a signed-in session away from `/`, so the marketing page is unreachable for existing users and no auth flow touches it.
+- **The copy rules are enforced by `src/app/__tests__/landing.test.tsx`, not by care.** Before editing this page:
+  - `PRIVACY_CLAIM` (`src/lib/site.ts`) is the spec's sentence **verbatim** and is asserted against the literal string. Change it only if the spec changes, and change both together.
+  - **Never claim "zero-knowledge" unqualified.** The page disavows the term explicitly; a test fails on `is zero-knowledge` / `truly zero-knowledge`. The blind-proxy exception is real, so the unqualified claim would be false.
+  - **Never call the project "open source".** The licence is **O'SAASY — source-available**: self-hosting and modification are fine, offering it to third parties as a competing hosted service is not. A test asserts the phrase never appears. (#187's issue text says "fully open source"; that is wrong.)
+- **The domain is configuration.** `SITE_URL` (`src/lib/site.ts`) resolves from `NEXT_PUBLIC_SITE_URL`, then `VERCEL_PROJECT_PRODUCTION_URL`, then `http://localhost:3002`. `metadataBase`, canonical, Open Graph and Twitter tags all derive from it, so pointing a new domain at the deployment is an env-var change, not a code change.
+- Pricing deliberately carries **no number** until E6 (#188) settles one; the page says so outright rather than implying a free tier that does not exist.
+
 ## PWA
 - `src/app/manifest.ts` is the web app manifest (Next's `MetadataRoute.Manifest`, served at `/manifest.webmanifest`) — not a static file in `public/`.
 - Icons in `public/` are generated from `public/flatpare_logo.svg` by cropping the square mark out of the wordmark. `icon-maskable-512.png` keeps the mark inside Android's safe zone; `apple-touch-icon.png` exists because iOS ignores the manifest's icons.
