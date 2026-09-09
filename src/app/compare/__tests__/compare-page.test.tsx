@@ -100,7 +100,10 @@ describe("Compare page — sort", () => {
     const user = userEvent.setup();
     setup();
     await user.click(screen.getByRole("combobox", { name: /Sort by/i }));
-    await user.click(screen.getByRole("option", { name: "Bathrooms" }));
+    // findByRole, not getByRole: the listbox opens asynchronously (portal +
+    // animation), so a synchronous query throws whenever the open has not
+    // landed yet. That flaked on CI, where contention is highest.
+    await user.click(await screen.findByRole("option", { name: "Bathrooms" }));
     await waitFor(() => {
       expect(columnOrder()).toEqual(["Bergstrasse 12", "Sonnenweg 3", "Seeblick 7"]);
     });

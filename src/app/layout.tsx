@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flatpare",
-  description: "Collaborative apartment comparison tool",
+  // metadataBase resolves the relative URLs below into absolute ones for
+  // Open Graph. Driven by NEXT_PUBLIC_SITE_URL so registering the domain and
+  // pointing it at Vercel needs no code change (#189).
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Flatpare — compare apartments together",
+    template: "%s · Flatpare",
+  },
+  description:
+    "A shared workspace for two people hunting for a flat. Listings, ratings and notes are encrypted in your browser, with a key the server never holds.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Flatpare",
+    title: "Flatpare — compare apartments together",
+    description:
+      "A shared workspace for two people hunting for a flat. Listings, ratings and notes are encrypted in your browser, with a key the server never holds.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary",
+    title: "Flatpare — compare apartments together",
+    description:
+      "A shared workspace for two people hunting for a flat. Listings, ratings and notes are encrypted in your browser, with a key the server never holds.",
+  },
   icons: {
     icon: "/favicon.ico",
     // iOS ignores the web app manifest's icons and uses this instead; without

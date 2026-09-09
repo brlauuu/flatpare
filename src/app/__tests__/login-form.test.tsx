@@ -181,28 +181,10 @@ describe("LoginForm — password path", () => {
   });
 });
 
-// E4: "The privacy exception documented at the endpoint and on the landing
-// page." The endpoint half is a comment in each route; this is the half a
-// user can actually read.
-describe("privacy disclosure", () => {
-  it("states the exception on the landing page", () => {
-    render(<LoginForm providers={["google"]} />);
-    expect(screen.getByText(/What Flatpare can and cannot see/i)).toBeInTheDocument();
-  });
-
-  it("names the third parties and says the data is not stored or logged", () => {
-    render(<LoginForm providers={["google"]} />);
-    const text = document.body.textContent ?? "";
-    expect(text).toMatch(/Google Maps/);
-    expect(text).toMatch(/Gemini/);
-    expect(text).toMatch(/never written to the database/i);
-    expect(text).toMatch(/never logged/i);
-  });
-
-  it("does not overclaim: it admits the data is unrecoverable", () => {
-    render(<LoginForm providers={["google"]} />);
-    const text = document.body.textContent ?? "";
-    expect(text).toMatch(/encrypted in your browser/i);
-    expect(text).toMatch(/recovery code/i);
-  });
-});
+// The privacy disclosure that E4 parked on this card moved to the landing
+// page in E7 (#189), which is where the spec always wanted it. Its assertions
+// live in src/app/__tests__/landing.test.tsx — verbatim claim, the named
+// third parties, the never-stored/never-logged wording, and the
+// no-unqualified-"zero-knowledge" rule. Deliberately not duplicated here: two
+// copies of a copy rule drift, and the sign-in card no longer renders any of
+// that text.
