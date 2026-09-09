@@ -19,14 +19,11 @@ export default defineConfig({
     mockReset: true,
     testTimeout: 15000,
     hookTimeout: 15000,
-    // The real-database suites (cross-tenant, tenancy, locations) share one
-    // libSQL file (data/test.db, created once by test-global-setup.ts) and
-    // write concurrently under file-level parallelism, producing SQLITE_BUSY
-    // failures that vary run to run. Turning off file parallelism serializes
-    // test *files* (tests within a file still run concurrently), which is
-    // the only fix that doesn't also require reworking global setup to hand
-    // each worker its own migrated database file.
-    fileParallelism: false,
+    // File parallelism is back on (#202). The real-database suites used to
+    // share one libSQL file and produced SQLITE_BUSY failures that varied run
+    // to run, which forced this off and cost ~22s -> ~85s. Each worker now
+    // gets its own migrated database (src/test-setup.ts), so the contention
+    // is removed rather than avoided.
     coverage: {
       exclude: [
         // shadcn-generated primitives — vendored, re-emitted by the CLI;
