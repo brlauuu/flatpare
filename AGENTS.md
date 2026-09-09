@@ -111,7 +111,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - **Never claim "zero-knowledge" unqualified.** The page disavows the term explicitly; a test fails on `is zero-knowledge` / `truly zero-knowledge`. The blind-proxy exception is real, so the unqualified claim would be false.
   - **Never call the project "open source".** The licence is **O'SAASY — source-available**: self-hosting and modification are fine, offering it to third parties as a competing hosted service is not. A test asserts the phrase never appears. (#187's issue text says "fully open source"; that is wrong.)
 - **The domain is configuration.** `SITE_URL` (`src/lib/site.ts`) resolves from `NEXT_PUBLIC_SITE_URL`, then `VERCEL_PROJECT_PRODUCTION_URL`, then `http://localhost:3002`. `metadataBase`, canonical, Open Graph and Twitter tags all derive from it, so pointing a new domain at the deployment is an env-var change, not a code change.
-- Pricing deliberately carries **no number** until E6 (#188) settles one; the page says so outright rather than implying a free tier that does not exist.
+- **One plan: $5 a month, 10 people, 40 apartments.** No free tier and no second tier. The page states the price in two places (hero and hosting section) and a test asserts both, since a pricing page that contradicts itself is worse than one that says nothing.
+  - **The hosted deployment must set `MAX_MEMBERS=10` and `MAX_APARTMENTS=40`** to match. Those are env vars (E5) and unset means *unlimited*, so forgetting them does not fail loudly — it silently gives paying customers more than the page sells, and makes the page a false statement. Change the numbers in `src/app/_components/landing.tsx`, its test, and the deployment env together.
 
 ## PWA
 - `src/app/manifest.ts` is the web app manifest (Next's `MetadataRoute.Manifest`, served at `/manifest.webmanifest`) — not a static file in `public/`.
@@ -166,7 +167,7 @@ Beyond auth + Turso, the following keys gate cloud features. If any is unset, th
 - `GOOGLE_MAPS_API_KEY` — Geocoding + Distance Matrix (`src/lib/geocode.ts`, `distance.ts`, behind `/api/process/{geocode,distance}`). See `docs/google-apis.md` for which APIs to enable. The detail page's map is a Leaflet pin rendered client-side, not a Maps Embed iframe.
 - `OPENROUTESERVICE_API_KEY` — bike-distance fallback when Maps is unset (transit not supported).
 - `PROCESS_RATE_LIMIT_PER_HOUR` — per-household hourly ceiling on each `/api/process/*` endpoint. **Unset means unlimited** (self-hoster default); the hosted deployment sets a value. Not a positive integer = boot-time-style failure at first use.
-- `MAX_MEMBERS`, `MAX_APARTMENTS` — per-household entitlement caps. **Unset means unlimited** (self-hoster default). No tier dimension; see Entitlements (E5).
+- `MAX_MEMBERS`, `MAX_APARTMENTS` — per-household entitlement caps. **Unset means unlimited** (self-hoster default). No tier dimension; see Entitlements (E5). **The hosted deployment sets 10 and 40**, which is what the landing page sells for $5 a month — keep the three in sync.
 
 ## Dev server
 - `npm run dev` and `npm run start` listen on **port 3002** (not the Next.js default 3000); both scripts pass `-p 3002`.

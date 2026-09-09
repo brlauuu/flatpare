@@ -68,7 +68,7 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
             it is stored, with a key the server never holds.
           </p>
           <p className="text-sm text-muted-foreground">
-            Free while you run it yourself. Paid if you would rather we ran it.
+            $5 a month hosted, or free forever if you run it yourself.
           </p>
         </div>
 
@@ -169,14 +169,23 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Server className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                <h3 className="font-medium">Hosted by us — paid</h3>
+                <h3 className="font-medium">
+                  Hosted by us — <span className="whitespace-nowrap">$5 a month</span>
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground text-pretty">
-                We run the servers, the database and the API keys for PDF
-                reading and maps. Those cost money every month, so hosting is a
-                paid service rather than a free tier that quietly degrades.
-                Pricing is not settled yet; this page will carry the numbers
-                before anyone is asked for a card.
+                One plan, no tiers to compare: up to{" "}
+                <strong className="font-medium text-foreground">
+                  10 people
+                </strong>{" "}
+                and{" "}
+                <strong className="font-medium text-foreground">
+                  40 apartments
+                </strong>{" "}
+                per household. We run the servers, the database and the API
+                keys for PDF reading and maps, which cost money every month —
+                so this is a paid service rather than a free tier that quietly
+                degrades.
               </p>
             </div>
             <div className="space-y-2">
@@ -185,9 +194,14 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
                 <h3 className="font-medium">Run it yourself — free</h3>
               </div>
               <p className="text-sm text-muted-foreground text-pretty">
-                The source is public. Bring your own machine and your own API
-                keys and there are no limits at all — the member and apartment
-                caps are environment variables, and unset means unlimited. A{" "}
+                Flatpare is{" "}
+                <strong className="font-medium text-foreground">
+                  source available
+                </strong>
+                : the code is public to read, modify and run for yourself.
+                Bring your own machine and your own API keys and there are no
+                limits at all — the member and apartment caps are environment
+                variables, and unset means unlimited. A{" "}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs">
                   docker compose up
                 </code>{" "}

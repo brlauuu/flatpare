@@ -68,13 +68,31 @@ describe("Landing", () => {
     it("says hosting is paid and self-hosting is free", () => {
       renderLanding();
       const text = pageText();
-      expect(text).toMatch(/Hosted by us — paid/);
+      expect(text).toMatch(/Hosted by us/);
       expect(text).toMatch(/Run it yourself — free/);
     });
 
-    it("commits to no price before one exists", () => {
+    // One plan, one price, stated in both the hero and the hosting section.
+    // If these drift apart the page contradicts itself, which on a pricing
+    // page is worse than saying nothing.
+    it("quotes $5 a month in the hero and the hosting section", () => {
       renderLanding();
-      expect(pageText()).toMatch(/[Pp]ricing is not settled yet/);
+      const matches = pageText().match(/\$5 a month/g) ?? [];
+      expect(matches.length).toBeGreaterThanOrEqual(2);
+    });
+
+    // These are the numbers a paying customer is buying. They must match the
+    // MAX_MEMBERS / MAX_APARTMENTS the hosted deployment actually sets.
+    it("states what the plan includes: 10 people and 40 apartments", () => {
+      renderLanding();
+      const text = pageText();
+      expect(text).toMatch(/10 people/);
+      expect(text).toMatch(/40 apartments/);
+    });
+
+    it("describes the project as source available", () => {
+      renderLanding();
+      expect(pageText()).toMatch(/source available/i);
     });
 
     // The licence is O'SAASY: source-available, with a clause forbidding
