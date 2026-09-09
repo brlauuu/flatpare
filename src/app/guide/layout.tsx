@@ -4,6 +4,7 @@ import { CryptoGate } from "@/components/crypto/crypto-gate";
 import { HouseholdDataProvider } from "@/components/household-data/household-data-provider";
 import { resolveHouseholdIdentity } from "@/lib/session";
 import { readLimits } from "@/lib/limits";
+import { requirePurchase } from "@/lib/billing-gate";
 
 export default async function GuideLayout({
   children,
@@ -16,6 +17,10 @@ export default async function GuideLayout({
   // Read here, in a server component: MAX_MEMBERS / MAX_APARTMENTS must
   // never be read from a "use client" file.
   const limits = readLimits();
+  // A household that has never purchased goes to /billing before it sees
+  // the app. No-op when billing is off (self-hosted), and never fires for
+  // a household that has merely run out of credits — see billing-gate.ts.
+  if (identity) await requirePurchase(identity.householdId);
 
   return (
     <>
