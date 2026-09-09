@@ -17,6 +17,20 @@ export const households = sqliteTable("households", {
     .references(() => users.id, { onDelete: "cascade" }),
   // Read by E5/E6. Present now so the column does not need adding later.
   tier: text("tier").notNull().default("free"),
+  // E6 apartment credits. Both plaintext and both the host's commercial
+  // record rather than the user's data, so neither is encrypted — the server
+  // must read them to enforce the quota.
+  //
+  // `apartmentsEverAdded` is MONOTONIC: it counts apartments added over the
+  // household's lifetime and is never decremented by a delete. That is the
+  // whole point — a credit is spent by *adding* an apartment, because adding
+  // is what costs money (PDF extraction, geocoding, distance calls), while
+  // holding one costs a few hundred bytes of ciphertext. The landing page
+  // states this explicitly.
+  apartmentCreditsGranted: integer("apartment_credits_granted")
+    .notNull()
+    .default(0),
+  apartmentsEverAdded: integer("apartments_ever_added").notNull().default(0),
   // Recovery kit: the data key AES-GCM-wrapped under a KEK derived from the
   // recovery code. All nullable — the owner may not have set up yet.
   recoveryWrappedKey: text("recovery_wrapped_key"),
