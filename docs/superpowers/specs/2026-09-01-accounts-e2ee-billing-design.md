@@ -163,6 +163,14 @@ belongs in the route handlers, not only the UI.
 
 ## E6 — Stripe
 
+> **Superseded as designed (2026-09-09, #188).** This section describes a
+> **subscription** with tiers, a Customer Portal for cancellation, and a
+> webhook that flips `tier`. The model is now a **one-time $5 purchase**
+> granting 40 apartment credits, with no free tier, no recurrence and nothing
+> to cancel. What survives verbatim: the webhook is the only source of truth
+> for entitlement, and billing metadata is deliberately unencrypted. See
+> `docs/superpowers/specs/2026-09-09-e6-stripe-one-time-design.md`.
+
 Provisioned through the Vercel Marketplace `payments` integration (`vercel
 integration add stripe`), confirmed as the available provider on 2026-09-01. Not
 hand-wired with the Stripe SDK.
