@@ -25,6 +25,18 @@ export default defineConfig({
     // gets its own migrated database (src/test-setup.ts), so the contention
     // is removed rather than avoided.
     coverage: {
+      // Count every source file, not only those a test happens to import
+      // (#203). Without this, a brand-new file with zero tests contributes
+      // nothing to the average and cannot pull it below the floor — the
+      // thresholds silently stop protecting exactly the code most likely to
+      // be untested.
+      //
+      // NOTE: `coverage.all` is NOT the knob for this. It was removed in
+      // vitest 3, and setting it true or false was measured here to change
+      // nothing at all — `include` alone decides what is reported. The issue
+      // proposed "coverage.all with an include list"; only the second half
+      // does any work.
+      include: ["src/**/*.{ts,tsx}"],
       exclude: [
         // shadcn-generated primitives — vendored, re-emitted by the CLI;
         // testing them adds noise without signal.
@@ -33,6 +45,13 @@ export default defineConfig({
         // is misleading: 100% branches, but ~30% lines are untested
         // because there's nothing executable to assert.
         "src/lib/db/schema.ts",
+        // The test harness itself: shipped in no bundle, and its correctness
+        // is demonstrated by the suite running at all.
+        "src/test-setup.ts",
+        "src/test-global-setup.ts",
+        // Ambient type declarations — no executable code to cover.
+        "src/types/**",
+        "**/*.d.ts",
         // vitest's defaults (node_modules, dist, etc.) — kept implicit.
       ],
       // Floor — we're well above as of #129; set here so a regression

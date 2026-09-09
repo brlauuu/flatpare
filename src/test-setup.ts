@@ -1,6 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+import { configure } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+
+// testing-library's waitFor/findBy default to a 1000ms ceiling, which was
+// comfortable when test files ran one at a time and is not when 16 run at
+// once under v8 coverage instrumentation. One run of
+// household-data-provider.test.tsx failed that way (a waitFor resolved late
+// enough that the assertion after it saw pre-load state) in 1 of 7 coverage
+// runs; 0 of 6 plain runs. Raising the ceiling weakens no assertion — an
+// expectation that is never going to hold still fails, just later.
+configure({ asyncUtilTimeout: 5000 });
 
 // Give this test file its own database (#202).
 //
