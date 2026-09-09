@@ -1,5 +1,6 @@
 import { enabledProviderIds } from "@/auth";
 import { LoginForm } from "./login-form";
+import { Landing } from "./_components/landing";
 
 // This page must not be statically prerendered: enabledProviderIds is
 // computed at module load from GOOGLE_CLIENT_ID/GITHUB_CLIENT_ID, which is
@@ -18,6 +19,10 @@ export const dynamic = "force-dynamic";
 // vars read on the server, and passed down as plain data. The client
 // component never reads GOOGLE_CLIENT_ID / GITHUB_CLIENT_ID itself — those
 // values (and their secrets) have no business in client-shipped code.
-export default function LoginPage() {
-  return <LoginForm providers={enabledProviderIds} />;
+// `/` is only ever seen signed-out: src/proxy.ts redirects a session with a
+// household to /apartments and one without to /invitations. So the landing
+// page can live here without a second route, and nothing an existing user
+// does passes through it.
+export default function LandingPage() {
+  return <Landing signIn={<LoginForm providers={enabledProviderIds} />} />;
 }
