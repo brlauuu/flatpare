@@ -72,13 +72,35 @@ describe("Landing", () => {
       expect(text).toMatch(/Run it yourself — free/);
     });
 
-    // One plan, one price, stated in both the hero and the hosting section.
-    // If these drift apart the page contradicts itself, which on a pricing
-    // page is worse than saying nothing.
-    it("quotes $5 a month in the hero and the hosting section", () => {
+    // One price, stated in both the hero and the hosting section. If these
+    // drift apart the page contradicts itself, which on a pricing page is
+    // worse than saying nothing.
+    it("quotes $5 once in the hero and the hosting section", () => {
       renderLanding();
-      const matches = pageText().match(/\$5 a month/g) ?? [];
+      const matches = pageText().match(/\$5 once/g) ?? [];
       expect(matches.length).toBeGreaterThanOrEqual(2);
+    });
+
+    // A one-time payment described as a subscription (or vice versa) is the
+    // kind of error that generates refund requests.
+    it("says plainly that it is not a subscription", () => {
+      renderLanding();
+      expect(pageText()).toMatch(/not a subscription/i);
+      expect(pageText()).toMatch(/one-time payment/i);
+    });
+
+    // The quota counts apartments ADDED, not held. Saying so on the pricing
+    // page is the difference between a clear deal and a support complaint.
+    it("discloses that deleting an apartment does not refund the credit", () => {
+      renderLanding();
+      const text = pageText();
+      expect(text).toMatch(/counts apartments you\s*add/i);
+      expect(text).toMatch(/does not give the credit back/i);
+    });
+
+    it("explains that another $5 adds another 40", () => {
+      renderLanding();
+      expect(pageText()).toMatch(/another \$5 adds\s*another 40/i);
     });
 
     // These are the numbers a paying customer is buying. They must match the

@@ -68,7 +68,7 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
             it is stored, with a key the server never holds.
           </p>
           <p className="text-sm text-muted-foreground">
-            $5 a month hosted, or free forever if you run it yourself.
+            $5 once — not a subscription. Or free forever if you run it yourself.
           </p>
         </div>
 
@@ -170,11 +170,11 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
               <div className="flex items-center gap-2">
                 <Server className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                 <h3 className="font-medium">
-                  Hosted by us — <span className="whitespace-nowrap">$5 a month</span>
+                  Hosted by us — <span className="whitespace-nowrap">$5 once</span>
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground text-pretty">
-                One plan, no tiers to compare: up to{" "}
+                A one-time payment, not a subscription. It covers up to{" "}
                 <strong className="font-medium text-foreground">
                   10 people
                 </strong>{" "}
@@ -182,10 +182,16 @@ export function Landing({ signIn }: { signIn: React.ReactNode }) {
                 <strong className="font-medium text-foreground">
                   40 apartments
                 </strong>{" "}
-                per household. We run the servers, the database and the API
-                keys for PDF reading and maps, which cost money every month —
-                so this is a paid service rather than a free tier that quietly
-                degrades.
+                in one household. When you have used your 40, another $5 adds
+                another 40.
+              </p>
+              <p className="text-sm text-muted-foreground text-pretty">
+                The 40 counts apartments you{" "}
+                <strong className="font-medium text-foreground">add</strong>,
+                not apartments you keep: deleting one frees room in your
+                comparison but does not give the credit back. Reading a PDF and
+                measuring travel times costs us money per apartment, and that
+                is what you are paying for.
               </p>
             </div>
             <div className="space-y-2">
