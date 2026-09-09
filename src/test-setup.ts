@@ -3,20 +3,17 @@ import path from "node:path";
 import { configure } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-// TEMPORARY, tracked by #227 — this masks a race rather than fixing it.
+// testing-library's waitFor/findBy ceiling. 2000ms rather than the 1000ms
+// default — not to mask a race (#227 removed the three that existed), but
+// because CI runners are slower and more contended than a 16-core dev box and
+// 1000ms is tight for a component that renders after a decrypt.
 //
-// testing-library's waitFor/findBy default to a 1000ms ceiling, which was
-// comfortable when test files ran one at a time and is not when 16 run at
-// once under v8 coverage instrumentation. One run of
-// household-data-provider.test.tsx failed in 1 of 7 coverage runs (0 of 6
-// plain runs, 0 of 5 in isolation).
-//
-// The underlying defect is that that harness waits on the DOM but asserts on
-// a variable populated by a useEffect, so the value can be one render stale
-// when the wait resolves — widening the timeout only makes the window harder
-// to hit. Once #227 closes the two channels, this should be reconsidered on
-// its own merits rather than kept as load-bearing.
-configure({ asyncUtilTimeout: 5000 });
+// This is no longer load-bearing: the flakes it was introduced to hide were
+// a DOM/effect observation split, an uncancelled navigation timer leaking
+// across tests, and two synchronous queries against asynchronously-opened
+// popovers. All three are fixed at the source, so lowering this back to the
+// default should now be a no-op rather than a way to reintroduce them.
+configure({ asyncUtilTimeout: 2000 });
 
 // Give this test file its own database (#202).
 //

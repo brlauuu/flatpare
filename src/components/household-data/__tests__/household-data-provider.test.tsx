@@ -186,9 +186,29 @@ async function seedLocation(id: string, data: Location, sortOrder = 0) {
   server.locations.set(id, { id, sortOrder, envelope, createdAt: "", updatedAt: "" });
 }
 
-async function ready() {
-  await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("ready"));
+// Waits on the context value the assertions actually read, NOT on the DOM.
+//
+// `captured` is assigned from a useEffect, which React runs *after* it commits
+// the DOM. A wait that polls the DOM can therefore resolve one render before
+// `captured` is updated, and the assertion that follows then reads stale
+// state — empty locations, a null error. That is #227, and it flaked roughly
+// 1 run in 7 under parallel coverage.
+//
+// Everything in this file waits through here, so the two channels cannot come
+// apart. Where a wait already polls `captured` directly it is equivalent; this
+// just makes it the only shape used.
+async function waitForContext(
+  predicate: (ctx: HouseholdDataContextValue) => boolean
+): Promise<HouseholdDataContextValue> {
+  await waitFor(() => {
+    expect(captured, "the provider never rendered").not.toBeNull();
+    expect(predicate(captured as HouseholdDataContextValue)).toBe(true);
+  });
   return captured as HouseholdDataContextValue;
+}
+
+async function ready() {
+  return waitForContext((ctx) => ctx.status === "ready");
 }
 
 beforeEach(async () => {
@@ -241,8 +261,13 @@ describe("HouseholdDataProvider", () => {
     expect(view?.id).toBe(A1);
     expect(server.apartments.get(A1)?.envelope).toMatchObject({ v: 1 });
 
-    await waitFor(() => expect(screen.getByTestId(`apt-${A1}`).textContent).toMatch(/\|[A-Z]{3}-2B-1b-WN-8000\|/));
-    const enriched = (captured as HouseholdDataContextValue).apartments.find((a) => a.id === A1)!;
+    const enriched = (
+      await waitForContext((ctx) =>
+        /^[A-Z]{3}-2B-1b-WN-8000$/.test(
+          ctx.apartments.find((a) => a.id === A1)?.shortCode ?? ""
+        )
+      )
+    ).apartments.find((a) => a.id === A1)!;
     expect(enriched.latitude).toBe(47);
     expect(enriched.distances[L1]).toEqual({ bikeMin: 12, transitMin: 20 });
     expect(server.apartments.get(A1)?.version).toBe(2);
@@ -420,8 +445,8 @@ describe("HouseholdDataProvider", () => {
   it("reports a load failure as status error", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json({ error: "Not authenticated" }, 401)));
     renderProvider();
-    await waitFor(() => expect(screen.getByTestId("status").textContent).toBe("error"));
-    expect((captured as HouseholdDataContextValue).error).toBe("Not authenticated");
+    const ctx = await waitForContext((c) => c.status === "error");
+    expect(ctx.error).toBe("Not authenticated");
   });
 
   it("unmount drops state: a remount reloads from the server, not from memory", async () => {
