@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   type ApartmentForm,
@@ -38,6 +38,17 @@ export default function UploadPage() {
   const [error, setError] = useState<ErrorState | null>(null);
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
+
+  // The post-save redirect is deferred so the "Saved" badges are visible for a
+  // beat. Held in a ref and cleared on unmount: an uncancelled timer navigates
+  // after the component is gone, and in tests it fires against the next test's
+  // router mock, which is how #227's full-flow flake actually happened.
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current !== null) clearTimeout(redirectTimer.current);
+    };
+  }, []);
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -193,11 +204,18 @@ export default function UploadPage() {
 
     setSaving(false);
 
-    // If all saved, redirect to list
+    // Redirect to the list only when nothing needs the user's attention.
+    //
+    // This used to treat `status === "error"` as "done", so a batch with a
+    // failed item still navigated away after 500ms — the user was bounced to
+    // the list and never saw which upload failed or why. The comment said
+    // "if all saved"; the condition did not. Found via #227: the test that
+    // asserts a failed save does not redirect was passing only because it ran
+    // before the timer fired, and flaked whenever load put it after.
     setItems((prev) => {
-      const allDone = prev.every((i) => i.saved || i.discarded || i.status === "error");
-      if (allDone) {
-        setTimeout(() => router.push("/apartments"), 500);
+      const allSaved = prev.every((i) => i.saved || i.discarded);
+      if (allSaved) {
+        redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
       }
       return prev;
     });

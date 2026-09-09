@@ -187,7 +187,17 @@ describe("batch review flow", () => {
     await screen.findByText("Parsed a.pdf");
     await user.click(screen.getByRole("button", { name: /Save apartment/i }));
     expect(await screen.findByText("Failed to save")).toBeInTheDocument();
+
+    // Deterministic by construction, not by timing: with a failed item the
+    // redirect timer is never scheduled, so there is no pending work that
+    // could make this true later. Before the #227 fix the timer *was*
+    // scheduled (500ms) and this assertion passed only by running first.
     expect(pushMock).not.toHaveBeenCalled();
+    // Belt: give the old timer's window a chance to elapse and re-check, so a
+    // regression that reinstates the redirect fails here rather than flaking.
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Failed to save")).toBeInTheDocument();
   });
 
   it("'Upload more' returns to the drop zone and a discarded item is skipped on save", async () => {
