@@ -17,6 +17,13 @@ export async function proxy(request: NextRequest) {
   // Auth.js owns its own endpoints; gating them breaks the sign-in flow.
   if (path.startsWith("/api/auth/")) return NextResponse.next();
 
+  // Stripe posts here with no session and no cookie, so a session gate would
+  // reject every real event. The route authenticates the request itself, by
+  // verifying Stripe's signature over the raw body — it is the only endpoint
+  // in the app whose authentication is not the session, and the only one
+  // allowed past this gate for that reason.
+  if (path === "/api/billing/webhook") return NextResponse.next();
+
   const session = await auth();
   const userId = session?.user?.id;
   const hasHousehold = !!userId && !!session?.householdId;
