@@ -54,7 +54,10 @@ describe("SettingsPage", () => {
     await user.type(screen.getByLabelText(/Label/i), "Work");
     await user.type(screen.getByLabelText(/Address/i), "Zürich");
     await user.click(screen.getByRole("button", { name: /Pick icon/i }));
-    expect(screen.getByRole("dialog", { name: /Pick an icon/i })).toBeInTheDocument();
+    // findByRole for the same reason as compare-page: a dialog opens
+    // asynchronously, so asserting it synchronously is a race that only shows
+    // up under load.
+    expect(await screen.findByRole("dialog", { name: /Pick an icon/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Briefcase" }));
     await user.click(screen.getByRole("button", { name: /^Save$/ }));
 
