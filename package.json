@@ -23,7 +23,7 @@
     "@base-ui/react": "^1.4.0",
     "@libsql/client": "^0.17.2",
     "@stripe/react-stripe-js": "^6.9.0",
-    "@stripe/stripe-js": "^7.10.0",
+    "@stripe/stripe-js": "^9.16.0",
     "@vercel/blob": "^2.3.3",
     "ai": "^6.0.168",
     "class-variance-authority": "^0.7.1",
