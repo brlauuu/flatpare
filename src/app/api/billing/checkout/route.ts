@@ -6,6 +6,7 @@ import {
   PRICE_CHF_CENTS,
   PRICE_CURRENCY,
   PRODUCT_NAME,
+  PRODUCT_TAX_CODE,
   stripe,
 } from "@/lib/stripe";
 
@@ -27,15 +28,29 @@ export async function POST() {
     if (!billingEnabled()) throw new ApiError("Billing is not enabled", 404);
 
     const session = await stripe().checkout.sessions.create({
-      ui_mode: "embedded",
+      // "embedded_page", not "embedded": the latter was retired and the API
+      // rejects it outright ("The ui_mode value `embedded` is no longer
+      // supported"). Vercel's Stripe guide still shows the old value.
+      ui_mode: "embedded_page",
       redirect_on_completion: "never",
       mode: "payment",
       line_items: [
         {
           price_data: {
             currency: PRICE_CURRENCY,
-            product_data: { name: PRODUCT_NAME },
+            product_data: {
+              name: PRODUCT_NAME,
+              // Required: Managed Payments rejects a line item without it.
+              tax_code: PRODUCT_TAX_CODE,
+            },
             unit_amount: PRICE_CHF_CENTS,
+            // VAT is INSIDE the CHF 5, not added on top. Without this,
+            // Managed Payments adds tax to the total — a live test checkout
+            // from Poland showed CHF 6.15 against a page advertising CHF 5.
+            // EU consumer prices are expected to be displayed inclusive of
+            // VAT, and "the price you saw is the price you pay" is the only
+            // version of this that is honest.
+            tax_behavior: "inclusive",
           },
           quantity: 1,
         },

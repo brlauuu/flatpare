@@ -33,3 +33,18 @@ export function resetStripeClientForTests(): void {
 export const PRICE_CHF_CENTS = 500;
 export const PRICE_CURRENCY = "chf";
 export const PRODUCT_NAME = "Flatpare — 40 apartments";
+
+// Required by Stripe, not optional. Managed Payments is enabled by default on
+// new accounts, and it refuses a line item whose product has no tax code:
+//
+//   Invalid line_items[0]: the product tax code is missing. […] Product tax
+//   code is required for Managed Payments, which is enabled by default on
+//   your account.
+//
+// Found by calling the real test API — the unit tests mock
+// checkout.sessions.create, so they cannot catch a shape the API rejects.
+//
+// "SaaS - personal use" rather than business use: Flatpare is bought by
+// people looking for somewhere to live, not by companies. Codes come from
+// `stripe.taxCodes.list()`; do not invent one.
+export const PRODUCT_TAX_CODE = "txcd_10103000";

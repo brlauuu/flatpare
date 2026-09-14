@@ -136,8 +136,17 @@ describe("POST /api/billing/checkout", () => {
 
     const args = sessionsCreate.mock.calls[0][0];
     expect(args.mode).toBe("payment"); // never "subscription"
+    // Verified against the real test API: "embedded" was retired and is
+    // rejected outright. These two assertions exist because the mocked
+    // sessions.create above accepts ANY shape — only a live call catches a
+    // shape Stripe refuses, and both of these were found that way.
+    expect(args.ui_mode).toBe("embedded_page");
+    expect(args.line_items[0].price_data.product_data.tax_code).toBe("txcd_10103000");
     expect(args.line_items[0].price_data.currency).toBe("chf");
     expect(args.line_items[0].price_data.unit_amount).toBe(500);
+    // VAT inside the CHF 5, not added to it. A live checkout without this
+    // charged CHF 6.15 against a page advertising CHF 5.
+    expect(args.line_items[0].price_data.tax_behavior).toBe("inclusive");
     expect(args.client_reference_id).toBe(String(hid));
     expect(args.metadata.householdId).toBe(String(hid));
     // No redirect exists, so no redirect can be forged.
