@@ -105,9 +105,10 @@ export function CheckoutPanel() {
       </div>
       {waiting && (
         <p className="text-sm text-muted-foreground">
-          Payment received, but we haven&apos;t heard from Stripe yet. This
-          usually takes a few seconds. Your purchase is safe — reload this page
-          in a minute and it will be here.
+          We haven&apos;t heard back from Stripe yet. If your payment went
+          through, it usually lands within a few seconds — reload this page in
+          a minute and your apartments will be there. If it didn&apos;t, you
+          have not been charged and nothing was lost.
         </p>
       )}
     </div>
