@@ -127,6 +127,13 @@
       "when": 1788987859232,
       "tag": "0017_apartment_credits",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1788997909216,
+      "tag": "0018_payments",
+      "breakpoints": true
     }
   ]
 }

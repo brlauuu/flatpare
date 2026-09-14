@@ -253,9 +253,37 @@ export const processUsage = sqliteTable(
   ]
 );
 
+// E6 payment ledger. Append-only, and the primary key is the STRIPE EVENT ID
+// rather than a generated one: Stripe delivers webhooks at least once, so a
+// redelivery must be a no-op instead of granting a second 40 credits. An
+// insert that conflicts on this key means "already processed".
+//
+// Plaintext on purpose — this is the host's commercial record, not the
+// user's data, and the server must be able to read it. It holds no apartment
+// content, only a household id and what was paid.
+//
+// A refund is a new row with negative `creditsGranted`, never an edit, so the
+// ledger stays reconcilable against Stripe.
+export const payments = sqliteTable("payments", {
+  // Stripe event id, e.g. "evt_1234".
+  id: text("id").primaryKey(),
+  householdId: integer("household_id")
+    .notNull()
+    .references(() => households.id, { onDelete: "cascade" }),
+  stripeCustomer: text("stripe_customer"),
+  stripeSession: text("stripe_session"),
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").notNull(),
+  creditsGranted: integer("credits_granted").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;
 export type ProcessUsageRecord = typeof processUsage.$inferSelect;
+export type PaymentRecord = typeof payments.$inferSelect;
 
 export { users, accounts, sessions, verificationTokens } from "./schema-auth";

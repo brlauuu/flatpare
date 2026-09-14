@@ -1,7 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { households } from "@/lib/db/schema";
+import { households, payments } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api-error";
+import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
 // E6 apartment credits.
 //
@@ -114,4 +115,46 @@ export async function grantApartmentCredits(
       apartmentCreditsGranted: sql`${households.apartmentCreditsGranted} + ${credits}`,
     })
     .where(and(eq(households.id, householdId)));
+}
+
+export interface RecordedPayment {
+  eventId: string;
+  householdId: number;
+  stripeCustomer: string | null;
+  stripeSession: string | null;
+  amountCents: number;
+  currency: string;
+  credits: number;
+}
+
+// Records a payment and grants its credits, exactly once.
+//
+// Returns false when this Stripe event was already processed. Stripe delivers
+// webhooks AT LEAST ONCE — a retry after a slow response is normal — so a
+// redelivery must not grant a second 40 credits. The `payments` primary key
+// is the Stripe event id, which makes the insert itself the deduplication:
+// if it conflicts, we have seen this event before and stop.
+//
+// The insert happens BEFORE the grant on purpose. If the process dies between
+// the two, the customer is short 40 credits and the ledger says so, which is
+// visible and fixable. The other order risks granting twice on a retry, which
+// is silent and costs money.
+export async function recordPaymentOnce(p: RecordedPayment): Promise<boolean> {
+  try {
+    await db.insert(payments).values({
+      id: p.eventId,
+      householdId: p.householdId,
+      stripeCustomer: p.stripeCustomer,
+      stripeSession: p.stripeSession,
+      amountCents: p.amountCents,
+      currency: p.currency,
+      creditsGranted: p.credits,
+    });
+  } catch (err) {
+    if (isUniqueConstraintError(err)) return false; // already processed
+    throw err;
+  }
+
+  await grantApartmentCredits(p.householdId, p.credits);
+  return true;
 }
