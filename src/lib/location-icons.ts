@@ -32,11 +32,6 @@ export const LOCATION_ICONS = [
 
 export type LocationIconName = (typeof LOCATION_ICONS)[number]["name"];
 
-const ICON_NAMES = LOCATION_ICONS.map((i) => i.name) as LocationIconName[];
-
-export function isLocationIconName(value: string): value is LocationIconName {
-  return (ICON_NAMES as string[]).includes(value);
-}
 
 export function iconComponentFor(name: string): LucideIcon {
   const found = LOCATION_ICONS.find((i) => i.name === name);

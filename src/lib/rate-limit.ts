@@ -29,7 +29,7 @@ export function processRateLimitPerHour(): number | null {
   return readOptionalPositiveInt("PROCESS_RATE_LIMIT_PER_HOUR");
 }
 
-export function currentWindowStart(now: Date = new Date()): number {
+function currentWindowStart(now: Date = new Date()): number {
   return Math.floor(now.getTime() / 1000 / WINDOW_SECONDS) * WINDOW_SECONDS;
 }
 

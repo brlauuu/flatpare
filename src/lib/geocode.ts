@@ -154,12 +154,6 @@ export async function geocodeLatLngWithReason(
   };
 }
 
-export async function geocodeLatLng(
-  address: string | null | undefined
-): Promise<LatLng | null> {
-  return (await geocodeLatLngWithReason(address)).result;
-}
-
 export async function extractPostcode(
   address: string
 ): Promise<string | null> {
