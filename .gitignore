@@ -53,3 +53,9 @@ next-env.d.ts
 # enola architectural snapshots (local, regenerated on demand)
 /.enola/
 .env*.local
+
+# playwright (e2e artifacts; the suite is developer-run, not CI)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
