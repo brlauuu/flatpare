@@ -21,7 +21,7 @@
     "@ai-sdk/google": "^3.0.64",
     "@auth/drizzle-adapter": "^1.11.3",
     "@base-ui/react": "^1.4.0",
-    "@libsql/client": "^0.17.2",
+    "@libsql/client": "^0.18.0",
     "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.16.0",
     "@vercel/blob": "^2.8.0",
