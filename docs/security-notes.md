@@ -4,14 +4,16 @@
 
 ### eslint stays on 9 (10 breaks eslint-config-next)
 
-`eslint@10.3.0` is current, but bumping breaks `eslint-config-next@16.2.6` because the bundled `eslint-plugin-react` calls the now-removed `context.getFilename()` API.
+Bumping eslint to 10 breaks `eslint-config-next` because the `eslint-plugin-react` it bundles calls the now-removed `context.getFilename()` API.
 
 ```
 TypeError: Error while loading rule 'react/display-name':
   contextOrFilename.getFilename is not a function
 ```
 
-**Re-check trigger:** new `eslint-config-next` release that ships an `eslint-plugin-react` compatible with the eslint 10 rule API.
+**Re-tested 2026-09-15 (#248) and the pin still holds.** The documented trigger — a new `eslint-config-next` — has fired twice over (16.2.6 → 16.3.5, shipped with #242), so the bump was actually attempted rather than assumed: `eslint@10.10.0` against `eslint-config-next@16.3.5` fails with the identical error, because 16.3.5 still bundles `eslint-plugin-react@7.37.5`, the same version with the same call.
+
+**Re-check trigger (sharpened):** the version to watch is **`eslint-plugin-react`, not `eslint-config-next`** — the latter moving is not evidence of anything. Re-test when `eslint-config-next` bundles an `eslint-plugin-react` past 7.37.5 that has adopted the eslint 10 rule API.
 
 ## Auth model — reviewed 2026-09-02 (E1 accounts/OAuth epic)
 
@@ -132,7 +134,20 @@ the repo, sanitize at that point.
 
 This section lists `npm audit` advisories that have been intentionally left unfixed, with rationale. Re-evaluate on every dependency bump and when upstream patches are released.
 
-Last reviewed: 2026-09-15 (issue #247).
+**An acceptance covers only the advisory it names.** A later advisory on the same package
+is a new decision, not something an existing entry extends to — that is how the postcss
+entry below went stale without anyone noticing.
+
+Last reviewed: 2026-09-15 (issue #248).
+
+**Tree as of that review:** `npm audit --omit=dev` reports **no vulnerabilities at all**;
+the full tree has 4 moderate, all the single `drizzle-kit → esbuild` chain accepted below.
+The audit that opened #242–#248 found 12 high + 1 critical across the tree and 5 high + 1
+critical production-only. Those were fixed rather than accepted, so they get no entries
+here: `next` (#242, including the GHSA-6gpp-xcg3-4w24 proxy bypass, plus postcss, sharp
+and nanoid transitively), `undici` via `@vercel/blob` (#245), `ws` via `@libsql/client`
+(#246), and the dev tree — brace-expansion, browserslist, fast-uri, hono, ip-address,
+js-yaml, vite, qs and the vitest mocker path traversal (#247).
 
 
 
@@ -155,15 +170,19 @@ Both advisories require an attacker to reach a developer's local **esbuild dev s
 
 **Re-check trigger:** a `drizzle-kit` release that drops `@esbuild-kit/*` (the migration to `tsx` is in progress upstream), or `tsx` moving past `esbuild@0.28.0`.
 
-### postcss <8.5.10 — GHSA-qx2v-qp2m-jg93 (moderate, build-only)
+### Resolved, no longer accepted: postcss (was GHSA-qx2v-qp2m-jg93)
 
-> PostCSS has XSS via Unescaped `</style>` in its CSS Stringify Output.
+This acceptance is **retired**. Its re-check trigger — "a Next.js patch release that bumps
+the bundled postcss" — fired, and #242 took it: `next@16.3.5` resolves `postcss@8.5.23`
+for every consumer in the tree. The advisory no longer appears in `npm audit`.
 
-**Path:** `next → postcss` (the copy bundled inside next, not our top-level postcss which is patched).
-
-**Why we accept:** `npm audit fix --force` would downgrade `next` to `9.3.3` (an 8-year-old release). The advisory only fires when CSS containing attacker-controlled input is round-tripped through postcss's stringifier — we don't do that anywhere. Waiting for Next.js to bump its bundled postcss.
-
-**Re-check trigger:** Next.js patch release that bumps the bundled postcss to ≥ 8.5.10.
+Recorded rather than deleted because the note had also drifted into being wrong in a way
+worth not repeating: it described "our top-level postcss which is patched", and there was
+no top-level `postcss` in `package.json`. Three later path-traversal advisories on the same
+package (GHSA-6g55-p6wh-862q, GHSA-fxqj-rqcc-2cmp, GHSA-r28c-9q8g-f849) were also a
+different class from the `</style>` XSS this note reasoned about, so the acceptance had
+silently stopped covering the findings that were actually present. **An acceptance is
+scoped to the advisory it names; new advisories on the same package are not covered by it.**
 
 ## Encryption model — reviewed 2026-09-06 (E2 crypto core)
 
@@ -344,3 +363,90 @@ posture most HTTP clients take.
 ever tested after resolution, so this costs nothing in practice; the alternative —
 defaulting to "public" on an input we do not understand — is the wrong way to be
 wrong.
+
+## Entitlements and billing — reviewed 2026-09-15 (E5 caps, E6 Stripe)
+
+Added in #248. Billing is the newest security-relevant surface in the application and
+had no entry here: the Stripe webhook is the **sole** source of entitlement truth, it
+is the one route in the app with no session behind it, and the ledger it writes is
+deliberately not encrypted.
+
+### Accepted: `POST /api/billing/webhook` is unauthenticated, and its signature is the whole gate
+
+Stripe has no session and no cookie, so `src/proxy.ts` allow-lists this path
+explicitly. Everything protecting it is `stripe().webhooks.constructEvent(raw,
+signature, secret)`. Two properties are load-bearing and must not be "cleaned up":
+
+- **The body is read with `req.text()`, never `req.json()`.** The signature covers the
+  exact bytes Stripe sent; re-serializing through `JSON.parse`/`stringify` invalidates
+  it. A refactor that switches to `req.json()` for tidiness turns signature
+  verification into a function that always fails, and — worse, if someone then
+  "fixes" it by dropping the check — into no verification at all.
+- **Nothing is trusted before `constructEvent` returns.** Until then the payload is
+  attacker-controlled input that merely resembles Stripe.
+
+The tests sign real payloads with `Stripe.webhooks.generateTestHeaderString`,
+including a tampered-after-signing case. **`constructEvent` is deliberately not
+mocked** — mocking it would leave the test suite green with the verification removed,
+which is precisely the regression worth catching.
+
+**Residual:** anyone who obtains `STRIPE_WEBHOOK_SECRET` can mint credits for any
+household id they choose. That is inherent to shared-secret webhooks; the mitigation
+is secret handling, not code. A deployment that leaves the variable unset fails
+closed — the route answers 500 and logs loudly, rather than accepting unverified
+events.
+
+### Accepted: the credit ledger is plaintext, and deliberately so
+
+`payments` and the `households.apartment_credits_granted` / `apartments_ever_added`
+counters are **not** encrypted, unlike every row of user data. They are the host's
+commercial record rather than the user's content: a household id, a Stripe customer
+and session id, an amount, a currency, a credit count, a timestamp. The server must be
+able to read and enforce them without a key it is not supposed to have — encrypting
+them would make the paywall unenforceable, which is the opposite of the point.
+
+Nothing in that table derives from an apartment, an address or a rating. The privacy
+claim on the landing page is about search data, and this is not search data.
+
+### Accepted: the purchase gate keys on `granted === 0`, never `remaining === 0`
+
+`requirePurchase` (`src/lib/billing-gate.ts`) gates only households that have **never**
+purchased. This is a security property, not a UX preference: a household that bought
+and spent its credits *owns apartments*, and under E2EE nobody — including the
+operator — can retrieve that data on their behalf. Gating on `remaining === 0` would
+lock a paying customer out of data that cannot be recovered for them. Running out of
+credits means "no new apartments", never "no access".
+
+`/billing` sits outside the four signed-in layouts for the related reason: those mount
+`CryptoGate`, and paying must not require first unlocking a key the user may not have
+set up.
+
+### Accepted: credit consumption is optimistic, with a refund on failure
+
+A credit is consumed **before** the insert, by a guarded single-statement
+`UPDATE ... WHERE apartments_ever_added < apartment_credits_granted`, and refunded in a
+`finally` when no row was produced. Consuming after a successful insert reads more
+naturally but lets two concurrent adds overspend the last credit; an 8-way concurrency
+test asserts exactly 3 succeed with 3 credits. The residual is the reverse direction:
+a process killed between the consume and the refund leaves the customer one credit
+short. That is visible and correctable, whereas silent overspend is neither. **Do not
+wrap this in `db.transaction`** — see #225.
+
+### Accepted: entitlement caps are unlimited by default
+
+`MAX_MEMBERS` and `MAX_APARTMENTS` unset means no ceiling, matching
+`PROCESS_RATE_LIMIT_PER_HOUR` above and for the same reason: `docker compose up` must
+work unconfigured, and a self-hoster spends their own resources.
+
+The consequence is a **deployment** risk rather than a code one, and it fails silently
+in the expensive direction: the hosted deployment must set 10 and 40 to match what the
+landing page sells, and forgetting them does not error — it quietly grants paying
+customers more than they bought and makes the pricing copy untrue. `billingEnabled()`
+is likewise keyed on `STRIPE_SECRET_KEY` alone, so a deployment that cannot take money
+never enforces a paywall it would have no way to lift.
+
+### Accepted: `households.tier` exists and is read by nothing
+
+The column is present so it need not be added later. No code path reads it — not E5,
+not E6. It is noted here because a future reader may reasonably assume an unused
+`tier` column is load-bearing entitlement state and build on it; it is not.
