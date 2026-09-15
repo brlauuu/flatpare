@@ -1,5 +1,12 @@
 # E3 — Encrypted Data Model Implementation Plan
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E3 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Apartments, ratings and locations become client-encrypted envelope blobs sealed with the E2 household data key; the server stores, versions and scopes them but never reads them, and every derived view (sort, search, averages, distances) is computed in the browser from one in-memory store.

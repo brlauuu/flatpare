@@ -1,5 +1,12 @@
 # User-Switch Rating Implementation Plan
 
+> **Status: superseded.** Written before accounts (E1) and end-to-end encryption (E2/E3).
+> It describes a Flatpare that no longer exists — a shared password, a `flatpare-name`
+> cookie, a name-picker for identity, plaintext rows, and/or a single hard-coded station
+> instead of user-chosen locations of interest. **Do not implement anything from this file.**
+> Kept as a record of how the product got here; `AGENTS.md` describes what it is now.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** When the user switches identity via the NavBar while rating an apartment, confirm if there are unsaved changes, then reload the rating form for the new user so the right person's preferences are saved.

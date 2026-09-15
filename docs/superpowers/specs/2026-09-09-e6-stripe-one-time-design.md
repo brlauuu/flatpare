@@ -1,6 +1,6 @@
 # E6 — Stripe one-time purchase and the apartment quota
 
-**Status:** design, pending provisioning. Nothing here is implemented.
+**Status:** **shipped** (2026-09-14). Migrations 0017 and 0018, `src/lib/billing.ts`, `src/lib/stripe.ts`, `src/lib/billing-gate.ts` and `/api/billing/*` are all in `main`. Three defects found against the real Stripe API after this was written are recorded in #238; the current behaviour is described in AGENTS.md, not here.
 
 **Issue:** [#188](https://github.com/brlauuu/flatpare/issues/188)
 

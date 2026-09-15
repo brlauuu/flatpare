@@ -1,5 +1,12 @@
 # Locations of interest — design
 
+> **Status: superseded.** Written before accounts (E1) and end-to-end encryption (E2/E3).
+> It describes a Flatpare that no longer exists — a shared password, a `flatpare-name`
+> cookie, a name-picker for identity, plaintext rows, and/or a single hard-coded station
+> instead of user-chosen locations of interest. **Do not implement anything from this file.**
+> Kept as a record of how the product got here; `AGENTS.md` describes what it is now.
+
+
 **Issue:** [#85 — Locations of interest: configurable list of places with per-apartment distances](https://github.com/brlauuu/flatpare/issues/85)
 **Follows up:** [#56 — single configurable train station](https://github.com/brlauuu/flatpare/issues/56)
 **Date:** 2026-04-26

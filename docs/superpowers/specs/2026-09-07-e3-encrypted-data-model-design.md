@@ -1,5 +1,12 @@
 # E3 — Encrypted data model
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E3 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 **Issue:** #185. **Parent:** [2026-09-01-accounts-e2ee-billing-design.md](./2026-09-01-accounts-e2ee-billing-design.md).
 **Builds on:** [2026-09-06-e2-crypto-core-design.md](./2026-09-06-e2-crypto-core-design.md).
 **Ships as:** one PR.

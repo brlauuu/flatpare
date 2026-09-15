@@ -1,5 +1,12 @@
 # E4 — Blind-Proxy Hardening Implementation Plan
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E4 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make `/api/process/*` safe to expose to open registration — no plaintext in logs on any path, no unbounded spend of the host's API keys, and no arbitrary outbound fetch.

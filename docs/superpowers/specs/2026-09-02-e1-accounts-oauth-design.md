@@ -1,5 +1,12 @@
 # E1 — Accounts, OAuth, and multi-tenancy
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E1 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 Implementation design for epic E1 (issues #181 and #182). Expands the E1 section
 of [2026-09-01-accounts-e2ee-billing-design.md](./2026-09-01-accounts-e2ee-billing-design.md),
 which remains the authority on the wider phase.

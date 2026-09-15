@@ -1,5 +1,12 @@
 # E1 — Accounts, OAuth, and multi-tenancy: Implementation Plan
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E1 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the shared-password gate with real per-user accounts, and scope every row and file in the app to a household.

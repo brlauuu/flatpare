@@ -1,5 +1,12 @@
 # E2 — Crypto core, key lifecycle, and invitations
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E2 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 Implementation design for issues #183, #184 and #197. Refines the E2 section
 of [the phase spec](./2026-09-01-accounts-e2ee-billing-design.md) and builds on
 the household model E1 shipped
