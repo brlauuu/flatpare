@@ -90,7 +90,7 @@ const LEGACY_DATA_TABLES = [
   "apartment_distances",
 ] as const;
 
-export async function preflightEncryptedModelMigration(
+async function preflightEncryptedModelMigration(
   client: Client
 ): Promise<void> {
   const tables = await client.execute({
@@ -139,7 +139,7 @@ export async function preflightEncryptedModelMigration(
 // picking a survivor silently would destroy one person's data. So the
 // preflight reports exactly which addresses collided and which user ids hold
 // them, and leaves the choice to the operator.
-export async function preflightDuplicateUserEmails(
+async function preflightDuplicateUserEmails(
   client: Client
 ): Promise<void> {
   const tables = await client.execute({
@@ -226,7 +226,7 @@ async function assertModeChosenForExistingData(client: Client): Promise<void> {
   );
 }
 
-export async function stampEncryptionMode(
+async function stampEncryptionMode(
   client: Client,
   mode: EncryptionMode
 ): Promise<void> {

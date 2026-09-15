@@ -6,53 +6,6 @@ export interface ErrorDetails {
   timestamp: string;
 }
 
-export async function fetchErrorFromResponse(
-  res: Response,
-  url: string
-): Promise<ErrorDetails> {
-  let message: string | undefined;
-  try {
-    const cloned = res.clone();
-    const data = (await cloned.json()) as { error?: unknown };
-    if (typeof data?.error === "string") {
-      message = data.error;
-    }
-  } catch {
-    try {
-      const text = await res.clone().text();
-      if (text) message = text.slice(0, 500);
-    } catch {
-      // give up — status alone is the signal
-    }
-  }
-
-  return {
-    status: res.status,
-    url,
-    message: message ?? res.statusText ?? undefined,
-    timestamp: new Date().toISOString(),
-  };
-}
-
-export function fetchErrorFromException(
-  err: unknown,
-  url: string
-): ErrorDetails {
-  if (err instanceof Error) {
-    return {
-      url,
-      message: err.message,
-      stack: err.stack,
-      timestamp: new Date().toISOString(),
-    };
-  }
-  return {
-    url,
-    message: String(err),
-    timestamp: new Date().toISOString(),
-  };
-}
-
 // For errors thrown by the household store or a process client rather than
 // by a fetch the page made itself: no URL to report, but ApiClientError and
 // ParsePdfError carry the HTTP status, which is worth surfacing.

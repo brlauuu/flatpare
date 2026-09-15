@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export const RECOVERY_ACK =
+const RECOVERY_ACK =
   "I understand that if I lose both my passphrase and this recovery kit, my household's data cannot be recovered by anyone, including Flatpare.";
 
 export function RecoveryKit({
