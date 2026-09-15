@@ -14,7 +14,7 @@
   <img alt="TypeScript 6" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white" />
   <img alt="Tailwind 4" src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white" />
   <img alt="Drizzle ORM" src="https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black" />
-  <img alt="Vitest 4" src="https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white" />
+  <img alt="Vitest 5" src="https://img.shields.io/badge/Vitest-5-6E9F18?logo=vitest&logoColor=white" />
   <img alt="Node 24" src="https://img.shields.io/badge/Node-24-339933?logo=nodedotjs&logoColor=white" />
 </p>
 
@@ -63,7 +63,7 @@ Accepted limits and the full threat model are in [`docs/security-notes.md`](./do
 | AI | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini 2.5 Flash |
 | Maps | Google Maps (Geocoding + Distance Matrix) with [OpenRouteService](https://openrouteservice.org) bike-distance fallback; [Leaflet](https://leafletjs.com) for rendering |
 | Payments | [Stripe](https://stripe.com) embedded Checkout — one-time, optional, off unless configured |
-| Tests | **Vitest 4** + React Testing Library, coverage floors enforced in CI |
+| Tests | **Vitest 5** + React Testing Library, coverage floors enforced in CI |
 | Deploy target | Vercel (preferred) or any Node 24+ host |
 
 ## Quickstart

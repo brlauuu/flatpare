@@ -15,6 +15,35 @@ TypeError: Error while loading rule 'react/display-name':
 
 **Re-check trigger (sharpened):** the version to watch is **`eslint-plugin-react`, not `eslint-config-next`** — the latter moving is not evidence of anything. Re-test when `eslint-config-next` bundles an `eslint-plugin-react` past 7.37.5 that has adopted the eslint 10 rule API.
 
+### typescript stays on 6 (7 breaks typescript-eslint, and lint is a CI gate)
+
+`typescript@7.0.2` is current. The pin is **deliberate as of 2026-09-15 (#249)**, which
+is worth stating because the audit that raised it could not tell a pin from an
+oversight — there was no note here either way.
+
+`tsc --noEmit` itself is fine: TypeScript 7 typechecks this repository **clean, with no
+code changes**. The blocker is the other CI gate. `npm run lint` dies before linting
+anything:
+
+```
+typescript-eslint does not support TS 7.0.
+See https://github.com/typescript-eslint/typescript-eslint/issues/10940 for tracking
+typescript-eslint's support for TS >=7.1
+```
+
+`eslint-config-next` loads `typescript-eslint` at require time, so this is a hard
+failure of the whole lint step, not a degraded rule or two.
+
+TypeScript's release notes describe running 7.0 side-by-side with the 6.0 API so tools
+like typescript-eslint can keep using the older one. We have not taken that route: it
+means carrying two TypeScript installs to gain nothing a later upstream release will
+not give for free.
+
+**Re-check trigger:** a `typescript-eslint` release that supports TS ≥ 7.1 (tracked in
+typescript-eslint#10940), reachable through an `eslint-config-next` bump. Re-test
+**`npm run lint`**, not just `npm run typecheck` — typecheck already passes and is not
+evidence.
+
 ## Auth model — reviewed 2026-09-02 (E1 accounts/OAuth epic)
 
 The shared-password + display-name model described in the previous version of this
