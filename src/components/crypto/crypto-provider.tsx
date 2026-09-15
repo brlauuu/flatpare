@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isKeyStorePersistent, loadKeys, type StoredKeys } from "@/lib/crypto";
 import type { EncryptionMode } from "@/lib/encryption-mode";
 import {
@@ -19,35 +12,16 @@ import {
   runUnlock,
   type StatusResponse,
 } from "./flows";
+import {
+  CryptoContext,
+  type CryptoContextValue,
+  type CryptoState,
+} from "./crypto-context";
 import { ForgotPassphrase } from "./forgot-passphrase";
 import { RecoveryKit } from "./recovery-kit";
 import { SetupScreen } from "./setup-screen";
 import { UnlockScreen } from "./unlock-screen";
 import { PendingScreen } from "./pending-screen";
-
-export type CryptoState =
-  | "loading"
-  | "error"
-  | "off"
-  | "needs-setup"
-  | "pending-wrap"
-  | "locked"
-  | "unlocked";
-
-export interface CryptoContextValue {
-  state: CryptoState;
-  status: StatusResponse | null;
-  keys: StoredKeys | null;
-  error: string | null;
-  persistent: boolean;
-  refresh: () => Promise<void>;
-  setup: (passphrase: string) => Promise<void>;
-  unlock: (passphrase: string) => Promise<void>;
-  lock: () => Promise<void>;
-  // Task 12's recover/regenerate flows hand their fresh code here so the kit
-  // is shown through the same one-time screen as setup.
-  showRecoveryKit: (code: string) => void;
-}
 
 const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
@@ -61,15 +35,6 @@ const NOTICE_MS = 8_000;
 const ADOPT_FAILED_MESSAGE =
   "The key we received could not be opened. Reset your keys so a member can " +
   "send a new one, or use your recovery kit.";
-
-// Exported so component tests can render consumers under a hand-built value.
-export const CryptoContext = createContext<CryptoContextValue | null>(null);
-
-export function useCrypto(): CryptoContextValue {
-  const ctx = useContext(CryptoContext);
-  if (!ctx) throw new Error("useCrypto must be used inside <CryptoProvider>");
-  return ctx;
-}
 
 function deriveState(status: StatusResponse, keys: StoredKeys | null): CryptoState {
   if (status.mode === "off") return "off";

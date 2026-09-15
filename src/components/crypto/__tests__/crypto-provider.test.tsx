@@ -24,7 +24,8 @@ vi.mock("../flows", async () => {
 });
 vi.mock("@/lib/crypto", () => store);
 
-import { CryptoProvider, useCrypto } from "../crypto-provider";
+import { CryptoProvider } from "../crypto-provider";
+import { useCrypto } from "../crypto-context";
 import { FlowError } from "../flows";
 
 // Stand-ins: the provider never inspects a CryptoKey, it only passes them on.

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { useContext, useEffect } from "react";
-import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-provider";
+import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-context";
 import { generateDataKey, seal } from "@/lib/crypto";
 import { envelopeAad } from "@/lib/crypto";
 import { emptyApartment, EMPTY_RATING, type Apartment, type Location } from "@/lib/household-data/types";
