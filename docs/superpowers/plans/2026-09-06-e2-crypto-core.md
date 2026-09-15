@@ -1,5 +1,12 @@
 # E2 Crypto Core Implementation Plan
 
+> **Status: shipped.** This is the plan as written beforehand, kept as a record of intent.
+> **Unticked `- [ ]` boxes do not mean unfinished work** — they were never ticked back, and
+> nobody should re-derive completion from them. For what E2 actually does now, read
+> `AGENTS.md`; where the two disagree, the code and `AGENTS.md` are right and this file is
+> history.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the client-side crypto core (issues #183, #184) and household invitations (#197): a per-household AES-256-GCM data key that the server never sees, wrapped to each member's RSA-OAEP keypair, a passphrase-protected private key per member, a recovery kit, a deploy-wide `FLATPARE_ENCRYPTION` opt-out, and the invitation flow that new members arrive through.

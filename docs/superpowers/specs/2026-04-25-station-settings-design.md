@@ -1,5 +1,12 @@
 # Configurable train-station address — design
 
+> **Status: superseded.** Written before accounts (E1) and end-to-end encryption (E2/E3).
+> It describes a Flatpare that no longer exists — a shared password, a `flatpare-name`
+> cookie, a name-picker for identity, plaintext rows, and/or a single hard-coded station
+> instead of user-chosen locations of interest. **Do not implement anything from this file.**
+> Kept as a record of how the product got here; `AGENTS.md` describes what it is now.
+
+
 **Issue:** [#56 — Bike transit to the train station is not correct. I need setting where I can set the address of the train station](https://github.com/brlauuu/flatpare/issues/56)
 **Follow-up:** [#85 — Locations of interest](https://github.com/brlauuu/flatpare/issues/85)
 **Date:** 2026-04-25

@@ -1,5 +1,12 @@
 # User-switch during rating — design
 
+> **Status: superseded.** Written before accounts (E1) and end-to-end encryption (E2/E3).
+> It describes a Flatpare that no longer exists — a shared password, a `flatpare-name`
+> cookie, a name-picker for identity, plaintext rows, and/or a single hard-coded station
+> instead of user-chosen locations of interest. **Do not implement anything from this file.**
+> Kept as a record of how the product got here; `AGENTS.md` describes what it is now.
+
+
 **Issue:** [#50 — If the user changes in the middle of rating the apartment, the rating should be updated so that the right user's preferences are saved](https://github.com/brlauuu/flatpare/issues/50)
 **Date:** 2026-04-24
 
