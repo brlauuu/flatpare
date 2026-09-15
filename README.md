@@ -291,7 +291,7 @@ docs/                             # google-apis.md, security-notes.md
 
 ## API surface
 
-Every data route is `requireMember()` → validate → work, and answers `404` for unknown *and* foreign rows.
+The three data routes — apartments, ratings and locations — are `requireMember()` → validate → work, and answer `404` for unknown *and* foreign rows. The crypto, invitation and household routes use `requireHousehold()` instead; the three invitation routes marked below run for a signed-in user who has no household yet.
 
 | Method | Endpoint | Description |
 |---|---|---|
