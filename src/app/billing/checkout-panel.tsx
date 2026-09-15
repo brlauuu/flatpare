@@ -58,6 +58,7 @@ export function CheckoutPanel() {
           if (body.granted > 0) {
             // Full navigation, so the layout gate re-runs server-side and
             // lets us through rather than trusting client state.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.assign("/apartments");
             return;
           }

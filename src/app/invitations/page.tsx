@@ -57,6 +57,7 @@ export default function InvitationsPage() {
       if (!res.ok) throw new Error(await readError(res));
       // The session cookie was refreshed server-side (unstable_update); a
       // full navigation makes the proxy read the new token.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/apartments");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed");
