@@ -15,7 +15,8 @@ export const households = sqliteTable("households", {
   ownerId: text("owner_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  // Read by E5/E6. Present now so the column does not need adding later.
+  // Read by NOTHING. E5 has no tier dimension and E6 keys off the credit
+  // counters below, not this. Kept so the column need not be added later.
   tier: text("tier").notNull().default("free"),
   // E6 apartment credits. Both plaintext and both the host's commercial
   // record rather than the user's data, so neither is encrypted — the server
