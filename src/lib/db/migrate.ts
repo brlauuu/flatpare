@@ -35,11 +35,12 @@ const TENANCY_TABLES = [
 
 async function preflightTenancyMigration(client: Client): Promise<void> {
   // Check existence of all four tables 0011 touches, not just `apartments`:
-  // a legacy database can hold rows in `locations_of_interest` (the default
-  // "Train Station" backfilled by migrateLocationsOfInterestBackfill on
-  // every pre-tenancy database) while `apartments` is still empty — that
-  // combination is the single most likely self-hoster upgrade, and it must
-  // not slip past this preflight into the migrator's raw SQLite error.
+  // a legacy database can hold rows in `locations_of_interest` (a default
+  // "Train Station" row, which a pre-tenancy runtime backfill inserted into
+  // every such database — that backfill was deleted in E3 along with the
+  // table, so do not go looking for it) while `apartments` is still empty.
+  // That combination is the single most likely self-hoster upgrade, and it
+  // must not slip past this preflight into the migrator's raw SQLite error.
   const tables = await client.execute({
     sql: `SELECT name FROM sqlite_master WHERE type='table' AND name IN (${TENANCY_TABLES.map(() => "?").join(",")})`,
     args: [...TENANCY_TABLES],

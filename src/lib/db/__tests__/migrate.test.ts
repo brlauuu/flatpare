@@ -232,8 +232,9 @@ describe("applyMigrations", () => {
       )`,
       args: [],
     });
-    // migrateLocationsOfInterestBackfill inserts this default row on every
-    // pre-tenancy database, independent of whether any apartments exist.
+    // A pre-tenancy runtime backfill (deleted in E3 with the table) inserted
+    // this default row into every such database, independent of whether any
+    // apartments exist — which is what preflightTenancyMigration has to catch.
     await client.execute({
       sql: "INSERT INTO locations_of_interest (label, icon, address, sort_order) VALUES ('Train Station', 'Train', 'Basel SBB, Switzerland', 0)",
       args: [],

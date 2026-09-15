@@ -11,15 +11,20 @@ silently no-op.
 | PDF data extraction | Gemini API | Google AI Studio (or Vertex) | `GOOGLE_GENERATIVE_AI_API_KEY` |
 | Postcode + lat/lng geocoding | Geocoding API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 | Bike + transit travel times | Distance Matrix API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
-| Single-apartment map embed | Maps Embed API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 
-The map *overview* page does **not** call any Google API at render time —
-it uses OpenStreetMap tiles. Pin coordinates are produced by the
-Geocoding API at apartment/location save time and on backfill.
+**No Google API renders a map.** Both the overview map and the
+single-apartment pin are drawn client-side with [Leaflet](https://leafletjs.com)
+over OpenStreetMap tiles. The **Maps Embed API is not used and should not be
+enabled** — it was, until E3 deleted `src/lib/map-embed.ts`, and enabling an
+API a key does not need only widens what a leaked key can do.
+
+Google is asked for two things only: coordinates (Geocoding) and travel times
+(Distance Matrix), both at save time or during a maintenance pass — never at
+render time.
 
 All Maps Platform APIs share one key; you just need to **enable each one
-individually** in the Google Cloud Console. Enabling Maps Embed alone
-will not enable Geocoding — they are billed and gated separately.
+individually** in the Google Cloud Console. Enabling one does not enable the
+other — they are billed and gated separately.
 
 ## Setup
 
@@ -33,41 +38,57 @@ If unset, PDF upload falls back to manual entry.
 
 ### 2. Maps Platform key — `GOOGLE_MAPS_API_KEY`
 
-One key, three APIs to enable:
+One key, **two** APIs to enable:
 
 1. Open [Google Cloud Console → APIs & Services → Library](https://console.cloud.google.com/apis/library).
 2. Enable each of the following:
    - **Geocoding API** — used by `src/lib/geocode.ts` for both
-     postcode extraction and the lat/lng pins on the apartments
-     overview map.
+     postcode extraction and the lat/lng pins the maps draw.
    - **Distance Matrix API** — used by `src/lib/distance.ts` for bike
      and transit times shown on each apartment.
-   - **Maps Embed API** — used by `src/lib/map-embed.ts` to render
-     the single-apartment map iframe on the apartment detail page.
 3. Create or reuse an API key under **Credentials**. Restrict it to
-   the three APIs above. (HTTP-referrer restrictions break server-side
-   calls — restrict by API instead.)
+   **those two APIs and nothing else.** (HTTP-referrer restrictions break
+   server-side calls — restrict by API instead.)
 
-If the key is unset, distances and embedded maps are skipped without
-error, and apartments simply don't get geocoded — set
-`OPENROUTESERVICE_API_KEY` as a free fallback for both geocoding and
-distance.
+If the key is unset, distances are skipped without error and apartments
+simply don't get geocoded — set `OPENROUTESERVICE_API_KEY` as a free
+fallback for both geocoding and distance.
 
 ## Verifying it works
 
-After deployment, from the apartments page in DevTools:
+After deployment, signed in, from DevTools on any page inside the app:
 
 ```js
 // Geocoding API enabled?
-await fetch("/api/geocode/backfill", { method: "POST" }).then(r => r.json())
-// → { pending: N, updated: N }    ✅
-// → { pending: N, updated: 0 }    ❌ Geocoding API disabled or key wrong
+await fetch("/api/process/geocode", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ address: "Bahnhofstrasse 1, 8001 Zürich" }),
+}).then(r => r.json())
+// → { lat: 47.3, lng: 8.5, postcode: "8001" }        ✅
+// → { lat: null, lng: null, reason: "google: REQUEST_DENIED" }
+//                                                     ❌ API not enabled on this key
 ```
 
-If `updated < pending` after the backfill, check the function logs in
-Vercel — `tryGoogleGeocodeLatLng` swallows the error but logs through
-the API-usage table; a `REQUEST_DENIED` response from Google means the
-API isn't enabled on that key.
+```js
+// Distance Matrix API enabled?
+await fetch("/api/process/distance", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ from: "8001 Zürich", to: "8005 Zürich" }),
+}).then(r => r.json())
+```
+
+The `reason` field is where a misconfigured key shows up — `REQUEST_DENIED`
+means the API is not enabled, `ZERO_RESULTS` means it is enabled and simply
+found nothing. Both come back as a 200 with nulls, because a failed geocode
+is not a failed request.
+
+There is no server-side backfill route to call: geocoding a household's
+existing rows happens **in the browser**, through the store's
+`runMaintenance("geocode")`, since the addresses are encrypted and the server
+cannot read them. Opening the map overview panel on the apartments page
+triggers exactly that pass.
 
 ## Troubleshooting
 
@@ -76,7 +97,8 @@ API isn't enabled on that key.
   the Maps Platform key.
 - **Distances missing on apartment cards**: Distance Matrix API not
   enabled, or `GOOGLE_MAPS_API_KEY` not set in the deployed env.
-- **Single-apartment map iframe is blank**: Maps Embed API not enabled,
-  or the key has referrer restrictions that block your domain.
+- **A map renders but has no pins**: the apartments have no coordinates
+  yet, which is a Geocoding problem rather than a map one — the tiles come
+  from OpenStreetMap and need no key at all.
 - **PDF parsing returns "manual entry only"**:
   `GOOGLE_GENERATIVE_AI_API_KEY` is unset or invalid.

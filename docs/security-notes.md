@@ -142,7 +142,7 @@ for them by hand when configuring a deployment.
   something this codebase can detect for itself — it's a pre-deploy checklist item,
   not a code fix.
 - **A stale browser tab can hit a 400 on blob upload during the deploy window.**
-  `src/app/api/parse-pdf/upload-token/route.ts` rejects a non-canonical pathname
+  `src/app/api/files/upload-token/route.ts` rejects a non-canonical pathname
   outright (see the comment on `onBeforeGenerateToken`). The current client always
   sends an already-canonical pathname, so this only bites a tab that is still running
   the *previous* JS bundle across a deploy — if that old bundle sends a raw pathname
