@@ -52,8 +52,24 @@ export default defineConfig({
         // Ambient type declarations — no executable code to cover.
         "src/types/**",
         "**/*.d.ts",
+        // Test fixtures and helpers. `coverage.include` (#203) pulled these
+        // in as product code, so a fixture's unused branch counted against
+        // the floor — fake-household-data.tsx was being graded at 63.63%.
+        // Grading a fixture measures nothing: it is exercised exactly as much
+        // as the tests using it happen to need. Excluded in #254.
+        "**/__tests__/**",
         // vitest's defaults (node_modules, dist, etc.) — kept implicit.
       ],
+      // DELIBERATELY NOT EXCLUDED, decided in #254: the Leaflet
+      // `*-map-inner.tsx` components. They report 0% because three suites
+      // vi.mock them, and they are awkward to test — Leaflet wants a real
+      // DOM with layout. But they are shipped code a user sees, and their
+      // dynamic-import wrappers (96.66% / 100%) cover the branch that
+      // decides whether to mount them, not the components themselves.
+      // Excluding them would make the 0% disappear without making anything
+      // safer, and would silently swallow real logic added to them later.
+      // The 0% is honest signal; leave it visible.
+      //
       // Floor — we're well above as of #129; set here so a regression
       // (or a sneaky `if` slipping through without a test) fails CI.
       thresholds: {
