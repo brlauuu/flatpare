@@ -12,7 +12,7 @@ vi.mock("../flows", async () => {
   return { ...actual, ...flows };
 });
 
-import { CryptoContext, type CryptoContextValue } from "../crypto-provider";
+import { CryptoContext, type CryptoContextValue } from "../crypto-context";
 import { ForgotPassphrase } from "../forgot-passphrase";
 import { FlowError } from "../flows";
 

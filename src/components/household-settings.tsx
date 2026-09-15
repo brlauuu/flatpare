@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCrypto } from "@/components/crypto/crypto-provider";
+import { useCrypto } from "@/components/crypto/crypto-context";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 
 interface Member {

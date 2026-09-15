@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCrypto } from "./crypto-provider";
+import { useCrypto } from "./crypto-context";
 
 export function UnlockScreen({ extra }: { extra?: React.ReactNode }) {
   const { unlock, persistent } = useCrypto();

@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { CryptoContext } from "@/components/crypto/crypto-provider";
+import { CryptoContext } from "@/components/crypto/crypto-context";
 import {
   openApartment,
   openLocation,

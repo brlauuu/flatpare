@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-provider";
+import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-context";
 import { HouseholdSettings } from "../household-settings";
 import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
 import { makeHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
