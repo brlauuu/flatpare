@@ -132,19 +132,28 @@ the repo, sanitize at that point.
 
 This section lists `npm audit` advisories that have been intentionally left unfixed, with rationale. Re-evaluate on every dependency bump and when upstream patches are released.
 
-Last reviewed: 2026-05-09 (issue #132).
+Last reviewed: 2026-09-15 (issue #247).
 
 
 
-### esbuild ≤0.24.2 — GHSA-67mh-4wv8-2f99 (moderate, dev-only)
+### esbuild — GHSA-67mh-4wv8-2f99 (moderate) and GHSA-g7r4-m6w7-qqqr (low), dev-only
 
 > esbuild enables any website to send any requests to the development server and read the response.
+>
+> esbuild allows arbitrary file read when running the development server on Windows.
 
-**Path:** `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild`.
+**Paths:** two, both under `drizzle-kit@0.31.10`:
 
-**Why we accept:** Latest stable `drizzle-kit` (0.31.10) still depends on the `@esbuild-kit/*` chain. There is no published version that drops it; the migration is in progress upstream. The vulnerability requires an attacker to reach a developer's local esbuild dev server, which we never run — `drizzle-kit` only invokes esbuild inline during `db:generate` / `db:push` / `db:studio`.
+- `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild@0.18.20` (vulnerable range `<=0.24.2`)
+- `drizzle-kit → tsx@4.21.0 → esbuild@0.27.7` (vulnerable range `0.27.3 - 0.28.0`)
 
-**Re-check trigger:** drizzle-kit 1.x stable release (currently in beta/rc).
+`drizzle-kit`'s own direct `esbuild@0.25.12` is **not** in either range.
+
+**Why we accept:** `drizzle-kit@0.31.10` is the latest published version and still declares `@esbuild-kit/esm-loader` — verified against the registry on 2026-09-15, not assumed. There is no version to bump to. npm reports a "fix available", but it is a *downgrade* to `drizzle-kit@0.18.1`, which would lose thirteen minor versions of migration tooling to resolve a dev-only advisory; that is a worse trade than the exposure.
+
+Both advisories require an attacker to reach a developer's local **esbuild dev server**. We never run one: `drizzle-kit` invokes esbuild inline to bundle `drizzle.config.ts` during `db:generate` / `db:push` / `db:studio`, and neither path starts `esbuild serve`. The second advisory additionally requires a Windows host.
+
+**Re-check trigger:** a `drizzle-kit` release that drops `@esbuild-kit/*` (the migration to `tsx` is in progress upstream), or `tsx` moving past `esbuild@0.28.0`.
 
 ### postcss <8.5.10 — GHSA-qx2v-qp2m-jg93 (moderate, build-only)
 
