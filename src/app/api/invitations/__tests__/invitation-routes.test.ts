@@ -141,4 +141,53 @@ describe("POST /api/invitations/[id]/accept and /decline", () => {
     authUser.id = "m";
     expect((await declinePOST()).status).toBe(409);
   });
+
+  // These three routes read auth() directly instead of requireHousehold(),
+  // because their caller has no household yet — so their own unauthenticated
+  // and bad-input paths are the only thing standing between an anonymous
+  // request and an invitation. src/proxy.ts allow-lists all three.
+  describe("the paths that exist because these routes are allow-listed", () => {
+    it("accept is 401 with no session", async () => {
+      authUser.id = "";
+      const res = await acceptPOST(
+        new Request("http://localhost", { method: "POST" }),
+        params("1")
+      );
+      expect(res.status).toBe(401);
+      expect(unstableUpdate).not.toHaveBeenCalled();
+    });
+
+    it("decline is 401 with no session", async () => {
+      authUser.id = "";
+      const res = await declinePOST();
+      expect(res.status).toBe(401);
+      expect(unstableUpdate).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["not a number", "abc"],
+      ["fractional", "1.5"],
+    ])("accept rejects a %s invitation id with 400", async (_label, id) => {
+      const res = await acceptPOST(
+        new Request("http://localhost", { method: "POST" }),
+        params(id)
+      );
+      expect(res.status).toBe(400);
+      expect(unstableUpdate).not.toHaveBeenCalled();
+    });
+
+    it("an empty id falls through the guard as 0 and 404s", async () => {
+      // Number("") is 0, and Number.isInteger(0) is true — so the guard does
+      // NOT reject it and the lookup runs with id 0. Harmless, because ids
+      // autoincrement from 1 so nothing can match, and 404 is the right
+      // answer anyway. Pinned because it is surprising: the guard reads like
+      // it rejects empty input and does not.
+      const res = await acceptPOST(
+        new Request("http://localhost", { method: "POST" }),
+        params("")
+      );
+      expect(res.status).toBe(404);
+      expect(unstableUpdate).not.toHaveBeenCalled();
+    });
+  });
 });
