@@ -56,8 +56,7 @@ export default function InvitationsPage() {
       const res = await fetch(path, { method: "POST" });
       if (!res.ok) throw new Error(await readError(res));
       // The session cookie was refreshed server-side (unstable_update); a
-      // full navigation makes the proxy read the new token. A router push
-      // would not, so this must not become useRouter().push().
+      // full navigation makes the proxy read the new token.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/apartments");
     } catch (err) {
