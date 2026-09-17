@@ -252,3 +252,27 @@ describe("proxy — PWA assets stay public", () => {
     });
   }
 });
+
+// The beta-pass link (#239) is opened by someone with no account yet; the
+// handler sets a cookie and redirects to `/`, where the normal gate takes
+// over. So the proxy must pass it through signed out, and a signed-in user
+// is simply bounced onward by the `/` branch afterwards.
+describe("proxy — beta-pass link", () => {
+  it("passes /beta/<code> through unauthenticated", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/beta/0123456789abcdef0123456789abcdef"));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("passes /beta/<code> through for a signed-in user too", async () => {
+    signedIn();
+    const res = await proxy(makeRequest("/beta/0123456789abcdef0123456789abcdef"));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not widen the pass-through beyond /beta/", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/betas"));
+    expect(res.status).toBe(307);
+  });
+});

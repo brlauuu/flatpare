@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { db } from "@/lib/db";
 import { households, householdMembers, invitations } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
@@ -102,5 +102,35 @@ describe("session callback", () => {
     });
     expect(full.householdId).toBe(7);
     expect(full.role).toBe("owner");
+  });
+});
+
+// The under-development gate (#239) is wired as Auth.js's signIn callback.
+// The decision itself is tested in src/lib/__tests__/sign-up-gate.test.ts;
+// this checks the two things the wiring adds: `true` lets the sign-in
+// proceed, and a refusal is a redirect string (Auth.js then sends the browser
+// there instead of to its generic AccessDenied page).
+describe("signIn callback", () => {
+  const ORIGINAL_ACCESS = process.env.FLATPARE_PUBLIC_ACCESS;
+  afterEach(() => {
+    if (ORIGINAL_ACCESS === undefined) delete process.env.FLATPARE_PUBLIC_ACCESS;
+    else process.env.FLATPARE_PUBLIC_ACCESS = ORIGINAL_ACCESS;
+  });
+
+  it("returns true when access is open", async () => {
+    delete process.env.FLATPARE_PUBLIC_ACCESS;
+    expect(await authCallbacks.signIn({ user: { email: "new@example.com" } })).toBe(true);
+  });
+
+  it("returns true for an existing account when closed", async () => {
+    process.env.FLATPARE_PUBLIC_ACCESS = "closed";
+    expect(await authCallbacks.signIn({ user: { email: "u1@example.com" } })).toBe(true);
+  });
+
+  it("returns the landing-page redirect for a refused sign-up", async () => {
+    process.env.FLATPARE_PUBLIC_ACCESS = "closed";
+    expect(await authCallbacks.signIn({ user: { email: "new@example.com" } })).toBe(
+      "/?signin=closed"
+    );
   });
 });

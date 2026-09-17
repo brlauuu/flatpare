@@ -28,24 +28,48 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete process.env.FLATPARE_PUBLIC_ACCESS;
   for (const v of OAUTH_VARS) delete process.env[v];
   delete process.env.APP_PASSWORD;
   delete process.env.AUTH_SECRET;
   delete process.env.AUTH_TRUST_HOST;
 });
 
-/** Renders the server component and reports which provider ids it passed down. */
-async function renderedProviderIds(): Promise<string[]> {
+/** Renders the server component and reports what it passed to the form. */
+async function renderPage(
+  searchParams: Record<string, string | undefined> = {}
+): Promise<{ providers: string[]; access: string; notice: string }> {
   vi.doMock("../login-form", () => ({
-    LoginForm: ({ providers }: { providers: string[] }) => (
-      <div data-testid="login-form" data-providers={providers.join(",")} />
+    LoginForm: ({
+      providers,
+      access,
+      notice,
+    }: {
+      providers: string[];
+      access: string;
+      notice: string | null;
+    }) => (
+      <div
+        data-testid="login-form"
+        data-providers={providers.join(",")}
+        data-access={access}
+        data-notice={notice ?? ""}
+      />
     ),
   }));
   const { default: LandingPage } = await import("../page");
-  render(LandingPage());
+  render(await LandingPage({ searchParams: Promise.resolve(searchParams) }));
   const el = screen.getByTestId("login-form");
   const raw = el.dataset.providers ?? "";
-  return raw ? raw.split(",") : [];
+  return {
+    providers: raw ? raw.split(",") : [],
+    access: el.dataset.access ?? "",
+    notice: el.dataset.notice ?? "",
+  };
+}
+
+async function renderedProviderIds(): Promise<string[]> {
+  return (await renderPage()).providers;
 }
 
 /** What Auth.js actually registered, from its own providers endpoint. */
@@ -129,5 +153,41 @@ describe("LandingPage provider selection", () => {
     expect(rendered).toEqual(["google"]);
     expect(document.body.innerHTML).not.toContain("CLIENT-ID-MUST-NOT-LEAK");
     expect(document.body.innerHTML).not.toContain("CLIENT-SECRET-MUST-NOT-LEAK");
+  });
+});
+
+// The under-development gate (#239): the page reads FLATPARE_PUBLIC_ACCESS on
+// the server and passes only the resulting mode and the notice down, never
+// the variable itself.
+describe("LandingPage under-development gate", () => {
+  it("passes access=open by default, so a self-hoster sees no holding notice", async () => {
+    delete process.env.FLATPARE_PUBLIC_ACCESS;
+    const { access, notice } = await renderPage();
+    expect(access).toBe("open");
+    expect(notice).toBe("");
+  });
+
+  it("passes access=closed when the variable says so", async () => {
+    process.env.FLATPARE_PUBLIC_ACCESS = "closed";
+    expect((await renderPage()).access).toBe("closed");
+  });
+
+  it.each([
+    [{ signin: "closed" }, "sign-up-refused"],
+    [{ beta: "ready" }, "beta-ready"],
+    [{ beta: "invalid" }, "beta-invalid"],
+    [{ beta: "anything-else" }, ""],
+    [{}, ""],
+  ])("maps the query %j to notice %j", async (query, expected) => {
+    expect((await renderPage(query)).notice).toBe(expected);
+  });
+
+  it("can be called with no arguments", async () => {
+    vi.doMock("../login-form", () => ({
+      LoginForm: () => <div data-testid="login-form" />,
+    }));
+    const { default: LandingPage } = await import("../page");
+    render(await LandingPage());
+    expect(screen.getByTestId("login-form")).toBeInTheDocument();
   });
 });

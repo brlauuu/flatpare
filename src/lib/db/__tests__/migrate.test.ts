@@ -521,6 +521,37 @@ describe("applyMigrations", () => {
     expect(pk.rows).toHaveLength(1);
   });
 
+  it("creates the beta pass tables (#239) with the host-side columns only", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+
+    // A pass is the host's record — nothing here is user data, and nothing
+    // about a person beyond the user id of who redeemed it. A new column
+    // should be a deliberate decision.
+    expect((await columnNames(client, "beta_passes")).sort()).toEqual([
+      "code",
+      "created_at",
+      "credits",
+      "expires_at",
+      "id",
+      "label",
+      "max_uses",
+      "revoked_at",
+      "uses",
+    ]);
+    expect((await columnNames(client, "beta_pass_redemptions")).sort()).toEqual([
+      "created_at",
+      "pass_id",
+      "user_id",
+    ]);
+
+    const unique = await client.execute({
+      sql: "SELECT name FROM pragma_index_list('beta_passes') WHERE \"unique\" = 1",
+      args: [],
+    });
+    expect(unique.rows.map((r) => String(r.name))).toContain("beta_passes_code_unique");
+  });
+
   it("creates the E2 tables and recovery columns", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);

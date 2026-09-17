@@ -13,6 +13,11 @@ import {
 import { verifyPassword } from "@/lib/auth";
 import { resolveHouseholdForUser, assertMembership } from "@/lib/household";
 import { isUniqueConstraintError } from "@/lib/unique-constraint";
+import {
+  decideSignUp,
+  recordSignUpPass,
+  SIGN_IN_CLOSED_REDIRECT,
+} from "@/lib/sign-up-gate";
 import { eq } from "drizzle-orm";
 import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
@@ -129,6 +134,19 @@ export const providers = [
 // `unstable_update({})` after changing membership. Otherwise the claims are
 // left alone for the token's 24h life (see AGENTS.md, session staleness).
 export const authCallbacks = {
+  // The under-development gate (#239). Runs before @auth/core creates a user
+  // row, so a refused sign-UP leaves nothing behind; an existing account is
+  // always allowed. Returning a string makes Auth.js redirect there instead
+  // of to its generic AccessDenied page — the landing page reads the query
+  // and explains. See src/lib/sign-up-gate.ts for what gets through.
+  async signIn({
+    user,
+  }: {
+    user: { email?: string | null };
+  }): Promise<true | string> {
+    const decision = await decideSignUp(user);
+    return decision === "allowed" ? true : SIGN_IN_CLOSED_REDIRECT;
+  },
   async jwt({
     token,
     user,
@@ -185,4 +203,9 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
     maxAge: 60 * 60 * 24,
   },
   callbacks: authCallbacks,
+  events: {
+    // Ties a brand-new account to the beta pass that admitted it (if any),
+    // so #240 can grant the credits the pass promised.
+    createUser: ({ user }) => recordSignUpPass(user),
+  },
 });

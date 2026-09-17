@@ -24,6 +24,12 @@ export async function proxy(request: NextRequest) {
   // allowed past this gate for that reason.
   if (path === "/api/billing/webhook") return NextResponse.next();
 
+  // A beta-pass link (#239) is opened by someone who, by definition, has no
+  // account yet. The handler only sets a cookie and redirects to `/`, where
+  // the normal gate takes over — a signed-in user is bounced onward by the
+  // `/` branch below like anyone else.
+  if (path.startsWith("/beta/")) return NextResponse.next();
+
   const session = await auth();
   const userId = session?.user?.id;
   const hasHousehold = !!userId && !!session?.householdId;

@@ -281,10 +281,55 @@ export const payments = sqliteTable("payments", {
   ),
 });
 
+// Beta passes (#239, #240): the door through the under-development gate.
+//
+// A pass is a shareable link, `/beta/<code>`, that lets someone create an
+// account while FLATPARE_PUBLIC_ACCESS=closed. It is the host's record, not
+// the user's data, so it is plaintext: the server has to read it to decide
+// who may sign up. `maxUses` null means unlimited; `revokedAt` stops the
+// link working for NEW sign-ups only — anyone already in stays in, and
+// nothing granted through a pass is ever clawed back (decided on #240).
+// `credits` is what #240 will grant on first use; recorded here so the pass
+// says what it promises even before that lands.
+export const betaPasses = sqliteTable("beta_passes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  code: text("code").notNull().unique(),
+  label: text("label"),
+  credits: integer("credits").notNull().default(40),
+  maxUses: integer("max_uses"),
+  uses: integer("uses").notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
+// Which pass let which user in. Deliberately NOT the `payments` ledger: that
+// one is keyed by Stripe event id and reconciles against Stripe, and a beta
+// grant written there would pollute the books. One row per user — a person
+// signs up once.
+export const betaPassRedemptions = sqliteTable(
+  "beta_pass_redemptions",
+  {
+    passId: integer("pass_id")
+      .notNull()
+      .references(() => betaPasses.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [primaryKey({ columns: [table.userId] })]
+);
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;
 export type ProcessUsageRecord = typeof processUsage.$inferSelect;
 export type PaymentRecord = typeof payments.$inferSelect;
+export type BetaPass = typeof betaPasses.$inferSelect;
 
 export { users, accounts, sessions, verificationTokens } from "./schema-auth";

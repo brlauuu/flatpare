@@ -8,10 +8,108 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ErrorDisplay } from "@/components/error-display";
+import { REPO_URL } from "@/lib/site";
+import type { PublicAccess } from "@/lib/public-access";
 
 type ProviderId = "google" | "github" | "credentials";
 
-export function LoginForm({ providers }: { providers: ProviderId[] }) {
+// What the sign-in flow redirected back with (#239):
+//   sign-up-refused — a sign-in that would have created an account was
+//                     turned away because public access is closed;
+//   beta-ready      — a beta link was accepted and its cookie is set;
+//   beta-invalid    — a beta link was revoked, expired or used up.
+export type SignInNotice =
+  | "sign-up-refused"
+  | "beta-ready"
+  | "beta-invalid"
+  | null;
+
+// The holding notice while FLATPARE_PUBLIC_ACCESS=closed. Honest and short,
+// per #239: what is happening, roughly when it opens, and a way to ask for
+// a place — no countdown, no invented waitlist numbers. Existing accounts
+// and beta invitations still sign in, so the buttons stay.
+function ClosedNotice() {
+  return (
+    <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground space-y-2">
+      <p>
+        <strong className="font-medium text-foreground">
+          Flatpare is in a private beta.
+        </strong>{" "}
+        New sign-ups are closed while billing is finished; we expect to open
+        later this year. Existing accounts and beta invitations still sign in
+        below.
+      </p>
+      <p>
+        Want a place in the beta?{" "}
+        <a
+          className="font-medium underline underline-offset-4"
+          href={`${REPO_URL}/issues`}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Ask for an invite
+        </a>
+        .
+      </p>
+    </div>
+  );
+}
+
+function NoticeFor({ notice }: { notice: SignInNotice }) {
+  switch (notice) {
+    case "sign-up-refused":
+      return (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+        >
+          <p className="font-medium text-destructive">Sign-ups are closed for now</p>
+          <p className="mt-1 text-muted-foreground">
+            There is no account for that address yet, and this browser holds
+            no beta invitation. If you were given a beta link, open it first
+            and then sign in again.
+          </p>
+        </div>
+      );
+    case "beta-invalid":
+      return (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+        >
+          <p className="font-medium text-destructive">
+            That beta link is no longer valid
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            It may have expired, been used up, or been revoked. Ask the person
+            who sent it for a new one.
+          </p>
+        </div>
+      );
+    case "beta-ready":
+      return (
+        <p
+          role="status"
+          className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm"
+        >
+          <strong className="font-medium">Your beta invitation is ready.</strong>{" "}
+          Sign in below to create your account.
+        </p>
+      );
+    default:
+      return null;
+  }
+}
+
+export function LoginForm({
+  providers,
+  access = "open",
+  notice = null,
+}: {
+  providers: ProviderId[];
+  access?: PublicAccess;
+  notice?: SignInNotice;
+}) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +169,8 @@ export function LoginForm({ providers }: { providers: ProviderId[] }) {
               this too, and while it lived inside the password form the error
               was invisible on an OAuth-only deployment. */}
           {error && <ErrorDisplay headline={error} />}
+          {access === "closed" && notice !== "beta-ready" && <ClosedNotice />}
+          <NoticeFor notice={notice} />
           {providers.includes("google") && (
             <Button
               type="button"
