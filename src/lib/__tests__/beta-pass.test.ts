@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { betaPasses, betaPassRedemptions } from "@/lib/db/schema";
+import { betaPasses, betaPassRedemptions, households } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import {
   consumeBetaPassUse,
@@ -9,6 +9,7 @@ import {
   findBetaPass,
   findBetaPassRedemption,
   findUsableBetaPass,
+  grantBetaPassCredits,
   isBetaPassUsable,
   newBetaPassCode,
   recordBetaPassRedemption,
@@ -18,8 +19,25 @@ import {
 beforeEach(async () => {
   await db.delete(betaPassRedemptions);
   await db.delete(betaPasses);
+  await db.delete(households);
   await db.delete(users);
 });
+
+async function grantedOn(householdId: number): Promise<number> {
+  const [row] = await db
+    .select({ granted: households.apartmentCreditsGranted })
+    .from(households)
+    .where(eq(households.id, householdId));
+  return row.granted;
+}
+
+async function makeHousehold(ownerId: string): Promise<number> {
+  const [h] = await db
+    .insert(households)
+    .values({ name: "H", ownerId })
+    .returning({ id: households.id });
+  return h.id;
+}
 
 async function usesOf(code: string): Promise<number> {
   const [row] = await db
@@ -198,5 +216,48 @@ describe("recordBetaPassRedemption", () => {
 
     expect(await findBetaPassRedemption("u1")).toEqual({ passId: a.id, userId: "u1" });
     expect(await findBetaPassRedemption("nobody")).toBeNull();
+  });
+});
+
+describe("grantBetaPassCredits", () => {
+  it("grants what the pass promised, once, and stamps the redemption", async () => {
+    await db.insert(users).values({ id: "u1", email: "u1@example.com" });
+    const pass = await createBetaPass({ credits: 80 });
+    await recordBetaPassRedemption(pass.id, "u1");
+    const h = await makeHousehold("u1");
+
+    expect(await grantBetaPassCredits("u1", h)).toBe(80);
+    expect(await grantedOn(h)).toBe(80);
+
+    const [redemption] = await db.select().from(betaPassRedemptions);
+    expect(redemption.grantedAt).not.toBeNull();
+
+    // A second household for the same person gets nothing.
+    const h2 = await makeHousehold("u1");
+    expect(await grantBetaPassCredits("u1", h2)).toBe(0);
+    expect(await grantedOn(h2)).toBe(0);
+    expect(await grantedOn(h)).toBe(80);
+  });
+
+  it("is a no-op for a user with no redemption", async () => {
+    await db.insert(users).values({ id: "u1", email: "u1@example.com" });
+    const h = await makeHousehold("u1");
+    expect(await grantBetaPassCredits("u1", h)).toBe(0);
+    expect(await grantedOn(h)).toBe(0);
+  });
+
+  // The stamp is the claim: eight concurrent creations for one user must
+  // grant exactly once.
+  it("grants exactly once under concurrency", async () => {
+    await db.insert(users).values({ id: "u1", email: "u1@example.com" });
+    const pass = await createBetaPass();
+    await recordBetaPassRedemption(pass.id, "u1");
+    const h = await makeHousehold("u1");
+
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () => grantBetaPassCredits("u1", h))
+    );
+    expect(results.filter((n) => n > 0)).toHaveLength(1);
+    expect(await grantedOn(h)).toBe(40);
   });
 });

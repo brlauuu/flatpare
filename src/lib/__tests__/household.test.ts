@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/db";
 import {
+  betaPasses,
+  betaPassRedemptions,
   households,
   householdMembers,
   householdKeyWraps,
@@ -20,6 +22,8 @@ import {
 } from "../household";
 
 beforeEach(async () => {
+  await db.delete(betaPassRedemptions);
+  await db.delete(betaPasses);
   await db.delete(invitations);
   await db.delete(householdKeyWraps);
   await db.delete(memberKeys);
@@ -112,6 +116,58 @@ describe("createHouseholdForUser", () => {
     await makeUser("u1");
     const id = await createHouseholdForUser("u1");
     expect(await assertMembership(id, "u1")).toBe("owner");
+  });
+
+  async function grantedOn(householdId: number): Promise<number> {
+    const [row] = await db
+      .select({ granted: households.apartmentCreditsGranted })
+      .from(households)
+      .where(eq(households.id, householdId));
+    return row.granted;
+  }
+
+  // #240: the beta pass that admitted the user pays out here, on their own
+  // first household — the same place a first sign-in lands (resolveHousehold
+  // ForUser) and where declining every invitation lands (invitations.ts).
+  it("grants a beta tester the credits their pass promised", async () => {
+    await makeUser("tester");
+    const [pass] = await db
+      .insert(betaPasses)
+      .values({ code: "c".repeat(32), credits: 40 })
+      .returning();
+    await db.insert(betaPassRedemptions).values({ passId: pass.id, userId: "tester" });
+
+    const id = await createHouseholdForUser("tester");
+    expect(await grantedOn(id)).toBe(40);
+  });
+
+  it("grants nothing to a user who did not come in through a pass", async () => {
+    await makeUser("u1");
+    const id = await createHouseholdForUser("u1");
+    expect(await grantedOn(id)).toBe(0);
+  });
+
+  // An invited joiner lands in someone else's household, which already has
+  // its credits or is paying: nothing is granted to it on their account.
+  it("does not grant on joining an existing household by invitation", async () => {
+    await makeUser("owner");
+    await makeUser("tester");
+    const [pass] = await db
+      .insert(betaPasses)
+      .values({ code: "d".repeat(32), credits: 40 })
+      .returning();
+    await db.insert(betaPassRedemptions).values({ passId: pass.id, userId: "tester" });
+    const ownerHousehold = await createHouseholdForUser("owner");
+    await db.insert(householdMembers).values({
+      householdId: ownerHousehold,
+      userId: "tester",
+      role: "member",
+    });
+
+    expect(await resolveHouseholdForUser("tester")).toBe(ownerHousehold);
+    expect(await grantedOn(ownerHousehold)).toBe(0);
+    const [redemption] = await db.select().from(betaPassRedemptions);
+    expect(redemption.grantedAt).toBeNull();
   });
 });
 

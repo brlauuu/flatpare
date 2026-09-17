@@ -95,6 +95,9 @@ try {
       `  expires:  ${expiresAt === null ? "never" : new Date(expiresAt * 1000).toISOString()}`
     );
     console.log(`  link:     ${siteUrl()}/beta/${code}`);
+    console.log(
+      "  say:      Beta accounts are free; your data and credits are yours to keep and are not taken back when the beta ends."
+    );
   } else if (command === "list") {
     if (rest.length > 0) usage();
     const res = await db.execute(

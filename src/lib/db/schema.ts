@@ -308,7 +308,9 @@ export const betaPasses = sqliteTable("beta_passes", {
 // Which pass let which user in. Deliberately NOT the `payments` ledger: that
 // one is keyed by Stripe event id and reconciles against Stripe, and a beta
 // grant written there would pollute the books. One row per user — a person
-// signs up once.
+// signs up once. `grantedAt` is stamped when the pass's credits land on the
+// user's first own household (#240); it is the idempotency mark, so a second
+// household creation for the same person can never grant twice.
 export const betaPassRedemptions = sqliteTable(
   "beta_pass_redemptions",
   {
@@ -318,6 +320,7 @@ export const betaPassRedemptions = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    grantedAt: integer("granted_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).default(
       sql`(unixepoch())`
     ),

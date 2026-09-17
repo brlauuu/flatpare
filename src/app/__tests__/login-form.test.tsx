@@ -235,6 +235,9 @@ describe("LoginForm — under-development notice", () => {
   it("swaps the holding notice for a welcome once a beta link was accepted", () => {
     render(<LoginForm providers={["google"]} access="closed" notice="beta-ready" />);
     expect(screen.getByRole("status")).toHaveTextContent(/beta invitation is ready/i);
+    // Decided on #240: beta access is permanent, and that is said up front.
+    expect(screen.getByRole("status")).toHaveTextContent(/yours to keep/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/neither your data nor your credits are taken back/i);
     expect(screen.queryByText(/new sign-ups are closed/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
   });

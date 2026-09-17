@@ -1,0 +1,1 @@
+ALTER TABLE `beta_pass_redemptions` ADD `granted_at` integer;
