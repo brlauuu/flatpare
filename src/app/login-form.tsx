@@ -55,9 +55,18 @@ function ClosedNotice() {
   );
 }
 
-function NoticeFor({ notice }: { notice: SignInNotice }) {
+function NoticeFor({
+  notice,
+  access,
+}: {
+  notice: SignInNotice;
+  access: PublicAccess;
+}) {
   switch (notice) {
     case "sign-up-refused":
+      // Only meaningful while the door is shut: a bookmarked redirect URL
+      // must not claim sign-ups are closed after the gate has been opened.
+      if (access !== "closed") return null;
       return (
         <div
           role="alert"
@@ -170,7 +179,7 @@ export function LoginForm({
               was invisible on an OAuth-only deployment. */}
           {error && <ErrorDisplay headline={error} />}
           {access === "closed" && notice !== "beta-ready" && <ClosedNotice />}
-          <NoticeFor notice={notice} />
+          <NoticeFor notice={notice} access={access} />
           {providers.includes("google") && (
             <Button
               type="button"

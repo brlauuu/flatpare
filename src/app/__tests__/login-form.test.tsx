@@ -221,6 +221,12 @@ describe("LoginForm — under-development notice", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/no account for that address/i);
   });
 
+  it("ignores a stale refusal in the URL once access is open again", () => {
+    render(<LoginForm providers={["google"]} access="open" notice="sign-up-refused" />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign-ups are closed/i)).not.toBeInTheDocument();
+  });
+
   it("explains a dead beta link", () => {
     render(<LoginForm providers={["google"]} access="closed" notice="beta-invalid" />);
     expect(screen.getByRole("alert")).toHaveTextContent(/no longer valid/i);
