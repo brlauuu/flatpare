@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { betaPasses, betaPassRedemptions, type BetaPass } from "@/lib/db/schema";
+import { grantApartmentCredits } from "@/lib/billing";
 
 // Beta passes: the one door through the under-development gate (#239) and,
 // once #240 lands, the thing that grants a tester their free credits. One
@@ -126,6 +127,47 @@ export async function findBetaPassRedemption(
     .where(eq(betaPassRedemptions.userId, userId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+// Grants the credits a pass promised to the user's first own household
+// (#240). Called from createHouseholdForUser, so an invited joiner — who
+// lands in someone else's household — gets nothing, which is right: that
+// household already has its credits or is paying for them.
+//
+// Exactly once per user: the guarded UPDATE that stamps `granted_at` is the
+// claim, and only the caller that wins it grants. Stamp-then-grant, same
+// posture as recordPaymentOnce — dying in between leaves a tester short and
+// the record says so, whereas grant-then-stamp could grant twice silently.
+//
+// Grants regardless of whether billing is on. With billing off the counters
+// are never read, so it costs nothing; and if billing is switched on later
+// the tester must already hold their credits, or the purchase gate (which
+// keys on granted === 0) would send a beta user to the checkout they were
+// promised they would never see.
+export async function grantBetaPassCredits(
+  userId: string,
+  householdId: number
+): Promise<number> {
+  const claimed = await db
+    .update(betaPassRedemptions)
+    .set({ grantedAt: new Date() })
+    .where(
+      and(
+        eq(betaPassRedemptions.userId, userId),
+        isNull(betaPassRedemptions.grantedAt)
+      )
+    )
+    .returning({ passId: betaPassRedemptions.passId });
+  if (claimed.length === 0) return 0;
+
+  const [pass] = await db
+    .select({ credits: betaPasses.credits })
+    .from(betaPasses)
+    .where(eq(betaPasses.id, claimed[0].passId))
+    .limit(1);
+  const credits = pass?.credits ?? 0;
+  if (credits > 0) await grantApartmentCredits(householdId, credits);
+  return credits;
 }
 
 // Stops the link admitting anyone new. Never touches redemptions or anything

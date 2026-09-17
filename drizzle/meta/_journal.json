@@ -141,6 +141,13 @@
       "when": 1789651873091,
       "tag": "0019_beta_passes",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789653404059,
+      "tag": "0020_beta_pass_granted_at",
+      "breakpoints": true
     }
   ]
 }

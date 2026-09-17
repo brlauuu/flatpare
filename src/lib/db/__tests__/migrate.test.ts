@@ -541,6 +541,7 @@ describe("applyMigrations", () => {
     ]);
     expect((await columnNames(client, "beta_pass_redemptions")).sort()).toEqual([
       "created_at",
+      "granted_at",
       "pass_id",
       "user_id",
     ]);

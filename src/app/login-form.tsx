@@ -102,7 +102,9 @@ function NoticeFor({
           className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm"
         >
           <strong className="font-medium">Your beta invitation is ready.</strong>{" "}
-          Sign in below to create your account.
+          Sign in below to create your account. Beta accounts are free, and
+          what you get is yours to keep: neither your data nor your credits
+          are taken back when the beta ends.
         </p>
       );
     default:

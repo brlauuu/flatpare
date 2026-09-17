@@ -8,6 +8,7 @@ import {
 import { users } from "@/lib/db/schema-auth";
 import { and, eq, gt, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api-error";
+import { grantBetaPassCredits } from "@/lib/beta-pass";
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -47,6 +48,10 @@ export async function createHouseholdForUser(userId: string): Promise<number> {
   await db
     .insert(householdMembers)
     .values({ householdId: created.id, userId, role: "owner" });
+
+  // A beta tester's free credits land here, on their first own household
+  // (#240). No-op for everyone else; exactly once for them.
+  await grantBetaPassCredits(userId, created.id);
 
   return created.id;
 }
