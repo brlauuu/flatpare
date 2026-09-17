@@ -229,7 +229,7 @@ Every ceiling is opt-in, because a self-hoster spends their own resources. There
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for metadata (canonical, Open Graph, Twitter). Falls back to Vercel's production URL, then `http://localhost:3002`. Nothing routes off it. |
-| `FLATPARE_PUBLIC_ACCESS` | `closed` refuses any sign-in that would **create** an account unless the browser holds a beta pass or the address has a pending invitation. Existing accounts keep signing in and the landing page stays up. **Unset means open** (the self-host default). Mint passes with `node scripts/beta-pass.mjs create` — it prints a `/beta/<code>` link to share; `list` and `revoke <code>` manage them. |
+| `FLATPARE_PUBLIC_ACCESS` | `closed` refuses any sign-in that would **create** an account unless the browser holds a beta pass or the address has a pending invitation. Existing accounts keep signing in and the landing page stays up. **Unset means open** (the self-host default). Mint passes with `node scripts/beta-pass.mjs create` — it loads `.env.local`, says which database it is about to touch, and prints a `/beta/<code>` link to share; `list` and `revoke <code>` manage them. The tables exist only once the app has booted this release against that database. |
 
 ## Auth model
 
