@@ -1,5 +1,6 @@
 import { enabledProviderIds } from "@/auth";
-import { LoginForm } from "./login-form";
+import { readPublicAccess } from "@/lib/public-access";
+import { LoginForm, type SignInNotice } from "./login-form";
 import { Landing } from "./_components/landing";
 
 // This page must not be statically prerendered: enabledProviderIds is
@@ -23,6 +24,35 @@ export const dynamic = "force-dynamic";
 // household to /apartments and one without to /invitations. So the landing
 // page can live here without a second route, and nothing an existing user
 // does passes through it.
-export default function LandingPage() {
-  return <Landing signIn={<LoginForm providers={enabledProviderIds} />} />;
+//
+// The under-development gate (#239) is read here for the same reason: the
+// landing page stays up when FLATPARE_PUBLIC_ACCESS=closed, and only the
+// sign-in card changes — it says that new sign-ups are closed, and it reads
+// the query the sign-in flow redirects back with (a refused sign-up, or a
+// beta link that was or was not accepted). Nothing about the value reaches
+// client code except the notice to show.
+function noticeFromQuery(q: Record<string, string | string[] | undefined>): SignInNotice {
+  if (q.signin === "closed") return "sign-up-refused";
+  if (q.beta === "ready") return "beta-ready";
+  if (q.beta === "invalid") return "beta-invalid";
+  return null;
+}
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const query = (await searchParams) ?? {};
+  return (
+    <Landing
+      signIn={
+        <LoginForm
+          providers={enabledProviderIds}
+          access={readPublicAccess()}
+          notice={noticeFromQuery(query)}
+        />
+      }
+    />
+  );
 }

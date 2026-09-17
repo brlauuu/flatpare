@@ -188,3 +188,54 @@ describe("LoginForm — password path", () => {
 // no-unqualified-"zero-knowledge" rule. Deliberately not duplicated here: two
 // copies of a copy rule drift, and the sign-in card no longer renders any of
 // that text.
+
+// The under-development gate (#239). The landing page stays up when
+// FLATPARE_PUBLIC_ACCESS=closed; only this card changes.
+describe("LoginForm — under-development notice", () => {
+  it("shows nothing extra by default, so a self-hoster never sees a holding notice", () => {
+    render(<LoginForm providers={["credentials"]} />);
+    expect(screen.queryByText(/private beta/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("when closed, says so honestly and keeps the sign-in buttons for existing accounts", () => {
+    render(<LoginForm providers={["google"]} access="closed" />);
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/private beta/i);
+    expect(text).toMatch(/new sign-ups are closed/i);
+    // Roughly when, and a way to ask — no countdown, no invented numbers.
+    expect(text).toMatch(/later this year/i);
+    expect(screen.getByRole("link", { name: /ask for an invite/i })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^https:\/\/github\.com\//)
+    );
+    expect(text).not.toMatch(/\d+\s+people/i);
+    expect(text).not.toMatch(/waitlist/i);
+    expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
+  });
+
+  it("explains a refused sign-up rather than showing a generic error", () => {
+    render(<LoginForm providers={["google"]} access="closed" notice="sign-up-refused" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/sign-ups are closed for now/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/no account for that address/i);
+  });
+
+  it("ignores a stale refusal in the URL once access is open again", () => {
+    render(<LoginForm providers={["google"]} access="open" notice="sign-up-refused" />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign-ups are closed/i)).not.toBeInTheDocument();
+  });
+
+  it("explains a dead beta link", () => {
+    render(<LoginForm providers={["google"]} access="closed" notice="beta-invalid" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/no longer valid/i);
+  });
+
+  it("swaps the holding notice for a welcome once a beta link was accepted", () => {
+    render(<LoginForm providers={["google"]} access="closed" notice="beta-ready" />);
+    expect(screen.getByRole("status")).toHaveTextContent(/beta invitation is ready/i);
+    expect(screen.queryByText(/new sign-ups are closed/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
+  });
+});
