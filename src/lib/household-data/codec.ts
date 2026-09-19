@@ -44,9 +44,10 @@ export function sealApartment(
   key: CryptoKey | null,
   householdId: number,
   id: string,
-  data: Apartment
+  data: Apartment,
+  keyVersion = 1
 ): Promise<Envelope> {
-  return seal(key, data, envelopeAad(householdId, TABLE.apartments, id));
+  return seal(key, data, envelopeAad(householdId, TABLE.apartments, id), keyVersion);
 }
 
 export function openApartment(
@@ -63,12 +64,14 @@ export function sealRating(
   householdId: number,
   apartmentId: string,
   userId: string,
-  data: Rating
+  data: Rating,
+  keyVersion = 1
 ): Promise<Envelope> {
   return seal(
     key,
     data,
-    envelopeAad(householdId, TABLE.ratings, ratingRowId(apartmentId, userId))
+    envelopeAad(householdId, TABLE.ratings, ratingRowId(apartmentId, userId)),
+    keyVersion
   );
 }
 
@@ -91,9 +94,10 @@ export function sealLocation(
   key: CryptoKey | null,
   householdId: number,
   id: string,
-  data: Location
+  data: Location,
+  keyVersion = 1
 ): Promise<Envelope> {
-  return seal(key, data, envelopeAad(householdId, TABLE.locations, id));
+  return seal(key, data, envelopeAad(householdId, TABLE.locations, id), keyVersion);
 }
 
 export function openLocation(

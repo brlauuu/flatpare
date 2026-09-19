@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { z } from "zod";
 import { ApiError } from "../api-error";
-import { apiErrorResponse, parseBody, parseIdParam, requireEncryptionOn } from "../api-route";
+import { apiErrorResponse, parseBody, parseIdParam, requireCurrentKey, requireEncryptionOn } from "../api-route";
+import { db } from "@/lib/db";
+import { households } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema-auth";
 import { ForbiddenError, UnauthorizedError } from "../household";
 
 const sessionState = vi.hoisted(() => ({
@@ -281,4 +284,45 @@ describe("parseIdParam", () => {
       }
     }
   );
+});
+
+// #219: every envelope write must be sealed under the household's current
+// data key, or a device holding an old key would write rows nobody can read.
+describe("requireCurrentKey", () => {
+  async function household(keyVersion: number): Promise<number> {
+    await db.delete(households);
+    await db.delete(users);
+    await db.insert(users).values({ id: "o", email: "o@example.com" });
+    const [h] = await db.insert(households).values({ name: "H", ownerId: "o", keyVersion }).returning();
+    return h.id;
+  }
+  const v1 = (k?: number) => ({ v: 1 as const, ...(k === undefined ? {} : { k }), iv: "AAAAAAAAAAAAAAAA", ct: "QUJD" });
+
+  it("accepts the current version, and treats a missing k as version 1", async () => {
+    const hid = await household(1);
+    await expect(requireCurrentKey(hid, v1(1))).resolves.toBeUndefined();
+    await expect(requireCurrentKey(hid, v1())).resolves.toBeUndefined();
+  });
+
+  it("refuses any other version with 409 and names the current one", async () => {
+    const hid = await household(3);
+    await expect(requireCurrentKey(hid, v1(2))).rejects.toMatchObject({
+      status: 409,
+      message: "Stale key",
+      details: { keyVersion: 3 },
+    });
+    await expect(requireCurrentKey(hid, v1())).rejects.toMatchObject({ status: 409 });
+    await expect(requireCurrentKey(hid, v1(4))).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("ignores a plaintext envelope, which has no key", async () => {
+    const hid = await household(3);
+    await expect(requireCurrentKey(hid, { v: 0, data: {} })).resolves.toBeUndefined();
+  });
+
+  it("puts the details into the response body", async () => {
+    const res = apiErrorResponse(new ApiError("Stale key", 409, { keyVersion: 7 }), "t");
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "Stale key", keyVersion: 7 });
+  });
 });

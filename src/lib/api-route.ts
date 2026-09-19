@@ -6,6 +6,9 @@ import { assertEnvelopeMode, type Envelope } from "@/lib/crypto";
 import { readEncryptionMode } from "@/lib/encryption-mode";
 import { assertMembership, ForbiddenError, UnauthorizedError, type Role } from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { households } from "@/lib/db/schema";
 
 // Single error → response mapping for the E2 route handlers. `tag` names the
 // route in the 500 log line, e.g. "crypto:setup".
@@ -17,7 +20,7 @@ export function apiErrorResponse(err: unknown, tag: string): NextResponse {
     return NextResponse.json({ error: err.message }, { status: 403 });
   }
   if (err instanceof ApiError) {
-    return NextResponse.json({ error: err.message }, { status: err.status });
+    return NextResponse.json({ ...err.details, error: err.message }, { status: err.status });
   }
   if (err instanceof ZodError) {
     return NextResponse.json(
@@ -98,6 +101,28 @@ export function requireEnvelopeMode(envelope: Envelope): void {
     assertEnvelopeMode(envelope, readEncryptionMode());
   } catch (err) {
     throw new ApiError(err instanceof Error ? err.message : "Bad envelope", 400);
+  }
+}
+
+// Data-key rotation (#219): a v1 envelope must be sealed under the
+// household's CURRENT data key. A device that still holds the previous key
+// — a removed member, or a member whose browser has not re-keyed yet —
+// would otherwise write ciphertext nobody else can open. The client treats
+// `409 Stale key` as "refresh the crypto status, then retry"; the version in
+// the body tells it what to expect. A v0 envelope has no key to check.
+export async function requireCurrentKey(
+  householdId: number,
+  envelope: Envelope
+): Promise<void> {
+  if (envelope.v !== 1) return;
+  const [row] = await db
+    .select({ keyVersion: households.keyVersion })
+    .from(households)
+    .where(eq(households.id, householdId))
+    .limit(1);
+  const current = row?.keyVersion ?? 1;
+  if ((envelope.k ?? 1) !== current) {
+    throw new ApiError("Stale key", 409, { keyVersion: current });
   }
 }
 

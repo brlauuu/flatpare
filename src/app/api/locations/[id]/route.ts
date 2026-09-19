@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api-error";
 import {
   apiErrorResponse,
   parseBody,
+  requireCurrentKey,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
@@ -27,6 +28,7 @@ export async function PUT(req: Request, ctx: Ctx) {
     const id = await rowId(ctx);
     const body = await parseBody(req, updateSchema);
     requireEnvelopeMode(body.envelope);
+    await requireCurrentKey(householdId, body.envelope);
     const updated = await updateLocation(householdId, id, JSON.stringify(body.envelope));
     if (!updated) throw new ApiError("Not found", 404);
     return NextResponse.json(locationRow(updated));

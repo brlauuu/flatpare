@@ -250,3 +250,21 @@ describe("listMembers / removeMember", () => {
     await expect(removeMember(id, "x", "m")).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
+
+// #219: removal flags the household so the owner is warned until the data
+// key is rotated. Rotation itself is client-side and tested elsewhere.
+describe("removeMember marks rotation due", () => {
+  it("sets rotation_due and leaves it for the rotation to clear", async () => {
+    await makeUser("owner");
+    await makeUser("m");
+    const id = await createHouseholdForUser("owner");
+    await db.insert(householdMembers).values({ householdId: id, userId: "m", role: "member" });
+    const before = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
+    expect(before[0].due).toBe(false);
+
+    await removeMember(id, "owner", "m");
+
+    const after = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
+    expect(after[0].due).toBe(true);
+  });
+});

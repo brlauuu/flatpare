@@ -67,9 +67,22 @@ export function CryptoProvider({
   const [adoptFailed, setAdoptFailed] = useState(false);
   const sweeping = useRef(false);
 
+  // Keeps the previous keys object when nothing about it changed: loadKeys
+  // returns fresh CryptoKey objects every time, and a new identity would make
+  // the household store (which keys its reload on `dataKey`) refetch and
+  // re-decrypt everything on every periodic refresh.
   const apply = useCallback((s: StatusResponse, k: StoredKeys | null) => {
     setStatus(s);
-    setKeys(k);
+    setKeys((prev) =>
+      prev &&
+      k &&
+      prev.userId === k.userId &&
+      prev.householdId === k.householdId &&
+      (prev.keyVersion ?? 1) === (k.keyVersion ?? 1) &&
+      !!prev.dataKey === !!k.dataKey
+        ? prev
+        : k
+    );
     setPersistent(isKeyStorePersistent());
     setState(deriveState(s, k));
   }, []);
@@ -78,7 +91,14 @@ export function CryptoProvider({
     try {
       const s = await fetchStatus();
       let k = s.mode === "off" ? null : await loadKeys(s.userId, s.householdId);
-      if (k && !k.dataKey && s.wrap) {
+      // Adopt the wrap when we have none, or when the household's key was
+      // rotated (#219) and the one we hold is an older version. The private
+      // key on this device opens the new wrap, so no passphrase is needed.
+      const outdated =
+        !!k?.dataKey &&
+        s.wrapKeyVersion !== null &&
+        (k.keyVersion ?? 1) !== s.wrapKeyVersion;
+      if (k && s.wrap && (!k.dataKey || outdated)) {
         try {
           k = await runAdoptWrap(s, k);
         } catch {
@@ -118,7 +138,11 @@ export function CryptoProvider({
     return () => clearInterval(id);
   }, [state, refresh]);
 
-  // unlocked: let pending members in, now and periodically.
+  // unlocked: let pending members in, now and periodically — and re-read the
+  // status on the same beat, so a rotation by the owner (#219) reaches this
+  // device within a minute and refresh() adopts the new wrap. `apply` keeps
+  // the keys object stable when nothing changed, so the periodic refresh
+  // does not make the household store reload.
   useEffect(() => {
     if (state !== "unlocked" || !status || !keys) return;
     const sweep = async () => {
@@ -134,9 +158,12 @@ export function CryptoProvider({
       }
     };
     void sweep();
-    const id = setInterval(() => void sweep(), WRAP_SWEEP_MS);
+    const id = setInterval(() => {
+      void sweep();
+      void refresh();
+    }, WRAP_SWEEP_MS);
     return () => clearInterval(id);
-  }, [state, status, keys]);
+  }, [state, status, keys, refresh]);
 
   useEffect(() => {
     if (!notice) return;

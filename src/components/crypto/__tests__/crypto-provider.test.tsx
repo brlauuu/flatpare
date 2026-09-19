@@ -50,6 +50,9 @@ function status(over: Partial<StatusResponse> = {}): StatusResponse {
     role: "owner",
     memberKeys: null,
     wrap: null,
+    wrapKeyVersion: null,
+    keyVersion: 1,
+    rotationDue: false,
     householdHasWraps: false,
     othersHaveWraps: false,
     recovery: null,
@@ -276,5 +279,57 @@ describe("CryptoProvider", () => {
       expect(flows.runLock).toHaveBeenCalled();
       expect(await screen.findByLabelText(/^Passphrase$/i)).toBeInTheDocument();
     });
+  });
+});
+
+// #219: after the owner rotates, a member's device holds an older key
+// version than the wrap on the server; refresh() adopts the new wrap with
+// the private key already on the device — no passphrase prompt.
+describe("data-key rotation", () => {
+  it("adopts the new wrap when the stored key version is behind the wrap's", async () => {
+    flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, wrap: "wrap-v2", wrapKeyVersion: 2, keyVersion: 2, householdHasWraps: true }));
+    store.loadKeys.mockResolvedValue({ ...keysWithData, keyVersion: 1 });
+    flows.runAdoptWrap.mockResolvedValue({ ...keysWithData, keyVersion: 2 });
+    renderApp();
+    expect(await screen.findByText("page:unlocked:has-key")).toBeInTheDocument();
+    expect(flows.runAdoptWrap).toHaveBeenCalledWith(
+      expect.objectContaining({ wrapKeyVersion: 2 }),
+      expect.objectContaining({ keyVersion: 1 })
+    );
+  });
+
+  it("treats a stored key without a version as version 1", async () => {
+    flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, wrap: "wrap", wrapKeyVersion: 1, keyVersion: 1, householdHasWraps: true }));
+    store.loadKeys.mockResolvedValue(keysWithData); // no keyVersion field
+    renderApp();
+    expect(await screen.findByText("page:unlocked:has-key")).toBeInTheDocument();
+    expect(flows.runAdoptWrap).not.toHaveBeenCalled();
+  });
+
+  it("keeps the same keys object across a refresh that changed nothing", async () => {
+    // A fresh status object per call, as a real fetch would give — the same
+    // object would let React skip the re-render this test is about.
+    flows.fetchStatus.mockImplementation(async () =>
+      status({ memberKeys: member, wrap: "wrap", wrapKeyVersion: 1, keyVersion: 1, householdHasWraps: true })
+    );
+    store.loadKeys.mockImplementation(async () => ({ ...keysWithData, keyVersion: 1 }));
+    const seen: unknown[] = [];
+    function Probe() {
+      const { keys, refresh } = useCrypto();
+      seen.push(keys);
+      return <button onClick={() => void refresh()}>refresh</button>;
+    }
+    render(
+      <CryptoProvider mode="on">
+        <Probe />
+      </CryptoProvider>
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "refresh" }));
+    await waitFor(() => expect(flows.fetchStatus).toHaveBeenCalledTimes(2));
+    // The refresh replaces `status`, which re-renders the probe; the keys it
+    // sees must be the very same object as before.
+    await waitFor(() => expect(seen.filter((k) => k !== null).length).toBeGreaterThan(1));
+    expect(new Set(seen.filter((k) => k !== null)).size).toBe(1);
   });
 });

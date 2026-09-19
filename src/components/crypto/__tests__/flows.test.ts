@@ -44,6 +44,9 @@ const server = {
       role: this.me.role,
       memberKeys: this.keys.get(this.me.userId) ?? null,
       wrap: this.wraps.get(this.me.userId) ?? null,
+      wrapKeyVersion: this.wraps.has(this.me.userId) ? 1 : null,
+      keyVersion: 1,
+      rotationDue: false,
       householdHasWraps: this.wraps.size > 0,
       othersHaveWraps: [...this.wraps.keys()].some((id) => id !== this.me.userId),
       recovery: this.recovery,
@@ -341,5 +344,22 @@ describe("FlowError", () => {
       message: "Encryption is off for this deployment",
     });
     expect(new FlowError("x", "state").code).toBe("state");
+  });
+});
+
+// #219: the stored key records which data-key version it is, from the wrap
+// that produced it, so the provider can tell when a rotation happened.
+describe("key version on stored keys", () => {
+  it("runSetup stores the household version; runUnlock and runAdoptWrap store the wrap's", async () => {
+    await runSetup(server.status(), "correct horse battery staple", { kdfParams: TEST_KDF_PARAMS });
+    expect((await loadKeys("o", 1))?.keyVersion).toBe(1);
+
+    await runLock();
+    const unlocked = await runUnlock({ ...server.status(), wrapKeyVersion: 3, keyVersion: 3 }, "correct horse battery staple");
+    expect(unlocked.keyVersion).toBe(3);
+
+    const adopted = await runAdoptWrap({ ...server.status(), wrapKeyVersion: 4, keyVersion: 4 }, { ...unlocked, dataKey: null });
+    expect(adopted.keyVersion).toBe(4);
+    expect((await loadKeys("o", 1))?.keyVersion).toBe(4);
   });
 });

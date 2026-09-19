@@ -187,5 +187,12 @@ export async function removeMember(
           eq(householdKeyWraps.userId, targetUserId)
         )
       );
+    // The removed member's device still holds the data key. Rotation (#219)
+    // is a client-side job the owner runs next; this flag is how the owner
+    // is warned if it did not land, and it is cleared when it does.
+    await tx
+      .update(households)
+      .set({ rotationDue: true })
+      .where(eq(households.id, householdId));
   });
 }

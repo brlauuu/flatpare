@@ -42,6 +42,7 @@ import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/
 import { ApiClientError, getJson, sendJson } from "./api-client";
 import { enrichApartment } from "./enrichment";
 import { checkListing, distanceBetween, geocodeAddress } from "./process-client";
+import { isStaleKey, runRotateDataKey, type RotationReport } from "./rotation";
 import type { Limits } from "@/lib/limits";
 
 export interface HouseholdIdentity {
@@ -82,6 +83,10 @@ export interface HouseholdDataContextValue {
     kind: MaintenanceKind,
     onProgress?: (done: number, total: number) => void
   ): Promise<MaintenanceReport>;
+  // Data-key rotation (#219): owner only, encryption on. Re-seals every row
+  // and PDF under a fresh key, re-wraps it to every member, and mints a new
+  // recovery kit — the returned code must be shown to the owner once.
+  rotateDataKey(): Promise<{ recoveryCode: string; report: RotationReport }>;
 }
 
 // Exported so component tests can render consumers under a hand-built value
@@ -96,6 +101,9 @@ interface Store {
 
 const EMPTY_STORE: Store = { apartments: [], ratings: [], locations: [] };
 const LISTING_CONCURRENCY = 4;
+
+const STALE_KEY_MESSAGE =
+  "The household key was changed by the owner. Your data has been reloaded; please try again.";
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -121,7 +129,12 @@ export function HouseholdDataProvider({
   children: React.ReactNode;
 }) {
   const { userId, householdId } = identity;
-  const dataKey = useContext(CryptoContext)?.keys?.dataKey ?? null;
+  const crypto = useContext(CryptoContext);
+  const dataKey = crypto?.keys?.dataKey ?? null;
+  // The version of the key we seal under (#219). The server refuses any
+  // other; an old device record without a version is version 1.
+  const keyVersion = crypto?.keys?.keyVersion ?? 1;
+  const refreshCrypto = crypto?.refresh;
 
   const [status, setStatus] = useState<HouseholdDataContextValue["status"]>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +148,23 @@ export function HouseholdDataProvider({
     storeRef.current = update(storeRef.current);
     setStore(storeRef.current);
   }, []);
+
+  // Every envelope write goes through here. A `409 Stale key` means the
+  // owner rotated the household key (#219) and this device still holds the
+  // old one: refresh the crypto status — which adopts the new wrap, changes
+  // `dataKey`, and makes this store reload — and tell the caller to retry.
+  const send = useCallback(
+    async <T,>(method: "POST" | "PUT" | "DELETE", url: string, body?: unknown): Promise<T> => {
+      try {
+        return await sendJson<T>(method, url, body);
+      } catch (err) {
+        if (!isStaleKey(err)) throw err;
+        if (refreshCrypto) void refreshCrypto();
+        throw new Error(STALE_KEY_MESSAGE);
+      }
+    },
+    [refreshCrypto]
+  );
 
   // ---- decode helpers ------------------------------------------------------
 
@@ -220,8 +250,8 @@ export function HouseholdDataProvider({
 
   const putApartment = useCallback(
     async (row: DecodedApartment, next: Apartment): Promise<void> => {
-      const envelope = await sealApartment(dataKey, householdId, row.id, next);
-      const saved = await sendJson<ApartmentRow>("PUT", `/api/apartments/${row.id}`, {
+      const envelope = await sealApartment(dataKey, householdId, row.id, next, keyVersion);
+      const saved = await send<ApartmentRow>("PUT", `/api/apartments/${row.id}`, {
         version: row.version,
         envelope,
       });
@@ -234,7 +264,7 @@ export function HouseholdDataProvider({
         ),
       }));
     },
-    [commit, dataKey, householdId]
+    [commit, dataKey, householdId, keyVersion, send]
   );
 
   const refetchApartment = useCallback(
@@ -309,8 +339,8 @@ export function HouseholdDataProvider({
 
   const createApartment = useCallback(
     async (id: string, data: Apartment): Promise<ApartmentView> => {
-      const envelope = await sealApartment(dataKey, householdId, id, data);
-      const saved = await sendJson<ApartmentRow>("POST", "/api/apartments", { id, envelope });
+      const envelope = await sealApartment(dataKey, householdId, id, data, keyVersion);
+      const saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
       commit((s) => ({
         ...s,
         apartments: [
@@ -321,7 +351,7 @@ export function HouseholdDataProvider({
       void runEnrichment(id, planEnrichment(null, data));
       return viewOf(id);
     },
-    [commit, dataKey, householdId, runEnrichment, viewOf]
+    [commit, dataKey, householdId, keyVersion, runEnrichment, send, viewOf]
   );
 
   const updateApartment = useCallback(
@@ -367,8 +397,8 @@ export function HouseholdDataProvider({
         }));
         return;
       }
-      const envelope = await sealRating(dataKey, householdId, id, userId, rating);
-      const saved = await sendJson<RatingRow>("PUT", `/api/apartments/${id}/ratings/me`, { envelope });
+      const envelope = await sealRating(dataKey, householdId, id, userId, rating, keyVersion);
+      const saved = await send<RatingRow>("PUT", `/api/apartments/${id}/ratings/me`, { envelope });
       const decoded: DecodedRating = {
         apartmentId: saved.apartmentId,
         userId: saved.userId,
@@ -381,7 +411,7 @@ export function HouseholdDataProvider({
         ratings: [...s.ratings.filter((r) => !(r.apartmentId === id && r.userId === userId)), decoded],
       }));
     },
-    [commit, dataKey, householdId, userId]
+    [commit, dataKey, householdId, keyVersion, send, userId]
   );
 
   // ---- locations -----------------------------------------------------------
@@ -434,8 +464,8 @@ export function HouseholdDataProvider({
   const createLocation = useCallback(
     async (id: string, data: Location): Promise<LocationView> => {
       const located = await geocodeLocation(data);
-      const envelope = await sealLocation(dataKey, householdId, id, located);
-      const saved = await sendJson<LocationRow>("POST", "/api/locations", { id, envelope });
+      const envelope = await sealLocation(dataKey, householdId, id, located, keyVersion);
+      const saved = await send<LocationRow>("POST", "/api/locations", { id, envelope });
       commit((s) => ({
         ...s,
         locations: [...s.locations, { id: saved.id, sortOrder: saved.sortOrder, data: located }],
@@ -444,7 +474,7 @@ export function HouseholdDataProvider({
       void fillDistances([view], "all");
       return view;
     },
-    [commit, dataKey, fillDistances, geocodeLocation, householdId, locationViewOf]
+    [commit, dataKey, fillDistances, geocodeLocation, householdId, keyVersion, locationViewOf, send]
   );
 
   const updateLocation = useCallback(
@@ -454,8 +484,8 @@ export function HouseholdDataProvider({
       let next = mutate(row.data);
       const addressChanged = next.address !== row.data.address;
       if (addressChanged) next = await geocodeLocation(next);
-      const envelope = await sealLocation(dataKey, householdId, id, next);
-      const saved = await sendJson<LocationRow>("PUT", `/api/locations/${id}`, { envelope });
+      const envelope = await sealLocation(dataKey, householdId, id, next, keyVersion);
+      const saved = await send<LocationRow>("PUT", `/api/locations/${id}`, { envelope });
       commit((s) => ({
         ...s,
         locations: s.locations.map((l) =>
@@ -466,7 +496,7 @@ export function HouseholdDataProvider({
       if (addressChanged) void fillDistances([view], "all");
       return view;
     },
-    [commit, dataKey, fillDistances, geocodeLocation, householdId, locationViewOf]
+    [commit, dataKey, fillDistances, geocodeLocation, householdId, keyVersion, locationViewOf, send]
   );
 
   // Apartments keep a stale `distances[id]` entry until their next write,
@@ -566,6 +596,19 @@ export function HouseholdDataProvider({
     [currentLocations, fillDistances, takenCodes, userId, writeApartment]
   );
 
+  // ---- rotation ------------------------------------------------------------
+
+  const rotateDataKey = useCallback(async () => {
+    if (!crypto?.status || !crypto.keys) {
+      throw new Error("Encryption is off or the keys are not loaded");
+    }
+    const result = await runRotateDataKey(crypto.status, crypto.keys);
+    // The device now holds the new key; refreshing the crypto status swaps
+    // it into context, which makes this store reload under the new key.
+    await crypto.refresh();
+    return result;
+  }, [crypto]);
+
   // ---- context -------------------------------------------------------------
 
   const value = useMemo<HouseholdDataContextValue>(
@@ -589,11 +632,12 @@ export function HouseholdDataProvider({
       deleteLocation,
       moveLocation,
       runMaintenance,
+      rotateDataKey,
     }),
     [
       identity, limits, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
-      createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance,
+      createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
     ]
   );
 

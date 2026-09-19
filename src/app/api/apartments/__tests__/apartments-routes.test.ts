@@ -259,3 +259,24 @@ describe("DELETE /api/apartments/[id]", () => {
     expect((await removeDELETE(json("DELETE"), params(ID_A))).status).toBe(401);
   });
 });
+
+// #219: a write sealed under any version but the household's current one is
+// refused, so a device holding an old key cannot write unreadable rows.
+describe("stale data-key version", () => {
+  it("refuses create and update with 409 Stale key naming the current version", async () => {
+    await db.update(households).set({ keyVersion: 2 }).where(eq(households.id, hid));
+    const create = await createPOST(json("POST", { id: ID_A, envelope: { ...v1("a"), k: 1 } }));
+    expect(create.status).toBe(409);
+    expect(await create.json()).toEqual({ error: "Stale key", keyVersion: 2 });
+    // A missing k is version 1.
+    expect((await createPOST(json("POST", { id: ID_A, envelope: v1("a") }))).status).toBe(409);
+
+    const ok = await createPOST(json("POST", { id: ID_A, envelope: { ...v1("a"), k: 2 } }));
+    expect(ok.status).toBe(201);
+    const stale = await updatePUT(json("PUT", { version: 1, envelope: { ...v1("b"), k: 1 } }), params(ID_A));
+    expect(stale.status).toBe(409);
+    expect((await stale.json()).error).toBe("Stale key");
+    const fresh = await updatePUT(json("PUT", { version: 1, envelope: { ...v1("b"), k: 2 } }), params(ID_A));
+    expect(fresh.status).toBe(200);
+  });
+});

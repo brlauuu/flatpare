@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api-error";
 import {
   apiErrorResponse,
   parseBody,
+  requireCurrentKey,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
@@ -36,6 +37,7 @@ export async function PUT(req: Request, ctx: Ctx) {
     const id = await rowId(ctx);
     const body = await parseBody(req, updateSchema);
     requireEnvelopeMode(body.envelope);
+    await requireCurrentKey(householdId, body.envelope);
 
     // Optimistic concurrency: the UPDATE only lands when the version the
     // client read is still current. Zero rows means stale or not ours.

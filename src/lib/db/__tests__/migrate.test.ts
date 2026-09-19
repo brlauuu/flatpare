@@ -553,6 +553,17 @@ describe("applyMigrations", () => {
     expect(unique.rows.map((r) => String(r.name))).toContain("beta_passes_code_unique");
   });
 
+  it("adds the data-key rotation columns (#219)", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    expect(await columnNames(client, "households")).toEqual(
+      expect.arrayContaining(["key_version", "rotation_due"])
+    );
+    expect(await columnNames(client, "household_key_wraps")).toEqual(
+      expect.arrayContaining(["key_version"])
+    );
+  });
+
   it("creates the E2 tables and recovery columns", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);

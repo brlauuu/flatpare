@@ -64,3 +64,17 @@ describe("envelope", () => {
     expect(() => assertEnvelopeMode(encrypted, "off")).toThrow(/encrypted/i);
   });
 });
+
+// #219
+describe("key version", () => {
+  it("stamps the version it was given, defaulting to 1, and never on v0", async () => {
+    const key = await generateDataKey();
+    const one = await seal(key, { a: 1 }, "1:t:r");
+    const two = await seal(key, { a: 1 }, "1:t:r", 2);
+    expect(one.v === 1 && one.k).toBe(1);
+    expect(two.v === 1 && two.k).toBe(2);
+    expect(await open(key, two, "1:t:r")).toEqual({ a: 1 });
+    const plain = await seal(null, { a: 1 }, "1:t:r", 2);
+    expect(plain).toEqual({ v: 0, data: { a: 1 } });
+  });
+});

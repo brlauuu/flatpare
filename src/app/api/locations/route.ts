@@ -5,6 +5,7 @@ import {
   apiErrorResponse,
   isUniqueConstraintError,
   parseBody,
+  requireCurrentKey,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     const { householdId } = await requireMember();
     const body = await parseBody(req, createSchema);
     requireEnvelopeMode(body.envelope);
+    await requireCurrentKey(householdId, body.envelope);
     try {
       const created = await createLocation(householdId, {
         id: body.id,

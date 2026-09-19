@@ -66,3 +66,24 @@ describe("POST /api/files", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// #219
+describe("POST /api/files with keyVersion", () => {
+  it("stores the re-encrypted file under the versioned name", async () => {
+    const res = await POST(
+      request({ file: new Blob([new Uint8Array([9])], { type: "application/octet-stream" }), apartmentId: APT, keyVersion: "2" })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).path).toBe(`/api/uploads/households/7/${APT}.k2.pdf.enc`);
+    expect(fs.existsSync(path.join(UPLOADS_DIR, "households", "7", `${APT}.k2.pdf.enc`))).toBe(true);
+  });
+
+  it("rejects a non-positive or non-integer keyVersion", async () => {
+    for (const bad of ["0", "1.5", "abc"]) {
+      const res = await POST(
+        request({ file: new Blob([new Uint8Array([9])], { type: "application/octet-stream" }), apartmentId: APT, keyVersion: bad })
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+});
