@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth, unstable_update } from "@/auth";
-import { ApiError } from "@/lib/api-error";
-import { apiErrorResponse } from "@/lib/api-route";
+import { apiErrorResponse, parseIdParam } from "@/lib/api-route";
 import { UnauthorizedError } from "@/lib/household";
 import { acceptInvitation } from "@/lib/invitations";
 
@@ -13,8 +12,7 @@ export async function POST(
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) throw new UnauthorizedError();
-    const id = Number((await params).id);
-    if (!Number.isInteger(id)) throw new ApiError("Invalid invitation id", 400);
+    const id = parseIdParam((await params).id, "invitation id");
     const householdId = await acceptInvitation(id, userId);
     // Rewrites the JWT cookie in this response (jwt callback, trigger "update").
     await unstable_update({});
