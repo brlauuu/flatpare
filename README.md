@@ -155,7 +155,7 @@ Transit isn't supported — enter those minutes manually if you need them.
    TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... npx drizzle-kit push
    ```
 
-5. Subsequent pushes to `main` deploy automatically. The `vercel-build` script runs the migration step inside the build.
+5. Deploy with `vercel --prod` (git-triggered deploys are disabled in `vercel.json`). The `vercel-build` script runs `scripts/migrate.ts` inside the build — the same preflights and migrator the app runs at boot — so a deploy that cannot migrate fails the build with the actionable message rather than going live broken.
 
 > ### ⚠️ Upgrading an existing database
 >
@@ -168,7 +168,7 @@ Transit isn't supported — enter those minutes manually if you need them.
 >
 > For a hosted deployment, wipe the database **before** deploying, not after: deploying first means the very first request triggers the failed boot-time migration.
 >
-> Known gap: `scripts/vercel-build.mjs` runs `drizzle-kit migrate` at build time and bypasses these runtime preflights ([#211](https://github.com/brlauuu/flatpare/issues/211)).
+> The Vercel build runs the same checks (`scripts/migrate.ts` via `scripts/vercel-build.mjs`), so on the hosted deployment they fail the **build**, before anything goes live ([#211](https://github.com/brlauuu/flatpare/issues/211)).
 
 ## Configuration
 
