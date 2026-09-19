@@ -135,6 +135,22 @@ export function HouseholdSettings() {
     }
   }
 
+  // Self-service leave (#220). Members only — the owner cannot leave. The
+  // session is refreshed server-side and lands on a fresh household of the
+  // leaver's own; a full navigation makes the proxy read the new cookie.
+  function leave() {
+    const message = encryptionOn
+      ? "Leave this household? You lose access to its apartments immediately, and everything you added stays with it. You will get an empty household of your own."
+      : "Leave this household? You lose access to its apartments immediately, and everything you added stays with it.";
+    if (!window.confirm(message)) return;
+    void run(async () => {
+      const res = await fetch("/api/household/leave", { method: "POST" });
+      if (!res.ok) throw new Error(await readError(res));
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/apartments");
+    });
+  }
+
   function remove(member: Member) {
     const label = member.name ?? member.email;
     const message = encryptionOn
@@ -190,6 +206,17 @@ export function HouseholdSettings() {
           </li>
         ))}
       </ul>
+
+      {me && !isOwner && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={leave}>
+            Leave household
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Your ratings and the apartments you added stay with the household.
+          </span>
+        </div>
+      )}
 
       {isOwner && (
         <>

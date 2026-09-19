@@ -23,6 +23,7 @@ import { POST as resetPOST } from "../member-keys/reset/route";
 import { POST as recoverPOST } from "../recover/route";
 import { PUT as recoveryPUT } from "../recovery/route";
 import { GET as rotateGET, POST as rotatePOST } from "../rotate/route";
+import { POST as householdKeyPOST } from "../household-key/route";
 import { apartments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -346,5 +347,29 @@ describe("/api/crypto/rotate", () => {
     const res = await rotatePOST(post(body()));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "Stale key", keyVersion: 2 });
+  });
+});
+
+// #220
+describe("POST /api/crypto/household-key", () => {
+  it("creates the key for an owner who already has a key pair", async () => {
+    await as("o", "owner", hid);
+    await db.insert(memberKeys).values({
+      userId: "o", publicKey: "PUBo", wrappedPrivateKey: "PRIVo", privateKeyIv: "IVIV",
+      kdfSalt: "AAAA", kdfMemoryKib: 65536, kdfIterations: 3, kdfParallelism: 1, kdfVersion: 1,
+    });
+    const res = await householdKeyPOST(post({ wrappedKey: "WRAP", recovery }));
+    expect(res.status).toBe(201);
+    const status = await (await statusGET()).json();
+    expect(status.wrap).toBe("WRAP");
+    expect(status.householdHasWraps).toBe(true);
+  });
+
+  it("refuses a member and answers 409 when encryption is off", async () => {
+    await as("m", "member", hid);
+    expect((await householdKeyPOST(post({ wrappedKey: "WRAP", recovery }))).status).toBe(403);
+    vi.stubEnv("FLATPARE_ENCRYPTION", "off");
+    await as("o", "owner", hid);
+    expect((await householdKeyPOST(post({ wrappedKey: "WRAP", recovery }))).status).toBe(409);
   });
 });

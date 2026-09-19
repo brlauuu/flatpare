@@ -10,6 +10,7 @@ import { users } from "@/lib/db/schema-auth";
 import { eq } from "drizzle-orm";
 import {
   CryptoStateError,
+  createHouseholdKey,
   fulfilWraps,
   getCryptoStatus,
   listPendingWraps,
@@ -593,5 +594,38 @@ describe("rotateHouseholdKey", () => {
     expect((await getCryptoStatus(hid, "m", "member")).wrapKeyVersion).toBe(2);
     await recoverHousehold(hid, "m", { member: member("m3"), wrappedKey: "REC", recovery });
     expect((await getCryptoStatus(hid, "m", "member")).wrapKeyVersion).toBe(2);
+  });
+});
+
+// #220: an owner who already has a key pair creating the data key for a
+// fresh household.
+describe("createHouseholdKey", () => {
+  it("wraps the key to the owner at the current version and stores the kit", async () => {
+    const hid = await makeHousehold("o");
+    await db.update(households).set({ keyVersion: 3, rotationDue: true }).where(eq(households.id, hid));
+    await db.insert(memberKeys).values({
+      userId: "o", publicKey: "PUBo", wrappedPrivateKey: "PRIVo", privateKeyIv: "IVIV",
+      kdfSalt: "AAAA", kdfMemoryKib: 65536, kdfIterations: 3, kdfParallelism: 1, kdfVersion: 1,
+    });
+    await createHouseholdKey({ householdId: hid, userId: "o", role: "owner", wrappedKey: "WRAP", recovery });
+    const s = await getCryptoStatus(hid, "o", "owner");
+    expect(s.wrap).toBe("WRAP");
+    expect(s.wrapKeyVersion).toBe(3);
+    expect(s.recovery?.wrappedKey).toBe("RECOV");
+    expect(s.rotationDue).toBe(false);
+  });
+
+  it("refuses a member, a user without keys, and a household that already has a key", async () => {
+    const hid = await makeHousehold("o", "m");
+    await expect(
+      createHouseholdKey({ householdId: hid, userId: "m", role: "member", wrappedKey: "W", recovery })
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      createHouseholdKey({ householdId: hid, userId: "o", role: "owner", wrappedKey: "W", recovery })
+    ).rejects.toMatchObject({ status: 409, message: /Set up your keys/ });
+    await setupMemberKeys({ householdId: hid, userId: "o", role: "owner", member: member("o"), household: { wrappedKey: "WRAPO", recovery } });
+    await expect(
+      createHouseholdKey({ householdId: hid, userId: "o", role: "owner", wrappedKey: "W", recovery })
+    ).rejects.toMatchObject({ status: 409, message: /already exists/ });
   });
 });

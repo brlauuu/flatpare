@@ -6,6 +6,7 @@ import type { EncryptionMode } from "@/lib/encryption-mode";
 import {
   fetchStatus,
   runAdoptWrap,
+  runCreateHouseholdKey,
   runFulfilPendingWraps,
   runLock,
   runSetup,
@@ -22,6 +23,7 @@ import { RecoveryKit } from "./recovery-kit";
 import { SetupScreen } from "./setup-screen";
 import { UnlockScreen } from "./unlock-screen";
 import { PendingScreen } from "./pending-screen";
+import { HouseholdKeyScreen } from "./household-key-screen";
 
 const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
@@ -41,9 +43,13 @@ function deriveState(status: StatusResponse, keys: StoredKeys | null): CryptoSta
   if (!status.memberKeys) return "needs-setup";
   if (!keys) return "locked";
   if (keys.dataKey) return "unlocked";
-  // Private key on this device, no data key yet: either nobody has wrapped
-  // to us (pending) or a wrap arrived and load() will adopt it on next pass.
-  return status.wrap ? "locked" : "pending-wrap";
+  // Private key on this device, no data key yet: a wrap arrived and load()
+  // will adopt it on the next pass; or nobody has wrapped to us (pending);
+  // or there is nothing to wrap because the household has no key and we own
+  // it (#220: after leaving or being removed from another household).
+  if (status.wrap) return "locked";
+  if (status.role === "owner" && !status.householdHasWraps) return "needs-household-key";
+  return "pending-wrap";
 }
 
 function describe(err: unknown): string {
@@ -195,6 +201,13 @@ export function CryptoProvider({
     if (status) apply(status, null);
   }, [status, apply]);
 
+  const createHouseholdKey = useCallback(async () => {
+    if (!status || !keys) throw new Error("Keys not loaded");
+    const { recoveryCode } = await runCreateHouseholdKey(status, keys);
+    setKitCode(recoveryCode);
+    await refresh();
+  }, [status, keys, refresh]);
+
   const value: CryptoContextValue = {
     state,
     status,
@@ -205,6 +218,7 @@ export function CryptoProvider({
     setup,
     unlock,
     lock,
+    createHouseholdKey,
     showRecoveryKit: setKitCode,
   };
 
@@ -241,6 +255,9 @@ export function CryptoProvider({
             extra={<ForgotPassphrase />}
           />
         );
+        break;
+      case "needs-household-key":
+        body = <HouseholdKeyScreen />;
         break;
       case "locked":
         body = <UnlockScreen extra={<ForgotPassphrase />} />;

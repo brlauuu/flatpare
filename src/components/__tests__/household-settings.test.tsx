@@ -37,6 +37,7 @@ function cryptoValue(state: CryptoContextValue["state"]): CryptoContextValue {
     refresh: vi.fn(async () => {}),
     setup: vi.fn(async () => {}),
     unlock: vi.fn(async () => {}),
+    createHouseholdKey: vi.fn(async () => {}),
     lock: vi.fn(async () => {}),
     showRecoveryKit,
   };
@@ -63,6 +64,7 @@ function renderAs(
     }
     if (url === "/api/invitations/4" && method === "DELETE") return jsonRes(null, 204);
     if (url === "/api/household/members/m" && method === "DELETE") return jsonRes(null, 204);
+    if (url === "/api/household/leave" && method === "POST") return jsonRes({});
     return jsonRes({ error: `unexpected ${method} ${url}` }, 500);
   });
   return render(
@@ -258,5 +260,38 @@ describe("HouseholdSettings — data-key rotation", () => {
     renderAs({ userId: "m", role: "member" });
     await screen.findByText("bob@example.com");
     expect(screen.queryByRole("button", { name: /rotate household key/i })).not.toBeInTheDocument();
+  });
+});
+
+// #220
+describe("HouseholdSettings — leave", () => {
+  const assign = vi.fn();
+  beforeEach(() => {
+    Object.defineProperty(window, "location", { value: { ...window.location, assign }, configurable: true });
+    assign.mockReset();
+  });
+
+  it("lets a member leave after confirming, then navigates to the fresh household", async () => {
+    const user = userEvent.setup();
+    renderAs({ userId: "m", role: "member" });
+    await user.click(await screen.findByRole("button", { name: /leave household/i }));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/stays with it/i));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/apartments"));
+    expect(fetchMock).toHaveBeenCalledWith("/api/household/leave", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("does nothing when the member cancels", async () => {
+    const user = userEvent.setup();
+    (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    renderAs({ userId: "m", role: "member" });
+    await user.click(await screen.findByRole("button", { name: /leave household/i }));
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/household/leave", expect.anything());
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it("does not offer it to the owner", async () => {
+    renderAs({ userId: "o", role: "owner" });
+    await screen.findByText("Ana");
+    expect(screen.queryByRole("button", { name: /leave household/i })).not.toBeInTheDocument();
   });
 });

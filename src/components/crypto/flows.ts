@@ -165,6 +165,35 @@ export async function runSetup(
   return { recoveryCode };
 }
 
+// An owner with a key pair but a household with no data key (#220): they
+// left, or were removed from, another household and now own a fresh one.
+// Generates the key, wraps it to their own public key, mints a kit.
+export async function runCreateHouseholdKey(
+  status: StatusResponse,
+  keys: StoredKeys,
+  opts: FlowOptions = {}
+): Promise<{ recoveryCode: string; keys: StoredKeys }> {
+  const params = opts.kdfParams ?? DEFAULT_KDF_PARAMS;
+  const m = requireMemberKeys(status);
+  if (status.role !== "owner") {
+    throw new FlowError("Only the owner can create the household key", "state");
+  }
+  if (status.householdHasWraps) throw new FlowError("The household key already exists", "state");
+  const dataKey = await generateDataKey();
+  const kit = await makeRecoveryKit(dataKey, params);
+  await post("/api/crypto/household-key", {
+    wrappedKey: await wrapDataKey(dataKey, await importPublicKey(m.publicKey)),
+    recovery: kit.recovery,
+  });
+  const next: StoredKeys = {
+    ...keys,
+    dataKey: await toStoredDataKey(dataKey),
+    keyVersion: status.keyVersion,
+  };
+  await saveKeys(next);
+  return { recoveryCode: kit.code, keys: next };
+}
+
 export async function runUnlock(
   status: StatusResponse,
   passphrase: string

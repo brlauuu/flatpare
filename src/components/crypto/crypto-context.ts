@@ -24,6 +24,9 @@ export type CryptoState =
   | "off"
   | "needs-setup"
   | "pending-wrap"
+  // Key pair on this device, unlocked, but the household has no data key and
+  // this user owns it (#220): they can create one.
+  | "needs-household-key"
   | "locked"
   | "unlocked";
 
@@ -37,6 +40,9 @@ export interface CryptoContextValue {
   setup: (passphrase: string) => Promise<void>;
   unlock: (passphrase: string) => Promise<void>;
   lock: () => Promise<void>;
+  // needs-household-key only: creates the household's data key with the key
+  // pair already on this device, then shows the recovery kit.
+  createHouseholdKey: () => Promise<void>;
   // Task 12's recover/regenerate flows hand their fresh code here so the kit
   // is shown through the same one-time screen as setup.
   showRecoveryKit: (code: string) => void;

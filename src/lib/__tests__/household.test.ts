@@ -15,6 +15,7 @@ import {
   resolveHouseholdForUser,
   createHouseholdForUser,
   assertMembership,
+  leaveHousehold,
   listMembers,
   removeMember,
   ForbiddenError,
@@ -266,5 +267,53 @@ describe("removeMember marks rotation due", () => {
 
     const after = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
     expect(after[0].due).toBe(true);
+  });
+});
+
+// #220
+describe("leaveHousehold", () => {
+  async function seeded() {
+    await makeUser("owner");
+    await makeUser("m");
+    const id = await createHouseholdForUser("owner");
+    await db.insert(householdMembers).values({ householdId: id, userId: "m", role: "member" });
+    await db.insert(householdKeyWraps).values({ householdId: id, userId: "m", wrappedKey: "W", wrappedBy: "owner" });
+    return id;
+  }
+
+  it("removes the member's membership and wrap and marks rotation due", async () => {
+    const id = await seeded();
+    await leaveHousehold(id, "m");
+    await expect(assertMembership(id, "m")).rejects.toBeInstanceOf(ForbiddenError);
+    expect(await db.select().from(householdKeyWraps).where(eq(householdKeyWraps.userId, "m"))).toHaveLength(0);
+    const [h] = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
+    expect(h.due).toBe(true);
+    // The owner is untouched.
+    expect(await assertMembership(id, "owner")).toBe("owner");
+  });
+
+  it("refuses the owner with 400 and changes nothing", async () => {
+    const id = await seeded();
+    await expect(leaveHousehold(id, "owner")).rejects.toMatchObject({ status: 400, message: /owner cannot leave/ });
+    expect(await assertMembership(id, "owner")).toBe("owner");
+    const [h] = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
+    expect(h.due).toBe(false);
+  });
+
+  it("refuses a non-member", async () => {
+    const id = await seeded();
+    await makeUser("x");
+    await expect(leaveHousehold(id, "x")).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  // After leaving, the next session refresh resolves a fresh household of
+  // their own — the same path as a first sign-in.
+  it("leaves the leaver with a fresh household on re-resolve", async () => {
+    const id = await seeded();
+    await leaveHousehold(id, "m");
+    const fresh = await resolveHouseholdForUser("m");
+    expect(fresh).not.toBeNull();
+    expect(fresh).not.toBe(id);
+    expect(await assertMembership(fresh!, "m")).toBe("owner");
   });
 });
