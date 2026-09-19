@@ -53,6 +53,17 @@ export async function parseBody<T>(
   return schema.parse(raw);
 }
 
+// Parses a numeric path parameter that names a row. Only a canonical positive
+// decimal integer passes — "1", not "01", " 1", "1.0", "1e3", "-1" or "".
+// The old `Number.isInteger(Number(raw))` guard read as if it rejected empty
+// input and did not: Number("") is 0 and 0 is an integer (#290). Nothing was
+// reachable through that, since ids autoincrement from 1, but a guard that
+// does not do what it says is a trap for the next route that copies it.
+export function parseIdParam(raw: string, label = "id"): number {
+  if (!/^[1-9]\d*$/.test(raw)) throw new ApiError(`Invalid ${label}`, 400);
+  return Number(raw);
+}
+
 // Every crypto write is meaningless in an encryption-off deployment; the
 // client never calls them there, so a call is a bug or a probe.
 export function requireEncryptionOn(): void {

@@ -167,6 +167,12 @@ describe("POST /api/invitations/[id]/accept and /decline", () => {
     it.each([
       ["not a number", "abc"],
       ["fractional", "1.5"],
+      ["empty", ""],
+      ["zero", "0"],
+      ["negative", "-1"],
+      ["exponent", "1e3"],
+      ["padded", " 1"],
+      ["leading-zero", "01"],
     ])("accept rejects a %s invitation id with 400", async (_label, id) => {
       const res = await acceptPOST(
         new Request("http://localhost", { method: "POST" }),
@@ -176,18 +182,16 @@ describe("POST /api/invitations/[id]/accept and /decline", () => {
       expect(unstableUpdate).not.toHaveBeenCalled();
     });
 
-    it("an empty id falls through the guard as 0 and 404s", async () => {
-      // Number("") is 0, and Number.isInteger(0) is true — so the guard does
-      // NOT reject it and the lookup runs with id 0. Harmless, because ids
-      // autoincrement from 1 so nothing can match, and 404 is the right
-      // answer anyway. Pinned because it is surprising: the guard reads like
-      // it rejects empty input and does not.
-      const res = await acceptPOST(
-        new Request("http://localhost", { method: "POST" }),
+    // #290: Number("") is 0 and Number.isInteger(0) is true, so the old
+    // guard let an empty id through to a lookup for id 0 (a harmless 404).
+    // The shared parseIdParam now refuses it up front; the revoke route
+    // shares the guard, so it is pinned here too.
+    it("revoke rejects an empty invitation id with 400", async () => {
+      const res = await revokeDELETE(
+        new Request("http://localhost", { method: "DELETE" }),
         params("")
       );
-      expect(res.status).toBe(404);
-      expect(unstableUpdate).not.toHaveBeenCalled();
+      expect(res.status).toBe(400);
     });
   });
 });

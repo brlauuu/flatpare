@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { z } from "zod";
 import { ApiError } from "../api-error";
-import { apiErrorResponse, parseBody, requireEncryptionOn } from "../api-route";
+import { apiErrorResponse, parseBody, parseIdParam, requireEncryptionOn } from "../api-route";
 import { ForbiddenError, UnauthorizedError } from "../household";
 
 const sessionState = vi.hoisted(() => ({
@@ -258,4 +258,27 @@ describe("apiErrorResponse scrubbing for process routes", () => {
     expect(loggedText(spy.mock.calls)).toContain("ordinary failure");
     spy.mockRestore();
   });
+});
+
+describe("parseIdParam", () => {
+  it("accepts a canonical positive integer", () => {
+    expect(parseIdParam("1")).toBe(1);
+    expect(parseIdParam("42")).toBe(42);
+    expect(parseIdParam("9007199254740991")).toBe(9007199254740991);
+  });
+
+  // #290: Number("") is 0 and Number.isInteger(0) is true, so a guard built
+  // on those let empty input through. This one is a whitelist, not a coercion.
+  it.each(["", "0", "-1", "1.5", "1.0", "1e3", " 1", "1 ", "01", "abc", "0x1", "Infinity"])(
+    "rejects %j with a 400 ApiError",
+    (raw) => {
+      expect(() => parseIdParam(raw)).toThrow(ApiError);
+      try {
+        parseIdParam(raw, "invitation id");
+      } catch (e) {
+        expect((e as ApiError).status).toBe(400);
+        expect((e as ApiError).message).toBe("Invalid invitation id");
+      }
+    }
+  );
 });
