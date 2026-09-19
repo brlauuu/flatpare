@@ -41,6 +41,13 @@ export const setupSchema = z.object({
     .optional(),
 });
 
+// An owner who already has a key pair creating the data key for a fresh
+// household (#220).
+export const householdKeySchema = z.object({
+  wrappedKey: base64,
+  recovery: recoverySchema,
+});
+
 export const wrapsSchema = z.object({
   wraps: z
     // `publicKey` is the key the client wrapped against; fulfilWraps rejects

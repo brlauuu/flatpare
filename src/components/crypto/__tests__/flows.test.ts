@@ -17,6 +17,7 @@ import {
   fetchStatus,
   runAdoptWrap,
   runChangePassphrase,
+  runCreateHouseholdKey,
   runFulfilPendingWraps,
   runLock,
   runRecover,
@@ -100,6 +101,10 @@ async function handle(url: string, init?: RequestInit): Promise<Response> {
     case "PUT /api/crypto/recovery":
       server.recovery = body;
       return json({});
+    case "POST /api/crypto/household-key":
+      server.wraps.set(me, body.wrappedKey);
+      server.recovery = body.recovery;
+      return json({}, 201);
     default:
       return json({ error: `unhandled ${init?.method} ${url}` }, 500);
   }
@@ -361,5 +366,42 @@ describe("key version on stored keys", () => {
     const adopted = await runAdoptWrap({ ...server.status(), wrapKeyVersion: 4, keyVersion: 4 }, { ...unlocked, dataKey: null });
     expect(adopted.keyVersion).toBe(4);
     expect((await loadKeys("o", 1))?.keyVersion).toBe(4);
+  });
+});
+
+// #220: an owner with a key pair but a household with no data key.
+describe("runCreateHouseholdKey", () => {
+  it("creates a key the owner's own private key opens, and a working kit", async () => {
+    // Keys from a previous household: set up, then pretend the wrap is gone.
+    await runSetup(server.status(), "correct horse battery staple", opts);
+    server.wraps.clear();
+    server.recovery = null;
+    const keys = await runUnlock(server.status(), "correct horse battery staple");
+    expect(keys.dataKey).toBeNull();
+
+    const { recoveryCode, keys: next } = await runCreateHouseholdKey(server.status(), keys, opts);
+    expect(next.dataKey).not.toBeNull();
+    expect(next.keyVersion).toBe(1);
+    expect((await loadKeys("o", 1))?.dataKey).not.toBeNull();
+
+    // The wrap the server got opens with the private key on the device...
+    const fromWrap = await unwrapDataKey(server.wraps.get("o")!, keys.privateKey);
+    const sealed = await seal(next.dataKey!, { a: 1 }, "1:t:r");
+    expect(await open(fromWrap, sealed, "1:t:r")).toEqual({ a: 1 });
+    // ...and the recovery code unwraps the same key.
+    const compact = normalizeRecoveryCode(recoveryCode)!;
+    const r = server.recovery!;
+    const kek = await deriveKek(compact, fromBase64(r.kdf.salt), r.kdf);
+    const { unwrapDataKeyWithKek } = await import("@/lib/crypto");
+    const fromKit = await unwrapDataKeyWithKek({ wrapped: r.wrappedKey, iv: r.iv }, kek);
+    expect(await open(fromKit, sealed, "1:t:r")).toEqual({ a: 1 });
+  });
+
+  it("refuses a member and a household that already has a key", async () => {
+    await runSetup(server.status(), "correct horse battery staple", opts);
+    const keys = await runUnlock(server.status(), "correct horse battery staple");
+    await expect(runCreateHouseholdKey(server.status(), keys, opts)).rejects.toThrow(/already exists/);
+    server.wraps.clear();
+    await expect(runCreateHouseholdKey({ ...server.status(), role: "member" }, keys, opts)).rejects.toThrow(/Only the owner/);
   });
 });

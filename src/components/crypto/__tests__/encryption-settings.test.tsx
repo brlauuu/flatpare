@@ -50,6 +50,7 @@ function ctx(over: Partial<CryptoContextValue> = {}, status: Partial<StatusRespo
     refresh: vi.fn(async () => {}),
     setup: vi.fn(async () => {}),
     unlock: vi.fn(async () => {}),
+    createHouseholdKey: vi.fn(async () => {}),
     lock: vi.fn(async () => {}),
     showRecoveryKit: vi.fn(),
     ...over,

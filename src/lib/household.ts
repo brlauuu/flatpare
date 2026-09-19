@@ -151,6 +151,33 @@ export async function listMembers(householdId: number): Promise<MemberSummary[]>
   }));
 }
 
+// Self-service leave (#220). Refused for the owner: a household without one
+// has nobody who can invite, remove or rotate. Deletes the membership and the
+// wrap and marks the household rotation-due — the leaver's device still holds
+// the data key, and the owner is warned until they rotate it (#219).
+export async function leaveHousehold(householdId: number, userId: string): Promise<void> {
+  const role = await assertMembership(householdId, userId);
+  if (role === "owner") {
+    throw new HouseholdError("The owner cannot leave the household", 400);
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(householdMembers)
+      .where(
+        and(eq(householdMembers.householdId, householdId), eq(householdMembers.userId, userId))
+      );
+    await tx
+      .delete(householdKeyWraps)
+      .where(
+        and(eq(householdKeyWraps.householdId, householdId), eq(householdKeyWraps.userId, userId))
+      );
+    await tx
+      .update(households)
+      .set({ rotationDue: true })
+      .where(eq(households.id, householdId));
+  });
+}
+
 // Owner-only, checked against the database. Deletes the membership and the
 // member's wrap; their JWT keeps working for up to 24h (documented limit).
 export async function removeMember(

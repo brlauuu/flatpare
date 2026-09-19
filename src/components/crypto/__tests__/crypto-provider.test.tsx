@@ -9,6 +9,7 @@ const flows = vi.hoisted(() => ({
   runSetup: vi.fn(),
   runUnlock: vi.fn(),
   runAdoptWrap: vi.fn(),
+  runCreateHouseholdKey: vi.fn(),
   runFulfilPendingWraps: vi.fn(),
   runLock: vi.fn(),
 }));
@@ -331,5 +332,47 @@ describe("data-key rotation", () => {
     // sees must be the very same object as before.
     await waitFor(() => expect(seen.filter((k) => k !== null).length).toBeGreaterThan(1));
     expect(new Set(seen.filter((k) => k !== null)).size).toBe(1);
+  });
+});
+
+// #220: an owner whose fresh household has no key, with a key pair already
+// on the device — after leaving or being removed from another household.
+describe("needs-household-key", () => {
+  it("offers to create the key instead of waiting for a wrap, then shows the kit", async () => {
+    const user = userEvent.setup();
+    flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, role: "owner", householdHasWraps: false }));
+    store.loadKeys.mockResolvedValue(keysPending);
+    flows.runCreateHouseholdKey.mockImplementation(async () => {
+      flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, role: "owner", wrap: "wrap", wrapKeyVersion: 1, householdHasWraps: true }));
+      store.loadKeys.mockResolvedValue(keysWithData);
+      return { recoveryCode: "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY", keys: keysWithData };
+    });
+    renderApp();
+    expect(await screen.findByText(/no encryption key yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Waiting for someone/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /create the household key/i }));
+    expect(await screen.findByText("ABCDE-FGHIJ-KLMNO-PQRST-UVWXY")).toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(await screen.findByText("page:unlocked:has-key")).toBeInTheDocument();
+  });
+
+  it("still waits for a wrap when the household has a key someone else holds", async () => {
+    flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, role: "owner", householdHasWraps: true }));
+    store.loadKeys.mockResolvedValue(keysPending);
+    renderApp();
+    expect(await screen.findByText(/Waiting for someone/)).toBeInTheDocument();
+  });
+
+  it("shows the error and stays on the screen when creation fails", async () => {
+    const user = userEvent.setup();
+    flows.fetchStatus.mockResolvedValue(status({ memberKeys: member, role: "owner", householdHasWraps: false }));
+    store.loadKeys.mockResolvedValue(keysPending);
+    flows.runCreateHouseholdKey.mockRejectedValue(new FlowError("offline", "http"));
+    renderApp();
+    await user.click(await screen.findByRole("button", { name: /create the household key/i }));
+    expect(await screen.findByText("offline")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /create the household key/i })).toBeEnabled();
   });
 });

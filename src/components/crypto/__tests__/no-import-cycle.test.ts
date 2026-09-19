@@ -41,6 +41,7 @@ const SCREENS = [
   "unlock-screen.tsx",
   "forgot-passphrase.tsx",
   "pending-screen.tsx",
+  "household-key-screen.tsx",
   "recovery-kit.tsx",
   "encryption-settings.tsx",
 ];

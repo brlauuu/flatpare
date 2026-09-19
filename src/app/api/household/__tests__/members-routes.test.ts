@@ -7,14 +7,20 @@ const currentSession = { householdId: 0, userId: "", role: "owner" as "owner" | 
 vi.mock("@/lib/session", () => ({
   requireHousehold: vi.fn(async () => ({ ...currentSession })),
 }));
+const unstableUpdate = vi.fn(async () => null);
+vi.mock("@/auth", () => ({
+  unstable_update: (...args: unknown[]) => unstableUpdate(...(args as [])),
+}));
 
 import { GET as membersGET } from "../members/route";
 import { DELETE as memberDELETE } from "../members/[userId]/route";
+import { POST as leavePOST } from "../leave/route";
 
 const params = (userId: string) => ({ params: Promise.resolve({ userId }) });
 let hid: number;
 
 beforeEach(async () => {
+  unstableUpdate.mockClear();
   await db.delete(householdKeyWraps);
   await db.delete(householdMembers);
   await db.delete(households);
@@ -66,5 +72,28 @@ describe("DELETE /api/household/members/[userId]", () => {
     currentSession.userId = "o";
     expect((await memberDELETE(new Request("http://localhost"), params("o"))).status).toBe(400);
     expect((await memberDELETE(new Request("http://localhost"), params("zzz"))).status).toBe(404);
+  });
+});
+
+// #220
+describe("POST /api/household/leave", () => {
+  it("lets a member leave and refreshes the session", async () => {
+    currentSession.userId = "m";
+    currentSession.role = "member";
+    const res = await leavePOST();
+    expect(res.status).toBe(200);
+    expect(unstableUpdate).toHaveBeenCalledTimes(1);
+    const rows = await db.select().from(householdMembers);
+    expect(rows.map((r) => r.userId)).toEqual(["o"]);
+    const [h] = await db.select({ due: households.rotationDue }).from(households);
+    expect(h.due).toBe(true);
+  });
+
+  it("refuses the owner with 400 and does not touch the session", async () => {
+    const res = await leavePOST();
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/owner cannot leave/);
+    expect(unstableUpdate).not.toHaveBeenCalled();
+    expect(await db.select().from(householdMembers)).toHaveLength(2);
   });
 });

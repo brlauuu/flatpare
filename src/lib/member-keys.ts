@@ -316,6 +316,42 @@ export async function setupMemberKeys(args: {
   });
 }
 
+// The data key for a household that has none, created by an owner who
+// already has a key pair (#220). Setup handles the first-time case where the
+// key pair and the household key are created together; this is the other
+// order — the person left or was removed and now owns a fresh household.
+export async function createHouseholdKey(args: {
+  householdId: number;
+  userId: string;
+  role: Role;
+  wrappedKey: string;
+  recovery: RecoveryMaterial;
+}): Promise<void> {
+  const { householdId, userId, role, wrappedKey, recovery } = args;
+  await db.transaction(async (tx) => {
+    if (role !== "owner") {
+      throw new CryptoStateError("Only the owner can create the household key", 403);
+    }
+    if (!(await loadMemberKeys(tx, userId))) {
+      throw new CryptoStateError("Set up your keys first", 409);
+    }
+    if ((await countWraps(tx, householdId)) > 0) {
+      throw new CryptoStateError("The household key already exists", 409);
+    }
+    await tx.insert(householdKeyWraps).values({
+      householdId,
+      userId,
+      wrappedKey,
+      wrappedBy: userId,
+      keyVersion: (await loadKeyState(tx, householdId)).keyVersion,
+    });
+    await tx
+      .update(households)
+      .set({ ...recoveryColumns(recovery), rotationDue: false })
+      .where(eq(households.id, householdId));
+  });
+}
+
 // Household members who have a member_keys row (published a public key) but
 // no household_key_wraps row (nobody has wrapped the data key to them yet).
 // Shared by listPendingWraps (which needs the display fields) and fulfilWraps

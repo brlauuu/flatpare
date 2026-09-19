@@ -313,6 +313,16 @@ rotation can reach bytes that already left the server. #219 closes everything wr
 after the removal; this residue is permanent and is the reason removal is described to
 users as "loses access", not "forgets what they saw".
 
+### Accepted: a member who leaves keeps the data key until the owner rotates
+
+`POST /api/household/leave` (#220) removes the leaver's membership and wrap and marks the
+household rotation-due, exactly like an owner-initiated removal — but the owner is not in
+the loop at that moment, so the rotation happens on the owner's next visit to Household
+settings, where the warning and the button are. Until then the leaver holds a key that
+opens anything written in between. The window is bounded by the owner noticing; it is
+the same class as the JWT staleness window and is stated here rather than closed, since
+nothing but an owner's browser can rotate.
+
 ### Accepted: rotation replaces the recovery code
 
 The recovery kit wraps the data key under a KEK derived from the recovery code. The owner
