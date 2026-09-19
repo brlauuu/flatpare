@@ -1,6 +1,12 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+// `.mts`, not `.ts` (#289): with no `"type": "module"` in package.json a
+// `.ts` config is loaded as CommonJS, which Vite's coming native config
+// loader refuses — and it would take the whole suite down, not one test.
+// The extension makes the ESM-ness explicit, which is also why this file
+// uses import.meta.dirname rather than __dirname.
+
 export default defineConfig({
   test: {
     environment: "jsdom",
@@ -82,7 +88,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   ssr: {
