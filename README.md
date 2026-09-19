@@ -343,7 +343,7 @@ npm run typecheck
 
 [Vitest](https://vitest.dev/) + React Testing Library. Tests live next to their source in colocated `__tests__/` directories, and each test *file* runs against its own copy of a pre-migrated database, in parallel.
 
-CI fails if coverage drops below the floors in `vitest.config.ts`: **lines ≥ 80 %, statements ≥ 80 %, functions ≥ 78 %, branches ≥ 75 %**. Those floors apply to every source file, not only the ones a test imports — a wholly untested new file counts against the average.
+CI fails if coverage drops below the floors in `vitest.config.mts`: **lines ≥ 80 %, statements ≥ 80 %, functions ≥ 78 %, branches ≥ 75 %**. Those floors apply to every source file, not only the ones a test imports — a wholly untested new file counts against the average.
 
 ## Database
 

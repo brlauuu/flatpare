@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // one file, each failing for a reason that had nothing to do with the code
 // under test.
 //
-// `mockReset: true` in vitest.config.ts resets every mock before each test,
+// `mockReset: true` in vitest.config.mts resets every mock before each test,
 // which drains the queue. These two tests only pass together, and only in this
 // order: the first deliberately over-queues, the second asserts it sees a clean
 // mock rather than the leftover.
