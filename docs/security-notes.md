@@ -235,12 +235,16 @@ can decrypt with them while the device is unlocked but cannot read the key bytes
 is the price of once-per-device unlock. *Lock this device* in settings and sign-out both
 clear the store.
 
-### Accepted: removed members keep a usable cached key
+### Closed by #219: removed members keep a usable cached key — but it opens nothing new
 
-Removal deletes the wrap row and membership. A removed member who still has the data key
-in their device store can decrypt ciphertext they can still fetch during the 24h JWT
-window (see the auth section above). E3's ciphertext reads re-check membership against
-the database; rotating the data key on removal is a backlog item.
+Removal deletes the wrap row and membership, and E3's reads re-check membership, so the
+removed member fetches nothing more. What they still hold is the data key in their device
+store. Since #219 the owner rotates that key right after the removal: every row and PDF
+is re-sealed under a new key, the new key is wrapped to every remaining member, and the
+server refuses any write sealed under the old version. From then on a copy of the
+database is closed to them. What rotation cannot undo is ciphertext they fetched
+**before** removal (next entry). A removal whose rotation did not land is flagged
+(`households.rotation_due`) and the owner is warned until it does.
 
 ### Accepted: the encryption mode is a property of the database
 
@@ -304,8 +308,18 @@ the section below for what it changed and what it left standing.**
 
 `requireMember()` re-checks the database on every data read, so a removed member's
 still-valid JWT stops returning rows immediately. But ciphertext they fetched *before*
-removal, and the data key cached in their device store, remain usable offline. Closing
-this needs data-key rotation on removal, tracked as #219.
+removal, and the data key cached in their device store, remain usable offline — and no
+rotation can reach bytes that already left the server. #219 closes everything written
+after the removal; this residue is permanent and is the reason removal is described to
+users as "loses access", not "forgets what they saw".
+
+### Accepted: rotation replaces the recovery code
+
+The recovery kit wraps the data key under a KEK derived from the recovery code. The owner
+does not have the code at hand during a removal, and storing the recovery KEK anywhere the
+old data key could reach would hand the new key to exactly the person being removed. So a
+rotation mints a new kit and shows the new code once; the old code stops working. The
+removal confirmation says this before the owner clicks.
 
 ### Accepted: corrupt rows are shown, not hidden
 

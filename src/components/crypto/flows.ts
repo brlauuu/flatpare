@@ -52,7 +52,11 @@ function kdfRow(salt: Uint8Array, params: KdfParams): KdfRow {
   return { salt: toBase64(salt), ...params };
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
+// Exported (with `post` and `makeRecoveryKit`) for the rotation flow in
+// src/components/household-data/rotation.ts, which sequences crypto + fetch
+// like the flows here but also needs the codec — so it lives beside the
+// store, and borrows these rather than duplicating them.
+export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
@@ -70,7 +74,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-const post = <T>(path: string, body: unknown, method = "POST") =>
+export const post = <T>(path: string, body: unknown, method = "POST") =>
   api<T>(path, { method, body: JSON.stringify(body) });
 
 export function fetchStatus(): Promise<StatusResponse> {
@@ -110,7 +114,7 @@ async function makeMemberMaterial(passphrase: string, params: KdfParams) {
   };
 }
 
-async function makeRecoveryKit(dataKey: CryptoKey, params: KdfParams) {
+export async function makeRecoveryKit(dataKey: CryptoKey, params: KdfParams) {
   const code = generateRecoveryCode();
   const compact = normalizeRecoveryCode(code);
   if (!compact) throw new FlowError("Generated an invalid recovery code", "state");
@@ -156,6 +160,7 @@ export async function runSetup(
     householdId: status.householdId,
     privateKey: await unwrapPrivateKey(blob, kek),
     dataKey: dataKey ? await toStoredDataKey(dataKey) : null,
+    keyVersion: status.keyVersion,
   });
   return { recoveryCode };
 }
@@ -175,6 +180,7 @@ export async function runUnlock(
     householdId: status.householdId,
     privateKey,
     dataKey,
+    keyVersion: status.wrapKeyVersion ?? status.keyVersion,
   };
   await saveKeys(keys);
   return keys;
@@ -217,6 +223,7 @@ export async function runAdoptWrap(
   const adopted: StoredKeys = {
     ...keys,
     dataKey: await unwrapDataKey(status.wrap, keys.privateKey),
+    keyVersion: status.wrapKeyVersion ?? status.keyVersion,
   };
   await saveKeys(adopted);
   return adopted;
@@ -296,6 +303,7 @@ export async function runRecover(
     householdId: status.householdId,
     privateKey: await unwrapPrivateKey(blob, kek),
     dataKey: await toStoredDataKey(dataKey),
+    keyVersion: status.keyVersion,
   });
   return { recoveryCode: kit.code };
 }

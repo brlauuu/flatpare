@@ -8,6 +8,7 @@ import { ApiError } from "@/lib/api-error";
 import {
   apiErrorResponse,
   parseBody,
+  requireCurrentKey,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
@@ -37,6 +38,7 @@ export async function PUT(req: Request, ctx: Ctx) {
     const apartmentId = await ownedApartmentId(ctx, householdId);
     const body = await parseBody(req, bodySchema);
     requireEnvelopeMode(body.envelope);
+    await requireCurrentKey(householdId, body.envelope);
 
     const envelope = JSON.stringify(body.envelope);
     const [saved] = await db

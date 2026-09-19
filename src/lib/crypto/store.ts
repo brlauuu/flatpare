@@ -19,6 +19,11 @@ export interface StoredKeys {
   // null while the member has a key pair but nobody has wrapped the
   // household key to it yet ("pending wrap").
   dataKey: CryptoKey | null;
+  // Which household data key `dataKey` is (#219). Absent on records written
+  // before rotation existed, which means 1. The provider compares it with
+  // the wrap's version from /api/crypto/status and re-keys from the wrap
+  // when they differ — no passphrase needed, the private key is here.
+  keyVersion?: number;
 }
 
 // Some private-browsing modes have no IndexedDB, or refuse to open it. Then

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { useContext, useEffect } from "react";
 import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-context";
@@ -165,8 +165,14 @@ function Capture() {
   );
 }
 
+const cryptoRefresh = vi.fn(async () => {});
+let cryptoKeyVersion: number | undefined = undefined;
+
 function renderProvider() {
-  const crypto = { keys: { userId: ME.userId, householdId: HID, privateKey: {} as CryptoKey, dataKey } } as unknown as CryptoContextValue;
+  const crypto = {
+    keys: { userId: ME.userId, householdId: HID, privateKey: {} as CryptoKey, dataKey, keyVersion: cryptoKeyVersion },
+    refresh: cryptoRefresh,
+  } as unknown as CryptoContextValue;
   return render(
     <CryptoContext.Provider value={crypto}>
       <HouseholdDataProvider identity={ME} limits={{ maxMembers: null, maxApartments: null }}>
@@ -465,5 +471,45 @@ describe("HouseholdDataProvider", () => {
     // Two GET /api/apartments in total — one per mount; nothing was cached
     // across the unmount.
     expect(server.calls.filter((c) => c.method === "GET" && c.url === "/api/apartments")).toHaveLength(2);
+  });
+});
+
+// #219: every seal carries the version of the key this device holds, and a
+// `409 Stale key` answer refreshes the crypto status and tells the caller to
+// try again once the store has reloaded under the new key.
+describe("data-key version", () => {
+  beforeEach(() => {
+    cryptoRefresh.mockClear();
+    cryptoKeyVersion = undefined;
+  });
+  afterEach(() => {
+    cryptoKeyVersion = undefined;
+  });
+
+  it("seals writes under the device key's version, defaulting to 1", async () => {
+    cryptoKeyVersion = 2;
+    renderProvider();
+    const ctx = await waitForContext((c) => c.status === "ready");
+    await act(async () => {
+      await ctx.createApartment(A1, emptyApartment("New"));
+    });
+    const env = server.apartments.get(A1)!.envelope;
+    expect(env.v === 1 && env.k).toBe(2);
+  });
+
+  it("turns Stale key into a refresh and a retry-able error", async () => {
+    await seed(A1, emptyApartment("Old"));
+    renderProvider();
+    const ctx = await waitForContext((c) => c.status === "ready");
+    const fetchMock = fetch as unknown as Mock<(url: string, init?: RequestInit) => Promise<Response>>;
+    const original = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === "PUT" && url === `/api/apartments/${A1}`) {
+        return json({ error: "Stale key", keyVersion: 2 }, 409);
+      }
+      return original(url, init);
+    });
+    await expect(ctx.updateApartment(A1, (a) => ({ ...a, name: "Newer" }))).rejects.toThrow(/household key was changed/i);
+    expect(cryptoRefresh).toHaveBeenCalledTimes(1);
   });
 });

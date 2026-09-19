@@ -58,6 +58,10 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     deleteLocation: vi.fn(async () => {}),
     moveLocation: vi.fn(async () => {}),
     runMaintenance: vi.fn(async () => ({ updated: 0, skipped: 0, failed: [] })),
+    rotateDataKey: vi.fn(async () => ({
+      recoveryCode: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEE",
+      report: { keyVersion: 2, rows: 0, pdfs: 0, pdfFailures: [] },
+    })),
     ...over,
   };
 }

@@ -33,9 +33,11 @@ async function readError(res: Response): Promise<string> {
 }
 
 export function HouseholdSettings() {
-  const { state } = useCrypto();
-  const { limits } = useHouseholdData();
+  const { state, status: cryptoStatus, showRecoveryKit } = useCrypto();
+  const { limits, rotateDataKey } = useHouseholdData();
   const encryptionOn = state !== "off";
+  const [rotating, setRotating] = useState(false);
+  const [rotationNote, setRotationNote] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [me, setMe] = useState<{ userId: string; role: "owner" | "member" } | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -112,15 +114,46 @@ export function HouseholdSettings() {
     });
   }
 
+  // Data-key rotation (#219): re-seals everything under a fresh key so the
+  // removed member's cached key opens nothing written from now on, and ends
+  // with a NEW recovery code the owner must save. Also offered on its own
+  // while `rotationDue` is set, i.e. a removal happened and its rotation
+  // did not land.
+  async function rotate(): Promise<void> {
+    setRotating(true);
+    setRotationNote(null);
+    try {
+      const { recoveryCode, report } = await rotateDataKey();
+      if (report.pdfFailures.length > 0) {
+        setRotationNote(
+          `Household key rotated, but ${report.pdfFailures.length} PDF(s) could not be re-encrypted and were left as they were.`
+        );
+      }
+      showRecoveryKit(recoveryCode);
+    } finally {
+      setRotating(false);
+    }
+  }
+
   function remove(member: Member) {
     const label = member.name ?? member.email;
-    if (!window.confirm(`Remove ${label} from the household? They lose access immediately.`)) {
-      return;
-    }
+    const message = encryptionOn
+      ? `Remove ${label} from the household? They lose access immediately, and the household key will be rotated — you will be shown a new recovery code to save.`
+      : `Remove ${label} from the household? They lose access immediately.`;
+    if (!window.confirm(message)) return;
     void run(async () => {
       const res = await fetch(`/api/household/members/${member.userId}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readError(res));
       setMembers((prev) => prev.filter((m) => m.userId !== member.userId));
+      if (state !== "unlocked") return;
+      try {
+        await rotate();
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : "unknown error";
+        throw new Error(
+          `${label} was removed, but the household key could not be rotated: ${reason}. Rotate it below when you are ready.`
+        );
+      }
     });
   }
 
@@ -201,6 +234,45 @@ export function HouseholdSettings() {
             </ul>
           )}
         </>
+      )}
+
+      {encryptionOn && isOwner && (
+        <div className="space-y-2 rounded-md border p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="font-medium">Household key</h3>
+            <span className="text-xs text-muted-foreground">
+              version {cryptoStatus?.keyVersion ?? 1}
+            </span>
+          </div>
+          {cryptoStatus?.rotationDue ? (
+            <p role="alert" className="text-sm text-destructive">
+              A member was removed but the household key has not been rotated
+              since. Until it is, anything written now is readable with the key
+              their device still holds.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Rotating re-encrypts everything under a new key and gives every
+              member the new key automatically. It happens on its own when you
+              remove someone; you can also run it by hand. You will be shown a
+              new recovery code — the old one stops working.
+            </p>
+          )}
+          {rotationNote && <p className="text-sm">{rotationNote}</p>}
+          <Button
+            type="button"
+            variant={cryptoStatus?.rotationDue ? "default" : "outline"}
+            size="sm"
+            disabled={busy || rotating || state !== "unlocked"}
+            onClick={() =>
+              void rotate().catch((err) =>
+                setError(err instanceof Error ? err.message : "Could not rotate the key")
+              )
+            }
+          >
+            {rotating ? "Rotating…" : "Rotate household key"}
+          </Button>
+        </div>
       )}
     </section>
   );

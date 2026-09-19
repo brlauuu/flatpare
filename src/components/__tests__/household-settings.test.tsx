@@ -24,10 +24,13 @@ const invites = [
   { id: 4, email: "cara@example.com", expiresAt: new Date(Date.now() + 86_400_000).toISOString(), createdAt: new Date().toISOString() },
 ];
 
+const showRecoveryKit = vi.fn();
+let cryptoStatus: CryptoContextValue["status"] = null;
+
 function cryptoValue(state: CryptoContextValue["state"]): CryptoContextValue {
   return {
     state,
-    status: null,
+    status: cryptoStatus,
     keys: null,
     error: null,
     persistent: true,
@@ -35,15 +38,18 @@ function cryptoValue(state: CryptoContextValue["state"]): CryptoContextValue {
     setup: vi.fn(async () => {}),
     unlock: vi.fn(async () => {}),
     lock: vi.fn(async () => {}),
-    showRecoveryKit: vi.fn(),
+    showRecoveryKit,
   };
 }
+
+let householdData = makeHouseholdData();
 
 function renderAs(
   me: { userId: string; role: "owner" | "member" },
   state: CryptoContextValue["state"] = "unlocked",
   limits: Limits = { maxMembers: null, maxApartments: null }
 ) {
+  householdData = makeHouseholdData({ limits });
   fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     if (url === "/api/household/members") return jsonRes({ members, me });
@@ -61,7 +67,7 @@ function renderAs(
   });
   return render(
     <CryptoContext.Provider value={cryptoValue(state)}>
-      <HouseholdDataContext.Provider value={makeHouseholdData({ limits })}>
+      <HouseholdDataContext.Provider value={householdData}>
         <HouseholdSettings />
       </HouseholdDataContext.Provider>
     </CryptoContext.Provider>
@@ -70,6 +76,8 @@ function renderAs(
 
 beforeEach(() => {
   fetchMock.mockReset();
+  showRecoveryKit.mockReset();
+  cryptoStatus = null;
   vi.stubGlobal("fetch", fetchMock);
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
@@ -182,5 +190,73 @@ describe("member limit (#187)", () => {
     const email = screen.getByLabelText("Email");
     await userEvent.type(email, "new@example.com");
     expect(screen.getByRole("button", { name: "Invite" })).toBeEnabled();
+  });
+});
+
+// #219: removing a member rotates the household key and shows the new
+// recovery code; a removal whose rotation did not land leaves a warning and
+// a button to run it by hand.
+describe("HouseholdSettings — data-key rotation", () => {
+  const owner = { userId: "o", role: "owner" as const };
+  const withStatus = (over: Partial<NonNullable<CryptoContextValue["status"]>>) => {
+    cryptoStatus = {
+      mode: "on", userId: "o", householdId: 1, role: "owner", memberKeys: null, wrap: "w",
+      wrapKeyVersion: 1, keyVersion: 1, rotationDue: false, householdHasWraps: true,
+      othersHaveWraps: true, recovery: null, ...over,
+    };
+  };
+
+  it("rotates after a removal and hands the new recovery code to the kit screen", async () => {
+    const user = userEvent.setup();
+    withStatus({});
+    renderAs(owner);
+    const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: /remove/i }));
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/new recovery code/i));
+    await waitFor(() => expect(householdData.rotateDataKey).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(showRecoveryKit).toHaveBeenCalledWith("AAAAA-BBBBB-CCCCC-DDDDD-EEEEE"));
+    expect(screen.queryByText("bob@example.com")).not.toBeInTheDocument();
+  });
+
+  it("says so when the removal landed but the rotation did not", async () => {
+    const user = userEvent.setup();
+    withStatus({});
+    renderAs(owner);
+    (householdData.rotateDataKey as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("network down"));
+    const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: /remove/i }));
+
+    expect(await screen.findByText(/was removed, but the household key could not be rotated: network down/i)).toBeInTheDocument();
+    expect(showRecoveryKit).not.toHaveBeenCalled();
+  });
+
+  it("does not rotate when encryption is off", async () => {
+    const user = userEvent.setup();
+    renderAs(owner, "off");
+    const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: /remove/i }));
+    await waitFor(() => expect(screen.queryByText("bob@example.com")).not.toBeInTheDocument());
+    expect(householdData.rotateDataKey).not.toHaveBeenCalled();
+    expect(window.confirm).toHaveBeenCalledWith(expect.not.stringMatching(/recovery code/i));
+    expect(screen.queryByText(/household key/i)).not.toBeInTheDocument();
+  });
+
+  it("warns while a rotation is due and lets the owner run it by hand", async () => {
+    const user = userEvent.setup();
+    withStatus({ rotationDue: true, keyVersion: 3 });
+    renderAs(owner);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/has not been rotated/i);
+    expect(screen.getByText(/version 3/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /rotate household key/i }));
+    await waitFor(() => expect(householdData.rotateDataKey).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(showRecoveryKit).toHaveBeenCalled());
+  });
+
+  it("hides the key block from members", async () => {
+    withStatus({ role: "member" });
+    renderAs({ userId: "m", role: "member" });
+    await screen.findByText("bob@example.com");
+    expect(screen.queryByRole("button", { name: /rotate household key/i })).not.toBeInTheDocument();
   });
 });

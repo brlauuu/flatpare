@@ -1,5 +1,6 @@
 import { upload } from "@vercel/blob/client";
 import { canonicalizePathname } from "@/lib/pathname";
+import { pdfFileName } from "@/lib/pdf-file-name";
 
 // Picks between client-direct Blob upload (cloud, no serverless body limit)
 // and multipart-to-server (local dev, no Blob token). Probes the upload-token
@@ -37,12 +38,15 @@ export function _resetBlobModeProbeForTests() {
   blobModeProbe = null;
 }
 
-// Stores sealed bytes as households/<hid>/<apartmentId>.pdf.enc and returns
-// the app-relative URL that serves them back (/api/pdf/... or /api/uploads/...).
+// Stores sealed bytes as households/<hid>/<pdfFileName(apartmentId, keyVersion)>
+// and returns the app-relative URL that serves them back (/api/pdf/... or
+// /api/uploads/...).
 export async function uploadEncryptedFile(
   bytes: Uint8Array<ArrayBuffer>,
-  apartmentId: string
+  apartmentId: string,
+  keyVersion = 1
 ): Promise<string> {
+  const fileName = pdfFileName(apartmentId, keyVersion);
   const body = new Blob([bytes], { type: "application/octet-stream" });
   const probe = await probeBlobMode();
 
@@ -53,7 +57,7 @@ export async function uploadEncryptedFile(
     // A UUID-based name never changes under canonicalization, but the
     // invariant is cheap to keep and the server checks it anyway.
     const pathname = canonicalizePathname(
-      `households/${probe.householdId}/${apartmentId}.pdf.enc`
+      `households/${probe.householdId}/${fileName}`
     );
     const blob = await upload(pathname, body, {
       access: "private",
@@ -64,8 +68,9 @@ export async function uploadEncryptedFile(
   }
 
   const formData = new FormData();
-  formData.append("file", body, `${apartmentId}.pdf.enc`);
+  formData.append("file", body, fileName);
   formData.append("apartmentId", apartmentId);
+  formData.append("keyVersion", String(keyVersion));
   const res = await fetch(FILES_URL, { method: "POST", body: formData });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };

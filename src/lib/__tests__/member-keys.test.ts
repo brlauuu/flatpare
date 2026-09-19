@@ -13,12 +13,15 @@ import {
   fulfilWraps,
   getCryptoStatus,
   listPendingWraps,
+  listRotationTargets,
   recoverHousehold,
   replaceMemberKeys,
   replaceRecovery,
   resetMemberKeys,
+  rotateHouseholdKey,
   setupMemberKeys,
 } from "../member-keys";
+import { apartments, locations, ratings } from "@/lib/db/schema";
 
 const kdf = { salt: "AAAA", memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 as const };
 const member = (tag: string) => ({
@@ -30,6 +33,9 @@ const member = (tag: string) => ({
 const recovery = { wrappedKey: "RECOV", iv: "RIV", kdf };
 
 beforeEach(async () => {
+  await db.delete(ratings);
+  await db.delete(apartments);
+  await db.delete(locations);
   await db.delete(householdKeyWraps);
   await db.delete(memberKeys);
   await db.delete(householdMembers);
@@ -66,6 +72,9 @@ describe("getCryptoStatus", () => {
       role: "owner",
       memberKeys: null,
       wrap: null,
+      wrapKeyVersion: null,
+      keyVersion: 1,
+      rotationDue: false,
       householdHasWraps: false,
       othersHaveWraps: false,
       recovery: null,
@@ -414,5 +423,175 @@ describe("KDF version validation on read", () => {
 describe("CryptoStateError", () => {
   it("carries its status", () => {
     expect(new CryptoStateError("x", 409).status).toBe(409);
+  });
+});
+
+// ---- Data-key rotation (#219) ----------------------------------------------
+
+const A1 = "11111111-1111-4111-8111-111111111111";
+const A2 = "22222222-2222-4222-8222-222222222222";
+const L1 = "33333333-3333-4333-8333-333333333333";
+const sealed = (k: number, tag = "x") => ({
+  v: 1 as const,
+  k,
+  iv: "AAAAAAAAAAAAAAAA",
+  ct: Buffer.from(tag).toString("base64"),
+});
+
+async function rotatableHousehold() {
+  const hid = await makeHousehold("o", "m", "p");
+  await setupMemberKeys({
+    householdId: hid,
+    userId: "o",
+    role: "owner",
+    member: member("o"),
+    household: { wrappedKey: "WRAPO", recovery },
+  });
+  await setupMemberKeys({ householdId: hid, userId: "m", role: "member", member: member("m") });
+  await fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "WRAPM", publicKey: "PUBm" }]);
+  // "p" is a member with no key pair at all: gets no wrap, is not a target.
+  await db.insert(apartments).values({ id: A1, householdId: hid, envelope: JSON.stringify(sealed(1, "a1")) });
+  await db.insert(apartments).values({ id: A2, householdId: hid, envelope: JSON.stringify(sealed(1, "a2")) });
+  await db.insert(ratings).values({ householdId: hid, apartmentId: A1, userId: "o", envelope: JSON.stringify(sealed(1, "r")) });
+  await db.insert(locations).values({ id: L1, householdId: hid, sortOrder: 0, envelope: JSON.stringify(sealed(1, "l")) });
+  return hid;
+}
+
+function request(over: Partial<Parameters<typeof rotateHouseholdKey>[2]> = {}) {
+  return {
+    fromKeyVersion: 1,
+    wraps: [
+      { userId: "o", wrappedKey: "NEWO", publicKey: "PUBo" },
+      { userId: "m", wrappedKey: "NEWM", publicKey: "PUBm" },
+    ],
+    recovery: { wrappedKey: "RECOV2", iv: "RIV2", kdf },
+    apartments: [
+      { id: A1, version: 1, envelope: sealed(2, "a1'") },
+      { id: A2, version: 1, envelope: sealed(2, "a2'") },
+    ],
+    ratings: [{ apartmentId: A1, userId: "o", envelope: sealed(2, "r'") }],
+    locations: [{ id: L1, envelope: sealed(2, "l'") }],
+    retiredPdfPaths: [],
+    ...over,
+  };
+}
+
+describe("listRotationTargets", () => {
+  it("names the current version and every member with a public key, pending or not", async () => {
+    const hid = await rotatableHousehold();
+    await resetMemberKeys(hid, "m", member("m2")); // m becomes pending again
+    const t = await listRotationTargets(hid);
+    expect(t.keyVersion).toBe(1);
+    expect(t.members.map((m) => m.userId).sort()).toEqual(["m", "o"]);
+    expect(t.members.find((m) => m.userId === "m")?.publicKey).toBe("PUBm2");
+  });
+});
+
+describe("rotateHouseholdKey", () => {
+  it("replaces every wrap, the kit and every row, and bumps the version", async () => {
+    const hid = await rotatableHousehold();
+    await db.update(households).set({ rotationDue: true }).where(eq(households.id, hid));
+
+    expect(await rotateHouseholdKey(hid, "o", request())).toEqual({ keyVersion: 2 });
+
+    const s = await getCryptoStatus(hid, "m", "member");
+    expect(s.keyVersion).toBe(2);
+    expect(s.rotationDue).toBe(false);
+    expect(s.wrap).toBe("NEWM");
+    expect(s.wrapKeyVersion).toBe(2);
+    expect(s.recovery?.wrappedKey).toBe("RECOV2");
+    const wraps = await db.select().from(householdKeyWraps);
+    expect(wraps.map((w) => w.userId).sort()).toEqual(["m", "o"]);
+    expect(wraps.every((w) => w.keyVersion === 2 && w.wrappedBy === "o")).toBe(true);
+
+    const a = await db.select().from(apartments).where(eq(apartments.id, A1));
+    expect(a[0].version).toBe(2);
+    expect(JSON.parse(a[0].envelope).k).toBe(2);
+    const r = await db.select().from(ratings);
+    expect(JSON.parse(r[0].envelope).ct).toBe(Buffer.from("r'").toString("base64"));
+    const l = await db.select().from(locations);
+    expect(JSON.parse(l[0].envelope).k).toBe(2);
+  });
+
+  it("leaves a null (corrupt) row untouched and still rotates", async () => {
+    const hid = await rotatableHousehold();
+    await rotateHouseholdKey(hid, "o", request({
+      apartments: [
+        { id: A1, version: 1, envelope: null },
+        { id: A2, version: 1, envelope: sealed(2, "a2'") },
+      ],
+    }));
+    const a = await db.select().from(apartments).where(eq(apartments.id, A1));
+    expect(a[0].version).toBe(1);
+    expect(JSON.parse(a[0].envelope).k).toBe(1);
+    expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(2);
+  });
+
+  it("refuses a stale version and reports the current one", async () => {
+    const hid = await rotatableHousehold();
+    await rotateHouseholdKey(hid, "o", request());
+    await expect(rotateHouseholdKey(hid, "o", request())).rejects.toMatchObject({
+      message: "Stale key",
+      status: 409,
+      details: { keyVersion: 2 },
+    });
+  });
+
+  it("refuses a wrap set that is not exactly the members with keys", async () => {
+    const hid = await rotatableHousehold();
+    await expect(
+      rotateHouseholdKey(hid, "o", request({ wraps: [{ userId: "o", wrappedKey: "NEWO", publicKey: "PUBo" }] }))
+    ).rejects.toMatchObject({ status: 409, message: /every member/ });
+    await expect(
+      rotateHouseholdKey(hid, "o", request({
+        wraps: [...request().wraps, { userId: "p", wrappedKey: "NEWP", publicKey: "PUBp" }],
+      }))
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("refuses a wrap made for a public key the member has since replaced", async () => {
+    const hid = await rotatableHousehold();
+    await resetMemberKeys(hid, "m", member("m2"));
+    await expect(rotateHouseholdKey(hid, "o", request())).rejects.toMatchObject({
+      status: 409,
+      message: /public key has changed/,
+    });
+  });
+
+  it.each([
+    ["a missing apartment", { apartments: [{ id: A1, version: 1, envelope: sealed(2) }] }],
+    ["a moved apartment version", { apartments: [{ id: A1, version: 2, envelope: sealed(2) }, { id: A2, version: 1, envelope: sealed(2) }] }],
+    ["a missing rating", { ratings: [] }],
+    ["an extra location", { locations: [{ id: L1, envelope: sealed(2) }, { id: A2, envelope: sealed(2) }] }],
+  ])("refuses %s as Stale rows", async (_label, over) => {
+    const hid = await rotatableHousehold();
+    await expect(rotateHouseholdKey(hid, "o", request(over))).rejects.toMatchObject({
+      status: 409,
+      message: "Stale rows",
+    });
+    expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(1);
+  });
+
+  it("refuses an envelope not sealed under the new version", async () => {
+    const hid = await rotatableHousehold();
+    await expect(
+      rotateHouseholdKey(hid, "o", request({ locations: [{ id: L1, envelope: sealed(1) }] }))
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      rotateHouseholdKey(hid, "o", request({ locations: [{ id: L1, envelope: sealed(3) }] }))
+    ).rejects.toMatchObject({ status: 400 });
+    // Nothing partial landed.
+    expect(await db.select().from(householdKeyWraps)).toHaveLength(2);
+    expect((await db.select().from(householdKeyWraps))[0].keyVersion).toBe(1);
+  });
+
+  it("later wraps and recoveries carry the current version", async () => {
+    const hid = await rotatableHousehold();
+    await rotateHouseholdKey(hid, "o", request());
+    await resetMemberKeys(hid, "m", member("m2"));
+    await fulfilWraps(hid, "o", [{ userId: "m", wrappedKey: "AGAIN", publicKey: "PUBm2" }]);
+    expect((await getCryptoStatus(hid, "m", "member")).wrapKeyVersion).toBe(2);
+    await recoverHousehold(hid, "m", { member: member("m3"), wrappedKey: "REC", recovery });
+    expect((await getCryptoStatus(hid, "m", "member")).wrapKeyVersion).toBe(2);
   });
 });

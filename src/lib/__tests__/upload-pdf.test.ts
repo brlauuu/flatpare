@@ -85,3 +85,28 @@ describe("uploadEncryptedFile", () => {
     expect(fetchMock.mock.calls.filter(([u]) => u === "/api/files/upload-token")).toHaveLength(1);
   });
 });
+
+// #219: a rotation uploads under a versioned name so the old file survives
+// until the rotation commits.
+describe("uploadEncryptedFile with a key version", () => {
+  it("names the Blob upload with the version", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ enabled: true, householdId: 7 })));
+    mockUpload.mockResolvedValue({ pathname: `households/7/${APT}.k2.pdf.enc` });
+    const path = await uploadEncryptedFile(bytes, APT, 2);
+    expect(path).toBe(`/api/pdf/households/7/${APT}.k2.pdf.enc`);
+    expect(mockUpload.mock.calls[0][0]).toBe(`households/7/${APT}.k2.pdf.enc`);
+  });
+
+  it("passes the version to the multipart fallback", async () => {
+    let seen: string | null = null;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/files/upload-token") return jsonResponse({ enabled: false }, 404);
+      const form = init?.body as FormData;
+      seen = String(form.get("keyVersion"));
+      expect((form.get("file") as File).name).toBe(`${APT}.k3.pdf.enc`);
+      return jsonResponse({ path: `/api/uploads/households/7/${APT}.k3.pdf.enc` }, 201);
+    }));
+    expect(await uploadEncryptedFile(bytes, APT, 3)).toBe(`/api/uploads/households/7/${APT}.k3.pdf.enc`);
+    expect(seen).toBe("3");
+  });
+});

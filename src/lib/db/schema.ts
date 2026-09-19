@@ -32,6 +32,13 @@ export const households = sqliteTable("households", {
     .notNull()
     .default(0),
   apartmentsEverAdded: integer("apartments_ever_added").notNull().default(0),
+  // Data-key rotation (#219). `keyVersion` names the data key every current
+  // wrap holds and every current envelope is sealed under (`k` in the
+  // envelope, absent = 1); the server refuses a write sealed under any other
+  // version. `rotationDue` is set by removeMember and cleared by a completed
+  // rotation, so the owner is warned when a removal's rotation did not land.
+  keyVersion: integer("key_version").notNull().default(1),
+  rotationDue: integer("rotation_due", { mode: "boolean" }).notNull().default(false),
   // Recovery kit: the data key AES-GCM-wrapped under a KEK derived from the
   // recovery code. All nullable — the owner may not have set up yet.
   recoveryWrappedKey: text("recovery_wrapped_key"),
@@ -113,6 +120,10 @@ export const householdKeyWraps = sqliteTable(
     wrappedBy: text("wrapped_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Which data key this wrap holds (households.key_version at the time it
+    // was written). A device compares it with the version of the key it has
+    // cached to know a rotation happened.
+    keyVersion: integer("key_version").notNull().default(1),
     createdAt: integer("created_at", { mode: "timestamp" }).default(
       sql`(unixepoch())`
     ),

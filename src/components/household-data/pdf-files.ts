@@ -13,10 +13,11 @@ export async function encryptAndUploadPdf(
   dataKey: CryptoKey | null,
   householdId: number,
   apartmentId: string,
-  bytes: Uint8Array<ArrayBuffer>
+  bytes: Uint8Array<ArrayBuffer>,
+  keyVersion = 1
 ): Promise<ApartmentPdf> {
   const sealed = await sealBytes(dataKey, bytes, pdfAad(householdId, apartmentId));
-  const path = await uploadEncryptedFile(sealed.ct, apartmentId);
+  const path = await uploadEncryptedFile(sealed.ct, apartmentId, keyVersion);
   return { path, iv: sealed.iv };
 }
 

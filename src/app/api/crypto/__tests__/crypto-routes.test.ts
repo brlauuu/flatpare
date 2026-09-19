@@ -22,6 +22,9 @@ import { PUT as memberKeysPUT } from "../member-keys/route";
 import { POST as resetPOST } from "../member-keys/reset/route";
 import { POST as recoverPOST } from "../recover/route";
 import { PUT as recoveryPUT } from "../recovery/route";
+import { GET as rotateGET, POST as rotatePOST } from "../rotate/route";
+import { apartments } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 const kdf = { salt: "AAAA", memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 };
 const member = (tag: string) => ({
@@ -50,6 +53,7 @@ let hid: number;
 
 beforeEach(async () => {
   vi.stubEnv("FLATPARE_ENCRYPTION", "on");
+  await db.delete(apartments);
   await db.delete(householdKeyWraps);
   await db.delete(memberKeys);
   await db.delete(householdMembers);
@@ -277,5 +281,70 @@ describe("recover + recovery", () => {
     );
     expect(ok.status).toBe(200);
     expect((await (await statusGET()).json()).recovery.wrappedKey).toBe("R3");
+  });
+});
+
+// ---- /api/crypto/rotate (#219) ---------------------------------------------
+
+const A1 = "11111111-1111-4111-8111-111111111111";
+const sealedK = (k: number) => ({ v: 1, k, iv: "AAAAAAAAAAAAAAAA", ct: "QUJD" });
+
+describe("/api/crypto/rotate", () => {
+  async function seeded() {
+    await ownerSetup();
+    await db.insert(apartments).values({ id: A1, householdId: hid, envelope: JSON.stringify(sealedK(1)) });
+  }
+  const body = (retired: string[] = []) => ({
+    fromKeyVersion: 1,
+    wraps: [{ userId: "o", wrappedKey: "NEWO", publicKey: "PUBo" }],
+    recovery,
+    apartments: [{ id: A1, version: 1, envelope: sealedK(2) }],
+    ratings: [],
+    locations: [],
+    retiredPdfPaths: retired,
+  });
+
+  it("GET lists the version and targets for the owner", async () => {
+    await seeded();
+    const res = await rotateGET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ keyVersion: 1, members: [{ userId: "o", publicKey: "PUBo" }] });
+  });
+
+  it("refuses a member on both verbs, and answers 409 when encryption is off", async () => {
+    await seeded();
+    await as("m", "member", hid);
+    expect((await rotateGET()).status).toBe(403);
+    expect((await rotatePOST(post(body()))).status).toBe(403);
+    vi.stubEnv("FLATPARE_ENCRYPTION", "off");
+    await as("o", "owner", hid);
+    expect((await rotateGET()).status).toBe(409);
+  });
+
+  it("POST commits and deletes the retired PDFs afterwards", async () => {
+    await seeded();
+    const res = await rotatePOST(post(body([`/api/uploads/households/${hid}/${A1}.pdf.enc`])));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ keyVersion: 2 });
+    const [row] = await db.select().from(apartments).where(eq(apartments.id, A1));
+    expect(JSON.parse(row.envelope).k).toBe(2);
+    expect(row.version).toBe(2);
+    // The file did not exist on disk; deletion is best-effort and silent.
+  });
+
+  it("POST refuses a retired path outside the household before touching anything", async () => {
+    await seeded();
+    const res = await rotatePOST(post(body([`/api/uploads/households/${hid + 1}/${A1}.pdf.enc`])));
+    expect(res.status).toBe(400);
+    const [row] = await db.select().from(apartments).where(eq(apartments.id, A1));
+    expect(row.version).toBe(1);
+  });
+
+  it("POST relays Stale key with the current version", async () => {
+    await seeded();
+    expect((await rotatePOST(post(body()))).status).toBe(200);
+    const res = await rotatePOST(post(body()));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "Stale key", keyVersion: 2 });
   });
 });

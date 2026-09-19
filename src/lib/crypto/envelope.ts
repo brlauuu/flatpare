@@ -6,8 +6,12 @@ import { randomIv } from "./keys";
 // v0: the plaintext value, written only when the deployment runs with
 // FLATPARE_ENCRYPTION=off. A row's envelope version is how a reader tells
 // which it is; assertEnvelopeMode is how a deployment refuses the other.
+// `k` (v1 only) is the data-key version the row was sealed under; absent
+// means 1 (#219). The server compares it with the household's current
+// version on every write; the client never reads it — a key that does not
+// open a row is a key that does not open a row, whatever `k` says.
 export type Envelope =
-  | { v: 1; iv: string; ct: string }
+  | { v: 1; k?: number; iv: string; ct: string }
   | { v: 0; data: unknown };
 
 const enc = new TextEncoder();
@@ -31,7 +35,8 @@ function requireAad(aad: string): Uint8Array<ArrayBuffer> {
 export async function seal(
   key: CryptoKey | null,
   value: unknown,
-  aad: string
+  aad: string,
+  keyVersion = 1
 ): Promise<Envelope> {
   const additionalData = requireAad(aad);
   if (key === null) return { v: 0, data: value };
@@ -41,7 +46,7 @@ export async function seal(
     key,
     enc.encode(JSON.stringify(value))
   );
-  return { v: 1, iv: toBase64(iv), ct: toBase64(ct) };
+  return { v: 1, k: keyVersion, iv: toBase64(iv), ct: toBase64(ct) };
 }
 
 export async function open(

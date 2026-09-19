@@ -6,6 +6,7 @@ import { apartments } from "@/lib/db/schema";
 import {
   apiErrorResponse,
   parseBody,
+  requireCurrentKey,
   requireEnvelopeMode,
   requireMember,
 } from "@/lib/api-route";
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
     const { householdId } = await requireMember();
     const body = await parseBody(req, createSchema);
     requireEnvelopeMode(body.envelope);
+    await requireCurrentKey(householdId, body.envelope);
     // Duplicate-id and MAX_APARTMENTS handling both live in the store, so
     // the cap is enforced for every caller rather than only this route.
     const created = await createApartmentRow(householdId, {

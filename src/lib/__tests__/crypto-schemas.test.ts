@@ -6,6 +6,7 @@ import {
   recoverSchema,
   envelopeSchema,
 } from "../crypto-schemas";
+import { rotateSchema } from "../crypto-schemas";
 
 const kdf = { salt: "AAAA", memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 };
 const member = {
@@ -110,5 +111,31 @@ describe("envelopeSchema", () => {
     expect(envelopeSchema.safeParse({ v: 2, iv: "AA==", ct: "AA==" }).success).toBe(false);
     expect(envelopeSchema.safeParse({ v: 1, iv: "AA==", ct: "not base64!" }).success).toBe(false);
     expect(envelopeSchema.safeParse({ v: 1, iv: "AA==" }).success).toBe(false);
+  });
+});
+
+// #219
+describe("envelope key version and rotateSchema", () => {
+  const base64 = "QUJD";
+  it("accepts a v1 envelope with or without k, and refuses k < 1", () => {
+    expect(envelopeSchema.safeParse({ v: 1, iv: base64, ct: base64 }).success).toBe(true);
+    expect(envelopeSchema.safeParse({ v: 1, k: 2, iv: base64, ct: base64 }).success).toBe(true);
+    expect(envelopeSchema.safeParse({ v: 1, k: 0, iv: base64, ct: base64 }).success).toBe(false);
+    expect(envelopeSchema.safeParse({ v: 1, k: 1.5, iv: base64, ct: base64 }).success).toBe(false);
+  });
+
+  it("accepts a rotation with kept (null) rows and an empty wrap list", () => {
+    const kdf = { salt: base64, memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 };
+    const ok = rotateSchema.safeParse({
+      fromKeyVersion: 1,
+      wraps: [],
+      recovery: { wrappedKey: base64, iv: base64, kdf },
+      apartments: [{ id: "11111111-1111-4111-8111-111111111111", version: 1, envelope: null }],
+      ratings: [],
+      locations: [],
+      retiredPdfPaths: ["/api/pdf/households/1/x.pdf.enc"],
+    });
+    expect(ok.success).toBe(true);
+    expect(rotateSchema.safeParse({}).success).toBe(false);
   });
 });
