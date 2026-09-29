@@ -41,6 +41,8 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     // Unlimited by default so every existing page test keeps its current
     // behaviour: a test that cares about a cap passes `limits` explicitly.
     limits: { maxMembers: null, maxApartments: null },
+    // Billing off, the self-hoster default: no balance is shown.
+    credits: null,
     dataKey: null,
     status: "ready",
     error: null,

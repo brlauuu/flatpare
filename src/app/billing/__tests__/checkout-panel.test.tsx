@@ -111,6 +111,26 @@ describe("CheckoutPanel", () => {
     expect(assign).toHaveBeenCalledWith("/apartments");
   });
 
+  it("waits for the total to GROW when a household is topping up (#305)", async () => {
+    vi.useFakeTimers();
+    let granted = 40;
+    route({ status: () => jsonRes({ granted }) });
+    cleanup();
+    render(<CheckoutPanel grantedAtStart={40} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /buy 40 apartments/i }));
+    });
+
+    // They already hold 40. "Above zero" is true before they have paid
+    // anything, and used to send them away from the payment form.
+    await tick(6000);
+    expect(assign).not.toHaveBeenCalled();
+
+    granted = 80;
+    await tick(2500);
+    expect(assign).toHaveBeenCalledWith("/apartments");
+  });
+
   it("keeps polling while the status call fails, rather than giving up", async () => {
     vi.useFakeTimers();
     let calls = 0;

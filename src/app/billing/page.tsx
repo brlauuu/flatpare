@@ -5,7 +5,8 @@ import { resolveHouseholdIdentity } from "@/lib/session";
 import { readCreditBalance } from "@/lib/billing";
 import { CheckoutPanel } from "./checkout-panel";
 
-// Where a household that has never purchased lands (src/lib/billing-gate.ts).
+// Where a household that has never purchased lands (src/lib/billing-gate.ts),
+// and where "Buy more" takes one that has (#305).
 //
 // Deliberately outside the four signed-in layouts: those mount CryptoGate and
 // the household data store, neither of which is needed to buy something, and
@@ -19,8 +20,8 @@ export default async function BillingPage() {
   if (!identity) redirect("/");
 
   const balance = await readCreditBalance(identity.householdId);
-  // Nothing to sell: either billing is off (self-hosted) or they already own
-  // credits. Either way this page has no purpose for them.
+  // Nothing to sell when billing is off (self-hosted). A household that
+  // already owns credits is welcome: topping up is the `returning` copy below.
   if (!balance.enabled) redirect("/apartments");
 
   const returning = balance.granted > 0;
@@ -55,7 +56,7 @@ export default async function BillingPage() {
           )}
         </div>
 
-        <CheckoutPanel />
+        <CheckoutPanel grantedAtStart={balance.granted} />
 
         <p className="text-xs text-muted-foreground text-pretty">
           Payment is handled by Stripe. Flatpare never sees your card details,

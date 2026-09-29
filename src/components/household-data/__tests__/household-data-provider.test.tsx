@@ -32,6 +32,8 @@ interface FakeServer {
     distance: (from: string, to: string) => unknown;
     checkListing: (url: string) => unknown;
   };
+  // What GET /api/billing/status answers; `credits` is granted minus used.
+  billing: { enabled: boolean; granted: number; used: number; fail: boolean };
   calls: { method: string; url: string }[];
 }
 
@@ -45,6 +47,7 @@ function makeServer(): FakeServer {
       distance: () => ({ bikeMin: 12, transitMin: 20 }),
       checkListing: () => ({ gone: false }),
     },
+    billing: { enabled: false, granted: 0, used: 0, fail: false },
     calls: [],
   };
 }
@@ -65,8 +68,17 @@ function installFetch(server: FakeServer) {
       server.calls.push({ method, url });
       const body = init?.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
 
+      if (url === "/api/billing/status" && method === "GET") {
+        if (server.billing.fail) return json({ error: "boom" }, 500);
+        const { enabled, granted, used } = server.billing;
+        return json({ enabled, granted, used, remaining: Math.max(0, granted - used) });
+      }
       if (url === "/api/apartments" && method === "GET") return json([...server.apartments.values()]);
       if (url === "/api/apartments" && method === "POST") {
+        if (server.billing.enabled) {
+          if (server.billing.used >= server.billing.granted) return json({ error: "No apartment credits left" }, 402);
+          server.billing.used += 1;
+        }
         if (server.apartments.has(body.id)) return json({ error: "Duplicate id" }, 409);
         const row: ApartmentRow = { id: body.id, version: 1, envelope: body.envelope, createdAt: now(), updatedAt: now() };
         server.apartments.set(row.id, row);
@@ -626,5 +638,85 @@ describe("moving between sections (#302)", () => {
     expect(captured!.status).toBe("ready");
     expect(captured!.error).toBeNull();
     expect(captured!.apartments).toHaveLength(1);
+  });
+});
+
+describe("apartment credits (#305)", () => {
+  it("exposes no balance when billing is off", async () => {
+    renderProvider();
+    await waitForContext((c) => c.status === "ready");
+    // Anchor: the status call has been made and answered.
+    await waitFor(() => expect(server.calls.some((c) => c.url === "/api/billing/status")).toBe(true));
+    await act(async () => {
+      await captured!.createLocation(L1, { label: "Work", address: "Somewhere 1" } as Location);
+    });
+    expect(captured!.credits).toBeNull();
+  });
+
+  it("exposes the household's balance when billing is on", async () => {
+    server.billing = { enabled: true, granted: 40, used: 37, fail: false };
+    renderProvider();
+    const ctx = await waitForContext((c) => c.credits !== null);
+    expect(ctx.credits).toEqual({ granted: 40, used: 37, remaining: 3 });
+  });
+
+  it("updates after an apartment is added, without a reload", async () => {
+    server.billing = { enabled: true, granted: 40, used: 37, fail: false };
+    renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 3);
+
+    await act(async () => {
+      await captured!.createApartment(A1, { ...emptyApartment(), name: "New" });
+    });
+    const ctx = await waitForContext((c) => c.credits?.remaining === 2);
+    expect(ctx.credits).toEqual({ granted: 40, used: 38, remaining: 2 });
+  });
+
+  it("corrects the number when the add is refused because another member spent the last credit", async () => {
+    server.billing = { enabled: true, granted: 40, used: 39, fail: false };
+    renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 1);
+
+    server.billing.used = 40; // someone else, meanwhile
+    await act(async () => {
+      await expect(
+        captured!.createApartment(A1, { ...emptyApartment(), name: "New" })
+      ).rejects.toThrow();
+    });
+    const ctx = await waitForContext((c) => c.credits?.remaining === 0);
+    expect(ctx.apartments).toHaveLength(0);
+  });
+
+  it("picks up another member's spending on a section switch", async () => {
+    server.billing = { enabled: true, granted: 40, used: 10, fail: false };
+    pathname = "/apartments";
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 30);
+
+    server.billing.used = 12;
+    navigate("/settings");
+    await waitForContext((c) => c.credits?.remaining === 28);
+  });
+
+  it("keeps the rows and the last balance when the balance cannot be read", async () => {
+    server.billing = { enabled: true, granted: 40, used: 10, fail: false };
+    pathname = "/apartments";
+    await seed(A1, { ...emptyApartment(), name: "First" });
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 30);
+
+    server.billing.fail = true;
+    const before = server.calls.filter((c) => c.url === "/api/billing/status").length;
+    navigate("/settings");
+    await waitFor(() =>
+      expect(server.calls.filter((c) => c.url === "/api/billing/status").length).toBe(before + 1)
+    );
+    await act(async () => {
+      await captured!.createLocation(L1, { label: "Work", address: "Somewhere 1" } as Location);
+    });
+
+    expect(captured!.status).toBe("ready");
+    expect(captured!.apartments).toHaveLength(1);
+    expect(captured!.credits?.remaining).toBe(30);
   });
 });

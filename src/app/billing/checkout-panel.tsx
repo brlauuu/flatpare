@@ -23,7 +23,12 @@ const stripePromise = loadStripe(
 const POLL_MS = 2000;
 const POLL_TIMEOUT_MS = 90_000;
 
-export function CheckoutPanel() {
+// `grantedAtStart` is what the household held when the page rendered. The
+// purchase has landed when the total has GROWN past it — not when it is above
+// zero, which for a household topping up (#305) is already true before they
+// have paid anything, and sent them back to the app two seconds into the
+// payment form.
+export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
@@ -55,7 +60,7 @@ export function CheckoutPanel() {
         const res = await fetch("/api/billing/status", { cache: "no-store" });
         if (res.ok) {
           const body = (await res.json()) as { granted: number };
-          if (body.granted > 0) {
+          if (body.granted > grantedAtStart) {
             // Full navigation, so the layout gate re-runs server-side and
             // lets us through rather than trusting client state.
             // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -78,7 +83,7 @@ export function CheckoutPanel() {
       cancelled = true;
       clearTimeout(id);
     };
-  }, [clientSecret]);
+  }, [clientSecret, grantedAtStart]);
 
   if (error) {
     return (
