@@ -60,6 +60,10 @@ export interface HouseholdDataContextValue {
   // axis means unlimited, which is the self-hoster's default; the server
   // enforces these regardless of what the UI does with them.
   limits: Limits;
+  // Remaining apartment credits (#305), shared by the whole household (#294).
+  // null when billing is off, and until the first answer arrives — "nothing
+  // to show", never "zero".
+  credits: Credits | null;
   // The unlocked household data key (null in off mode). Pages that seal or
   // open PDFs themselves (upload, View PDF, reprocess) read it from here so
   // they never touch CryptoContext directly.
@@ -88,6 +92,12 @@ export interface HouseholdDataContextValue {
   // and PDF under a fresh key, re-wraps it to every member, and mints a new
   // recovery kit — the returned code must be shown to the owner once.
   rotateDataKey(): Promise<{ recoveryCode: string; report: RotationReport }>;
+}
+
+export interface Credits {
+  granted: number;
+  used: number;
+  remaining: number;
 }
 
 // Exported so component tests can render consumers under a hand-built value
@@ -141,6 +151,20 @@ export function HouseholdDataProvider({
   const [error, setError] = useState<string | null>(null);
   const [store, setStore] = useState<Store>(EMPTY_STORE);
   const [enrichmentError, setEnrichmentError] = useState<Record<string, string>>({});
+  const [credits, setCredits] = useState<Credits | null>(null);
+
+  // Read from the server rather than counted here: another member's add
+  // spends from the same pool, and a refused or refunded create does not move
+  // the counter at all. Never blocks or fails anything — a balance that could
+  // not be read keeps the last one shown.
+  const refreshCredits = useCallback(async () => {
+    try {
+      const b = await getJson<Credits & { enabled: boolean }>("/api/billing/status");
+      setCredits(b.enabled ? { granted: b.granted, used: b.used, remaining: b.remaining } : null);
+    } catch {
+      // Keep what is on screen.
+    }
+  }, []);
 
   // Async writers read the latest store through this ref rather than a
   // closure, so two awaited writes in a row see each other's result.
@@ -204,6 +228,8 @@ export function HouseholdDataProvider({
 
   const load = useCallback(async (background: boolean) => {
     const commitsAtStart = commits.current;
+    // Beside the rows, not part of them: the page must not wait on it.
+    void refreshCredits();
     try {
       const [aRows, rRows, lRows] = await Promise.all([
         getJson<ApartmentRow[]>("/api/apartments"),
@@ -230,7 +256,7 @@ export function HouseholdDataProvider({
       setError(messageOf(err));
       setStatus("error");
     }
-  }, [commit, decodeApartment, decodeLocation, decodeRating]);
+  }, [commit, decodeApartment, decodeLocation, decodeRating, refreshCredits]);
 
   const reload = useCallback(() => load(false), [load]);
 
@@ -372,7 +398,14 @@ export function HouseholdDataProvider({
   const createApartment = useCallback(
     async (id: string, data: Apartment): Promise<ApartmentView> => {
       const envelope = await sealApartment(dataKey, householdId, id, data, keyVersion);
-      const saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
+      let saved: ApartmentRow;
+      try {
+        saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
+      } finally {
+        // Refused or not: a 402 means someone else spent the last credit, and
+        // the number on screen is what told this user they had one.
+        void refreshCredits();
+      }
       commit((s) => ({
         ...s,
         apartments: [
@@ -383,7 +416,7 @@ export function HouseholdDataProvider({
       void runEnrichment(id, planEnrichment(null, data));
       return viewOf(id);
     },
-    [commit, dataKey, householdId, keyVersion, runEnrichment, send, viewOf]
+    [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, viewOf]
   );
 
   const updateApartment = useCallback(
@@ -653,6 +686,7 @@ export function HouseholdDataProvider({
       apartments,
       locations,
       enrichmentError,
+      credits,
       reload,
       createApartment,
       updateApartment,
@@ -667,7 +701,7 @@ export function HouseholdDataProvider({
       rotateDataKey,
     }),
     [
-      identity, limits, dataKey, status, error, apartments, locations, enrichmentError, reload,
+      identity, limits, credits, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
       createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
     ]

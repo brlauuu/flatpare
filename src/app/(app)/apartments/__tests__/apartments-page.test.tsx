@@ -342,6 +342,37 @@ describe("apartment limit (#187)", () => {
     expect(screen.getByRole("link", { name: "Upload New" })).toBeInTheDocument();
   });
 
+  it("shows no credit balance when billing is off (#305)", () => {
+    // The fixture's default is `credits: null`, the self-hoster's case.
+    renderWithHouseholdData(<ApartmentsPage />, { apartments: three });
+    expect(screen.queryByTestId("credit-balance")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /buy more/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the credit balance on the empty state too (#305)", () => {
+    // A household that just bought, or deleted everything, holds no
+    // apartments and still has a balance. Found with a real browser: the
+    // empty state is a separate branch that skips the header.
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: [],
+      credits: { granted: 40, used: 0, remaining: 40 },
+    });
+    expect(screen.getByText("No apartments yet")).toBeInTheDocument();
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("40 apartments left to add");
+  });
+
+  it("shows the credit balance beside the held-at-once counter (#305)", () => {
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: three,
+      limits: { maxMembers: null, maxApartments: 40 },
+      credits: { granted: 40, used: 36, remaining: 4 },
+    });
+    // Two different numbers, and they must not read as one.
+    expect(screen.getByText("3 of 40")).toBeInTheDocument();
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("4 apartments left to add");
+    expect(screen.getByRole("link", { name: /buy more/i })).toHaveAttribute("href", "/billing");
+  });
+
   it("shows the count against the cap when one is set", () => {
     renderWithHouseholdData(<ApartmentsPage />, {
       apartments: three,

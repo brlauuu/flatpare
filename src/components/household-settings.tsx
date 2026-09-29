@@ -1,5 +1,6 @@
 "use client";
 
+import { CreditBalance } from "@/components/credit-balance";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -185,6 +186,8 @@ export function HouseholdSettings() {
           </span>
         )}
       </div>
+      {/* Renders nothing when billing is off. */}
+      <CreditBalance />
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <ul className="divide-y rounded-md border">

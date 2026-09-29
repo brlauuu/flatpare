@@ -1,5 +1,6 @@
 "use client";
 
+import { CreditBalance } from "@/components/credit-balance";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -173,6 +174,9 @@ export default function ApartmentsPage() {
         <Link href="/apartments/new" className={buttonVariants()}>
           Upload your first listing
         </Link>
+        {/* Here too: a household that just bought, or deleted everything,
+            holds no apartments and still has a balance (#305). */}
+        <CreditBalance />
       </div>
     );
   }
@@ -234,7 +238,7 @@ export default function ApartmentsPage() {
         )}
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h1 className="text-2xl font-semibold">Apartments</h1>
           {/* Only shown when a cap is configured: a self-hoster with no
               MAX_APARTMENTS must not see a counter implying one exists. */}
@@ -243,6 +247,8 @@ export default function ApartmentsPage() {
               {apartments.length} of {limits.maxApartments}
             </span>
           )}
+          {/* Renders nothing when billing is off. */}
+          <CreditBalance />
         </div>
         {/* Wraps on phones: the control cluster is ~390px wide and used to
             push the document past the viewport. */}

@@ -24,7 +24,9 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => redirect(url) }))
 
 // Not under test here; it has its own file.
 vi.mock("../checkout-panel", () => ({
-  CheckoutPanel: () => <div data-testid="checkout-panel" />,
+  CheckoutPanel: ({ grantedAtStart }: { grantedAtStart?: number }) => (
+    <div data-testid="checkout-panel" data-granted-at-start={grantedAtStart} />
+  ),
 }));
 vi.mock("@/components/nav-bar", () => ({
   NavBar: ({ userName }: { userName: string }) => <div data-testid="nav">{userName}</div>,
@@ -91,6 +93,14 @@ describe("BillingPage", () => {
       screen.getByRole("heading", { name: /add 40 more apartments/i })
     ).toBeInTheDocument();
     expect(screen.getByText(/used 40 of 40 apartments/i)).toBeInTheDocument();
+  });
+
+  it("tells the checkout what the household already holds (#305)", async () => {
+    // So a top-up waits for the total to grow, rather than for it to be
+    // above zero, which it already is.
+    readCreditBalance.mockResolvedValue(balance({ granted: 40, used: 12, remaining: 28 }));
+    await renderPage();
+    expect(screen.getByTestId("checkout-panel").dataset.grantedAtStart).toBe("40");
   });
 
   it("redirects to /apartments when billing is off", async () => {

@@ -48,9 +48,10 @@ let householdData = makeHouseholdData();
 function renderAs(
   me: { userId: string; role: "owner" | "member" },
   state: CryptoContextValue["state"] = "unlocked",
-  limits: Limits = { maxMembers: null, maxApartments: null }
+  limits: Limits = { maxMembers: null, maxApartments: null },
+  credits: { granted: number; used: number; remaining: number } | null = null
 ) {
-  householdData = makeHouseholdData({ limits });
+  householdData = makeHouseholdData({ limits, credits });
   fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     if (url === "/api/household/members") return jsonRes({ members, me });
@@ -163,6 +164,28 @@ describe("member limit (#187)", () => {
     await screen.findByText("Household");
     expect(screen.queryByText(/ of \d+$/)).not.toBeInTheDocument();
   });
+
+  it("shows no credit balance when billing is off (#305)", async () => {
+    renderAs({ userId: "o", role: "owner" });
+    await screen.findByText("Household");
+    expect(screen.queryByTestId("credit-balance")).not.toBeInTheDocument();
+  });
+
+  it.each(["owner", "member"] as const)(
+    "shows the credit balance to the %s (#305)",
+    async (role) => {
+      // One shared pool (#294): everyone sees what is left, not only the
+      // person who paid.
+      renderAs({ userId: role === "owner" ? "o" : "m", role }, "unlocked", undefined, {
+        granted: 40,
+        used: 40,
+        remaining: 0,
+      });
+      await screen.findByText("Household");
+      expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to add");
+      expect(screen.getByRole("link", { name: /buy more/i })).toBeInTheDocument();
+    }
+  );
 
   it("counts members plus pending invitations against the cap", async () => {
     // The fixture has 2 members and 1 pending invitation.
