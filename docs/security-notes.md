@@ -470,7 +470,7 @@ operator — can retrieve that data on their behalf. Gating on `remaining === 0`
 lock a paying customer out of data that cannot be recovered for them. Running out of
 credits means "no new apartments", never "no access".
 
-`/billing` sits outside the four signed-in layouts for the related reason: those mount
+`/billing` sits outside the shared signed-in layout (`src/app/(app)/layout.tsx`) for the related reason: that mounts
 `CryptoGate`, and paying must not require first unlocking a key the user may not have
 set up.
 

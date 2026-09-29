@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import ErrorBoundary from "../error";
-import GuidePage from "../guide/page";
+import GuidePage from "../(app)/guide/page";
 
 afterEach(() => {
   cleanup();

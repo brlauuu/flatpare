@@ -232,7 +232,9 @@ export function CryptoProvider({
         body = children;
         break;
       case "loading":
-        body = <p className="text-sm text-muted-foreground">Loading…</p>;
+        // Capped like the sections are (62rem, see src/app/(app)/section-width.tsx)
+        // so it sits where the page will, now that <main> is full width.
+        body = <p className="mx-auto w-full max-w-[62rem] text-sm text-muted-foreground">Loading…</p>;
         break;
       case "error":
         body = (
