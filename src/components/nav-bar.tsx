@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -23,6 +23,22 @@ const navItems = [
   { href: "/settings", label: "Settings" },
   { href: "/guide", label: "Guide" },
 ];
+
+// Marks the link that was just clicked while its page is on the way (#302).
+// loading.tsx covers the page area; this covers the case where the loading
+// state has not been prefetched yet, so the click still visibly registers.
+// Only the opacity changes, so nothing shifts.
+function NavLabel({ children }: { children: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      data-pending={pending ? "" : undefined}
+      className={cn("transition-opacity", pending && "animate-pulse opacity-60")}
+    >
+      {children}
+    </span>
+  );
+}
 
 export function NavBar({ userName }: { userName: string }) {
   const pathname = usePathname();
@@ -63,7 +79,7 @@ export function NavBar({ userName }: { userName: string }) {
                   : "text-muted-foreground"
               )}
             >
-              {item.label}
+              <NavLabel>{item.label}</NavLabel>
             </Link>
           ))}
         </nav>
@@ -97,7 +113,7 @@ export function NavBar({ userName }: { userName: string }) {
                 : "text-muted-foreground"
             )}
           >
-            {item.label}
+            <NavLabel>{item.label}</NavLabel>
           </Link>
         ))}
       </nav>

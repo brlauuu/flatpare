@@ -12,6 +12,9 @@ import {
   type HouseholdDataContextValue,
 } from "../household-data-provider";
 
+let pathname: string | null = "/apartments";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+
 const HID = 7;
 const ME = { userId: "u-me", householdId: HID, userName: "Me" };
 const A1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -168,18 +171,23 @@ function Capture() {
 const cryptoRefresh = vi.fn(async () => {});
 let cryptoKeyVersion: number | undefined = undefined;
 
+// The keys object is built once per render call and reused by `tree()`, the
+// way CryptoProvider keeps its identity stable: a rerender must not look like
+// a key change, or the store would reload for that reason instead.
 function renderProvider() {
   const crypto = {
     keys: { userId: ME.userId, householdId: HID, privateKey: {} as CryptoKey, dataKey, keyVersion: cryptoKeyVersion },
     refresh: cryptoRefresh,
   } as unknown as CryptoContextValue;
-  return render(
+  const tree = () => (
     <CryptoContext.Provider value={crypto}>
       <HouseholdDataProvider identity={ME} limits={{ maxMembers: null, maxApartments: null }}>
         <Capture />
       </HouseholdDataProvider>
     </CryptoContext.Provider>
   );
+  const view = render(tree());
+  return { ...view, navigate: (to: string) => { pathname = to; view.rerender(tree()); } };
 }
 
 async function seed(id: string, data: Apartment, version = 1) {
@@ -511,5 +519,112 @@ describe("data-key version", () => {
     });
     await expect(ctx.updateApartment(A1, (a) => ({ ...a, name: "Newer" }))).rejects.toThrow(/household key was changed/i);
     expect(cryptoRefresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("moving between sections (#302)", () => {
+  const gets = () => server.calls.filter((c) => c.method === "GET" && c.url === "/api/apartments").length;
+
+  beforeEach(() => {
+    pathname = "/apartments";
+  });
+
+  it("refreshes in the background and never returns to the loading state", async () => {
+    await seed(A1, { ...emptyApartment(), name: "First" });
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.apartments.length === 1);
+    expect(gets()).toBe(1);
+
+    // Another member adds one while we are looking at the list.
+    await seed(A2, { ...emptyApartment(), name: "Second" });
+    const statuses: string[] = [];
+    const stop = setInterval(() => statuses.push(screen.getByTestId("status").textContent ?? ""), 1);
+    navigate("/compare");
+    await waitForContext((c) => c.apartments.length === 2);
+    clearInterval(stop);
+
+    expect(gets()).toBe(2);
+    expect(statuses.every((s) => s === "ready")).toBe(true);
+  });
+
+  it("does not refetch when moving within a section", async () => {
+    await seed(A1, { ...emptyApartment(), name: "First" });
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready");
+
+    navigate(`/apartments/${A1}`);
+    navigate("/apartments/new");
+    // Anchor: a real write round-trips after the navigations, so a refresh
+    // they had started would have been recorded by now.
+    await act(async () => {
+      await captured!.createLocation(L1, { label: "Work", address: "Somewhere 1" } as Location);
+    });
+    expect(gets()).toBe(1);
+  });
+
+  it("drops a background refresh that a write overtook", async () => {
+    await seed(A1, { ...emptyApartment(), name: "First" });
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready");
+
+    // Hold the refresh's apartment list until after the write has landed.
+    const real = globalThis.fetch as Mock;
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    const stale = JSON.stringify([...server.apartments.values()]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init?: RequestInit) => {
+        if (input === "/api/apartments" && (init?.method ?? "GET") === "GET") {
+          server.calls.push({ method: "GET", url: input });
+          await held;
+          return new Response(stale, { status: 200, headers: { "content-type": "application/json" } });
+        }
+        return real(input, init);
+      })
+    );
+
+    navigate("/compare");
+    await waitFor(() => expect(gets()).toBe(2));
+    await act(async () => {
+      await captured!.updateApartment(A1, (a) => ({ ...a, name: "Renamed" }));
+    });
+    await act(async () => {
+      release();
+      await held;
+    });
+    // Anchor on a further round trip, so the held refresh has fully settled.
+    await act(async () => {
+      await captured!.createLocation(L1, { label: "Work", address: "Somewhere 1" } as Location);
+    });
+
+    expect(captured!.apartments[0].name).toBe("Renamed");
+  });
+
+  it("keeps the page when a background refresh fails", async () => {
+    await seed(A1, { ...emptyApartment(), name: "First" });
+    const { navigate } = renderProvider();
+    await waitForContext((c) => c.status === "ready");
+
+    const real = globalThis.fetch as Mock;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init?: RequestInit) => {
+        if ((init?.method ?? "GET") === "GET") {
+          server.calls.push({ method: "GET", url: input });
+          return new Response(JSON.stringify({ error: "boom" }), { status: 500 });
+        }
+        return real(input, init);
+      })
+    );
+    navigate("/settings");
+    await waitFor(() => expect(gets()).toBe(2));
+    await act(async () => {
+      await captured!.createLocation(L1, { label: "Work", address: "Somewhere 1" } as Location);
+    });
+
+    expect(captured!.status).toBe("ready");
+    expect(captured!.error).toBeNull();
+    expect(captured!.apartments).toHaveLength(1);
   });
 });

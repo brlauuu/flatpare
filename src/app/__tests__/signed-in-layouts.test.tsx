@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
-// The four signed-in layouts are near-identical on purpose, and what they
-// compose is a contract rather than a coincidence:
+// Every signed-in section shares ONE layout, src/app/(app)/layout.tsx (#302),
+// and what it composes is a contract rather than a coincidence:
 //
 //   resolveHouseholdIdentity -> requirePurchase -> CryptoGate ->
 //   HouseholdDataProvider -> children
@@ -11,8 +11,13 @@ import { render, screen, cleanup } from "@testing-library/react";
 // CryptoGate so `dataKey` exists when the store decodes, and it is mounted in
 // the layouts rather than inside crypto-gate.tsx specifically to break a
 // src/components/crypto <-> src/components/household-data import cycle (E3).
-// A well-meaning refactor that hoists the provider out, or drops the gate from
-// one of the four, is what this file exists to fail on.
+// A well-meaning refactor that hoists the provider out, or drops the gate, is
+// what this file exists to fail on.
+//
+// It was four layouts, one per section, until #302. The second half of this
+// file pins why it must not become four again: a section that brings its own
+// async layout makes every switch into it wait on the server and remount the
+// providers.
 
 const authMock = vi.fn();
 vi.mock("@/auth", () => ({ auth: () => authMock() }));
@@ -58,17 +63,11 @@ vi.mock("@/components/household-data/household-data-provider", () => ({
   ),
 }));
 
-import ApartmentsLayout from "../apartments/layout";
-import CompareLayout from "../compare/layout";
-import GuideLayout from "../guide/layout";
-import SettingsLayout from "../settings/layout";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import AppLayout from "../(app)/layout";
 
-const LAYOUTS = [
-  ["apartments", ApartmentsLayout],
-  ["compare", CompareLayout],
-  ["guide", GuideLayout],
-  ["settings", SettingsLayout],
-] as const;
+const LAYOUTS = [["shared", AppLayout]] as const;
 
 const IDENTITY = { householdId: 7, userId: "o", role: "owner" as const };
 
@@ -153,5 +152,38 @@ describe.each(LAYOUTS)("%s layout", (name, Layout) => {
     requirePurchase.mockRejectedValue(new Error("NEXT_REDIRECT:/billing"));
     await expect(renderLayout(Layout)).rejects.toThrow("NEXT_REDIRECT:/billing");
     expect(screen.queryByTestId("child")).not.toBeInTheDocument();
+  });
+});
+
+describe("section layouts", () => {
+  const root = join(process.cwd(), "src/app/(app)");
+  const nested: string[] = [];
+  (function walk(dir: string) {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (name === "layout.tsx" && dir !== root) nested.push(path);
+    }
+  })(root);
+
+  it("finds the sections", () => {
+    for (const section of ["apartments", "compare", "settings", "guide"]) {
+      expect(existsSync(join(root, section, "page.tsx")), section).toBe(true);
+    }
+    expect(nested.length).toBeGreaterThan(0);
+  });
+
+  it.each(nested.map((p) => [p.slice(root.length + 1), p]))(
+    "%s awaits nothing and mounts no provider",
+    (_name, path) => {
+      const source = readFileSync(path, "utf8");
+      expect(source).not.toMatch(/\basync\b/);
+      expect(source).not.toMatch(/\bawait\b/);
+      expect(source).not.toMatch(/CryptoGate|HouseholdDataProvider|NavBar|@\/auth/);
+    }
+  );
+
+  it("has a loading state beside the shared layout", () => {
+    expect(existsSync(join(root, "loading.tsx"))).toBe(true);
   });
 });

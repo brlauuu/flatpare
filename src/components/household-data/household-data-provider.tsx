@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { CryptoContext } from "@/components/crypto/crypto-context";
 import {
   openApartment,
@@ -144,7 +145,11 @@ export function HouseholdDataProvider({
   // Async writers read the latest store through this ref rather than a
   // closure, so two awaited writes in a row see each other's result.
   const storeRef = useRef<Store>(EMPTY_STORE);
+  // Counts commits, so a background refresh can tell that something was
+  // written while it was in flight and step aside.
+  const commits = useRef(0);
   const commit = useCallback((update: (prev: Store) => Store) => {
+    commits.current += 1;
     storeRef.current = update(storeRef.current);
     setStore(storeRef.current);
   }, []);
@@ -197,7 +202,8 @@ export function HouseholdDataProvider({
 
   // ---- load ----------------------------------------------------------------
 
-  const reload = useCallback(async () => {
+  const load = useCallback(async (background: boolean) => {
+    const commitsAtStart = commits.current;
     try {
       const [aRows, rRows, lRows] = await Promise.all([
         getJson<ApartmentRow[]>("/api/apartments"),
@@ -209,18 +215,44 @@ export function HouseholdDataProvider({
         Promise.all(rRows.map(decodeRating)),
         Promise.all(lRows.map(decodeLocation)),
       ]);
+      // A write landed while a background refresh was in flight: what was
+      // fetched may predate it, and replacing the store would take the
+      // user's own change off the screen. Drop it; the next refresh catches
+      // up.
+      if (background && commits.current !== commitsAtStart) return;
       commit(() => ({ apartments, ratings, locations }));
       setError(null);
       setStatus("ready");
     } catch (err) {
+      // A failed background refresh keeps what is on screen rather than
+      // replacing a working page with an error.
+      if (background) return;
       setError(messageOf(err));
       setStatus("error");
     }
   }, [commit, decodeApartment, decodeLocation, decodeRating]);
 
+  const reload = useCallback(() => load(false), [load]);
+
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Refresh when the user moves to another section (#302). The store now
+  // outlives a section switch — it sits in the shared layout — where it used
+  // to be rebuilt on every one, which was also the only way another member's
+  // changes ever arrived without a full reload. This keeps that, without the
+  // wait: the page renders from what is already decrypted and the refresh
+  // lands behind it.
+  const section = usePathname()?.split("/")[1] ?? null;
+  const lastSection = useRef(section);
+  useEffect(() => {
+    if (lastSection.current === section) return;
+    lastSection.current = section;
+    // Still on the first load (or failed): that path owns the status.
+    if (status !== "ready") return;
+    void load(true);
+  }, [section, status, load]);
 
   // ---- views ---------------------------------------------------------------
 
