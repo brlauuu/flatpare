@@ -20,6 +20,9 @@ const members = [
   { userId: "o", name: "Ana", email: "ana@example.com", role: "owner", hasWrap: true },
   { userId: "m", name: null, email: "bob@example.com", role: "member", hasWrap: false },
 ];
+// What POST /api/invitations reports about the email (#300).
+let emailed: "sent" | "failed" | "off" | undefined;
+
 const invites = [
   { id: 4, email: "cara@example.com", expiresAt: new Date(Date.now() + 86_400_000).toISOString(), createdAt: new Date().toISOString() },
 ];
@@ -61,7 +64,7 @@ function renderAs(
       if (body.email === "dup@example.com") {
         return jsonRes({ error: "An invitation is already pending for that email" }, 409);
       }
-      return jsonRes({ id: 5, email: body.email, expiresAt: invites[0].expiresAt, createdAt: invites[0].createdAt }, 201);
+      return jsonRes({ id: 5, email: body.email, expiresAt: invites[0].expiresAt, createdAt: invites[0].createdAt, emailed }, 201);
     }
     if (url === "/api/invitations/4" && method === "DELETE") return jsonRes(null, 204);
     if (url === "/api/household/members/m" && method === "DELETE") return jsonRes(null, 204);
@@ -158,6 +161,39 @@ describe("HouseholdSettings", () => {
 
 // E5: the UI mirrors MAX_MEMBERS. The server enforces it regardless — these
 // tests are about not offering an action that is guaranteed to 409.
+describe("invitation email notice (#300)", () => {
+  afterEach(() => {
+    emailed = undefined;
+  });
+
+  async function inviteBen() {
+    const user = userEvent.setup();
+    renderAs({ userId: "o", role: "owner" });
+    await user.type(await screen.findByLabelText(/email/i), "ben@example.com");
+    await user.click(screen.getByRole("button", { name: "Invite" }));
+    return screen.findByRole("status");
+  }
+
+  it("says the invitation was emailed", async () => {
+    emailed = "sent";
+    expect(await inviteBen()).toHaveTextContent("Invitation emailed to ben@example.com.");
+  });
+
+  it("says so when the email could not be sent, and what to do instead", async () => {
+    emailed = "failed";
+    const note = await inviteBen();
+    expect(note).toHaveTextContent(/could not be sent/i);
+    expect(note).toHaveTextContent(/sign in with that address/i);
+  });
+
+  it("does not claim an email was sent when the deployment sends none", async () => {
+    emailed = "off";
+    const note = await inviteBen();
+    expect(note).toHaveTextContent("Invitation created. Ask them to sign in with ben@example.com.");
+    expect(note).not.toHaveTextContent(/emailed/i);
+  });
+});
+
 describe("member limit (#187)", () => {
   it("shows no counter when no limit is configured", async () => {
     renderAs({ userId: "o", role: "owner" });
