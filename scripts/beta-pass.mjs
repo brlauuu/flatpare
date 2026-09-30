@@ -10,13 +10,19 @@
 // The target is printed before anything runs, because the same command hits
 // production with .env.local present and a scratch file without it.
 //
-//   node scripts/beta-pass.mjs create [--label "Ana"] [--max-uses 1] [--credits 40] [--expires-in-days 14]
+//   node scripts/beta-pass.mjs create [--label "Ana"] [--max-uses 1] [--credits 40] [--expires-in-days 14] [--email ana@example.com]
 //   node scripts/beta-pass.mjs list
 //   node scripts/beta-pass.mjs revoke <code>
 //
 // `create` prints the link to share. The site URL comes from
 // NEXT_PUBLIC_SITE_URL, then VERCEL_PROJECT_PRODUCTION_URL, then localhost —
 // the same precedence as src/lib/site.ts.
+//
+// `--email` sends the link to that address (#300), through the same Resend
+// call as src/lib/email.ts: RESEND_API_KEY, and EMAIL_FROM or
+// RESEND_EMAIL_DOMAIN for the sender. The pass is created FIRST and the link
+// is always printed, so a failed send costs nothing: copy the link by hand.
+// The address is used for that one message and is not stored.
 //
 // A revoked pass stops admitting NEW sign-ups. It never touches anyone
 // already in, and it never claws back anything granted (decided on #240).
@@ -29,7 +35,7 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 function usage(code = 1) {
   console.error(
     "usage:\n" +
-      "  node scripts/beta-pass.mjs create [--label L] [--max-uses N] [--credits N] [--expires-in-days N]\n" +
+      "  node scripts/beta-pass.mjs create [--label L] [--max-uses N] [--credits N] [--expires-in-days N] [--email ADDRESS]\n" +
       "  node scripts/beta-pass.mjs list\n" +
       "  node scripts/beta-pass.mjs revoke <code>"
   );
@@ -66,6 +72,71 @@ function siteUrl() {
   return "http://localhost:3002";
 }
 
+const KEEP_SENTENCE =
+  "Beta accounts are free; your data and credits are yours to keep and are not taken back when the beta ends.";
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function emailFrom() {
+  const explicit = process.env.EMAIL_FROM?.trim();
+  if (explicit) return explicit;
+  const domain = process.env.RESEND_EMAIL_DOMAIN?.trim();
+  return domain ? `Flatpare <hello@${domain}>` : null;
+}
+
+// Returns null on success, or a short reason. Never prints the key.
+async function sendBetaInvite(to, link, code, expiresAt) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  const from = emailFrom();
+  if (!key) return "RESEND_API_KEY is not set";
+  if (!from) return "neither EMAIL_FROM nor RESEND_EMAIL_DOMAIN is set";
+
+  const lines = [
+    "You are invited to the Flatpare private beta: a shared place to compare apartments with the person you are moving in with.",
+    "Open the link below, then sign in. The link opens the door for your account" +
+      (expiresAt === null ? "." : ` and is valid until ${new Date(expiresAt * 1000).toISOString().slice(0, 10)}.`),
+    KEEP_SENTENCE,
+  ];
+  const html =
+    `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;color:#111;max-width:520px;margin:0 auto;padding:24px">` +
+    lines.map((l) => `<p style="margin:0 0 16px;line-height:1.5">${escapeHtml(l)}</p>`).join("") +
+    `<p style="margin:24px 0"><a href="${escapeHtml(link)}" style="background:#0f6b70;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;display:inline-block">Join the beta</a></p>` +
+    `<p style="margin:0;font-size:13px;color:#666;line-height:1.5">If the button does not work, open ${escapeHtml(link)}</p>` +
+    `</div>`;
+  const replyTo = process.env.EMAIL_REPLY_TO?.trim();
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+        "idempotency-key": `beta-invite/${code}`,
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: "Your invitation to the Flatpare beta",
+        text: [lines[0], lines[1], link, lines[2]].join("\n\n"),
+        html,
+        ...(replyTo ? { reply_to: [replyTo] } : {}),
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (res.ok) return null;
+    const body = await res.json().catch(() => null);
+    return `Resend answered ${res.status}${body?.message ? `: ${body.message}` : ""}`;
+  } catch (err) {
+    return err instanceof Error ? err.name : "request failed";
+  }
+}
+
 function client() {
   return createClient(
     process.env.TURSO_DATABASE_URL
@@ -87,6 +158,12 @@ console.log(`[beta-pass] database: ${target}`);
 try {
   if (command === "create") {
     const flags = parseFlags(rest);
+    const email = flags.email?.trim();
+    // Checked before the insert, so a typo does not leave a pass behind.
+    if (email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.error(`--email must be an email address, got "${flags.email}"`);
+      process.exit(1);
+    }
     const code = randomUUID().replace(/-/g, "");
     const maxUses = positiveInt("max-uses", flags["max-uses"]);
     const credits = positiveInt("credits", flags.credits) ?? 40;
@@ -105,9 +182,16 @@ try {
       `  expires:  ${expiresAt === null ? "never" : new Date(expiresAt * 1000).toISOString()}`
     );
     console.log(`  link:     ${siteUrl()}/beta/${code}`);
-    console.log(
-      "  say:      Beta accounts are free; your data and credits are yours to keep and are not taken back when the beta ends."
-    );
+    console.log(`  say:      ${KEEP_SENTENCE}`);
+    if (email !== undefined) {
+      const problem = await sendBetaInvite(email, `${siteUrl()}/beta/${code}`, code, expiresAt);
+      if (problem === null) {
+        console.log(`  email:    sent to ${email} from ${emailFrom()}`);
+      } else {
+        console.error(`  email:    NOT sent (${problem}). The pass exists; share the link above by hand.`);
+        process.exitCode = 1;
+      }
+    }
   } else if (command === "list") {
     if (rest.length > 0) usage();
     const res = await db.execute(

@@ -156,6 +156,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - **Beta access is permanent, and it is said up front** (decided on #240): the "beta invitation is ready" notice and the script's `say:` line both state that neither data nor credits are taken back when the beta ends. Under E2EE nobody could recover a stranded household anyway. Refunds of beta credits do not exist, by decision, not omission.
 - **The UI is the sign-in card only** (`src/app/login-form.tsx`, `access` + `notice` props, both passed from the server component `src/app/page.tsx`; the client never reads the variable). When closed it says it is a private beta, that sign-ups open "later this year", and links to the repo issues to ask for a place — no countdown, no invented waitlist figures, and a test asserts the absence. The three notices (`sign-up-refused`, `beta-ready`, `beta-invalid`) come from the query string the flows redirect back with. There is no contact address in the repo; the invite link points at GitHub issues until one exists.
 
+## Email (#300)
+
+- **Email is off unless `RESEND_API_KEY` is set and a sender can be resolved** (`emailEnabled()`, `src/lib/email.ts`). Unset means nothing is sent and **nothing fails** — the self-hoster default, with tests at the leaf and at the route. The key and `RESEND_EMAIL_DOMAIN` are set on the Vercel project by the Resend Marketplace integration.
+- **`src/lib/email.ts` is a leaf** (no app imports) and calls Resend's HTTP API with plain `fetch`, not the SDK: it is one POST, and `scripts/beta-pass.mjs` cannot import TypeScript, so it makes the identical call. If you change the request in one, change the other.
+- **The sender is configuration.** `EMAIL_FROM` wins; otherwise it is `Flatpare <hello@<RESEND_EMAIL_DOMAIN>>`. `EMAIL_REPLY_TO` is optional. The From domain must be one Resend has verified, or every send is refused.
+- **Two emails exist, and what they may contain is a privacy decision:**
+  - **Household invitation**, sent by `POST /api/invitations` after the row is created (`sendInvitationEmail`, `src/lib/invitation-email.ts`; words in `src/lib/email-templates.ts`). It carries the inviter's display name and a link to the site. **It does not carry the household's name**, and a route test asserts that. The invitee's address was already stored in plaintext by the invitation itself, so the email discloses nothing new to the server.
+  - **Beta invitation**, sent by `node scripts/beta-pass.mjs create --email <address>`. The address is used for that one message and is **not stored**; `beta_passes` has no email column.
+- **A failed send never undoes anything.** The invitation or pass is created first. The route answers `emailed: "sent" | "failed" | "off"` and the settings page says which, so an owner is not left assuming a message went out; the script prints the link regardless and exits 1.
+- **`sendEmail` logs the HTTP status or the error's class and nothing else** — never the recipient, the subject, the key or the provider's message, which can quote the request back. Same posture as the process routes; pinned by `email.test.ts`.
+- **`INVITATIONS_PER_DAY = 20` per household, only while email is on** (`assertInvitationBudget`, 429). Inviting mails an address the owner typed, and `MAX_MEMBERS` does not bound that: a revoked invitation frees its slot, so invite-revoke-invite could mail strangers from our domain without limit. Rows in every status count, because each one sent an email.
+- **A display name is attacker-chosen.** `safeName` strips line breaks (it reaches the subject) and caps the length; `escapeHtml` covers the body.
+- **Idempotency keys** are `household-invitation/<id>` and `beta-invite/<code>`; Resend deduplicates on them for 24 hours.
+- Not built: an email when a member is removed (that is #298), and any admin UI for beta invitations — the script is the door, as before.
+
 ## Apartment credits (E6)
 
 - **What shipped and what did not.** Checkout, the webhook grant, the event-id idempotency key, the credit ledger and the purchase gate are all in `main` and tested — the heading used to say "partial" without saying of what (#263). Outstanding, and each is a *decision* rather than missing code:
@@ -254,6 +269,8 @@ Beyond auth + Turso, the following keys gate cloud features. If any is unset, th
 - `PROCESS_RATE_LIMIT_PER_HOUR` — per-household hourly ceiling on each `/api/process/*` endpoint. **Unset means unlimited** (self-hoster default); the hosted deployment sets a value. Not a positive integer = boot-time-style failure at first use.
 - `MAX_MEMBERS`, `MAX_APARTMENTS` — per-household entitlement caps. **Unset means unlimited** (self-hoster default). No tier dimension; see Entitlements (E5). **The hosted deployment sets 10 and 40**, which is what the landing page sells for CHF 5 — keep the three in sync.
 - `PARSE_PDF_MAX_BYTES` — upload ceiling for `/api/process/parse-pdf` (`parsePdfMaxBytes` in `src/lib/process-schemas.ts`, read per call so tests can stub it). Defaults to 20 MB, Gemini's inline-file limit. Unlike the limits above, a non-numeric value falls back to the default rather than throwing.
+- `RESEND_API_KEY`, `RESEND_EMAIL_DOMAIN` — **the email switch** and the verified sending domain, both set by the Resend Marketplace integration. Unset means no email is sent and inviting works as before. See Email (#300).
+- `EMAIL_FROM`, `EMAIL_REPLY_TO` — optional. The From header (default `Flatpare <hello@<RESEND_EMAIL_DOMAIN>>`) and where replies go.
 - `NEXT_PUBLIC_SITE_URL` — canonical origin for metadata only (`SITE_URL` in `src/lib/site.ts`); falls back to `VERCEL_PROJECT_PRODUCTION_URL`, then `http://localhost:3002`. Nothing routes off it. See Landing page (E7).
 - `FLATPARE_PUBLIC_ACCESS` — `closed` refuses sign-ins that would create a new account unless they carry a beta pass or a pending invitation; existing accounts are unaffected. **Unset means open** (self-hoster default). See Public access gate.
 - `STRIPE_SECRET_KEY` — **the billing switch**. Unset means billing is off entirely: no paywall, no quota enforcement, and `apartments_ever_added` is never incremented. See Apartment credits (E6).

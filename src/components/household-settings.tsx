@@ -43,6 +43,7 @@ export function HouseholdSettings() {
   const [me, setMe] = useState<{ userId: string; role: "owner" | "member" } | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [email, setEmail] = useState("");
+  const [inviteNote, setInviteNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -94,6 +95,7 @@ export function HouseholdSettings() {
 
   function invite(e: React.FormEvent) {
     e.preventDefault();
+    setInviteNote(null);
     void run(async () => {
       const res = await fetch("/api/invitations", {
         method: "POST",
@@ -101,9 +103,20 @@ export function HouseholdSettings() {
         body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error(await readError(res));
-      const created = (await res.json()) as Invitation;
+      const created = (await res.json()) as Invitation & {
+        emailed?: "sent" | "failed" | "off";
+      };
       setInvitations((prev) => [...prev, created]);
       setEmail("");
+      // Say what happened to the email (#300). The invitation is valid either
+      // way; what changes is whether the owner has to tell the person.
+      setInviteNote(
+        created.emailed === "sent"
+          ? `Invitation emailed to ${created.email}.`
+          : created.emailed === "failed"
+            ? `Invitation created, but the email to ${created.email} could not be sent. Ask them to sign in with that address.`
+            : `Invitation created. Ask them to sign in with ${created.email}.`
+      );
     });
   }
 
@@ -189,6 +202,11 @@ export function HouseholdSettings() {
       {/* Renders nothing when billing is off. */}
       <CreditBalance />
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {inviteNote && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {inviteNote}
+        </p>
+      )}
 
       <ul className="divide-y rounded-md border">
         {members.map((m) => (

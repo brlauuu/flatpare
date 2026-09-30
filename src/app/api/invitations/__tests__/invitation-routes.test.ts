@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
 import { households, householdMembers, invitations } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
@@ -50,6 +50,123 @@ beforeEach(async () => {
   currentSession.userId = "o";
   currentSession.role = "owner";
   authUser.id = "ana";
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+describe("invitation emails (#300)", () => {
+  const fetchMock = vi.fn();
+  const sentTo = () =>
+    fetchMock.mock.calls.map(([, init]) => JSON.parse(String((init as RequestInit).body)));
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: "e_1" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("RESEND_EMAIL_DOMAIN", "");
+    vi.stubEnv("EMAIL_FROM", "");
+  });
+
+  const emailOn = () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test");
+    vi.stubEnv("EMAIL_FROM", "Flatpare <hello@flatpare.com>");
+  };
+
+  it("sends nothing and still invites when email is off — the self-hoster default", async () => {
+    const res = await createPOST(json({ email: "ana@example.com" }));
+    expect(res.status).toBe(201);
+    expect((await res.json()).emailed).toBe("off");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await db.select().from(invitations)).toHaveLength(1);
+  });
+
+  it("emails the invitee, naming the inviter and nothing about the household", async () => {
+    emailOn();
+    await db.update(households).set({ name: "Secret Household Name" }).where(eq(households.id, hid));
+    const res = await createPOST(json({ email: "Ana@Example.com" }));
+    const body = await res.json();
+    expect(body.emailed).toBe("sent");
+
+    const [mail] = sentTo();
+    expect(mail.to).toEqual(["ana@example.com"]);
+    expect(mail.subject).toBe("o invited you to Flatpare");
+    expect(JSON.stringify(mail)).not.toContain("Secret Household Name");
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)["idempotency-key"]).toBe(
+      `household-invitation/${body.id}`
+    );
+  });
+
+  it("keeps the invitation when the email cannot be sent", async () => {
+    emailOn();
+    fetchMock.mockResolvedValue(new Response("{}", { status: 500 }));
+    const res = await createPOST(json({ email: "ana@example.com" }));
+    expect(res.status).toBe(201);
+    expect((await res.json()).emailed).toBe("failed");
+    const rows = await db.select().from(invitations);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("pending");
+  });
+
+  it("sends nothing for an invitation that was refused", async () => {
+    emailOn();
+    expect((await createPOST(json({ email: "m@example.com" }))).status).toBe(409); // already a member
+    expect((await createPOST(json({ email: "not-an-email" }))).status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not let a member send mail", async () => {
+    emailOn();
+    currentSession.userId = "m";
+    expect((await createPOST(json({ email: "ana@example.com" }))).status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  describe("daily ceiling", () => {
+    // Revoked rows count: each one sent an email when it was created.
+    const seedRevoked = async (n: number, createdAt = new Date()) => {
+      for (let i = 0; i < n; i += 1) {
+        await db.insert(invitations).values({
+          householdId: hid,
+          email: `past${i}-${createdAt.getTime()}@example.com`,
+          invitedBy: "o",
+          status: "revoked",
+          expiresAt: new Date(Date.now() + 1000),
+          createdAt,
+        });
+      }
+    };
+
+    it("refuses the 21st invitation in a day, before creating or sending anything", async () => {
+      emailOn();
+      await seedRevoked(20);
+      const res = await createPOST(json({ email: "ana@example.com" }));
+      expect(res.status).toBe(429);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(await db.select().from(invitations)).toHaveLength(20);
+    });
+
+    it("allows the 20th", async () => {
+      emailOn();
+      await seedRevoked(19);
+      expect((await createPOST(json({ email: "ana@example.com" }))).status).toBe(201);
+    });
+
+    it("forgets invitations older than a day", async () => {
+      emailOn();
+      await seedRevoked(20, new Date(Date.now() - 25 * 60 * 60 * 1000));
+      expect((await createPOST(json({ email: "ana@example.com" }))).status).toBe(201);
+    });
+
+    it("does not apply when email is off, where inviting mails nobody", async () => {
+      await seedRevoked(20);
+      expect((await createPOST(json({ email: "ana@example.com" }))).status).toBe(201);
+    });
+  });
 });
 
 describe("GET/POST /api/invitations", () => {

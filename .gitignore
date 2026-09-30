@@ -59,3 +59,7 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Agent skills installed by `vercel integration add` (vendor docs, re-fetchable
+# from skills-lock.json). Same treatment as .claude/.
+.agents/
