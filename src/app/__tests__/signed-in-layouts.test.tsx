@@ -167,7 +167,7 @@ describe("section layouts", () => {
   })(root);
 
   it("finds the sections", () => {
-    for (const section of ["apartments", "compare", "settings", "guide"]) {
+    for (const section of ["apartments", "compare", "household", "settings", "guide"]) {
       expect(existsSync(join(root, section, "page.tsx")), section).toBe(true);
     }
     expect(nested.length).toBeGreaterThan(0);

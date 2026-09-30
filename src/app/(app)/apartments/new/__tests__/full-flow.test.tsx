@@ -132,7 +132,7 @@ describe("batch review flow", () => {
     const user = userEvent.setup();
     const { value } = renderWithHouseholdData(<UploadPage />, {
       dataKey: null,
-      identity: { userId: "u-me", householdId: 7, userName: "Me" },
+      identity: { userId: "u-me", householdId: 7, userName: "Me", role: "owner" },
     });
     vi.mocked(value.createApartment).mockImplementation(async (id, data) =>
       makeApartmentView({ id, ...data })

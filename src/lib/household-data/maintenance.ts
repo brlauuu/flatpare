@@ -22,7 +22,7 @@ export function planGeocodeMaintenance(apartments: ApartmentView[]): ApartmentVi
 }
 
 // "missing" fills gaps (post-create enrichment, a new location); "all"
-// recomputes every located pair (the settings page's Recompute button, a
+// recomputes every located pair (the Household page's Recompute button, a
 // location whose address moved).
 export function planDistanceMaintenance(
   apartments: ApartmentView[],

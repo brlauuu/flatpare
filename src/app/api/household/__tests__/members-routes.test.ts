@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
 import { households, householdMembers, householdKeyWraps } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
@@ -61,9 +61,50 @@ describe("GET /api/household/members", () => {
 describe("DELETE /api/household/members/[userId]", () => {
   it("owner removes a member", async () => {
     const res = await memberDELETE(new Request("http://localhost"), params("m"));
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ emailed: "off" });
     const body = await (await membersGET()).json();
     expect(body.members.map((m: { userId: string }) => m.userId)).toEqual(["o"]);
+  });
+
+  describe("removal email (#298)", () => {
+    const fetchMock = vi.fn();
+    beforeEach(() => {
+      fetchMock.mockReset();
+      fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: "e_1" }), { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+      vi.stubEnv("RESEND_API_KEY", "re_test");
+      vi.stubEnv("EMAIL_FROM", "Flatpare <hello@flatpare.com>");
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    });
+
+    it("tells the removed member who removed them, and nothing about the household", async () => {
+      await db.update(households).set({ name: "Secret Household Name" });
+      const res = await memberDELETE(new Request("http://localhost"), params("m"));
+      expect(await res.json()).toEqual({ emailed: "sent" });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const mail = JSON.parse(String(init.body));
+      expect(mail.to).toEqual(["m@example.com"]);
+      expect(mail.text).toContain("o removed you");
+      expect(JSON.stringify(mail)).not.toContain("Secret Household Name");
+    });
+
+    it("keeps the removal when the email fails", async () => {
+      fetchMock.mockResolvedValue(new Response("{}", { status: 500 }));
+      const res = await memberDELETE(new Request("http://localhost"), params("m"));
+      expect(await res.json()).toEqual({ emailed: "failed" });
+      const body = await (await membersGET()).json();
+      expect(body.members.map((m: { userId: string }) => m.userId)).toEqual(["o"]);
+    });
+
+    it("sends nothing when the removal is refused", async () => {
+      currentSession.userId = "m";
+      expect((await memberDELETE(new Request("http://localhost"), params("o"))).status).toBe(403);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
   });
 
   it("member cannot remove (403); owner cannot remove self (400); unknown is 404", async () => {

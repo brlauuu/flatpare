@@ -16,7 +16,7 @@ let pathname: string | null = "/apartments";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 
 const HID = 7;
-const ME = { userId: "u-me", householdId: HID, userName: "Me" };
+const ME = { userId: "u-me", householdId: HID, userName: "Me", role: "owner" as const };
 const A1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const A2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const L1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";

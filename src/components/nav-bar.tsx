@@ -20,6 +20,7 @@ const navItems = [
   { href: "/apartments", label: "Apartments" },
   { href: "/apartments/new", label: "Upload" },
   { href: "/compare", label: "Compare" },
+  { href: "/household", label: "Household" },
   { href: "/settings", label: "Settings" },
   { href: "/guide", label: "Guide" },
 ];

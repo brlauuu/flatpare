@@ -4,7 +4,7 @@ import { ApiError } from "@/lib/api-error";
 import { apiErrorResponse, parseBody } from "@/lib/api-route";
 import { assertMembership } from "@/lib/household";
 import { createInvitation, listInvitations } from "@/lib/invitations";
-import { assertInvitationBudget, sendInvitationEmail } from "@/lib/invitation-email";
+import { assertInvitationBudget, sendInvitationEmail } from "@/lib/household-email";
 import { requireHousehold } from "@/lib/session";
 
 const createSchema = z.object({ email: z.string().min(1).max(320) });
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     await assertInvitationBudget(householdId);
     const created = await createInvitation(householdId, userId, email);
     // After the insert, and never able to fail it: the invitation stands
-    // whether or not the email arrives. `emailed` lets the settings page say
+    // whether or not the email arrives. `emailed` lets the Household page say
     // which, so an owner is not left assuming a message went out (#300).
     const emailed = await sendInvitationEmail(created);
     return NextResponse.json({ ...publicShape(created), emailed }, { status: 201 });

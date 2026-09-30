@@ -174,7 +174,19 @@ export function HouseholdSettings() {
     void run(async () => {
       const res = await fetch(`/api/household/members/${member.userId}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readError(res));
+      const { emailed } = (await res.json().catch(() => ({}))) as {
+        emailed?: "sent" | "failed" | "off";
+      };
       setMembers((prev) => prev.filter((m) => m.userId !== member.userId));
+      // Same rule as inviting (#300): say what happened to the email, so the
+      // owner knows whether the person has been told (#298).
+      setInviteNote(
+        emailed === "sent"
+          ? `${label} was removed and told by email.`
+          : emailed === "failed"
+            ? `${label} was removed, but the email telling them could not be sent.`
+            : `${label} was removed.`
+      );
       if (state !== "unlocked") return;
       try {
         await rotate();
@@ -190,7 +202,7 @@ export function HouseholdSettings() {
   return (
     <section className="space-y-4">
       <div className="flex items-baseline gap-2">
-        <h2 className="text-lg font-semibold">Household</h2>
+        <h2 className="text-lg font-semibold">Members</h2>
         {/* Only when a cap is configured — a self-hoster must not see a
             counter implying a limit that does not exist. */}
         {limits.maxMembers !== null && (

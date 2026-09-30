@@ -43,6 +43,23 @@ function shell(paragraphs: string[], button: { href: string; label: string }): s
   );
 }
 
+export function memberRemovedEmail(input: {
+  removerName: string | null | undefined;
+  siteUrl: string;
+}): RenderedEmail {
+  const name = safeName(input.removerName);
+  const lines = [
+    `${name} removed you from their household on Flatpare.`,
+    "You no longer have access to its apartments, ratings or locations. Your account is unchanged: sign in and you will find an empty household of your own, and any invitation you accept later still works.",
+    "If this is unexpected, the person who removed you is the one to ask.",
+  ];
+  return {
+    subject: "You were removed from a household on Flatpare",
+    text: [lines[0], lines[1], input.siteUrl, lines[2]].join("\n\n"),
+    html: shell(lines.map(escapeHtml), { href: input.siteUrl, label: "Open Flatpare" }),
+  };
+}
+
 export function householdInvitationEmail(input: {
   inviterName: string | null | undefined;
   invitedEmail: string;

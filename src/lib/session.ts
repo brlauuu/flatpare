@@ -26,6 +26,7 @@ export async function resolveHouseholdIdentity(): Promise<{
   userId: string;
   householdId: number;
   userName: string;
+  role: "owner" | "member";
 } | null> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -36,5 +37,8 @@ export async function resolveHouseholdIdentity(): Promise<{
     userId,
     householdId,
     userName: session?.user?.name ?? "Member",
+    // A session with a household but no role should not exist (the jwt
+    // callback stamps both); "member" is the safe reading if it ever does.
+    role: session?.role ?? "member",
   };
 }
