@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, householdInvitationEmail, safeName } from "@/lib/email-templates";
+import { escapeHtml, householdInvitationEmail, memberRemovedEmail, safeName } from "@/lib/email-templates";
 
 const base = {
   inviterName: "Ana",
@@ -66,5 +66,23 @@ describe("householdInvitationEmail", () => {
     // "add the household name" change; see the file's header comment.
     expect(Object.keys(base).sort()).toEqual(["expiresAt", "invitedEmail", "inviterName", "siteUrl"]);
     expect(householdInvitationEmail.length).toBe(1);
+  });
+});
+
+describe("memberRemovedEmail (#298)", () => {
+  it("names who did it, says access ended and the account is unchanged, and links the site", () => {
+    const mail = memberRemovedEmail({ removerName: "Ana", siteUrl: "https://flatpare.com" });
+    expect(mail.subject).toBe("You were removed from a household on Flatpare");
+    for (const part of [mail.text, mail.html]) {
+      expect(part).toContain("Ana removed you");
+      expect(part).toMatch(/no longer have access/i);
+      expect(part).toMatch(/account is unchanged/i);
+      expect(part).toContain("https://flatpare.com");
+    }
+  });
+
+  it("escapes a hostile display name", () => {
+    const mail = memberRemovedEmail({ removerName: "<b>x</b>", siteUrl: "https://flatpare.com" });
+    expect(mail.html).not.toContain("<b>");
   });
 });

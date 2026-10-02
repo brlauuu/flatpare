@@ -4,7 +4,7 @@ import { invitations, type Invitation } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { ApiError } from "@/lib/api-error";
 import { emailEnabled, sendEmail } from "@/lib/email";
-import { householdInvitationEmail } from "@/lib/email-templates";
+import { householdInvitationEmail, memberRemovedEmail } from "@/lib/email-templates";
 import { SITE_URL } from "@/lib/site";
 
 // How many invitations one household may create in 24 hours while email is
@@ -54,6 +54,39 @@ export async function sendInvitationEmail(
     to: invitation.email,
     ...rendered,
     idempotencyKey: `household-invitation/${invitation.id}`,
+  });
+  return result.sent ? "sent" : result.reason;
+}
+
+// Tells a removed member (#298). Called after the removal has committed, so a
+// mail failure cannot leave someone in who should be out; like the invitation
+// email it reports and never throws. Names who did it and nothing about the
+// household. The removed user's row still exists — only the membership went.
+export async function sendMemberRemovedEmail(
+  removedUserId: string,
+  removedBy: string
+): Promise<InvitationEmailOutcome> {
+  if (!emailEnabled()) return "off";
+
+  const [removed] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, removedUserId))
+    .limit(1);
+  if (!removed) return "failed";
+  const [remover] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, removedBy))
+    .limit(1);
+
+  const rendered = memberRemovedEmail({ removerName: remover?.name, siteUrl: SITE_URL });
+  const result = await sendEmail({
+    to: removed.email,
+    ...rendered,
+    // One notice per removal: a member removed, re-invited and removed again
+    // the same day gets a second one, which is right.
+    idempotencyKey: `member-removed/${removedUserId}/${Date.now()}`,
   });
   return result.sent ? "sent" : result.reason;
 }

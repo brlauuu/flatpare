@@ -87,7 +87,16 @@ describe("resolveHouseholdIdentity", () => {
       userId: "u1",
       householdId: 7,
       userName: "Ana",
+      role: "owner",
     });
+  });
+
+  it("reads a member as a member, and a session without a role as a member (#298)", async () => {
+    authMock.mockResolvedValue(session({ role: "member" }));
+    await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ role: "member" });
+    // Should not exist — the jwt callback stamps both — but never an owner.
+    authMock.mockResolvedValue(session({ role: null }));
+    await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ role: "member" });
   });
 
   it("falls back to 'Member' when the session has no name", async () => {

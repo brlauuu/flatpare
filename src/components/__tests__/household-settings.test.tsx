@@ -67,7 +67,7 @@ function renderAs(
       return jsonRes({ id: 5, email: body.email, expiresAt: invites[0].expiresAt, createdAt: invites[0].createdAt, emailed }, 201);
     }
     if (url === "/api/invitations/4" && method === "DELETE") return jsonRes(null, 204);
-    if (url === "/api/household/members/m" && method === "DELETE") return jsonRes(null, 204);
+    if (url === "/api/household/members/m" && method === "DELETE") return jsonRes({ emailed: emailed ?? "off" });
     if (url === "/api/household/leave" && method === "POST") return jsonRes({});
     return jsonRes({ error: `unexpected ${method} ${url}` }, 500);
   });
@@ -161,6 +161,37 @@ describe("HouseholdSettings", () => {
 
 // E5: the UI mirrors MAX_MEMBERS. The server enforces it regardless — these
 // tests are about not offering an action that is guaranteed to 409.
+describe("removal notice (#298)", () => {
+  afterEach(() => {
+    emailed = undefined;
+  });
+
+  async function removeBob() {
+    const user = userEvent.setup();
+    renderAs({ userId: "o", role: "owner" }, "off");
+    const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: /Remove/i }));
+    return screen.findByRole("status");
+  }
+
+  it("says the removed member was told by email", async () => {
+    emailed = "sent";
+    expect(await removeBob()).toHaveTextContent("bob@example.com was removed and told by email.");
+  });
+
+  it("says so when they could not be told", async () => {
+    emailed = "failed";
+    expect(await removeBob()).toHaveTextContent(/removed, but the email telling them could not be sent/i);
+  });
+
+  it("does not claim an email when the deployment sends none", async () => {
+    emailed = "off";
+    const note = await removeBob();
+    expect(note).toHaveTextContent("bob@example.com was removed.");
+    expect(note).not.toHaveTextContent(/email/i);
+  });
+});
+
 describe("invitation email notice (#300)", () => {
   afterEach(() => {
     emailed = undefined;
@@ -197,13 +228,13 @@ describe("invitation email notice (#300)", () => {
 describe("member limit (#187)", () => {
   it("shows no counter when no limit is configured", async () => {
     renderAs({ userId: "o", role: "owner" });
-    await screen.findByText("Household");
+    await screen.findByText("Members");
     expect(screen.queryByText(/ of \d+$/)).not.toBeInTheDocument();
   });
 
   it("shows no credit balance when billing is off (#305)", async () => {
     renderAs({ userId: "o", role: "owner" });
-    await screen.findByText("Household");
+    await screen.findByText("Members");
     expect(screen.queryByTestId("credit-balance")).not.toBeInTheDocument();
   });
 
@@ -217,7 +248,7 @@ describe("member limit (#187)", () => {
         used: 40,
         remaining: 0,
       });
-      await screen.findByText("Household");
+      await screen.findByText("Members");
       expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to add");
       expect(screen.getByRole("link", { name: /buy more/i })).toBeInTheDocument();
     }

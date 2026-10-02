@@ -65,3 +65,16 @@ describe("NavBar user menu", () => {
     setUnsavedRating(false);
   });
 });
+
+describe("NavBar sections", () => {
+  it("links every section, Household included (#298)", () => {
+    render(<NavBar userName="Alice" />);
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"))
+      .filter((h): h is string => h !== null);
+    for (const href of ["/apartments", "/apartments/new", "/compare", "/household", "/settings", "/guide"]) {
+      expect(hrefs).toContain(href);
+    }
+  });
+});

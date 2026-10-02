@@ -9,6 +9,10 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- A Household page for every member: who is in, who is invited, the credit balance, key rotation and the locations of interest. Only the owner sees Recompute distances. Settings keeps the personal encryption settings. (#298)
+- A removed member is emailed who removed them and that their account is unchanged. (#298)
+
 ## 0.2.0 — 2026-10-02
 
 The first tagged version. It names what is live on flatpare.com as of the
