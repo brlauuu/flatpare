@@ -176,6 +176,9 @@ describe("LandingPage under-development gate", () => {
     [{ signin: "closed" }, "sign-up-refused"],
     [{ beta: "ready" }, "beta-ready"],
     [{ beta: "invalid" }, "beta-invalid"],
+    [{ error: "Verification" }, "link-expired"],
+    [{ error: "Configuration" }, "sign-in-failed"],
+    [{ error: "" }, ""],
     [{ beta: "anything-else" }, ""],
     [{}, ""],
   ])("maps the query %j to notice %j", async (query, expected) => {

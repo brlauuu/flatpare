@@ -9,6 +9,12 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- Sign in with a regular email address: a sign-in link is sent to the address, works once and expires in 15 minutes. Available whenever email is configured; the beta gate applies to new addresses exactly as it does to Google. (#310)
+
+### Changed
+- The shared-password sign-in for self-hosting is disabled when email is configured, since a real sign-in method then exists. (#310)
+
 ## 0.3.0 — 2026-10-02
 
 ### Added

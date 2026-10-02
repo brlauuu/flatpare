@@ -10,6 +10,10 @@ const OAUTH_VARS = [
   "GOOGLE_CLIENT_SECRET",
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
+  // The magic-link provider (#310) is keyed on these two.
+  "RESEND_API_KEY",
+  "RESEND_EMAIL_DOMAIN",
+  "EMAIL_FROM",
 ] as const;
 
 beforeEach(() => {
@@ -116,5 +120,123 @@ describe("Auth.js provider registration — credentials actually carry the env v
     const options = await providerOptions("github");
     expect(options?.clientId).toBe("test-github-client-id");
     expect(options?.clientSecret).toBe("test-github-client-secret");
+  });
+});
+
+// Magic links (#310): registered exactly when email is on, and the shared
+// password disappears then for the same reason it does under OAuth.
+describe("magic-link provider registration", () => {
+  const emailOn = () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "Flatpare <hello@flatpare.com>";
+  };
+
+  it("registers resend and drops the credentials backdoor when email is on", async () => {
+    emailOn();
+    const ids = await registeredProviderIds();
+    expect(ids).toContain("resend");
+    expect(ids).not.toContain("credentials");
+  });
+
+  it("does not register resend with a key but no sender", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    const ids = await registeredProviderIds();
+    expect(ids).not.toContain("resend");
+    expect(ids).toContain("credentials");
+  });
+
+  it("sits beside OAuth when both are configured", async () => {
+    emailOn();
+    process.env.GOOGLE_CLIENT_ID = "g-id";
+    process.env.GOOGLE_CLIENT_SECRET = "g-secret";
+    const ids = await registeredProviderIds();
+    expect(ids).toEqual(expect.arrayContaining(["google", "resend"]));
+    expect(ids).not.toContain("credentials");
+  });
+
+  it("enabledProviderIds matches the registered set", async () => {
+    emailOn();
+    const { enabledProviderIds } = await import("@/auth");
+    expect(enabledProviderIds).toEqual(["resend"]);
+  });
+
+  it("links expire in 15 minutes and come from our sender", async () => {
+    emailOn();
+    // Auth.js keeps the user config under `options` and merges it over the
+    // provider's defaults at request time, so the defaults (a day, the
+    // authjs.dev sender) are what the bare object shows. Read what we set.
+    const { providers, MAGIC_LINK_MAX_AGE_SECONDS } = await import("@/auth");
+    type Runtime = { id?: string; options?: { maxAge?: number; from?: string } };
+    const resend = (providers as unknown as Runtime[]).find((p) => p?.id === "resend");
+    expect(MAGIC_LINK_MAX_AGE_SECONDS).toBe(900);
+    expect(resend?.options?.maxAge).toBe(900);
+    expect(resend?.options?.from).toBe("Flatpare <hello@flatpare.com>");
+  });
+
+  describe("sendVerificationRequest", () => {
+    const fetchMock = vi.fn();
+    beforeEach(() => {
+      emailOn();
+      fetchMock.mockReset();
+      vi.stubGlobal("fetch", fetchMock);
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    type Sender = {
+      id?: string;
+      options: { sendVerificationRequest: Sender["sendVerificationRequest"] };
+      sendVerificationRequest: (p: {
+        identifier: string;
+        url: string;
+        token: string;
+        expires: Date;
+        provider: unknown;
+        request: Request;
+        theme: unknown;
+      }) => Promise<void>;
+    };
+    async function sender(): Promise<Sender> {
+      const { providers } = await import("@/auth");
+      // Ours lives under `options` (see above); the top-level one is the
+      // provider's default that Auth.js replaces with it.
+      const p = (providers as unknown as Sender[]).find((p) => p?.id === "resend")!;
+      return { ...p, sendVerificationRequest: p.options.sendVerificationRequest };
+    }
+    const params = (url: string) => ({
+      identifier: "ana@example.com",
+      url,
+      token: "tok",
+      expires: new Date(),
+      provider: {},
+      request: new Request("http://localhost"),
+      theme: {},
+    });
+
+    it("sends the link to the address through our sender, keyed on the token", async () => {
+      fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: "e" }), { status: 200 }));
+      const url = "https://flatpare.com/api/auth/callback/resend?callbackUrl=%2Fapartments&token=abc123&email=ana%40example.com";
+      await (await sender()).sendVerificationRequest(params(url));
+
+      const [endpoint, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(endpoint).toBe("https://api.resend.com/emails");
+      expect((init.headers as Record<string, string>)["idempotency-key"]).toBe("magic-link/abc123");
+      const body = JSON.parse(String(init.body));
+      expect(body.to).toEqual(["ana@example.com"]);
+      expect(body.from).toBe("Flatpare <hello@flatpare.com>");
+      expect(body.subject).toBe("Your Flatpare sign-in link");
+      expect(body.text).toContain(url);
+      expect(body.html).toContain("flatpare.com");
+      expect(body.text).toMatch(/15 minutes/);
+    });
+
+    it("throws on a failed send, without the address in the message", async () => {
+      fetchMock.mockResolvedValue(new Response(JSON.stringify({ message: "nope ana@example.com" }), { status: 422 }));
+      await expect(
+        (await sender()).sendVerificationRequest(params("https://flatpare.com/api/auth/callback/resend?token=t"))
+      ).rejects.toThrow(/could not send/i);
+      await expect(
+        (await sender()).sendVerificationRequest(params("https://flatpare.com/api/auth/callback/resend?token=t"))
+      ).rejects.not.toThrow(/ana@example.com/);
+    });
   });
 });

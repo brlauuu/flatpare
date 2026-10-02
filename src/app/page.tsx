@@ -35,6 +35,10 @@ function noticeFromQuery(q: Record<string, string | string[] | undefined>): Sign
   if (q.signin === "closed") return "sign-up-refused";
   if (q.beta === "ready") return "beta-ready";
   if (q.beta === "invalid") return "beta-invalid";
+  // Auth.js redirects its errors here (pages.error in src/auth.ts). The
+  // link case gets its own words; everything else is one honest line.
+  if (q.error === "Verification") return "link-expired";
+  if (typeof q.error === "string" && q.error !== "") return "sign-in-failed";
   return null;
 }
 

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, householdInvitationEmail, memberRemovedEmail, safeName } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  householdInvitationEmail,
+  magicLinkEmail,
+  memberRemovedEmail,
+  safeName,
+} from "@/lib/email-templates";
 
 const base = {
   inviterName: "Ana",
@@ -84,5 +90,19 @@ describe("memberRemovedEmail (#298)", () => {
   it("escapes a hostile display name", () => {
     const mail = memberRemovedEmail({ removerName: "<b>x</b>", siteUrl: "https://flatpare.com" });
     expect(mail.html).not.toContain("<b>");
+  });
+});
+
+describe("magicLinkEmail (#310)", () => {
+  const url = "https://flatpare.com/api/auth/callback/resend?token=abc&email=a%40b.c";
+  it("carries the link, the host, the lifetime and the same-browser note", () => {
+    const mail = magicLinkEmail({ url, siteHost: "flatpare.com", minutes: 15 });
+    expect(mail.subject).toBe("Your Flatpare sign-in link");
+    expect(mail.text).toContain(url);
+    expect(mail.html).toContain(escapeHtml(url));
+    expect(mail.text).toContain("flatpare.com");
+    expect(mail.text).toMatch(/15 minutes/);
+    expect(mail.text).toMatch(/same browser/i);
+    expect(mail.text).toMatch(/ignore this email/i);
   });
 });

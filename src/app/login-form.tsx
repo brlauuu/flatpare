@@ -11,17 +11,21 @@ import { ErrorDisplay } from "@/components/error-display";
 import { REPO_URL } from "@/lib/site";
 import type { PublicAccess } from "@/lib/public-access";
 
-type ProviderId = "google" | "github" | "credentials";
+type ProviderId = "google" | "github" | "resend" | "credentials";
 
 // What the sign-in flow redirected back with (#239):
 //   sign-up-refused — a sign-in that would have created an account was
 //                     turned away because public access is closed;
 //   beta-ready      — a beta link was accepted and its cookie is set;
 //   beta-invalid    — a beta link was revoked, expired or used up.
+//   link-expired    — a magic link was already used or has expired (#310);
+//   sign-in-failed  — any other error Auth.js redirected back with.
 export type SignInNotice =
   | "sign-up-refused"
   | "beta-ready"
   | "beta-invalid"
+  | "link-expired"
+  | "sign-in-failed"
   | null;
 
 // The holding notice while FLATPARE_PUBLIC_ACCESS=closed. Honest and short,
@@ -107,6 +111,19 @@ function NoticeFor({
           are taken back when the beta ends.
         </p>
       );
+    case "link-expired":
+      return (
+        <p role="status" className="rounded-md border p-3 text-sm">
+          That sign-in link has expired or was already used. Enter your email
+          below and we will send a fresh one.
+        </p>
+      );
+    case "sign-in-failed":
+      return (
+        <p role="status" className="rounded-md border p-3 text-sm">
+          Sign-in did not go through. Please try again.
+        </p>
+      );
     default:
       return null;
   }
@@ -122,8 +139,36 @@ export function LoginForm({
   notice?: SignInNotice;
 }) {
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [linkSentTo, setLinkSentTo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Magic link (#310). `redirect: false` keeps the person on this card: the
+  // card says the link was sent instead of bouncing them to Auth.js's own
+  // "check your email" page. A refused sign-up still has to leave, because
+  // the server answered with the landing page's own explanation URL.
+  async function handleEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await signIn("resend", { email, redirect: false, callbackUrl: "/apartments" });
+      if (res?.url && /[?&]signin=closed/.test(res.url)) {
+        window.location.assign(res.url);
+        return;
+      }
+      if (!res || res.error) {
+        setError("Couldn't send the sign-in link. Check the address and try again.");
+        return;
+      }
+      setLinkSentTo(email.trim());
+    } catch {
+      setError("Couldn't send the sign-in link. Check the address and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleOAuth(provider: "google" | "github") {
     setError(null);
@@ -204,6 +249,34 @@ export function LoginForm({
               Continue with GitHub
             </Button>
           )}
+          {providers.includes("resend") &&
+            (linkSentTo ? (
+              <p role="status" className="rounded-md border p-3 text-sm">
+                <strong className="font-medium">Check your email.</strong> We sent a
+                sign-in link to {linkSentTo}. It works once and expires in 15
+                minutes; open it in this browser.
+              </p>
+            ) : (
+              <form onSubmit={handleEmail} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    className="h-11"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+                <Button type="submit" variant="outline" className="h-11 w-full" disabled={loading}>
+                  {loading ? "Sending…" : "Email me a sign-in link"}
+                </Button>
+              </form>
+            ))}
           {providers.includes("credentials") && (
             <form onSubmit={handlePassword} className="space-y-4">
               <div className="space-y-2">

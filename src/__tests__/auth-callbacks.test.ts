@@ -1,5 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
+
+// A pass-through spy on the gate: every test below still runs the real
+// decision, and one of them checks what the callback asked for.
+const decideSignUpSpy = vi.fn();
+vi.mock("@/lib/sign-up-gate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/sign-up-gate")>();
+  return {
+    ...actual,
+    decideSignUp: (...args: Parameters<typeof actual.decideSignUp>) => {
+      decideSignUpSpy(...args);
+      return actual.decideSignUp(...args);
+    },
+  };
+});
+
 import { households, householdMembers, invitations } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { eq } from "drizzle-orm";
@@ -125,6 +140,18 @@ describe("signIn callback", () => {
   it("returns true for an existing account when closed", async () => {
     process.env.FLATPARE_PUBLIC_ACCESS = "closed";
     expect(await authCallbacks.signIn({ user: { email: "u1@example.com" } })).toBe(true);
+  });
+
+  it("passes the magic-link pre-send call through as check-only (#310)", async () => {
+    // Pinned by shape: the gate's own test proves consume:false spends
+    // nothing; this proves the callback asks for it exactly when Auth.js
+    // says the link is about to be sent, and not when it is clicked.
+    delete process.env.FLATPARE_PUBLIC_ACCESS;
+    decideSignUpSpy.mockClear();
+    await authCallbacks.signIn({ user: { email: "new@example.com" }, email: { verificationRequest: true } });
+    expect(decideSignUpSpy).toHaveBeenLastCalledWith({ email: "new@example.com" }, { consume: false });
+    await authCallbacks.signIn({ user: { email: "new@example.com" } });
+    expect(decideSignUpSpy).toHaveBeenLastCalledWith({ email: "new@example.com" }, { consume: true });
   });
 
   it("returns the landing-page redirect for a refused sign-up", async () => {

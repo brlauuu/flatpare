@@ -122,6 +122,20 @@ describe("decideSignUp — access closed", () => {
     expect(await usesOf(pass.id)).toBe(1);
   });
 
+  it("with consume:false lets a usable pass in WITHOUT spending a use (#310)", async () => {
+    // The magic-link flow asks before sending the link; the person may
+    // never click it, so nothing may be spent yet.
+    const pass = await createBetaPass({ maxUses: 1 });
+    present(pass.code);
+    expect(await decideSignUp({ email: "new@example.com" }, { consume: false })).toBe("allowed");
+    expect(await usesOf(pass.id)).toBe(0);
+    // The real sign-in then spends it.
+    expect(await decideSignUp({ email: "new@example.com" })).toBe("allowed");
+    expect(await usesOf(pass.id)).toBe(1);
+    // And a third asker finds it exhausted even in check-only mode.
+    expect(await decideSignUp({ email: "third@example.com" }, { consume: false })).toBe("closed");
+  });
+
   it.each([
     ["unknown", async () => "not-a-code"],
     ["revoked", async () => {

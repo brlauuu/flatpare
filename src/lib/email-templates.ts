@@ -43,6 +43,22 @@ function shell(paragraphs: string[], button: { href: string; label: string }): s
   );
 }
 
+// The magic link (#310). The URL is the credential: it carries the token
+// Auth.js verifies, so this email must reach exactly the address typed and
+// say nothing that helps anyone else. The link is single-use and expires.
+export function magicLinkEmail(input: { url: string; siteHost: string; minutes: number }): RenderedEmail {
+  const lines = [
+    `Here is your sign-in link for Flatpare (${input.siteHost}).`,
+    `It works once and expires in ${input.minutes} minutes. Open it in the same browser you asked from.`,
+    "If you did not ask for this, ignore this email; nothing happens without the link.",
+  ];
+  return {
+    subject: "Your Flatpare sign-in link",
+    text: [lines[0], input.url, lines[1], lines[2]].join("\n\n"),
+    html: shell(lines.map(escapeHtml), { href: input.url, label: "Sign in to Flatpare" }),
+  };
+}
+
 export function memberRemovedEmail(input: {
   removerName: string | null | undefined;
   siteUrl: string;

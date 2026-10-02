@@ -242,3 +242,60 @@ describe("LoginForm — under-development notice", () => {
     expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
   });
 });
+
+describe("LoginForm — magic link (#310)", () => {
+  async function requestLink(address = "ana@example.com") {
+    const user = userEvent.setup();
+    render(<LoginForm providers={["resend"]} />);
+    await user.type(screen.getByLabelText(/Email/i), address);
+    await user.click(screen.getByRole("button", { name: /Email me a sign-in link/i }));
+  }
+
+  it("renders the email form when resend is enabled, and not otherwise", () => {
+    render(<LoginForm providers={["resend"]} />);
+    expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Password/i)).not.toBeInTheDocument();
+    cleanup();
+    render(<LoginForm providers={["google"]} />);
+    expect(screen.queryByLabelText(/Email/i)).not.toBeInTheDocument();
+  });
+
+  it("asks Auth.js for a link without leaving the page, then says to check the inbox", async () => {
+    signInMock.mockResolvedValue({ ok: true, url: "http://localhost/api/auth/verify-request" });
+    await requestLink();
+    expect(signInMock).toHaveBeenCalledWith("resend", {
+      email: "ana@example.com",
+      redirect: false,
+      callbackUrl: "/apartments",
+    });
+    const note = await screen.findByRole("status");
+    expect(note).toHaveTextContent(/check your email/i);
+    expect(note).toHaveTextContent("ana@example.com");
+    expect(screen.queryByLabelText(/Email/i)).not.toBeInTheDocument();
+  });
+
+  it("follows the refusal when sign-ups are closed, so the landing page can explain", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    signInMock.mockResolvedValue({ ok: true, url: "http://localhost/?signin=closed" });
+    await requestLink();
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("http://localhost/?signin=closed"));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("shows an error when the link could not be sent", async () => {
+    signInMock.mockResolvedValue({ ok: false, error: "EmailSignin" });
+    await requestLink();
+    expect(await screen.findByText(/Couldn't send the sign-in link/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
+  });
+
+  it("explains an expired link and a generic failure", () => {
+    render(<LoginForm providers={["resend"]} notice="link-expired" />);
+    expect(screen.getByRole("status")).toHaveTextContent(/expired or was already used/i);
+    cleanup();
+    render(<LoginForm providers={["resend"]} notice="sign-in-failed" />);
+    expect(screen.getByRole("status")).toHaveTextContent(/did not go through/i);
+  });
+});
