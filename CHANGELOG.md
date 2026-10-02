@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.4.0 — 2026-10-02
+
 ### Added
 - Sign in with a regular email address: a sign-in link is sent to the address, works once and expires in 15 minutes. Available whenever email is configured; the beta gate applies to new addresses exactly as it does to Google. (#310)
 
