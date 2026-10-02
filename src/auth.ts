@@ -2,6 +2,9 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
 import Credentials from "next-auth/providers/credentials";
+import Resend from "next-auth/providers/resend";
+import { emailEnabled, emailFrom, sendEmail } from "@/lib/email";
+import { magicLinkEmail } from "@/lib/email-templates";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import {
@@ -25,15 +28,26 @@ import type { JWT } from "next-auth/jwt";
 const hasOAuth = !!(
   process.env.GOOGLE_CLIENT_ID || process.env.GITHUB_CLIENT_ID
 );
+// Magic links (#310) ride on the same Resend setup as the invitation emails:
+// registered exactly when email is on. A link is a credential sent to the
+// address typed, so the gate below has to run BEFORE it is sent.
+const hasEmail = emailEnabled();
+// How long a link stays valid. Auth.js's default is a day; a sign-in link
+// that works tomorrow is a day of exposure for no benefit.
+export const MAGIC_LINK_MAX_AGE_SECONDS = 15 * 60;
 
 // The login page (src/app/page.tsx) needs to know which providers to render
 // buttons for, without reading env vars itself in client-shipped code. This
 // is computed with the same rule as `providers` below, so the two can never
 // drift apart: keep them next to each other.
-export const enabledProviderIds: Array<"google" | "github" | "credentials"> = [
+export const enabledProviderIds: Array<"google" | "github" | "resend" | "credentials"> = [
   ...(process.env.GOOGLE_CLIENT_ID ? (["google"] as const) : []),
   ...(process.env.GITHUB_CLIENT_ID ? (["github"] as const) : []),
-  ...(hasOAuth ? [] : (["credentials"] as const)),
+  ...(hasEmail ? (["resend"] as const) : []),
+  // The shared password is the self-hoster's zero-setup door, and only
+  // that: the moment any real identity provider is configured it must
+  // disappear, or it is a back door.
+  ...(hasOAuth || hasEmail ? [] : (["credentials"] as const)),
 ];
 
 const SELF_HOSTED_EMAIL = "self-hosted@flatpare.local";
@@ -105,7 +119,35 @@ export const providers = [
         }),
       ]
     : []),
-  ...(hasOAuth
+  ...(hasEmail
+    ? [
+        Resend({
+          apiKey: process.env.RESEND_API_KEY,
+          from: emailFrom() ?? undefined,
+          maxAge: MAGIC_LINK_MAX_AGE_SECONDS,
+          // Our own sender rather than the provider's default: the same
+          // words and From as every other Flatpare email, and the same
+          // rule that nothing about the recipient reaches a log. The
+          // default throws the provider's response body into the error.
+          async sendVerificationRequest({ identifier, url }) {
+            const rendered = magicLinkEmail({
+              url,
+              siteHost: new URL(url).host,
+              minutes: MAGIC_LINK_MAX_AGE_SECONDS / 60,
+            });
+            const result = await sendEmail({
+              to: identifier,
+              ...rendered,
+              // One link per token: a retried request resends the same mail
+              // rather than a second one.
+              idempotencyKey: `magic-link/${new URL(url).searchParams.get("token") ?? ""}`,
+            });
+            if (!result.sent) throw new Error("Could not send the sign-in email");
+          },
+        }),
+      ]
+    : []),
+  ...(hasOAuth || hasEmail
     ? []
     : [
         Credentials({
@@ -139,12 +181,20 @@ export const authCallbacks = {
   // always allowed. Returning a string makes Auth.js redirect there instead
   // of to its generic AccessDenied page — the landing page reads the query
   // and explains. See src/lib/sign-up-gate.ts for what gets through.
+  //
+  // The magic-link provider calls this twice (#310): once with
+  // `email.verificationRequest` set, before any link is sent, and again when
+  // the link is clicked. The first pass only decides whether a link goes
+  // out, so it must not spend a beta-pass use the person may never redeem;
+  // the second is the sign-in and consumes exactly as OAuth does.
   async signIn({
     user,
+    email,
   }: {
     user: { email?: string | null };
+    email?: { verificationRequest?: boolean };
   }): Promise<true | string> {
-    const decision = await decideSignUp(user);
+    const decision = await decideSignUp(user, { consume: !email?.verificationRequest });
     return decision === "allowed" ? true : SIGN_IN_CLOSED_REDIRECT;
   },
   async jwt({
@@ -196,6 +246,10 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   providers,
+  // Auth.js's own error page is a bare template nobody styled. Sending its
+  // errors back to the landing page lets the sign-in card explain them: an
+  // expired or used magic link (#310) is the common one.
+  pages: { error: "/" },
   session: {
     strategy: "jwt",
     // 24h, not the 30d default: a removed member keeps read access until

@@ -8,6 +8,7 @@ import {
   BETA_PASS_COOKIE,
   consumeBetaPassUse,
   findBetaPass,
+  findUsableBetaPass,
   recordBetaPassRedemption,
 } from "@/lib/beta-pass";
 
@@ -72,8 +73,14 @@ async function hasPendingInvitation(email: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+// `consume` (default true) spends a beta-pass use when the pass is what lets
+// the address in. The magic-link flow (#310) asks twice: once before the
+// link is sent, where the answer only decides whether to send it — nothing
+// may be spent, since the person may never click — and once when the link
+// is clicked, which is the sign-in proper and consumes like OAuth does.
 export async function decideSignUp(
-  user: { email?: string | null }
+  user: { email?: string | null },
+  { consume = true }: { consume?: boolean } = {}
 ): Promise<SignUpDecision> {
   const email = user.email ?? null;
   // No address means no way to tell a returning account from a new one.
@@ -81,7 +88,11 @@ export async function decideSignUp(
   if (email !== null && (await userExists(email))) return "allowed";
 
   const code = await readBetaPassCookie();
-  const pass = code ? await consumeBetaPassUse(code) : null;
+  const pass = code
+    ? consume
+      ? await consumeBetaPassUse(code)
+      : await findUsableBetaPass(code)
+    : null;
   if (pass) return "allowed";
 
   if (readPublicAccess() === "open") return "allowed";
