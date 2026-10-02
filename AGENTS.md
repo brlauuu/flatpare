@@ -277,6 +277,14 @@ Beyond auth + Turso, the following keys gate cloud features. If any is unset, th
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — client key for embedded Checkout. Injected by the Vercel Stripe integration alongside the secret key.
 - `STRIPE_WEBHOOK_SECRET` — signing secret for `POST /api/billing/webhook`, and the webhook's only authentication. **Not** injected by the integration — create the endpoint in the Stripe dashboard and copy it. Since the webhook is the only thing that grants credits, a deployment missing this takes money and grants nothing.
 
+## Versioning and releases
+
+- **The version lives in `package.json` only** (`package-lock.json` mirrors it in its two root `version` fields — edit those by hand; `npm install --package-lock-only` on a local npm 10 rewrites unrelated entries, see Dependency maintenance). No other file quotes it. There were no tags or releases before 0.2.0 (2026-10-02); everything earlier shipped untagged.
+- **`CHANGELOG.md` is the release notes.** Every merged PR adds a line under `## Unreleased`, grouped Added / Changed / Fixed, ending with the issue or PR number. Write for the person using the app, not the person reading the diff.
+- **After every merged PR, cut a release** (decided 2026-10-02): graduate Unreleased into `## X.Y.Z — YYYY-MM-DD`, bump the version, open `release: cut X.Y.Z` as its own PR, and tag `vX.Y.Z` from `main` only after that PR is merged and CI is green. **Minor** for a new user-visible capability or an additive migration; **patch** for fixes, dependencies, docs and internal work. A breaking change on this 0.x line is still a question for the owner, never a silent bump. `/release` follows these steps.
+- **1.0.0 is cut when sign-ups open.** Until then the version stays 0.x.
+- **No workflow publishes from tags.** `gh release create vX.Y.Z --notes-file <section>` is done by hand with the graduated changelog section, and the production deploy stays the manual `vercel --prod` from the tagged commit. A tag says what a deploy contains; it does not deploy.
+
 ## Dependency maintenance
 
 - **`npm outdated` lies about two of these; do not "fix" them** (#264):
