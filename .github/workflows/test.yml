@@ -29,3 +29,62 @@ jobs:
 
       - name: Test with coverage
         run: npm run test:coverage
+
+  # Production deploy after every push to main that passes `test` (#320).
+  #
+  # Not Vercel's Git integration, which stays off in vercel.json: that one
+  # also builds every branch and pull request as a preview, and preview
+  # builds receive TURSO_DATABASE_URL, so each PR used to run migrations
+  # against the production database (#212). Here only `main` deploys, only
+  # after lint, typecheck and the full suite have passed, and only the exact
+  # commit that was tested.
+  #
+  # It is the same command the owner ran by hand: Vercel builds the uploaded
+  # source with the production environment, so scripts/vercel-build.mjs runs
+  # the migration preflights there and a deploy that cannot migrate fails
+  # the build instead of going live. No production secret reaches this
+  # runner beyond the deploy token.
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    # One production deploy at a time, in push order; never cancel one
+    # half-way, since its build may already be migrating.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # Identifiers, not credentials (they are in every `vercel link`).
+      VERCEL_ORG_ID: team_sD5BO8JGuzyR3hmQ1xzUImPn
+      VERCEL_PROJECT_ID: prj_ezj2A5gOQUTKxSCWRdxfn4i3hIwp
+    steps:
+      - name: Skip when no deploy token is configured
+        id: token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::VERCEL_TOKEN is not set; skipping the production deploy."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.present == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: "24"
+
+      - name: Deploy to production
+        if: steps.token.outputs.present == 'true'
+        run: npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Smoke-check flatpare.com
+        if: steps.token.outputs.present == 'true'
+        run: |
+          curl -fsS -o /dev/null https://flatpare.com/
+          curl -fsS https://flatpare.com/api/auth/providers | grep -q '"google"'
+          echo "flatpare.com answers, and Google sign-in is registered."

@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- Every change merged to `main` now goes live on flatpare.com automatically once its tests pass, so fixes reach the site without a manual deploy. (#320)
+
 ## 0.5.1 — 2026-10-03
 
 ### Changed
