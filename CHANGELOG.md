@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.5.1 — 2026-10-03
+
 ### Changed
 - The landing page shows the actual comparison grid, in light and dark, instead of a placeholder. (#301)
 
