@@ -1,247 +1,400 @@
 import Image from "next/image";
+import { BarChart3, Lock, Monitor, Play, Users } from "lucide-react";
 import {
-  FileText,
-  Star,
-  MapPin,
-  Users,
-  Lock,
-  KeyRound,
-  Server,
-  Eye,
-} from "lucide-react";
-import { PRIVACY_CLAIM, REPO_URL } from "@/lib/site";
+  AUTHOR,
+  PRIVACY_CLAIM,
+  RELEASES_URL,
+  REPO_URL,
+  WALKTHROUGH_DURATION,
+  WALKTHROUGH_VIDEO_URL,
+} from "@/lib/site";
+import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
+import type { PublicAccess } from "@/lib/public-access";
+import { landingFontVariables } from "./landing-fonts";
+import { HeroSketch } from "./hero-sketch";
+import { LandingThemeToggle } from "./landing-theme-toggle";
+import { ReleaseNotice } from "./release-notice";
+import { SignInButton, SignInProvider } from "./sign-in-dialog";
+import { BetaRequestForm } from "./beta-request-form";
 
-// The landing page's content (#189). A server component with no interactive
-// state — the only client island on this page is the sign-in card, which the
-// caller places inside `signIn`.
+// The landing page (#189, redesigned in #301 from the Claude Design spec on
+// that issue: neo-brutalism, blue & white light, black & yellow dark). A
+// server component; the interactive parts are small client islands — the
+// theme toggle, the release notice, the sign-in dialog and the beta form.
 //
-// Two rules from the spec govern the copy here and are enforced by
-// src/app/__tests__/landing.test.tsx:
+// Copy rules, enforced by src/app/__tests__/landing.test.tsx:
 //   1. PRIVACY_CLAIM appears verbatim.
-//   2. The phrase "zero-knowledge" is never used unqualified. The blind-proxy
-//      exception is real, so an unqualified claim would be false.
+//   2. "zero-knowledge" is never claimed; the processing exception is real.
+//   3. Never "open source": the licence is O'SAASY, source-available.
+//   4. The price says what it is — CHF 5, once, not a subscription — and the
+//      quota's catch is disclosed: deleting does not refund a credit.
+//
+// `access` decides the hosted path's call to action. While sign-ups are
+// closed (the hosted deployment's private beta) it is the beta-invite form;
+// when open (a self-hoster's default) it is simply "Create your account".
 
 const FEATURES = [
   {
-    icon: FileText,
-    title: "Drop in the PDF, get the listing",
-    body: "Upload the exposé and the rent, rooms, size and address are read out of it for you. Correct anything that came out wrong — it is a starting point, not an oracle.",
+    title: "PDF in, facts out",
+    body: "Upload an exposé and rent, rooms, size and address are filled in for you.",
   },
   {
-    icon: Star,
-    title: "Rate it separately, compare it together",
-    body: "You each rate a flat on your own. The comparison shows both scores side by side, so a disagreement is visible instead of averaged away into nothing.",
+    title: "Rate on your own",
+    body: "Each person scores separately; the ratings sit side by side so you can see where you agree.",
   },
   {
-    icon: MapPin,
-    title: "Distances to the places you actually go",
-    body: "Save up to five locations — work, the gym, your sister — and every apartment shows how long it takes to get to each of them by bike and transit.",
+    title: "One comparison grid",
+    body: "Sort, hide and compare every listing until the winner is obvious.",
   },
   {
-    icon: Users,
-    title: "Built for two people, not a team",
-    body: "Invite the person you are moving in with. One household, shared listings, separate opinions.",
+    title: "Commutes, calculated",
+    body: "Bike and transit times to up to five places that matter to you.",
+  },
+  {
+    title: "Built for a household",
+    body: "Made for partners and flatmates searching together, not for teams or agents.",
+  },
+  {
+    title: "Private either way",
+    body: "Self-hosted on your own setup, or end-to-end encrypted when we host it.",
   },
 ] as const;
 
-export function Landing({ signIn }: { signIn: React.ReactNode }) {
+const TAGS = [
+  { icon: Users, label: "Collaborative" },
+  { icon: Lock, label: "Privacy first" },
+  { icon: BarChart3, label: "Data driven" },
+] as const;
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <span className="lp-mono text-[13px] tracking-[0.08em] text-(--lp-muted)">{children}</span>;
+}
+
+// lucide-react dropped brand marks in v1; this is the outline from the design.
+function GithubMark() {
   return (
-    <main className="flex-1">
-      {/* Hero + sign-in */}
-      <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 px-4 pb-16 pt-12 md:flex-row md:items-start md:justify-between md:pt-20">
-        <div className="max-w-xl space-y-5 text-center md:text-left">
-          <Image
-            src="/flatpare_logo.svg"
-            alt="Flatpare"
-            width={200}
-            height={62}
-            className="mx-auto h-12 w-auto dark:invert md:mx-0"
-            priority
-          />
-          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            Compare apartments together, without handing your search to anyone
-            else.
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
+    </svg>
+  );
+}
+
+function Logo() {
+  return (
+    <a href="#top" aria-label="Flatpare home" className="flex items-center">
+      <Image
+        src="/flatpare_logo_blue.svg"
+        alt="Flatpare"
+        width={129}
+        height={40}
+        className="h-10 w-auto dark:hidden"
+        priority
+      />
+      <Image
+        src="/flatpare_logo_yellow.svg"
+        alt="Flatpare"
+        width={129}
+        height={40}
+        className="hidden h-10 w-auto dark:block"
+        priority
+      />
+    </a>
+  );
+}
+
+function Nav({ release }: { release: ReleaseInfo | null }) {
+  return (
+    <header className="mx-auto flex w-full max-w-[1160px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
+      <Logo />
+      {release && (
+        <div className="order-last flex min-w-0 basis-full justify-center md:order-none md:basis-auto md:flex-1">
+          <ReleaseNotice version={release.version} href={RELEASES_URL} />
+        </div>
+      )}
+      <nav aria-label="Main" className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[15px] font-medium">
+        <a href="#video" className="hidden text-(--lp-ink) no-underline hover:underline sm:inline">
+          How it works
+        </a>
+        <a href="#paths" className="hidden text-(--lp-ink) no-underline hover:underline sm:inline">
+          Pricing
+        </a>
+        <a href={REPO_URL} className="inline-flex items-center gap-1.5 text-(--lp-ink) no-underline hover:underline">
+          <GithubMark />
+          GitHub
+        </a>
+        <SignInButton className="lp-btn lp-btn-secondary min-h-11 px-4">Sign in</SignInButton>
+        <LandingThemeToggle />
+      </nav>
+    </header>
+  );
+}
+
+function Hero({ access }: { access: PublicAccess }) {
+  return (
+    <section
+      id="top"
+      className="lp-grid-bg relative overflow-hidden border-y-[3px] border-(--lp-line) bg-(--lp-bg)"
+    >
+      <HeroSketch />
+      <div className="relative mx-auto flex max-w-[1160px] flex-wrap items-center gap-14 px-4 pt-16 pb-20 sm:px-6 md:pt-22 md:pb-24">
+        <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-6">
+          <Eyebrow>FIG. 01 — FLAT HUNTING, TOGETHER</Eyebrow>
+          <h1 className="lp-head m-0 text-[40px] leading-[1.02] tracking-[-0.03em] sm:text-[62px]">
+            Compare flats.
+            <br />
+            <span className="text-(--lp-accent-text)">Decide together.</span>
           </h1>
-          <p className="text-lg text-muted-foreground text-pretty">
-            Flatpare is a shared workspace for two people hunting for a flat.
-            Every listing, rating and note is encrypted in your browser before
-            it is stored, with a key the server never holds.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            CHF 5 once — not a subscription. Or free forever if you run it
-            yourself.
-          </p>
-        </div>
-
-        <div className="w-full max-w-sm shrink-0">{signIn}</div>
-      </section>
-
-      {/* What it does */}
-      <section className="border-t bg-muted/30">
-        <div className="mx-auto w-full max-w-5xl px-4 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            What it does
-          </h2>
-          <div className="mt-8 grid gap-8 sm:grid-cols-2">
-            {FEATURES.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                  <h3 className="font-medium">{title}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground text-pretty">
-                  {body}
-                </p>
-              </div>
+          <ul aria-label="Why Flatpare" className="m-0 flex list-none flex-wrap gap-2.5 p-0">
+            {TAGS.map(({ icon: Icon, label }) => (
+              <li key={label} className="lp-chip">
+                <Icon className="size-[18px] text-(--lp-accent-text)" aria-hidden />
+                {label}
+              </li>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The privacy claim — the section the spec is strictest about */}
-      <section className="border-t">
-        <div className="mx-auto w-full max-w-5xl px-4 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            What we can and cannot see
-          </h2>
-
-          <blockquote className="mt-6 border-l-4 border-primary/60 pl-4 text-lg font-medium text-pretty">
-            {PRIVACY_CLAIM}
-          </blockquote>
-
-          <div className="mt-8 grid gap-8 sm:grid-cols-3">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                <h3 className="font-medium">Encrypted before it leaves</h3>
-              </div>
-              <p className="text-sm text-muted-foreground text-pretty">
-                Your apartments, ratings, notes and saved PDFs are encrypted in
-                your browser. What reaches our database is ciphertext, and the
-                key to it never does.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <KeyRound
-                  className="h-5 w-5 shrink-0 text-primary"
-                  aria-hidden
-                />
-                <h3 className="font-medium">Your key, and only yours</h3>
-              </div>
-              <p className="text-sm text-muted-foreground text-pretty">
-                The key comes from your passphrase, plus a recovery code you
-                print and keep. There is no reset. If you lose both, your data
-                is gone — including to us, because we never had it.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Eye className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                <h3 className="font-medium">The exception, stated plainly</h3>
-              </div>
-              <p className="text-sm text-muted-foreground text-pretty">
-                Four things need a third party: geocoding an address, measuring
-                a travel time, checking whether a listing is still up, and
-                reading a PDF. That one address, URL or file is sent to us in
-                readable form and passed to Google Maps or Google Gemini. It is
-                used for that single call, never written to our database, and
-                never logged.
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-8 max-w-3xl text-sm text-muted-foreground text-pretty">
-            We do not describe this as zero-knowledge, because it is not: the
-            processing above is a real exception and it would be dishonest to
-            market around it. Everything derived from those calls is encrypted
-            in your browser before it is stored.
+          </ul>
+          <p className="m-0 max-w-[520px] text-[19px] leading-[1.55] text-(--lp-body)">
+            A shared workspace for the people hunting for a flat. Drop in listing
+            PDFs, rate every place on your own, compare commutes.
           </p>
-        </div>
-      </section>
-
-      {/* Hosting and self-hosting */}
-      <section className="border-t bg-muted/30">
-        <div className="mx-auto w-full max-w-5xl px-4 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Two ways to run it
-          </h2>
-          <div className="mt-8 grid gap-8 sm:grid-cols-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Server className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                <h3 className="font-medium">
-                  Hosted by us — <span className="whitespace-nowrap">CHF 5 once</span>
-                </h3>
-              </div>
-              <p className="text-sm text-muted-foreground text-pretty">
-                A one-time payment, not a subscription. It covers up to{" "}
-                <strong className="font-medium text-foreground">
-                  10 people
-                </strong>{" "}
-                and{" "}
-                <strong className="font-medium text-foreground">
-                  40 apartments
-                </strong>{" "}
-                in one household. When you have used your 40, another CHF 5
-                adds another 40.
-              </p>
-              <p className="text-sm text-muted-foreground text-pretty">
-                The 40 counts apartments you{" "}
-                <strong className="font-medium text-foreground">add</strong>,
-                not apartments you keep: deleting one frees room in your
-                comparison but does not give the credit back. Reading a PDF and
-                measuring travel times costs us money per apartment, and that
-                is what you are paying for.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                <h3 className="font-medium">Run it yourself — free</h3>
-              </div>
-              <p className="text-sm text-muted-foreground text-pretty">
-                Flatpare is{" "}
-                <strong className="font-medium text-foreground">
-                  source available
-                </strong>
-                : the code is public to read, modify and run for yourself.
-                Bring your own machine and your own API keys and there are no
-                limits at all — the member and apartment caps are environment
-                variables, and unset means unlimited. A{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                  docker compose up
-                </code>{" "}
-                gets you a working instance with no third-party sign-up.
-              </p>
-              <p className="pt-1 text-sm">
-                <a
-                  className="font-medium underline underline-offset-4"
-                  href={REPO_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  Read the source and the setup guide
-                </a>
-              </p>
-            </div>
+          <div className="flex flex-wrap gap-3.5">
+            {access === "closed" ? (
+              <a href="#hosted" className="lp-btn lp-btn-primary">
+                Request a beta invite
+              </a>
+            ) : (
+              <SignInButton className="lp-btn lp-btn-primary">Get started</SignInButton>
+            )}
+            <a href="#self-host" className="lp-btn lp-btn-secondary">
+              Run it yourself
+            </a>
           </div>
         </div>
-      </section>
-
-      <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>Flatpare — compare apartments together.</p>
-          <a
-            className="underline underline-offset-4"
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Source on GitHub
-          </a>
+        <div className="min-w-0 flex-[1_1_480px]">
+          <figure className="m-0 border-[3px] border-(--lp-card-line) bg-(--lp-surface) shadow-(--lp-hero-shadow)">
+            <div className="flex items-center gap-2 border-b-[3px] border-(--lp-card-line) px-3.5 py-2.5">
+              <span className="size-2.5 rounded-full bg-(--lp-line)" />
+              <span className="size-2.5 rounded-full bg-(--lp-line)" />
+              <span className="size-2.5 rounded-full bg-(--lp-line)" />
+              <span className="lp-mono ml-2 text-xs text-(--lp-muted)">flatpare.com / compare</span>
+            </div>
+            {/* Placeholder until the comparison-grid screenshot is captured
+                (light + dark, believable artificial data) — follow-up to #301. */}
+            <div className="m-4 flex aspect-[16/10] flex-col items-center justify-center gap-2.5 border-[1.5px] border-dashed border-(--lp-line-strong) bg-(--lp-soft) p-4 text-center">
+              <Monitor className="size-10 text-(--lp-muted)" strokeWidth={1.6} aria-hidden />
+              <strong className="text-base">The comparison grid</strong>
+              <span className="lp-mono text-xs text-(--lp-muted)">Screenshot coming soon</span>
+            </div>
+          </figure>
         </div>
-      </footer>
-    </main>
+      </div>
+    </section>
+  );
+}
+
+function Video() {
+  return (
+    <section id="video" className="mx-auto flex max-w-[1160px] flex-col gap-7 px-4 pt-24 pb-8 sm:px-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
+        <h2 className="lp-head m-0 text-[30px] sm:text-[36px]">See how it works</h2>
+        <Eyebrow>
+          FIG. 02 — WALKTHROUGH{WALKTHROUGH_DURATION ? ` · ${WALKTHROUGH_DURATION}` : ""}
+        </Eyebrow>
+      </div>
+      {WALKTHROUGH_VIDEO_URL ? (
+        <a
+          href={WALKTHROUGH_VIDEO_URL}
+          aria-label="Play the Flatpare walkthrough on YouTube"
+          className="lp-video-grid flex aspect-video items-center justify-center border-[3px] border-(--lp-card-line) no-underline shadow-(--lp-card-shadow)"
+        >
+          <span className="flex flex-col items-center gap-4 text-(--lp-video-ink)">
+            <span className="flex size-22 items-center justify-center rounded-full border-[3px] border-(--lp-btn-line) bg-(--lp-play-bg)">
+              <Play className="size-8 fill-(--lp-play-ink) text-(--lp-play-ink)" aria-hidden />
+            </span>
+            <span className="lp-mono text-sm">Watch on YouTube</span>
+          </span>
+        </a>
+      ) : (
+        <div className="lp-video-grid flex aspect-video items-center justify-center border-[3px] border-(--lp-card-line) shadow-(--lp-card-shadow)">
+          <span className="flex flex-col items-center gap-4 text-(--lp-video-ink)">
+            <span className="flex size-22 items-center justify-center rounded-full border-[3px] border-(--lp-btn-line) bg-(--lp-play-bg) opacity-80">
+              <Play className="size-8 fill-(--lp-play-ink) text-(--lp-play-ink)" aria-hidden />
+            </span>
+            <span className="lp-mono text-sm">Walkthrough video coming soon</span>
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Paths({ access }: { access: PublicAccess }) {
+  return (
+    <section id="paths" className="mx-auto flex max-w-[1160px] flex-col gap-8 px-4 py-24 sm:px-6">
+      <div className="flex flex-col gap-2.5">
+        <Eyebrow>FIG. 03 — TWO WAYS IN</Eyebrow>
+        <h2 className="lp-head m-0 text-[30px] sm:text-[36px]">Same app. Private either way.</h2>
+      </div>
+      <div className="flex flex-wrap gap-7">
+        <article
+          id="hosted"
+          className="flex min-w-0 flex-[1_1_420px] scroll-mt-6 flex-col gap-5 border-[3px] border-(--lp-hosted-border) bg-(--lp-soft) p-6 shadow-(--lp-hero-shadow) sm:p-9"
+        >
+          <div className="flex flex-wrap gap-2">
+            <span className="lp-badge border-(--lp-accent) bg-(--lp-accent) text-(--lp-on-accent)">HOSTED</span>
+            {access === "closed" && <span className="lp-badge text-(--lp-accent-text)">PRIVATE BETA</span>}
+          </div>
+          <h3 className="lp-head m-0 text-[28px]">
+            We run it for you.
+            <br />
+            <span className="text-(--lp-accent-text)">Private by encryption.</span>
+          </h3>
+          <p className="m-0 text-base leading-relaxed font-semibold text-(--lp-ink)">{PRIVACY_CLAIM}</p>
+          <p className="m-0 text-base leading-relaxed text-(--lp-body)">
+            Every listing, rating and note is encrypted in your browser before
+            it&apos;s stored, with a key the server never holds. Nothing to
+            install, no API keys to manage.
+          </p>
+          <div className="flex flex-wrap items-baseline gap-2.5">
+            <span className="lp-head text-[40px] tracking-[-0.03em]">CHF 5</span>
+            <span className="text-[15px] text-(--lp-muted)">
+              one-time payment · per household · not a subscription
+            </span>
+          </div>
+          <ul className="m-0 list-disc pl-5 text-[15px] leading-[1.7] text-(--lp-body)">
+            <li>Up to 10 people and 40 apartments.</li>
+            <li>Need more? Another CHF 5 adds another 40 apartments.</li>
+            <li>
+              The 40 counts apartments you add: deleting one does not give the
+              credit back.
+            </li>
+            <li>
+              Your key comes from your passphrase, plus a recovery code you
+              print. There is no reset — lose both and the data is gone, to us
+              too.
+            </li>
+          </ul>
+          <div className="mt-auto">
+            {access === "closed" ? (
+              <BetaRequestForm />
+            ) : (
+              <SignInButton className="lp-btn lp-btn-primary">Create your account →</SignInButton>
+            )}
+          </div>
+          <p className="m-0 text-[13px] leading-normal text-(--lp-muted)">
+            The one exception: to geocode an address, measure a commute, check a
+            listing or read a PDF, that single item is sent to Google Maps or
+            Gemini for processing — never written to our database, never logged.
+            That is why we do not describe this as zero-knowledge.
+          </p>
+        </article>
+        <article
+          id="self-host"
+          className="lp-card flex min-w-0 flex-[1_1_420px] scroll-mt-6 flex-col gap-5 p-6 sm:p-9"
+        >
+          <div className="flex flex-wrap gap-2">
+            <span className="lp-badge">SELF-HOSTED</span>
+            <span className="lp-badge">SOURCE AVAILABLE · O&apos;SAASY</span>
+          </div>
+          <h3 className="lp-head m-0 text-[28px]">
+            Run it yourself, for yourself.
+            <br />
+            <span className="text-(--lp-muted)">Private by definition.</span>
+          </h3>
+          <p className="m-0 text-base leading-relaxed text-(--lp-body)">
+            Your server, your database, your keys. Host it on a laptop, a home
+            server or your own cloud account — your search never leaves your
+            setup, and there are no limits.
+          </p>
+          <div className="flex flex-wrap items-baseline gap-2.5">
+            <span className="lp-head text-[40px] tracking-[-0.03em]">Free</span>
+            <span className="text-[15px] text-(--lp-muted)">bring your own Gemini &amp; Maps keys</span>
+          </div>
+          <pre className="lp-mono m-0 overflow-x-auto border border-(--lp-line) bg-(--lp-code-bg) p-4.5 text-[13px] leading-[1.7] text-(--lp-code-ink)">
+            {`git clone ${REPO_URL}\ncd flatpare\ncp .env.example .env.local\ndocker compose up -d`}
+          </pre>
+          <a href={REPO_URL} className="lp-btn lp-btn-secondary mt-auto self-start">
+            View on GitHub →
+          </a>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function Features() {
+  return (
+    <section className="lp-grid-bg border-y-[3px] border-(--lp-line)">
+      <div className="mx-auto flex max-w-[1160px] flex-col gap-8 px-4 py-22 sm:px-6">
+        <h2 className="lp-head m-0 text-[30px] sm:text-[36px]">What&apos;s inside</h2>
+        <div className="grid grid-cols-1 gap-[3px] sm:grid-cols-2 lg:grid-cols-3 overflow-hidden border-[3px] border-(--lp-card-line) bg-(--lp-card-line) shadow-(--lp-card-shadow)">
+          {FEATURES.map(({ title, body }, i) => (
+            <div key={title} className="flex flex-col gap-2 bg-(--lp-surface) p-7">
+              <span className="lp-mono text-[13px] text-(--lp-accent-text)">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="m-0 text-lg font-bold">{title}</h3>
+              <p className="m-0 leading-[1.55] text-(--lp-body)">{body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer>
+      <div className="lp-mono mx-auto flex max-w-[1160px] flex-col items-center gap-3 px-4 pt-9 pb-11 text-center text-sm text-(--lp-body) sm:px-6">
+        <span>
+          flatpare.com is created by{" "}
+          <a href={AUTHOR.url} className="font-semibold text-(--lp-accent-text)">
+            {AUTHOR.name}
+          </a>
+        </span>
+        <span className="flex flex-wrap justify-center gap-5 text-[13px]">
+          <a href={REPO_URL} className="text-(--lp-muted)">
+            GitHub
+          </a>
+          <a href={RELEASES_URL} className="text-(--lp-muted)">
+            Changelog
+          </a>
+        </span>
+      </div>
+    </footer>
+  );
+}
+
+export function Landing({
+  signIn,
+  access = "open",
+  openSignIn = false,
+  release = null,
+  now = new Date(),
+}: {
+  signIn: React.ReactNode;
+  access?: PublicAccess;
+  // Open the sign-in dialog on load: the sign-in flow came back with a
+  // notice to show (src/app/page.tsx decides).
+  openSignIn?: boolean;
+  // The newest release, from CHANGELOG.md at build time. Mentioned in the
+  // nav only while it is recent.
+  release?: ReleaseInfo | null;
+  now?: Date;
+}) {
+  const freshRelease = release && isReleaseFresh(release.date, now) ? release : null;
+  return (
+    <SignInProvider signIn={signIn} defaultOpen={openSignIn}>
+      <div className={`landing ${landingFontVariables} flex flex-1 flex-col`}>
+        <Nav release={freshRelease} />
+        <main className="flex-1">
+          <Hero access={access} />
+          <Video />
+          <Paths access={access} />
+          <Features />
+        </main>
+        <Footer />
+      </div>
+    </SignInProvider>
   );
 }

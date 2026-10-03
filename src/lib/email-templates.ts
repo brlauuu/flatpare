@@ -95,3 +95,21 @@ export function householdInvitationEmail(input: {
     html: shell(lines.map(escapeHtml), { href: input.siteUrl, label: "Open Flatpare" }),
   };
 }
+
+// A beta-invite request from the landing page (#301), sent to the owner, not
+// to the person who asked. The requester's address is the whole message —
+// the owner answers it with `beta-pass.mjs create --email`. It is typed by a
+// stranger, so it is escaped like any other untrusted text and kept out of
+// the subject.
+export function betaRequestEmail(input: { requesterEmail: string; siteUrl: string }): RenderedEmail {
+  const lines = [
+    `${input.requesterEmail} asked for a Flatpare beta invite.`,
+    `To invite them: node scripts/beta-pass.mjs create --email ${input.requesterEmail}`,
+    "Every request so far: node scripts/beta-pass.mjs requests",
+  ];
+  return {
+    subject: "New Flatpare beta request",
+    text: lines.join("\n\n"),
+    html: shell(lines.map(escapeHtml), { href: input.siteUrl, label: "Open Flatpare" }),
+  };
+}

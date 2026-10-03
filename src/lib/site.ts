@@ -37,3 +37,16 @@ export const REPO_URL = "https://github.com/brlauuu/flatpare";
 // its test assert on one string rather than two copies that can drift.
 export const PRIVACY_CLAIM =
   "We can't read your data. We do process PDFs and addresses in memory when you ask us to, and we never store them.";
+
+// Where "What's changed" and the footer's Changelog link point (#301).
+export const RELEASES_URL = `${REPO_URL}/releases`;
+
+// The walkthrough video on the landing page (#301). Null until it is
+// recorded: the page then shows a "coming soon" placeholder in its place.
+// A link to YouTube, not an embedded player, so the landing page of a
+// privacy-first product loads nothing from Google until the visitor clicks.
+export const WALKTHROUGH_VIDEO_URL: string | null = null;
+export const WALKTHROUGH_DURATION: string | null = null;
+
+// The author credit in the footer.
+export const AUTHOR = { name: "brlauuu", url: "https://brlauuu.dev" } as const;

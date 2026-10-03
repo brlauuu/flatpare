@@ -206,10 +206,8 @@ describe("LoginForm — under-development notice", () => {
     expect(text).toMatch(/new sign-ups are closed/i);
     // Roughly when, and a way to ask — no countdown, no invented numbers.
     expect(text).toMatch(/later this year/i);
-    expect(screen.getByRole("link", { name: /ask for an invite/i })).toHaveAttribute(
-      "href",
-      expect.stringMatching(/^https:\/\/github\.com\//)
-    );
+    // The way to ask is the landing page's beta-invite form (#301).
+    expect(text).toMatch(/request an invite with the form on this page/i);
     expect(text).not.toMatch(/\d+\s+people/i);
     expect(text).not.toMatch(/waitlist/i);
     expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();

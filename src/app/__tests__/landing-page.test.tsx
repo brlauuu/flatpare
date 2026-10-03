@@ -35,6 +35,34 @@ afterEach(() => {
   delete process.env.AUTH_TRUST_HOST;
 });
 
+// The landing page itself is tested in landing.test.tsx. Here it is a stub
+// that renders the sign-in slot inline (the real page keeps it in a dialog)
+// and reports the props page.tsx decided on.
+function mockLanding() {
+  vi.doMock("../_components/landing", () => ({
+    Landing: ({
+      signIn,
+      access,
+      openSignIn,
+      release,
+    }: {
+      signIn: React.ReactNode;
+      access?: string;
+      openSignIn?: boolean;
+      release?: { version: string; date: string } | null;
+    }) => (
+      <div
+        data-testid="landing"
+        data-access={access}
+        data-open-sign-in={String(!!openSignIn)}
+        data-release={release ? `${release.version}@${release.date}` : ""}
+      >
+        {signIn}
+      </div>
+    ),
+  }));
+}
+
 /** Renders the server component and reports what it passed to the form. */
 async function renderPage(
   searchParams: Record<string, string | undefined> = {}
@@ -57,6 +85,7 @@ async function renderPage(
       />
     ),
   }));
+  mockLanding();
   const { default: LandingPage } = await import("../page");
   render(await LandingPage({ searchParams: Promise.resolve(searchParams) }));
   const el = screen.getByTestId("login-form");
@@ -103,11 +132,11 @@ describe("LandingPage provider selection", () => {
     expect(await renderedProviderIds()).toEqual([...expected]);
   });
 
-  it("renders the landing copy around the sign-in form", async () => {
+  it("hands the sign-in form to the landing page", async () => {
     const ids = await renderedProviderIds();
     expect(ids).toEqual(["credentials"]);
     // The form is a slot inside the marketing page, not a separate route.
-    expect(screen.getByTestId("login-form")).toBeInTheDocument();
+    expect(screen.getByTestId("landing")).toContainElement(screen.getByTestId("login-form"));
   });
 
   // The invariant src/auth.ts promises in a comment and nothing enforced.
@@ -189,8 +218,46 @@ describe("LandingPage under-development gate", () => {
     vi.doMock("../login-form", () => ({
       LoginForm: () => <div data-testid="login-form" />,
     }));
+    mockLanding();
     const { default: LandingPage } = await import("../page");
     render(await LandingPage());
     expect(screen.getByTestId("login-form")).toBeInTheDocument();
+  });
+
+  // The sign-in card lives in a dialog since #301; a notice is the sign-in
+  // flow reporting back, so it must be visible without a click.
+  it("opens the sign-in dialog exactly when there is a notice to show", async () => {
+    await renderPage({ beta: "ready" });
+    expect(screen.getByTestId("landing").dataset.openSignIn).toBe("true");
+    cleanup();
+    await renderPage({});
+    expect(screen.getByTestId("landing").dataset.openSignIn).toBe("false");
+  });
+
+  it("passes the access mode to the page as well as to the form", async () => {
+    process.env.FLATPARE_PUBLIC_ACCESS = "closed";
+    await renderPage();
+    expect(screen.getByTestId("landing").dataset.access).toBe("closed");
+  });
+});
+
+// next.config.ts inlines the newest CHANGELOG release as two env vars (#301).
+describe("LandingPage release notice input", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("passes the release when both vars are set", async () => {
+    vi.stubEnv("FLATPARE_RELEASE_VERSION", "0.5.0");
+    vi.stubEnv("FLATPARE_RELEASE_DATE", "2026-10-03");
+    await renderPage();
+    expect(screen.getByTestId("landing").dataset.release).toBe("0.5.0@2026-10-03");
+  });
+
+  it("passes no release when either is missing", async () => {
+    vi.stubEnv("FLATPARE_RELEASE_VERSION", "0.5.0");
+    vi.stubEnv("FLATPARE_RELEASE_DATE", "");
+    await renderPage();
+    expect(screen.getByTestId("landing").dataset.release).toBe("");
   });
 });

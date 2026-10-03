@@ -237,6 +237,11 @@ describe("proxy — PWA assets stay public", () => {
     "/icon-maskable-512.png",
     "/apple-touch-icon.png",
     "/favicon.ico",
+    // Shown to signed-out visitors on the landing page (#301).
+    "/flatpare_logo.svg",
+    "/flatpare_logo_blue.svg",
+    "/flatpare_logo_yellow.svg",
+    "/flatpare_logo_dark.svg",
   ];
 
   for (const path of publicAssets) {
@@ -245,7 +250,12 @@ describe("proxy — PWA assets stay public", () => {
     });
   }
 
-  const guarded = ["/apartments", "/api/apartments", "/settings", "/compare"];
+  const guarded = [
+    "/apartments",
+    "/api/apartments",
+    "/settings",
+    "/compare",
+  ];
   for (const path of guarded) {
     it(`still runs the proxy for ${path}`, () => {
       expect(matcher.test(path)).toBe(true);
@@ -274,5 +284,21 @@ describe("proxy — beta-pass link", () => {
     signedOut();
     const res = await proxy(makeRequest("/betas"));
     expect(res.status).toBe(307);
+  });
+});
+
+// The landing page's beta-invite form (#301) is posted by someone with no
+// account; the route applies its own cap and stores nothing but the address.
+describe("proxy — beta-invite requests", () => {
+  it("passes /api/beta-requests through unauthenticated", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/api/beta-requests"));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not widen the pass-through to neighbouring paths", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/api/beta-requests/list"));
+    expect(res.status).toBe(401);
   });
 });
