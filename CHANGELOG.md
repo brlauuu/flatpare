@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.5.2 — 2026-10-03
+
 ### Changed
 - The landing page now says the private beta is free, that CHF 5 applies once sign-ups open, and that beta accounts keep their data and credits afterwards. (#322)
 - flatpare.com is updated automatically when a new version is released, and only then: each release goes live as one tested unit. (#320, #321)
