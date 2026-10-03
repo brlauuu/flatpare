@@ -1,10 +1,9 @@
 import type { MetadataRoute } from "next";
 
-// Colours mirror --primary and --background in globals.css, converted from
-// oklch to hex because the manifest spec only accepts CSS colour literals
-// that browsers parse outside a stylesheet.
-const THEME = "#00676f";
-const BACKGROUND = "#f9fafb";
+// Colours mirror --primary and --background in globals.css (light theme);
+// manifest.test.ts reads the stylesheet and fails if they drift.
+const THEME = "#2346ff";
+const BACKGROUND = "#ffffff";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

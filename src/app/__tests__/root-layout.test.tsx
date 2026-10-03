@@ -4,8 +4,8 @@ import type { Metadata, Viewport } from "next";
 // next/font/google runs a build-time font fetch; in a test it only needs to
 // hand back the CSS variable names the layout interpolates.
 vi.mock("next/font/google", () => ({
-  Geist: () => ({ variable: "--font-geist-sans" }),
-  Geist_Mono: () => ({ variable: "--font-geist-mono" }),
+  Archivo: () => ({ variable: "--font-archivo" }),
+  IBM_Plex_Mono: () => ({ variable: "--font-plex-mono" }),
 }));
 vi.mock("@/components/theme-provider", () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -88,8 +88,8 @@ describe("RootLayout viewport", () => {
     // flashes the wrong colour on launch.
     const { viewport } = await load();
     expect(viewport.themeColor).toEqual([
-      { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
-      { media: "(prefers-color-scheme: dark)", color: "#050e0f" },
+      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+      { media: "(prefers-color-scheme: dark)", color: "#0d0d0d" },
     ]);
   });
 });
@@ -107,8 +107,8 @@ describe("RootLayout element", () => {
     expect(html.lang).toBe("en");
     // suppressHydrationWarning + the font variables are what next-themes and
     // Tailwind depend on being on the <html> element specifically.
-    expect(html.className).toContain("--font-geist-sans");
-    expect(html.className).toContain("--font-geist-mono");
+    expect(html.className).toContain("--font-archivo");
+    expect(html.className).toContain("--font-plex-mono");
 
     const body = html.children;
     expect(body.type).toBe("body");
