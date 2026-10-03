@@ -196,7 +196,9 @@ export function LoginForm({
 
   return (
     <div className="w-full">
-      <Card className="w-full">
+      {/* Rendered inside the landing page's sign-in dialog, which draws the
+          frame; a second frame and shadow here would box it twice (#324). */}
+      <Card className="w-full border-0 shadow-none">
         <CardHeader className="items-center space-y-3">
           <Image
             src="/flatpare_logo.svg"

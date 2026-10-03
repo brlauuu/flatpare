@@ -56,7 +56,7 @@ export function NavBar({ userName }: { userName: string }) {
   }
 
   return (
-    <header className="border-b-3 border-frame bg-card">
+    <header className="border-b-3 border-frame bg-card print:hidden">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
           <Image

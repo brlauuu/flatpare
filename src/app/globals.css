@@ -146,6 +146,53 @@
   --sidebar-ring: #ffe500;
 }
 
+/* Paper is white (#324). Printing from dark mode — the recovery kit is
+   meant to be printed — puts the light palette back, so the page never
+   prints light text that a browser then drops onto white paper.
+   theme-contrast.test.ts checks this mirrors :root. */
+@media print {
+  .dark {
+    --background: #ffffff;
+    --foreground: #000000;
+    --card: #ffffff;
+    --card-foreground: #000000;
+    --popover: #ffffff;
+    --popover-foreground: #000000;
+    --primary: #2346ff;
+    --primary-foreground: #ffffff;
+    --secondary: #e6ecff;
+    --secondary-foreground: #000000;
+    --muted: #e6ecff;
+    --muted-foreground: #3d3d3d;
+    --accent: #e6ecff;
+    --accent-foreground: #000000;
+    --destructive: #c8102e;
+    --border: #1a1a1a;
+    --input: #1a1a1a;
+    --ring: #2346ff;
+    --frame: #000000;
+    --warning: #b45309;
+    --success: #0a7a3d;
+    --frame-shadow: 6px 6px 0 #000000;
+    --button-shadow: 4px 4px 0 #000000;
+    --pressed-shadow: 1px 1px 0 #000000;
+    --hero-shadow: 10px 10px 0 #2346ff;
+    --chart-1: #2346ff;
+    --chart-2: #000000;
+    --chart-3: #3d3d3d;
+    --chart-4: #b45309;
+    --chart-5: #0a7a3d;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #000000;
+    --sidebar-primary: #2346ff;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e6ecff;
+    --sidebar-accent-foreground: #000000;
+    --sidebar-border: #1a1a1a;
+    --sidebar-ring: #2346ff;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

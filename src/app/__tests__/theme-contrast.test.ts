@@ -73,3 +73,21 @@ describe.each([
 it("squares every corner", () => {
   expect(block(":root").radius).toBe("0");
 });
+
+// The recovery kit is printed on paper (#324 review focus). Printing from
+// dark mode must still produce dark text on white, so a print-only .dark
+// block puts the light palette back for every colour token dark redefines.
+it("prints in the light palette even from dark mode", () => {
+  const at = css.indexOf("@media print");
+  expect(at).toBeGreaterThan(-1);
+  const printCss = css.slice(at);
+  const start = printCss.search(/\.dark \{/);
+  expect(start).toBeGreaterThan(-1);
+  const body = printCss.slice(printCss.indexOf("{", start) + 1, printCss.indexOf("}", start));
+  const printed: Record<string, string> = {};
+  for (const m of body.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)) printed[m[1]] = m[2].trim();
+  const light = block(":root");
+  for (const name of Object.keys(block(".dark"))) {
+    expect(printed[name], `--${name} in the print block`).toBe(light[name]);
+  }
+});

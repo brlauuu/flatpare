@@ -93,3 +93,11 @@ describe("NavBar current section", () => {
     }
   });
 });
+
+describe("NavBar in print", () => {
+  // The recovery kit is printed (#324): the page header has no place on it.
+  it("is hidden when printed", () => {
+    render(<NavBar userName="Alice" />);
+    expect(document.querySelector("header")!.className).toContain("print:hidden");
+  });
+});
