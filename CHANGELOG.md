@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.6.0 — 2026-10-03
+
 ### Changed
 - The whole app now has the landing page's look: blue and white in light mode, black and yellow in dark, square corners, bold frames and the same typefaces. (#324)
 
