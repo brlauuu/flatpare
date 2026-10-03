@@ -59,24 +59,24 @@ describe("CompareTable — metric rows", () => {
     expect(screen.getByText("2,500")).toBeInTheDocument();
   });
 
-  it("highlights the cheapest rent in green (min direction)", () => {
+  it("highlights the cheapest rent as the best value (min direction)", () => {
     const a = makeApt({ id: "a1", name: "Cheap", rentChf: 1500 });
     const b = makeApt({ id: "a2", name: "Pricey", rentChf: 2500 });
     renderTable([a, b]);
     const cheap = screen.getByText("1,500");
     const pricey = screen.getByText("2,500");
-    expect(cheap.className).toContain("text-green-600");
-    expect(pricey.className).not.toContain("text-green-600");
+    expect(cheap.dataset.best).toBe("true");
+    expect(pricey.dataset.best).toBeUndefined();
   });
 
-  it("highlights the largest size in green (max direction)", () => {
+  it("highlights the largest size as the best value (max direction)", () => {
     const a = makeApt({ id: "a1", name: "Small", sizeM2: 40 });
     const b = makeApt({ id: "a2", name: "Big", sizeM2: 80 });
     renderTable([a, b]);
     const big = screen.getByText("80");
     const small = screen.getByText("40");
-    expect(big.className).toContain("text-green-600");
-    expect(small.className).not.toContain("text-green-600");
+    expect(big.dataset.best).toBe("true");
+    expect(small.dataset.best).toBeUndefined();
   });
 
   it("renders an em-dash for null metric values and never highlights them", () => {
@@ -89,23 +89,23 @@ describe("CompareTable — metric rows", () => {
 });
 
 describe("CompareTable — washing machine row", () => {
-  it("renders ✓ when true and highlights it green", () => {
+  it("renders ✓ when true and marks it as the best value", () => {
     const a = makeApt({ id: "a1", name: "Yes", hasWashingMachine: true });
     renderTable([a]);
     const wmRow = screen.getByText("Washing machine").closest("tr")!;
     const cell = within(wmRow).getByText("✓");
-    expect(cell.className).toContain("text-green-600");
+    expect(cell.dataset.best).toBe("true");
     expect(cell.getAttribute("title")).toBe("Yes");
   });
 
-  it("renders ✕ when false (no green highlight)", () => {
+  it("renders ✕ when false (not marked best)", () => {
     const a = makeApt({ id: "a1", name: "No", hasWashingMachine: false });
     renderTable([a]);
     // The column-header hide button also renders ✕; scope to the washing-
     // machine row.
     const wmRow = screen.getByText("Washing machine").closest("tr")!;
     const cell = within(wmRow).getByText("✕");
-    expect(cell.className).not.toContain("text-green-600");
+    expect(cell.dataset.best).toBeUndefined();
     expect(cell.getAttribute("title")).toBe("No (or shared)");
   });
 

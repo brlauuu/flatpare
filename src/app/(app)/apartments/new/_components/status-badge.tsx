@@ -11,7 +11,7 @@ export function StatusBadge({
   saved?: boolean;
 }) {
   if (saved) {
-    return <Badge className="bg-green-100 text-green-700">Saved</Badge>;
+    return <Badge className="bg-success/15 text-success">Saved</Badge>;
   }
 
   switch (status) {
@@ -20,7 +20,7 @@ export function StatusBadge({
     case "uploading":
       return <Badge variant="secondary">Uploading...</Badge>;
     case "done":
-      return <Badge className="bg-blue-100 text-blue-700">Parsed</Badge>;
+      return <Badge className="bg-secondary text-secondary-foreground">Parsed</Badge>;
     case "error":
       return (
         <Badge variant="destructive" title={error}>

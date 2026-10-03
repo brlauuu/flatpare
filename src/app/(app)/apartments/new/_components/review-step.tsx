@@ -108,7 +108,7 @@ export function ReviewStep({
                           .join(" · ") || item.fileName}
                       </p>
                       {item.pdfWarning && (
-                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                        <p className="text-xs text-warning">
                           {item.pdfWarning}
                         </p>
                       )}

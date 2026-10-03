@@ -31,9 +31,9 @@ export function CreditBalance({ className }: { className?: string }) {
       <span
         data-level={level}
         className={cn(
-          "font-medium tabular-nums",
+          "font-mono font-medium tabular-nums",
           level === "ok" && "text-foreground",
-          level === "low" && "text-orange-600 dark:text-orange-400",
+          level === "low" && "text-warning",
           level === "empty" && "text-destructive"
         )}
       >
