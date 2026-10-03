@@ -34,6 +34,7 @@ function NewPassphraseFields({
       <div className="space-y-1">
         <Label htmlFor="forgot-new">New passphrase</Label>
         <Input
+          weight="frame"
           id="forgot-new"
           type="password"
           autoComplete="new-password"
@@ -44,6 +45,7 @@ function NewPassphraseFields({
       <div className="space-y-1">
         <Label htmlFor="forgot-confirm">Confirm new passphrase</Label>
         <Input
+          weight="frame"
           id="forgot-confirm"
           type="password"
           autoComplete="new-password"
@@ -185,6 +187,7 @@ export function ForgotPassphrase() {
       <div className="space-y-1">
         <Label htmlFor="forgot-code">Recovery code</Label>
         <Input
+          weight="frame"
           id="forgot-code"
           autoComplete="off"
           value={code}

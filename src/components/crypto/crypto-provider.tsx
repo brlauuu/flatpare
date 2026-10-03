@@ -273,7 +273,7 @@ export function CryptoProvider({
       {notice && (
         <div
           role="status"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-md border bg-background px-4 py-2 text-sm shadow sm:bottom-6"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 border-3 border-frame bg-card px-4 py-2 text-sm font-semibold shadow-frame sm:bottom-6"
         >
           {notice}
         </div>

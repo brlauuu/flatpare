@@ -51,6 +51,7 @@ export function SetupScreen() {
       <div className="space-y-1">
         <Label htmlFor="setup-passphrase">Passphrase</Label>
         <Input
+          weight="frame"
           id="setup-passphrase"
           type="password"
           autoComplete="new-password"
@@ -61,6 +62,7 @@ export function SetupScreen() {
       <div className="space-y-1">
         <Label htmlFor="setup-confirm">Confirm passphrase</Label>
         <Input
+          weight="frame"
           id="setup-confirm"
           type="password"
           autoComplete="new-password"

@@ -135,6 +135,7 @@ export default function ComparePage() {
             onValueChange={(value) => setSortField(value as SortField)}
           >
             <SelectTrigger
+              weight="frame"
               aria-label="Sort by"
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >

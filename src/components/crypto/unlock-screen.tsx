@@ -41,6 +41,7 @@ export function UnlockScreen({ extra }: { extra?: React.ReactNode }) {
         <div className="space-y-1">
           <Label htmlFor="unlock-passphrase">Passphrase</Label>
           <Input
+            weight="frame"
             id="unlock-passphrase"
             type="password"
             autoComplete="current-password"

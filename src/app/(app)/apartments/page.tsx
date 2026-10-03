@@ -223,6 +223,7 @@ export default function ApartmentsPage() {
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          weight="frame"
           type="text"
           aria-label="Search apartments"
           placeholder="Search by name, code, or address..."
@@ -265,6 +266,7 @@ export default function ApartmentsPage() {
             onValueChange={(value) => setSortField(value as SortField)}
           >
             <SelectTrigger
+              weight="frame"
               aria-label="Sort by"
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >
