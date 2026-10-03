@@ -242,6 +242,8 @@ describe("proxy — PWA assets stay public", () => {
     "/flatpare_logo_blue.svg",
     "/flatpare_logo_yellow.svg",
     "/flatpare_logo_dark.svg",
+    "/hero/compare-light.webp",
+    "/hero/compare-dark.webp",
   ];
 
   for (const path of publicAssets) {

@@ -170,6 +170,15 @@ describe("Apartments page — sort", () => {
     expect(localStorage.getItem("flatpare-apartments-sort-field")).toBe("rentChf");
   });
 
+  // Base UI renders the raw value in the trigger unless given its items.
+  it("shows the selected option's label in the trigger, not its value", () => {
+    localStorage.setItem("flatpare-apartments-sort-field", "rentChf");
+    renderPage();
+    const trigger = screen.getByRole("combobox", { name: "Sort by" });
+    expect(trigger).toHaveTextContent("Price");
+    expect(trigger).not.toHaveTextContent("rentChf");
+  });
+
   it("toggles direction and persists it", async () => {
     const user = userEvent.setup();
     renderPage();

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BarChart3, Lock, Monitor, Play, Users } from "lucide-react";
+import { BarChart3, Lock, Play, Users } from "lucide-react";
 import {
   AUTHOR,
   PRIVACY_CLAIM,
@@ -177,13 +177,27 @@ function Hero({ access }: { access: PublicAccess }) {
               <span className="size-2.5 rounded-full bg-(--lp-line)" />
               <span className="lp-mono ml-2 text-xs text-(--lp-muted)">flatpare.com / compare</span>
             </div>
-            {/* Placeholder until the comparison-grid screenshot is captured
-                (light + dark, believable artificial data) — follow-up to #301. */}
-            <div className="m-4 flex aspect-[16/10] flex-col items-center justify-center gap-2.5 border-[1.5px] border-dashed border-(--lp-line-strong) bg-(--lp-soft) p-4 text-center">
-              <Monitor className="size-10 text-(--lp-muted)" strokeWidth={1.6} aria-hidden />
-              <strong className="text-base">The comparison grid</strong>
-              <span className="lp-mono text-xs text-(--lp-muted)">Screenshot coming soon</span>
-            </div>
+            {/* The real comparison grid with invented data, captured from a
+                production build by scripts/capture-hero.mjs — re-run it when
+                the grid changes. One image per theme. */}
+            <Image
+              src="/hero/compare-light.webp"
+              alt="Flatpare's comparison grid: five flats side by side with rent, size, rooms, commute times and each person's star ratings"
+              width={1600}
+              height={1000}
+              sizes="(min-width: 1160px) 560px, 100vw"
+              className="block h-auto w-full dark:hidden"
+              priority
+            />
+            <Image
+              src="/hero/compare-dark.webp"
+              alt="Flatpare's comparison grid: five flats side by side with rent, size, rooms, commute times and each person's star ratings"
+              width={1600}
+              height={1000}
+              sizes="(min-width: 1160px) 560px, 100vw"
+              className="hidden h-auto w-full dark:block"
+              priority
+            />
           </figure>
         </div>
       </div>
