@@ -1,0 +1,101 @@
+name: Deploy
+
+# Production deploys on a release tag (#321): pushing `vX.Y.Z` deploys exactly
+# that commit to flatpare.com. A merge to main no longer deploys anything;
+# Vercel's Git integration is off in vercel.json (which also keeps preview
+# builds off: they receive TURSO_DATABASE_URL and would migrate production,
+# #212).
+#
+# Why the tag is safe to trust: `main` is protected — the `test` check must
+# pass on an up-to-date branch before anything merges, admins included — and
+# this workflow refuses a tag whose commit is not on main. So every commit it
+# can deploy is one CI passed.
+#
+# It runs the command that used to be run by hand: Vercel builds the uploaded
+# source with the production environment, so scripts/vercel-build.mjs runs
+# the migration preflights there, and a deploy that cannot migrate fails its
+# build rather than going live. The only secret on this runner is the token.
+
+on:
+  push:
+    tags: ["v*"]
+  # A manual re-run of a release, e.g. after rotating the token. Give it the
+  # tag; the same checks apply.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to deploy, e.g. v0.5.1"
+        required: true
+
+concurrency:
+  # One production deploy at a time, in order; never cancel one half-way,
+  # since its build may already be migrating.
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # Identifiers, not credentials (every `vercel link` writes them).
+      VERCEL_ORG_ID: team_sD5BO8JGuzyR3hmQ1xzUImPn
+      VERCEL_PROJECT_ID: prj_ezj2A5gOQUTKxSCWRdxfn4i3hIwp
+    steps:
+      - name: Require the deploy token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::The VERCEL_TOKEN repository secret is not set, so $TAG was not deployed. Add it, then re-run this workflow."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      - name: Refuse a tag that is not on main
+        run: |
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/main; then
+            echo "::error::$TAG points at a commit that is not on main; only merged, tested commits deploy."
+            exit 1
+          fi
+
+      - name: Refuse a tag that does not match package.json
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::$TAG does not match package.json ($version); a release tag names the version it ships."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Deploy to production
+        run: npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
+
+      # The version appears in the page through the release notice, which
+      # only renders for a release at most 30 days old (src/lib/release.ts).
+      # A fresh tag always is; a manual re-run of an old one only warns.
+      - name: Check flatpare.com serves this release
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          version="${TAG#v}"
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS https://flatpare.com/ | grep -q "$version"; then
+              curl -fsS https://flatpare.com/api/auth/providers | grep -q '"google"'
+              echo "flatpare.com is serving $TAG, and Google sign-in is registered."
+              exit 0
+            fi
+            sleep 10
+          done
+          if [ "$EVENT" = "push" ]; then
+            echo "::error::flatpare.com does not mention $version after the deploy."
+            exit 1
+          fi
+          echo "::warning::flatpare.com does not mention $version; expected for a release older than 30 days."
