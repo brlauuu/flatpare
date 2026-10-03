@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.5.0 — 2026-10-03
+
 ### Added
 - A redesigned landing page: what Flatpare is at a glance, a place for the walkthrough video, the hosted and self-hosted options side by side, and light and dark themes that follow your system. (#301)
 - Ask for a beta invite straight from the landing page: leave your email and the owner is notified. (#301)
