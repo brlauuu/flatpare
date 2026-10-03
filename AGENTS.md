@@ -305,7 +305,12 @@ Beyond auth + Turso, the following keys gate cloud features. If any is unset, th
 - **`CHANGELOG.md` is the release notes.** Every merged PR adds a line under `## Unreleased`, grouped Added / Changed / Fixed, ending with the issue or PR number. Write for the person using the app, not the person reading the diff.
 - **After every merged PR, cut a release** (decided 2026-10-02): graduate Unreleased into `## X.Y.Z — YYYY-MM-DD`, bump the version, open `release: cut X.Y.Z` as its own PR, and tag `vX.Y.Z` from `main` only after that PR is merged and CI is green. **Minor** for a new user-visible capability or an additive migration; **patch** for fixes, dependencies, docs and internal work. A breaking change on this 0.x line is still a question for the owner, never a silent bump. `/release` follows these steps.
 - **1.0.0 is cut when sign-ups open.** Until then the version stays 0.x.
-- **No workflow publishes from tags.** `gh release create vX.Y.Z --notes-file <section>` is done by hand with the graduated changelog section, and the production deploy stays the manual `vercel --prod` from the tagged commit. A tag says what a deploy contains; it does not deploy.
+- **No workflow publishes from tags.** `gh release create vX.Y.Z --notes-file <section>` is done by hand with the graduated changelog section. A tag says what a release contains; it does not deploy.
+- **Every push to `main` deploys to production** (#320), through Vercel's GitHub integration: `vercel.json` sets `git.deploymentEnabled` to `{ "main": true, "**": false }`. Vercel's rule is that a branch matching several keys deploys if any of them is `true`, so `main` deploys and **every other branch and pull request does not** — no preview deployments at all.
+  - **Why previews stay off:** preview builds receive `TURSO_DATABASE_URL`, and `scripts/vercel-build.mjs` migrates whatever database that names — which is how every PR once ran migrations against production (#212). Do not widen the pattern, or set `deploymentEnabled` back to `true`, without first giving previews their own database.
+  - **Merging a migration to `main` applies it to production**, at build time, with the app's preflights (a deploy that cannot migrate fails its build, not the live site). Treat a migration PR's merge as its deploy.
+  - **Gating on CI is a Vercel dashboard setting, not code:** Project → Settings → Build and Deployment → **Deployment Checks**, requiring the GitHub `test` check, holds each production build off flatpare.com until CI passes. The build — migrations included — still runs before the check finishes; only the promotion waits.
+  - A manual `npx vercel@latest --prod --yes` from a clean `main` still works for an out-of-band redeploy.
 
 ## Dependency maintenance
 
