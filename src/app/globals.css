@@ -195,7 +195,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground;
@@ -225,8 +225,9 @@
 }
 
 /* Heading styles from the landing page (#324). Utilities rather than base
-   styles, because utilities win over @layer base and would otherwise be
-   overridden by a heading's own font-weight class. */
+   styles, because utilities win over @layer base. Do not combine them with
+   text-*, font-*, tracking-* or leading-*: cn() treats those as conflicting
+   (src/lib/utils.ts). */
 @utility title-page {
   font-size: 2.125rem;
   line-height: 1.05;

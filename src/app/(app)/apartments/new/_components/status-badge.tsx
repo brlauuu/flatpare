@@ -11,7 +11,7 @@ export function StatusBadge({
   saved?: boolean;
 }) {
   if (saved) {
-    return <Badge className="bg-success/15 text-success">Saved</Badge>;
+    return <Badge className="border-success bg-card text-success">Saved</Badge>;
   }
 
   switch (status) {

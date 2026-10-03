@@ -68,7 +68,7 @@ These are shadcn files, edited in place (normal shadcn practice). Re-running `np
   *In dark mode the primary button's border is black, as on the landing page (`--lp-btn-line`).
 - **card** — 3px `border-frame`, `shadow-frame`, square.
 - **input / textarea / select trigger** — a `weight` prop: `"dense"` (default; 1px `border-input`) or `"frame"` (3px `border-frame`). `frame` is used for search, sort, passphrase and recovery-code fields.
-- **badge** — `font-mono`, uppercase, `tracking-wide`, 2px border, square; variants map to primary fill / outline.
+- **badge** — `font-mono`, `tracking-wide`, 2px border, square; variants map to primary fill / outline. *Amended during implementation:* not uppercase — badges also show values, and uppercase turns `m²` into `M²`.
 - **dropdown-menu, select content** — 3px frame + `shadow-frame`.
 - **separator** — 1px `border` (the dense line).
 

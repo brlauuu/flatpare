@@ -4,20 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border-3 border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-x-[3px] active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-pressed motion-reduce:active:translate-x-0 motion-reduce:active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border-3 border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "border-black bg-primary text-primary-foreground shadow-button [a]:hover:bg-primary/90",
+          "border-black bg-primary text-primary-foreground shadow-button motion-safe:active:not-aria-[haspopup]:translate-x-[3px] motion-safe:active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-pressed [a]:hover:bg-primary/90",
         outline:
-          "border-frame bg-card text-foreground shadow-button hover:bg-muted aria-expanded:bg-muted",
+          "border-frame bg-card text-foreground shadow-button motion-safe:active:not-aria-[haspopup]:translate-x-[3px] motion-safe:active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-pressed hover:bg-muted aria-expanded:bg-muted",
         secondary:
-          "border-frame bg-secondary text-secondary-foreground shadow-button hover:bg-secondary/80 aria-expanded:bg-secondary",
+          "border-frame bg-secondary text-secondary-foreground shadow-button motion-safe:active:not-aria-[haspopup]:translate-x-[3px] motion-safe:active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-pressed hover:bg-secondary/80 aria-expanded:bg-secondary",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         destructive:
-          "border-destructive bg-card text-destructive shadow-button hover:bg-destructive/10 focus-visible:ring-destructive/30",
+          "border-destructive bg-card text-destructive shadow-button motion-safe:active:not-aria-[haspopup]:translate-x-[3px] motion-safe:active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-pressed hover:bg-destructive/10 focus-visible:ring-destructive",
         link: "border-0 text-primary underline-offset-4 hover:underline",
       },
       size: {

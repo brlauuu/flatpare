@@ -71,7 +71,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                       data-best={isBest ? "true" : undefined}
                       className={cn(
                         "px-4 py-2 font-mono",
-                        isBest && "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground"
+                        isBest && "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                       )}
                     >
                       {val != null ? metric.format(val) : "—"}
@@ -125,7 +125,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                 className={cn(
                   "px-4 py-2",
                   apt.hasWashingMachine === true &&
-                    "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground"
+                    "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                 )}
                 title={
                   apt.hasWashingMachine === true

@@ -91,3 +91,8 @@ it("prints in the light palette even from dark mode", () => {
     expect(printed[name], `--${name} in the print block`).toBe(light[name]);
   }
 });
+
+// #324 final review: the default focus outline must be full strength too.
+it("never draws the focus outline at half strength", () => {
+  expect(css).not.toContain("outline-ring/50");
+});

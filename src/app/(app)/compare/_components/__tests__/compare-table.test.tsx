@@ -69,6 +69,17 @@ describe("CompareTable — metric rows", () => {
     expect(pricey.dataset.best).toBeUndefined();
   });
 
+  // #324 final review: printed from dark mode, the dark: fill would print
+  // white text that a browser then drops onto white paper.
+  it("prints the best value without its fill", () => {
+    const a = makeApt({ id: "a1", name: "Cheap", rentChf: 1500 });
+    const b = makeApt({ id: "a2", name: "Pricey", rentChf: 2500 });
+    renderTable([a, b]);
+    const cls = screen.getByText("1,500").className;
+    expect(cls).toContain("print:bg-transparent");
+    expect(cls).toContain("print:text-black");
+  });
+
   it("highlights the largest size as the best value (max direction)", () => {
     const a = makeApt({ id: "a1", name: "Small", sizeM2: 40 });
     const b = makeApt({ id: "a2", name: "Big", sizeM2: 80 });
