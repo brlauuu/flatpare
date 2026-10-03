@@ -66,8 +66,9 @@ const APARTMENTS = [
   }),
 ];
 
+// Each column's name is the link to that apartment's page.
 function columnOrder(): string[] {
-  return Array.from(document.querySelectorAll("thead th .font-semibold")).map(
+  return Array.from(document.querySelectorAll('thead th a[href^="/apartments/"]')).map(
     (el) => el.textContent ?? ""
   );
 }
