@@ -10,7 +10,7 @@ export function PendingScreen({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-md space-y-4">
+    <div className="space-y-4">
       <h1 className="title-page">Almost there</h1>
       {problem ? (
         <p className="text-sm text-destructive">{problem}</p>

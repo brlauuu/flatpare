@@ -24,7 +24,7 @@ export function RecoveryKit({
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 print:max-w-none">
+    <div className="space-y-4 print:max-w-none">
       <h1 className="title-page">{title}</h1>
       <p className="text-sm text-muted-foreground print:hidden">
         Write this code down or print it and keep it somewhere safe. It is the

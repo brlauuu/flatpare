@@ -25,7 +25,7 @@ export function UnlockScreen({ extra }: { extra?: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
+    <div className="space-y-6">
       <form onSubmit={onSubmit} className="space-y-4">
         <h1 className="title-page">Unlock Flatpare</h1>
         <p className="text-sm text-muted-foreground">
