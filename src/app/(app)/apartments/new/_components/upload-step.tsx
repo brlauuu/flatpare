@@ -15,7 +15,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="text-2xl font-semibold">Upload Listings</h1>
+      <h1 className="title-page">Upload Listings</h1>
 
       <div
         onDragOver={(e) => {

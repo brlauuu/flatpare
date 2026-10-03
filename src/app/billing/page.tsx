@@ -31,7 +31,7 @@ export default async function BillingPage() {
       <NavBar userName={session?.user?.name ?? "Unknown"} />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-10">
         <div className="space-y-3">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="title-page">
             {returning ? "Add 40 more apartments" : "One payment, then it's yours"}
           </h1>
           {returning ? (

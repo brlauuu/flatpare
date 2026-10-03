@@ -52,7 +52,7 @@ export function ReviewStep({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Review Apartments</h1>
+        <h1 className="title-page">Review Apartments</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onUploadMore}>
             Upload more

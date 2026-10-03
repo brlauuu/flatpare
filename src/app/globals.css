@@ -177,15 +177,34 @@
   }
 }
 
+/* Heading styles from the landing page (#324). Utilities rather than base
+   styles, because utilities win over @layer base and would otherwise be
+   overridden by a heading's own font-weight class. */
+@utility title-page {
+  font-size: 2.125rem;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  @media (width >= 40rem) {
+    font-size: 2.75rem;
+  }
+}
+@utility title-section {
+  font-size: 1.375rem;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
 /* Prose styles for the in-app guide */
 .guide-prose {
   line-height: 1.75;
 }
 .guide-prose h1 {
-  @apply text-3xl font-bold mt-0 mb-4;
+  @apply mt-0 mb-4 title-page;
 }
 .guide-prose h2 {
-  @apply text-2xl font-semibold mt-10 mb-4 border-b pb-2;
+  @apply mt-10 mb-4 border-b pb-2 title-section;
 }
 .guide-prose h3 {
   @apply text-xl font-semibold mt-8 mb-3;

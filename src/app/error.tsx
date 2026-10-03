@@ -19,7 +19,7 @@ export default function ErrorBoundary({ error, unstable_retry }: ErrorBoundaryPr
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
+          <h1 className="title-page">Something went wrong</h1>
           <p className="text-sm text-muted-foreground">
             The page couldn&apos;t load. You can retry, or expand the details below
             to see what happened.

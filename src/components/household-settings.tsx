@@ -202,7 +202,7 @@ export function HouseholdSettings() {
   return (
     <section className="space-y-4">
       <div className="flex items-baseline gap-2">
-        <h2 className="text-lg font-semibold">Members</h2>
+        <h2 className="title-section">Members</h2>
         {/* Only when a cap is configured — a self-hoster must not see a
             counter implying a limit that does not exist. */}
         {limits.maxMembers !== null && (

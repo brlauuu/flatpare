@@ -11,7 +11,7 @@ export function PendingScreen({
 }) {
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-xl font-semibold">Almost there</h1>
+      <h1 className="title-page">Almost there</h1>
       {problem ? (
         <p className="text-sm text-destructive">{problem}</p>
       ) : (

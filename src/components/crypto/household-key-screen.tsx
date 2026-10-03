@@ -25,7 +25,7 @@ export function HouseholdKeyScreen() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-xl font-semibold">A new household</h1>
+      <h1 className="title-page">A new household</h1>
       <p className="text-sm text-muted-foreground">
         This household has no encryption key yet. Creating one makes it yours:
         everything you add is encrypted under it, and you will get a new

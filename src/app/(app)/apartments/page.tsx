@@ -245,7 +245,7 @@ export default function ApartmentsPage() {
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <h1 className="text-2xl font-semibold">Apartments</h1>
+          <h1 className="title-page">Apartments</h1>
           {/* Only shown when a cap is configured: a self-hoster with no
               MAX_APARTMENTS must not see a counter implying one exists. */}
           {limits.maxApartments !== null && (

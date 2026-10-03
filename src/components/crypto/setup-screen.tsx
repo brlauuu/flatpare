@@ -39,7 +39,7 @@ export function SetupScreen() {
 
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-md space-y-4">
-      <h1 className="text-xl font-semibold">Choose a passphrase</h1>
+      <h1 className="title-page">Choose a passphrase</h1>
       <p className="text-sm text-muted-foreground">
         Flatpare encrypts your household&apos;s data in your browser. This
         passphrase protects your keys; Flatpare never sees it and cannot reset
