@@ -110,6 +110,24 @@ describe("Compare page — sort", () => {
     expect(localStorage.getItem("flatpare-compare-sort-field")).toBe("numBathrooms");
   });
 
+  // Base UI renders the raw value ("rentChf") in the trigger unless the
+  // Select is handed its items; it shipped that way until #301's hero
+  // screenshot showed it.
+  it("shows the selected option's label in the trigger, not its value", () => {
+    setup();
+    const trigger = screen.getByRole("combobox", { name: /Sort by/i });
+    expect(trigger).toHaveTextContent("Price");
+    expect(trigger).not.toHaveTextContent("rentChf");
+  });
+
+  it("shows a location option's label too", () => {
+    localStorage.setItem("flatpare-compare-sort-field", "bikeTo:loc-1");
+    setup();
+    const trigger = screen.getByRole("combobox", { name: /Sort by/i });
+    expect(trigger).not.toHaveTextContent("bikeTo:loc-1");
+    expect(trigger.textContent).toMatch(/Work/);
+  });
+
   it("direction toggle flips column order and persists", async () => {
     const user = userEvent.setup();
     setup();

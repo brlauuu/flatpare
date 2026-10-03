@@ -54,6 +54,12 @@ export default function ComparePage() {
   );
 
   const sortOptions = useMemo(() => compareSortOptions(locations), [locations]);
+  // Handed to the Select so its trigger shows the option's label ("Rent")
+  // instead of the raw value ("rentChf"), which Base UI renders otherwise.
+  const sortItems = useMemo(
+    () => sortOptions.map((opt) => ({ value: opt.id, label: opt.label })),
+    [sortOptions]
+  );
 
   // Corrupt rows have no plaintext to compare; the list page is where they
   // surface (with a delete action).
@@ -124,6 +130,7 @@ export default function ComparePage() {
         <h1 className="text-2xl font-semibold">Compare</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
           <Select
+            items={sortItems}
             value={sortField}
             onValueChange={(value) => setSortField(value as SortField)}
           >

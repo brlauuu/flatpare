@@ -9,6 +9,12 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- The landing page shows the actual comparison grid, in light and dark, instead of a placeholder. (#301)
+
+### Fixed
+- The sort menu on the Apartments and Compare pages shows the chosen option's name ("Price") instead of an internal value ("rentChf"). (#301)
+
 ## 0.5.0 — 2026-10-03
 
 ### Added

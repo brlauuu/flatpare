@@ -129,6 +129,12 @@ export default function ApartmentsPage() {
   );
 
   const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
+  // Handed to the Select so its trigger shows the option's label ("Rent")
+  // instead of the raw value ("rentChf"), which Base UI renders otherwise.
+  const sortItems = useMemo(
+    () => sortOptions.map((opt) => ({ value: opt.id, label: opt.label })),
+    [sortOptions]
+  );
 
   // Corrupt placeholders show up during normal browsing but drop out while
   // a search is active — they have no real name/address/code to match, so
@@ -254,6 +260,7 @@ export default function ApartmentsPage() {
             push the document past the viewport. */}
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
           <Select
+            items={sortItems}
             value={sortField}
             onValueChange={(value) => setSortField(value as SortField)}
           >

@@ -53,6 +53,18 @@ describe("Landing", () => {
     expect(tags.map((t) => t.textContent)).toEqual(["Collaborative", "Privacy first", "Data driven"]);
   });
 
+  // The real grid, one capture per theme (scripts/capture-hero.mjs).
+  it("shows the comparison grid in the hero, one image per theme", () => {
+    renderLanding();
+    const shots = screen.getAllByRole("img", { name: /comparison grid/i });
+    const sources = shots.map((img) => img.getAttribute("src") ?? "");
+    expect(sources.some((src) => src.includes("compare-light"))).toBe(true);
+    expect(sources.some((src) => src.includes("compare-dark"))).toBe(true);
+    for (const name of ["compare-light.webp", "compare-dark.webp"]) {
+      expect(fs.existsSync(path.join(process.cwd(), "public", "hero", name))).toBe(true);
+    }
+  });
+
   it("links the nav to the sections it names", () => {
     renderLanding();
     expect(screen.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "#video");

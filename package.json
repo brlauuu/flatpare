@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "capture:hero": "node scripts/capture-hero.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",
