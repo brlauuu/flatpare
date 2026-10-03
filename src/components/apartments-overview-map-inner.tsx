@@ -29,7 +29,7 @@ function makeIcon(color: string): L.DivIcon {
   return L.divIcon({
     className: "flatpare-pin",
     html: `<svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z" fill="${color}" stroke="white" stroke-width="1.5"/>
+      <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z" fill="${color}" stroke="#000000" stroke-width="2"/>
       <circle cx="12" cy="10" r="3" fill="white"/>
     </svg>`,
     iconSize: [28, 28],
@@ -38,8 +38,11 @@ function makeIcon(color: string): L.DivIcon {
   });
 }
 
-const APT_ICON = makeIcon("#2563eb");
-const LOC_ICON = makeIcon("#dc2626");
+// Fixed colours (#324): map tiles do not follow the theme. Brand blue for
+// apartments, orange for places; the pins share a shape, so the colours
+// also differ in lightness and do not rely on hue alone.
+const APT_ICON = makeIcon("#2346ff");
+const LOC_ICON = makeIcon("#d9480f");
 
 function FitBounds({
   apartments,

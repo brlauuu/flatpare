@@ -5,7 +5,7 @@ export function GoneBadge() {
   return (
     <Badge
       variant="secondary"
-      className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      className="gap-1 border-destructive bg-card text-destructive"
     >
       <AlertTriangle className="h-3 w-3" />
       Gone
@@ -18,7 +18,7 @@ export function RatedBadge({ myRating }: { myRating: number | null }) {
     return (
       <Badge
         variant="secondary"
-        className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
+        className="gap-1 border-success bg-card text-success"
       >
         <CheckCircle2 className="h-3 w-3" />
         Rated

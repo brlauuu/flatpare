@@ -9,7 +9,7 @@ import { EncryptionSettings } from "@/components/crypto/encryption-settings";
 export default function SettingsPage() {
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <h1 className="title-page">Settings</h1>
       <EncryptionSettings />
       <p className="text-sm text-muted-foreground">
         Members, invitations and locations of interest have moved to the{" "}

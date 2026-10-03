@@ -94,6 +94,26 @@ const PEOPLE = [
 
 const STAMP = "2026-10-01T09:00:00.000Z";
 const aptId = (i) => `3f6e2a10-0000-4000-8000-00000000000${i + 1}`;
+
+// `node scripts/capture-hero.mjs` writes the landing hero (public/hero/).
+// `node scripts/capture-hero.mjs --screens <dir>` instead writes a PNG of
+// every signed-in screen, light and dark, into <dir> — before/after images
+// for a styling PR (#324). Same throwaway database, same invented data.
+const SCREENS_FLAG = process.argv.indexOf("--screens");
+const SCREENS_DIR = SCREENS_FLAG === -1 ? null : process.argv[SCREENS_FLAG + 1];
+if (SCREENS_FLAG !== -1 && !SCREENS_DIR) {
+  throw new Error("usage: capture-hero.mjs --screens <outDir>");
+}
+const SCREENS = [
+  { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { name: "Apartments" }).waitFor() },
+  { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  { name: "upload", path: "/apartments/new", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  { name: "compare", path: "/compare", ready: (p) => p.getByRole("table").waitFor() },
+  { name: "household", path: "/household", ready: (p) => p.getByRole("heading", { name: "Household" }).waitFor() },
+  { name: "settings", path: "/settings", ready: (p) => p.getByRole("heading", { name: "Settings" }).waitFor() },
+  { name: "guide", path: "/guide", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  { name: "invitations", path: "/invitations", ready: (p) => p.waitForLoadState("networkidle") },
+];
 // Encryption is off for this server, so an envelope is plaintext: { v: 0, data }.
 const plain = (data) => ({ v: 0, data });
 
@@ -158,7 +178,10 @@ function startServer() {
     RESEND_API_KEY: "",
     STRIPE_SECRET_KEY: "",
   };
-  const server = spawn("npx", ["next", "start", "-p", String(PORT)], { env, stdio: ["ignore", "pipe", "pipe"] });
+  // detached: its own process group, so cleanup can stop next-server too.
+  // Killing only the npx wrapper left next-server running, holding the pipes
+  // open, and the script never exited.
+  const server = spawn("npx", ["next", "start", "-p", String(PORT)], { env, stdio: ["ignore", "pipe", "pipe"], detached: true });
   let log = "";
   server.stdout.on("data", (d) => (log += d));
   server.stderr.on("data", (d) => (log += d));
@@ -195,7 +218,7 @@ try {
   db.close();
 
   browser = await chromium.launch();
-  mkdirSync(OUT_DIR, { recursive: true });
+  if (!SCREENS_DIR) mkdirSync(OUT_DIR, { recursive: true });
 
   for (const theme of ["light", "dark"]) {
     const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: theme });
@@ -213,15 +236,39 @@ try {
       await page.getByLabel("Password").fill(PASSWORD);
       await page.getByRole("button", { name: "Continue" }).click();
       await page.waitForURL("**/apartments");
-      await page.goto(`${BASE}/compare`);
-      await page.getByRole("table").waitFor();
-      // Let fonts and the theme settle.
-      await page.waitForTimeout(800);
+      if (SCREENS_DIR) {
+        mkdirSync(SCREENS_DIR, { recursive: true });
+        // The landing page and its sign-in dialog, signed out, first.
+        const signedOut = await browser.newContext({ viewport: VIEWPORT, colorScheme: theme });
+        await signedOut.addInitScript((t) => window.localStorage.setItem("theme", t), theme);
+        const lp = await signedOut.newPage();
+        await lp.goto(`${BASE}/`);
+        await lp.waitForTimeout(800);
+        await lp.screenshot({ path: `${SCREENS_DIR}/landing-${theme}.png`, fullPage: true });
+        await lp.getByRole("button", { name: "Sign in" }).click();
+        await lp.waitForTimeout(400);
+        await lp.screenshot({ path: `${SCREENS_DIR}/sign-in-${theme}.png` });
+        await signedOut.close();
 
-      const png = await page.screenshot();
-      const out = `${OUT_DIR}/compare-${theme}.webp`;
-      await sharp(png).resize({ width: 1600 }).webp({ quality: 86 }).toFile(out);
-      console.log(`[capture-hero] wrote ${out}`);
+        for (const s of SCREENS) {
+          await page.goto(`${BASE}${s.path}`);
+          await s.ready(page);
+          await page.waitForTimeout(800);
+          const out = `${SCREENS_DIR}/${s.name}-${theme}.png`;
+          await page.screenshot({ path: out, fullPage: true });
+          console.log(`[capture-hero] wrote ${out}`);
+        }
+      } else {
+        await page.goto(`${BASE}/compare`);
+        await page.getByRole("table").waitFor();
+        // Let fonts and the theme settle.
+        await page.waitForTimeout(800);
+
+        const png = await page.screenshot();
+        const out = `${OUT_DIR}/compare-${theme}.webp`;
+        await sharp(png).resize({ width: 1600 }).webp({ quality: 86 }).toFile(out);
+        console.log(`[capture-hero] wrote ${out}`);
+      }
     } catch (err) {
       await page.screenshot({ path: `data/hero-capture-failure-${theme}.png` }).catch(() => {});
       console.error(`[capture-hero] failed at ${page.url()}; see data/hero-capture-failure-${theme}.png`);
@@ -231,6 +278,10 @@ try {
   }
 } finally {
   await browser?.close();
-  server.kill("SIGTERM");
+  try {
+    process.kill(-server.pid, "SIGTERM");
+  } catch {
+    server.kill("SIGTERM");
+  }
   rmSync(DB_FILE, { force: true });
 }

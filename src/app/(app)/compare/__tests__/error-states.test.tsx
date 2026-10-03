@@ -46,6 +46,6 @@ describe("Compare page — load + error states", () => {
       ],
     });
     expect(screen.getByText("Readable")).toBeInTheDocument();
-    expect(document.querySelectorAll("thead th .font-semibold")).toHaveLength(1);
+    expect(document.querySelectorAll('thead th a[href^="/apartments/"]')).toHaveLength(1);
   });
 });

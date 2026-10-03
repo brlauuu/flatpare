@@ -25,9 +25,9 @@ export function UnlockScreen({ extra }: { extra?: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
+    <div className="space-y-6">
       <form onSubmit={onSubmit} className="space-y-4">
-        <h1 className="text-xl font-semibold">Unlock Flatpare</h1>
+        <h1 className="title-page">Unlock Flatpare</h1>
         <p className="text-sm text-muted-foreground">
           Enter your passphrase to decrypt your household&apos;s data on this
           device.
@@ -41,6 +41,7 @@ export function UnlockScreen({ extra }: { extra?: React.ReactNode }) {
         <div className="space-y-1">
           <Label htmlFor="unlock-passphrase">Passphrase</Label>
           <Input
+            weight="frame"
             id="unlock-passphrase"
             type="password"
             autoComplete="current-password"

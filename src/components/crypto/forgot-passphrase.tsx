@@ -34,6 +34,7 @@ function NewPassphraseFields({
       <div className="space-y-1">
         <Label htmlFor="forgot-new">New passphrase</Label>
         <Input
+          weight="frame"
           id="forgot-new"
           type="password"
           autoComplete="new-password"
@@ -44,6 +45,7 @@ function NewPassphraseFields({
       <div className="space-y-1">
         <Label htmlFor="forgot-confirm">Confirm new passphrase</Label>
         <Input
+          weight="frame"
           id="forgot-confirm"
           type="password"
           autoComplete="new-password"
@@ -154,7 +156,7 @@ export function ForgotPassphrase() {
   if (mode === "reset") {
     return (
       <form onSubmit={submitReset} className="space-y-4 rounded-md border p-4">
-        <h2 className="font-semibold">Reset my keys</h2>
+        <h2 className="title-section">Reset my keys</h2>
         <p className="text-sm text-muted-foreground">
           You will get new keys under a new passphrase and wait for someone in
           your household to open Flatpare. If you are the only member, use your
@@ -181,10 +183,11 @@ export function ForgotPassphrase() {
 
   return (
     <form onSubmit={submitRecover} className="space-y-4 rounded-md border p-4">
-      <h2 className="font-semibold">Use my recovery kit</h2>
+      <h2 className="title-section">Use my recovery kit</h2>
       <div className="space-y-1">
         <Label htmlFor="forgot-code">Recovery code</Label>
         <Input
+          weight="frame"
           id="forgot-code"
           autoComplete="off"
           value={code}

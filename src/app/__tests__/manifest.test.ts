@@ -18,9 +18,15 @@ describe("web app manifest", () => {
     expect(m.start_url).toBe("/");
   });
 
-  it("sets theme and background colours", () => {
-    expect(m.theme_color).toMatch(/^#[0-9a-f]{6}$/i);
-    expect(m.background_color).toMatch(/^#[0-9a-f]{6}$/i);
+  // AGENTS.md: theme_color / background_color mirror --primary / --background
+  // in globals.css. Read the real file so the two cannot drift.
+  it("mirrors --primary and --background from the light theme", () => {
+    const css = fs.readFileSync(path.join(__dirname, "../globals.css"), "utf8");
+    const root = css.slice(css.search(/^:root \{/m));
+    const token = (name: string) =>
+      new RegExp(`--${name}:\\s*(#[0-9a-f]{6});`, "i").exec(root)?.[1];
+    expect(m.theme_color).toBe(token("primary"));
+    expect(m.background_color).toBe(token("background"));
   });
 
   it("ships the 192px and 512px icons browsers require", () => {

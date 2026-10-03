@@ -28,9 +28,9 @@ describe("CreditBalance", () => {
     expect(number().dataset.level).toBe(level);
   });
 
-  it("is orange when low and red when empty", () => {
+  it("uses the warning colour when low and the destructive one when empty", () => {
     const { unmount } = renderWithHouseholdData(<CreditBalance />, { credits: credits(3) });
-    expect(number().className).toMatch(/text-orange-/);
+    expect(number().className).toMatch(/text-warning/);
     unmount();
     renderWithHouseholdData(<CreditBalance />, { credits: credits(0) });
     expect(number().className).toMatch(/text-destructive/);

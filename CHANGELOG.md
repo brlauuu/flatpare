@@ -9,6 +9,12 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- The whole app now has the landing page's look: blue and white in light mode, black and yellow in dark, square corners, bold frames and the same typefaces. (#324)
+
+### Fixed
+- Printing the recovery kit while the app is in dark mode now prints dark text on white paper, without the page header. (#324)
+
 ## 0.5.2 — 2026-10-03
 
 ### Changed

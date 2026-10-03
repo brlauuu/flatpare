@@ -11,7 +11,7 @@ export default function HouseholdPage() {
   const { identity } = useHouseholdData();
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Household</h1>
+      <h1 className="title-page">Household</h1>
       <HouseholdSettings />
       <LocationsSettings canRecompute={identity.role === "owner"} />
     </div>

@@ -258,7 +258,7 @@ export default function UploadPage() {
     const doneCount = items.filter((i) => i.status === "done" || i.status === "error").length;
     return (
       <div className="mx-auto max-w-lg space-y-6">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="title-page">
           Processing ({doneCount}/{items.length})
         </h1>
         <div className="space-y-2">

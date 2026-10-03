@@ -52,7 +52,7 @@ export function ReviewStep({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Review Apartments</h1>
+        <h1 className="title-page">Review Apartments</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onUploadMore}>
             Upload more
@@ -108,7 +108,7 @@ export function ReviewStep({
                           .join(" · ") || item.fileName}
                       </p>
                       {item.pdfWarning && (
-                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                        <p className="text-xs text-warning">
                           {item.pdfWarning}
                         </p>
                       )}

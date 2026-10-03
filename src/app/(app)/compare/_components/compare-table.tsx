@@ -40,11 +40,11 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto border-3 border-frame bg-card">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="sticky left-0 z-10 bg-muted/50 px-4 py-3 text-left font-medium">
+          <tr className="border-b-3 border-frame bg-card">
+            <th className="sticky left-0 z-10 bg-card px-4 py-3 text-left font-medium">
               &nbsp;
             </th>
             {sortedVisible.map((apt) => (
@@ -57,7 +57,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
             const bestVal = findBest(metric.key, metric.best);
             return (
               <tr key={metric.key} className="border-b">
-                <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
+                <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
                   {metric.label}
                 </td>
                 {sortedVisible.map((apt) => {
@@ -68,9 +68,10 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                   return (
                     <td
                       key={apt.id}
+                      data-best={isBest ? "true" : undefined}
                       className={cn(
-                        "px-4 py-2",
-                        isBest && "font-semibold text-green-600"
+                        "px-4 py-2 font-mono",
+                        isBest && "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                       )}
                     >
                       {val != null ? metric.format(val) : "—"}
@@ -86,7 +87,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
             return (
               <tr key={`loc-${loc.id}`} className="border-b">
                 <td
-                  className="sticky left-0 z-10 bg-background px-4 py-2 font-medium"
+                  className="sticky left-0 z-10 bg-card px-4 py-2 font-medium"
                   title={`Bike + transit to ${loc.label}`}
                 >
                   <Icon className="h-4 w-4" aria-label={loc.label} />
@@ -96,7 +97,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                   const bike = d?.bikeMin ?? null;
                   const transit = d?.transitMin ?? null;
                   return (
-                    <td key={apt.id} className="px-4 py-2 text-xs">
+                    <td key={apt.id} className="px-4 py-2 font-mono text-xs">
                       {bike == null && transit == null ? (
                         "—"
                       ) : (
@@ -114,16 +115,17 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
           })}
 
           <tr className="border-b">
-            <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
+            <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
               Washing machine
             </td>
             {sortedVisible.map((apt) => (
               <td
                 key={apt.id}
+                data-best={apt.hasWashingMachine === true ? "true" : undefined}
                 className={cn(
                   "px-4 py-2",
                   apt.hasWashingMachine === true &&
-                    "font-semibold text-green-600"
+                    "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                 )}
                 title={
                   apt.hasWashingMachine === true
@@ -156,7 +158,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                 </tr>
                 {ratingKeys.map((rKey) => (
                   <tr key={`${userId}-${rKey}`} className="border-b">
-                    <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
+                    <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 text-muted-foreground">
                       {ratingLabels[rKey]}
                     </td>
                     {sortedVisible.map((apt) => {
@@ -176,7 +178,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                   </tr>
                 ))}
                 <tr key={`${userId}-comment`} className="border-b">
-                  <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 text-muted-foreground">
+                  <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 text-muted-foreground">
                     Comment
                   </td>
                   {sortedVisible.map((apt) => {
@@ -207,7 +209,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
           </tr>
           {ratingKeys.map((rKey) => (
             <tr key={`avg-${rKey}`} className="border-b">
-              <td className="sticky left-0 z-10 bg-background px-4 py-2 pl-8 font-medium">
+              <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 font-medium">
                 {ratingLabels[rKey]}
               </td>
               {sortedVisible.map((apt) => {

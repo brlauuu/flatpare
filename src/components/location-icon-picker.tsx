@@ -29,7 +29,7 @@ export function LocationIconPicker({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm space-y-3 rounded-lg bg-background p-4 shadow-lg"
+        className="w-full max-w-sm space-y-3 border-3 border-frame bg-card p-4 shadow-frame"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

@@ -24,6 +24,7 @@ import { SetupScreen } from "./setup-screen";
 import { UnlockScreen } from "./unlock-screen";
 import { PendingScreen } from "./pending-screen";
 import { HouseholdKeyScreen } from "./household-key-screen";
+import { GateFrame } from "./gate-frame";
 
 const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
@@ -224,7 +225,11 @@ export function CryptoProvider({
 
   let body: React.ReactNode;
   if (kitCode) {
-    body = <RecoveryKit code={kitCode} onContinue={() => setKitCode(null)} />;
+    body = (
+      <GateFrame>
+        <RecoveryKit code={kitCode} onContinue={() => setKitCode(null)} />
+      </GateFrame>
+    );
   } else {
     switch (state) {
       case "off":
@@ -247,22 +252,36 @@ export function CryptoProvider({
         );
         break;
       case "needs-setup":
-        body = <SetupScreen />;
+        body = (
+          <GateFrame>
+            <SetupScreen />
+          </GateFrame>
+        );
         break;
       case "pending-wrap":
         body = (
-          <PendingScreen
-            pollMs={PENDING_POLL_MS}
-            problem={adoptFailed ? ADOPT_FAILED_MESSAGE : null}
-            extra={<ForgotPassphrase />}
-          />
+          <GateFrame>
+            <PendingScreen
+              pollMs={PENDING_POLL_MS}
+              problem={adoptFailed ? ADOPT_FAILED_MESSAGE : null}
+              extra={<ForgotPassphrase />}
+            />
+          </GateFrame>
         );
         break;
       case "needs-household-key":
-        body = <HouseholdKeyScreen />;
+        body = (
+          <GateFrame>
+            <HouseholdKeyScreen />
+          </GateFrame>
+        );
         break;
       case "locked":
-        body = <UnlockScreen extra={<ForgotPassphrase />} />;
+        body = (
+          <GateFrame>
+            <UnlockScreen extra={<ForgotPassphrase />} />
+          </GateFrame>
+        );
         break;
     }
   }
@@ -273,7 +292,7 @@ export function CryptoProvider({
       {notice && (
         <div
           role="status"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-md border bg-background px-4 py-2 text-sm shadow sm:bottom-6"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 border-3 border-frame bg-card px-4 py-2 text-sm font-semibold shadow-frame sm:bottom-6"
         >
           {notice}
         </div>

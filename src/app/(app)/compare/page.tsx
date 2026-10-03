@@ -127,7 +127,7 @@ export default function ComparePage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Compare</h1>
+        <h1 className="title-page">Compare</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
           <Select
             items={sortItems}
@@ -135,6 +135,7 @@ export default function ComparePage() {
             onValueChange={(value) => setSortField(value as SortField)}
           >
             <SelectTrigger
+              weight="frame"
               aria-label="Sort by"
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >

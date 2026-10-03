@@ -223,6 +223,7 @@ export default function ApartmentsPage() {
       <div className="relative w-full max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          weight="frame"
           type="text"
           aria-label="Search apartments"
           placeholder="Search by name, code, or address..."
@@ -245,7 +246,7 @@ export default function ApartmentsPage() {
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <h1 className="text-2xl font-semibold">Apartments</h1>
+          <h1 className="title-page">Apartments</h1>
           {/* Only shown when a cap is configured: a self-hoster with no
               MAX_APARTMENTS must not see a counter implying one exists. */}
           {limits.maxApartments !== null && (
@@ -265,6 +266,7 @@ export default function ApartmentsPage() {
             onValueChange={(value) => setSortField(value as SortField)}
           >
             <SelectTrigger
+              weight="frame"
               aria-label="Sort by"
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >

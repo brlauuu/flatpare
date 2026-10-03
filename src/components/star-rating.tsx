@@ -29,8 +29,8 @@ export function StarRating({
             // overlay is wrong here: five adjacent stars would overlap.
             readonly
               ? "cursor-default"
-              : "min-h-11 min-w-11 cursor-pointer hover:text-yellow-400 sm:min-h-0 sm:min-w-0",
-            star <= value ? "text-yellow-500" : "text-muted-foreground/30",
+              : "min-h-11 min-w-11 cursor-pointer hover:text-primary/70 sm:min-h-0 sm:min-w-0",
+            star <= value ? "text-primary" : "text-muted-foreground/30",
             size === "sm" ? "text-sm" : "text-lg"
           )}
         >

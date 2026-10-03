@@ -24,8 +24,8 @@ export function RecoveryKit({
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 print:max-w-none">
-      <h1 className="text-xl font-semibold">{title}</h1>
+    <div className="space-y-4 print:max-w-none">
+      <h1 className="title-page">{title}</h1>
       <p className="text-sm text-muted-foreground print:hidden">
         Write this code down or print it and keep it somewhere safe. It is the
         only way to get your household&apos;s data back if you forget your

@@ -63,3 +63,6 @@ next-env.d.ts
 # Agent skills installed by `vercel integration add` (vendor docs, re-fetchable
 # from skills-lock.json). Same treatment as .claude/.
 .agents/
+
+# before/after screenshots for styling PRs (scripts/capture-hero.mjs --screens)
+/screens/

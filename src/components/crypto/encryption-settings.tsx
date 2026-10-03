@@ -20,7 +20,7 @@ export function EncryptionSettings() {
   if (state === "off" || !status) {
     return (
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Encryption</h2>
+        <h2 className="title-section">Encryption</h2>
         <p className="text-sm text-muted-foreground">
           Encryption: off — set by this deployment.
         </p>
@@ -69,7 +69,7 @@ export function EncryptionSettings() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold">Encryption</h2>
+      <h2 className="title-section">Encryption</h2>
 
       <form onSubmit={changePassphrase} className="space-y-3">
         <div className="space-y-1">
