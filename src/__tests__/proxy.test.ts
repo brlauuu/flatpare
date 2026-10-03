@@ -237,6 +237,11 @@ describe("proxy — PWA assets stay public", () => {
     "/icon-maskable-512.png",
     "/apple-touch-icon.png",
     "/favicon.ico",
+    // Shown to signed-out visitors on the landing page (#301).
+    "/flatpare_logo.svg",
+    "/flatpare_logo_blue.svg",
+    "/flatpare_logo_yellow.svg",
+    "/flatpare_logo_dark.svg",
   ];
 
   for (const path of publicAssets) {
@@ -245,7 +250,12 @@ describe("proxy — PWA assets stay public", () => {
     });
   }
 
-  const guarded = ["/apartments", "/api/apartments", "/settings", "/compare"];
+  const guarded = [
+    "/apartments",
+    "/api/apartments",
+    "/settings",
+    "/compare",
+  ];
   for (const path of guarded) {
     it(`still runs the proxy for ${path}`, () => {
       expect(matcher.test(path)).toBe(true);

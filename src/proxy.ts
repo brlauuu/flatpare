@@ -68,6 +68,10 @@ export const config = {
     // The PWA manifest and its icons must stay public: a browser fetches the
     // manifest WITHOUT credentials, so gating it makes the app silently
     // uninstallable. None of these files contain user data.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png).*)",
+    // The logos are shown to signed-out visitors on the landing page and the
+    // sign-in card; gated, they were a 307 to `/` and a broken image (#301).
+    // A prefix like the entries before it: Next compiles this pattern itself,
+    // and an anchored `\.svg$` inside the lookahead did not survive that.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|flatpare_logo).*)",
   ],
 };

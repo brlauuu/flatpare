@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ErrorDisplay } from "@/components/error-display";
-import { REPO_URL } from "@/lib/site";
 import type { PublicAccess } from "@/lib/public-access";
 
 type ProviderId = "google" | "github" | "resend" | "credentials";
@@ -30,7 +29,9 @@ export type SignInNotice =
 
 // The holding notice while FLATPARE_PUBLIC_ACCESS=closed. Honest and short,
 // per #239: what is happening, roughly when it opens, and a way to ask for
-// a place — no countdown, no invented waitlist numbers. Existing accounts
+// a place — no countdown, no invented waitlist numbers. Since #301 the way
+// to ask is the landing page's beta-invite form, which sits behind this card
+// (it opens in a dialog there), so this points at it instead of a link. Existing accounts
 // and beta invitations still sign in, so the buttons stay.
 function ClosedNotice() {
   return (
@@ -44,16 +45,8 @@ function ClosedNotice() {
         below.
       </p>
       <p>
-        Want a place in the beta?{" "}
-        <a
-          className="font-medium underline underline-offset-4"
-          href={`${REPO_URL}/issues`}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          Ask for an invite
-        </a>
-        .
+        Want a place in the beta? Request an invite with the form on this
+        page.
       </p>
     </div>
   );

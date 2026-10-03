@@ -9,6 +9,17 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- A redesigned landing page: what Flatpare is at a glance, a place for the walkthrough video, the hosted and self-hosted options side by side, and light and dark themes that follow your system. (#301)
+- Ask for a beta invite straight from the landing page: leave your email and the owner is notified. (#301)
+- A notice in the header when a new release is out, linking to what changed; it disappears after 30 days or when dismissed. (#301)
+
+### Changed
+- Signing in now opens from a "Sign in" button on the landing page. (#301)
+
+### Fixed
+- The Flatpare logo on the landing page and sign-in card no longer shows as a broken image for signed-out visitors. (#301)
+
 ## 0.4.0 — 2026-10-02
 
 ### Added

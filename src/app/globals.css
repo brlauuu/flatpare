@@ -219,3 +219,178 @@
   background: transparent;
   border: 0;
 }
+
+/* ── Landing page (#301): the neo-brutalist look ─────────────────────────
+   Scoped to `.landing`, so the signed-in app keeps its own theme. Light is
+   blue & white, dark is black & yellow; dark follows next-themes' `.dark`
+   class on <html>, which defaults to the system preference. Tokens are from
+   the design spec on #301. */
+.landing {
+  --lp-bg: #ffffff;
+  --lp-surface: #ffffff;
+  --lp-ink: #000000;
+  --lp-body: #1a1a1a;
+  --lp-muted: #3d3d3d;
+  --lp-line: #000000;
+  --lp-line-strong: #000000;
+  --lp-card-line: #000000;
+  --lp-chip-line: #000000;
+  --lp-btn-line: #000000;
+  --lp-grid: #e4e9fa;
+  --lp-accent: #2346ff;
+  --lp-on-accent: #ffffff;
+  --lp-accent-text: #1f3de0;
+  --lp-soft: #e6ecff;
+  --lp-hosted-border: #000000;
+  --lp-card-shadow: 6px 6px 0 #000000;
+  --lp-btn-shadow: 4px 4px 0 #000000;
+  --lp-btn-shadow-pressed: 1px 1px 0 #000000;
+  --lp-toast-shadow: 5px 5px 0 #000000;
+  --lp-hero-shadow: 10px 10px 0 #2346ff;
+  --lp-video-bg: #2346ff;
+  --lp-video-grid: #3d5cff;
+  --lp-video-ink: #ffffff;
+  --lp-play-bg: #ffffff;
+  --lp-play-ink: #000000;
+  --lp-code-bg: #000000;
+  --lp-code-ink: #ffffff;
+  --lp-map-ink: #000000;
+  --lp-map-mark: #2346ff;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+}
+.dark .landing {
+  --lp-bg: #0d0d0d;
+  --lp-surface: #161616;
+  --lp-ink: #ffffff;
+  --lp-body: #e6e6e6;
+  --lp-muted: #bdbdbd;
+  --lp-line: #ffe500;
+  --lp-line-strong: #ffffff;
+  --lp-card-line: #ffffff;
+  --lp-chip-line: #ffe500;
+  --lp-btn-line: #000000;
+  --lp-grid: #1c1b0e;
+  --lp-accent: #ffe500;
+  --lp-on-accent: #000000;
+  --lp-accent-text: #ffe500;
+  --lp-soft: #1f1c00;
+  --lp-hosted-border: #ffe500;
+  --lp-card-shadow: 6px 6px 0 #ffe500;
+  --lp-btn-shadow: 4px 4px 0 #ffffff;
+  --lp-btn-shadow-pressed: 1px 1px 0 #ffffff;
+  --lp-toast-shadow: 5px 5px 0 #ffe500;
+  --lp-hero-shadow: 10px 10px 0 #ffe500;
+  --lp-video-bg: #161616;
+  --lp-video-grid: #24220f;
+  --lp-video-ink: #ffffff;
+  --lp-play-bg: #ffe500;
+  --lp-play-ink: #000000;
+  --lp-code-bg: #000000;
+  --lp-code-ink: #ffffff;
+  --lp-map-ink: #ffffff;
+  --lp-map-mark: #ffe500;
+}
+.landing .lp-mono {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+}
+.landing .lp-head {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.landing .lp-grid-bg {
+  background-image:
+    linear-gradient(var(--lp-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.landing .lp-video-grid {
+  background-color: var(--lp-video-bg);
+  background-image:
+    linear-gradient(var(--lp-video-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-video-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.landing .lp-card {
+  background: var(--lp-surface);
+  border: 3px solid var(--lp-card-line);
+  box-shadow: var(--lp-card-shadow);
+}
+.landing .lp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  background: var(--lp-surface);
+  border: 3px solid var(--lp-chip-line);
+  box-shadow: var(--lp-btn-shadow);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.landing .lp-badge {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 13px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+}
+.landing .lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 3px solid var(--lp-btn-line);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+}
+.landing .lp-btn-primary {
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+  box-shadow: var(--lp-btn-shadow);
+}
+.landing .lp-btn-primary:hover {
+  transform: translate(3px, 3px);
+  box-shadow: var(--lp-btn-shadow-pressed);
+}
+.landing .lp-btn-primary:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+.landing .lp-btn-secondary {
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  border-color: var(--lp-line-strong);
+  font-weight: 500;
+}
+.landing .lp-btn-secondary:hover {
+  background: var(--lp-soft);
+}
+.landing .lp-input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 3px solid var(--lp-line-strong);
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.landing a:focus-visible,
+.landing button:focus-visible,
+.landing input:focus-visible {
+  outline: 3px solid var(--lp-accent);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .lp-btn {
+    transition: none;
+  }
+  .landing .lp-btn-primary:hover {
+    transform: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { enabledProviderIds } from "@/auth";
 import { readPublicAccess } from "@/lib/public-access";
+import type { ReleaseInfo } from "@/lib/release";
 import { LoginForm, type SignInNotice } from "./login-form";
 import { Landing } from "./_components/landing";
 
@@ -42,21 +43,31 @@ function noticeFromQuery(q: Record<string, string | string[] | undefined>): Sign
   return null;
 }
 
+// Inlined at build time by next.config.ts from CHANGELOG.md's newest
+// version heading; empty when it could not be read, and then there is no
+// release notice.
+function latestRelease(): ReleaseInfo | null {
+  const version = process.env.FLATPARE_RELEASE_VERSION;
+  const date = process.env.FLATPARE_RELEASE_DATE;
+  return version && date ? { version, date } : null;
+}
+
 export default async function LandingPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 } = {}) {
   const query = (await searchParams) ?? {};
+  const access = readPublicAccess();
+  const notice = noticeFromQuery(query);
   return (
     <Landing
-      signIn={
-        <LoginForm
-          providers={enabledProviderIds}
-          access={readPublicAccess()}
-          notice={noticeFromQuery(query)}
-        />
-      }
+      access={access}
+      // A notice is the sign-in flow reporting back, so show it: the card
+      // lives in a dialog on the redesigned page (#301).
+      openSignIn={notice !== null}
+      release={latestRelease()}
+      signIn={<LoginForm providers={enabledProviderIds} access={access} notice={notice} />}
     />
   );
 }
