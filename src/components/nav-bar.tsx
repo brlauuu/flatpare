@@ -56,7 +56,7 @@ export function NavBar({ userName }: { userName: string }) {
   }
 
   return (
-    <header className="border-b bg-background">
+    <header className="border-b-3 border-frame bg-card">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
           <Image
@@ -73,11 +73,12 @@ export function NavBar({ userName }: { userName: string }) {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
               className={cn(
-                "rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
+                "border-2 border-transparent px-3 py-1.5 text-sm font-bold transition-colors",
                 pathname === item.href
-                  ? "bg-accent font-medium"
-                  : "text-muted-foreground"
+                  ? "border-frame bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-muted"
               )}
             >
               <NavLabel>{item.label}</NavLabel>
@@ -87,7 +88,7 @@ export function NavBar({ userName }: { userName: string }) {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:min-h-0">
+            <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">
               <User className="h-3.5 w-3.5" />
               <span>{userName}</span>
               <ChevronDown className="h-3 w-3" />
@@ -102,15 +103,16 @@ export function NavBar({ userName }: { userName: string }) {
         </div>
       </div>
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-background sm:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t-3 border-frame bg-card sm:hidden">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            aria-current={pathname === item.href ? "page" : undefined}
             className={cn(
               "flex min-h-11 flex-1 items-center justify-center py-3 text-center text-xs transition-colors",
               pathname === item.href
-                ? "font-medium text-foreground"
+                ? "bg-primary font-bold text-primary-foreground"
                 : "text-muted-foreground"
             )}
           >

@@ -78,3 +78,18 @@ describe("NavBar sections", () => {
     }
   });
 });
+
+describe("NavBar current section", () => {
+  // The mocked pathname is /apartments. The current section is a filled
+  // block (#324); aria-current is what says so to a screen reader, and what
+  // the styling keys off. Both navs (desktop and mobile) carry it.
+  it("marks the current section with aria-current in both navs", () => {
+    render(<NavBar userName="Alice" />);
+    const current = screen.getAllByRole("link", { name: "Apartments" });
+    expect(current).toHaveLength(2);
+    for (const link of current) expect(link.getAttribute("aria-current")).toBe("page");
+    for (const link of screen.getAllByRole("link", { name: "Compare" })) {
+      expect(link.hasAttribute("aria-current")).toBe(false);
+    }
+  });
+});
