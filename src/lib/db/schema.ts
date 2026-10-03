@@ -339,6 +339,20 @@ export const betaPassRedemptions = sqliteTable(
   (table) => [primaryKey({ columns: [table.userId] })]
 );
 
+// Beta-invite requests from the landing page (#301): someone without an
+// account asks for a beta pass. The host's record, like `beta_passes`, so it
+// is plaintext — the owner has to read the address to answer it. One row per
+// address (the unique index is what makes a repeat request a no-op), and
+// nothing else about the person: no name, no IP, no user agent. A new column
+// should be a deliberate decision; migrate.test.ts pins the list.
+export const betaRequests = sqliteTable("beta_requests", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;

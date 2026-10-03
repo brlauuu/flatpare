@@ -276,3 +276,19 @@ describe("proxy — beta-pass link", () => {
     expect(res.status).toBe(307);
   });
 });
+
+// The landing page's beta-invite form (#301) is posted by someone with no
+// account; the route applies its own cap and stores nothing but the address.
+describe("proxy — beta-invite requests", () => {
+  it("passes /api/beta-requests through unauthenticated", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/api/beta-requests"));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not widen the pass-through to neighbouring paths", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/api/beta-requests/list"));
+    expect(res.status).toBe(401);
+  });
+});

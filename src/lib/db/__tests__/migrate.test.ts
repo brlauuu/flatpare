@@ -553,6 +553,24 @@ describe("applyMigrations", () => {
     expect(unique.rows.map((r) => String(r.name))).toContain("beta_passes_code_unique");
   });
 
+  it("creates beta_requests (#301) with the address and nothing else about the person", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+
+    // A stranger's email address, stored so the owner can answer it. No name,
+    // IP or user agent: a new column here should be a deliberate decision.
+    expect((await columnNames(client, "beta_requests")).sort()).toEqual([
+      "created_at",
+      "email",
+      "id",
+    ]);
+    const unique = await client.execute({
+      sql: "SELECT name FROM pragma_index_list('beta_requests') WHERE \"unique\" = 1",
+      args: [],
+    });
+    expect(unique.rows.map((r) => String(r.name))).toContain("beta_requests_email_unique");
+  });
+
   it("adds the data-key rotation columns (#219)", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);

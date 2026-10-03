@@ -13,6 +13,10 @@
 //   node scripts/beta-pass.mjs create [--label "Ana"] [--max-uses 1] [--credits 40] [--expires-in-days 14] [--email ana@example.com]
 //   node scripts/beta-pass.mjs list
 //   node scripts/beta-pass.mjs revoke <code>
+//   node scripts/beta-pass.mjs requests
+//
+// `requests` lists the beta-invite requests left through the landing page's
+// form (#301), oldest first. Answer one with `create --email <address>`.
 //
 // `create` prints the link to share. The site URL comes from
 // NEXT_PUBLIC_SITE_URL, then VERCEL_PROJECT_PRODUCTION_URL, then localhost —
@@ -37,7 +41,8 @@ function usage(code = 1) {
     "usage:\n" +
       "  node scripts/beta-pass.mjs create [--label L] [--max-uses N] [--credits N] [--expires-in-days N] [--email ADDRESS]\n" +
       "  node scripts/beta-pass.mjs list\n" +
-      "  node scripts/beta-pass.mjs revoke <code>"
+      "  node scripts/beta-pass.mjs revoke <code>\n" +
+      "  node scripts/beta-pass.mjs requests"
   );
   process.exit(code);
 }
@@ -224,10 +229,27 @@ try {
       process.exit(1);
     }
     console.log(`[beta-pass] revoked on ${target}; existing redemptions are untouched`);
+  } else if (command === "requests") {
+    if (rest.length > 0) usage();
+    const res = await db.execute(
+      "SELECT email, created_at FROM beta_requests ORDER BY created_at, id"
+    );
+    console.log(`[beta-pass] ${res.rows.length} beta request(s) on ${target}`);
+    for (const r of res.rows) {
+      const at = r.created_at ? new Date(Number(r.created_at) * 1000).toISOString().slice(0, 10) : "?";
+      console.log(`  ${at}  ${r.email}`);
+    }
   } else {
     usage(command === undefined || command === "--help" ? 0 : 1);
   }
 } catch (err) {
+  if (/no such table: beta_requests/.test(String(err?.message))) {
+    console.error(
+      `[beta-pass] ${target} has no beta_requests table: migration 0022 has not ` +
+        "been applied to it yet. It runs when the app boots or at a Vercel build."
+    );
+    process.exit(1);
+  }
   if (/no such table: beta_pass/.test(String(err?.message))) {
     console.error(
       `[beta-pass] ${target} has no beta_passes table: migration 0019 has not ` +

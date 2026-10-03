@@ -30,6 +30,12 @@ export async function proxy(request: NextRequest) {
   // `/` branch below like anyone else.
   if (path.startsWith("/beta/")) return NextResponse.next();
 
+  // The landing page's beta-invite form (#301) posts here, by definition
+  // without an account. The handler stores an email address and nothing
+  // else, applies its own daily cap, and answers the same for a new or a
+  // repeat address.
+  if (path === "/api/beta-requests") return NextResponse.next();
+
   const session = await auth();
   const userId = session?.user?.id;
   const hasHousehold = !!userId && !!session?.householdId;
