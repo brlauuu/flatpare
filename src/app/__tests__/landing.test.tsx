@@ -189,6 +189,21 @@ describe("Landing", () => {
       expect(text).toMatch(/10 people/);
       expect(text).toMatch(/40 apartments/);
     });
+
+    // While the hosted deployment is a closed beta the invite form sits right
+    // under "CHF 5", which reads as "request an invite, then pay" (#322).
+    it("says the beta is free while sign-ups are closed", () => {
+      renderLanding({ access: "closed" });
+      const hosted = document.getElementById("hosted")!;
+      expect(hosted).toHaveTextContent(/free during the private beta/i);
+      expect(hosted).toHaveTextContent(/CHF 5 applies once sign-ups open/i);
+      expect(hosted).toHaveTextContent(/neither your data nor your credits are taken back when the beta ends/i);
+    });
+
+    it("does not mention a free beta once sign-ups are open", () => {
+      renderLanding({ access: "open" });
+      expect(pageText()).not.toMatch(/free during the private beta/i);
+    });
   });
 
   describe("the licence", () => {

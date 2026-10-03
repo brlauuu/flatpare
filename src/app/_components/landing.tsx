@@ -28,6 +28,9 @@ import { BetaRequestForm } from "./beta-request-form";
 //   3. Never "open source": the licence is O'SAASY, source-available.
 //   4. The price says what it is — CHF 5, once, not a subscription — and the
 //      quota's catch is disclosed: deleting does not refund a credit.
+//   5. While sign-ups are closed, the hosted card says the beta is free (#322),
+//      in the same terms as the beta-ready notice in login-form.tsx and the
+//      `say:` line in scripts/beta-pass.mjs.
 //
 // `access` decides the hosted path's call to action. While sign-ups are
 // closed (the hosted deployment's private beta) it is the beta-invite form;
@@ -274,6 +277,14 @@ function Paths({ access }: { access: PublicAccess }) {
               one-time payment · per household · not a subscription
             </span>
           </div>
+          {access === "closed" && (
+            <p className="m-0 border-[3px] border-(--lp-accent) bg-(--lp-bg) p-4 text-[15px] leading-relaxed text-(--lp-body)">
+              <strong className="text-(--lp-ink)">Free during the private beta.</strong>{" "}
+              CHF 5 applies once sign-ups open. What a beta account gets is
+              yours to keep: neither your data nor your credits are taken back
+              when the beta ends.
+            </p>
+          )}
           <ul className="m-0 list-disc pl-5 text-[15px] leading-[1.7] text-(--lp-body)">
             <li>Up to 10 people and 40 apartments.</li>
             <li>Need more? Another CHF 5 adds another 40 apartments.</li>
