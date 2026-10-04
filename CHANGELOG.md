@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.7.0 — 2026-10-04
+
 ### Changed
 - On flatpare.com, reading a listing PDF now goes through Vercel AI Gateway with zero data retention: neither Vercel nor the model provider keeps what is sent. Self-hosted installs keep using Google Gemini directly unless they opt in. (#333)
 
