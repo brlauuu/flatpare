@@ -5,6 +5,7 @@ import { apiErrorResponse, requireMember } from "@/lib/api-route";
 import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
+import { aiAvailable, readAiConfig } from "@/lib/ai-provider";
 
 // Privacy exception: the client decrypts the PDF and posts the plaintext
 // bytes here for one extraction call. The bytes are held in memory for the
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       throw new ApiError("PDF too large to extract", 413);
     }
 
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    if (!aiAvailable(readAiConfig())) {
       return NextResponse.json({ extracted: emptyExtraction(file.name), aiAvailable: false });
     }
 

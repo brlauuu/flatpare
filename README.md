@@ -199,10 +199,23 @@ All env vars live in `.env.local` (loaded by Next.js) or your Vercel project set
 
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_GENERATIVE_AI_API_KEY` | optional | Gemini 2.5 Flash for PDF extraction. Without it, manual entry only. |
+| `AI_PROVIDER` | optional | `google` (default) or `gateway`. Which backend reads PDFs and writes summaries. See [AI and your data](#ai-and-your-data). |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | optional | Gemini key for `AI_PROVIDER=google`. Without it, manual entry only. |
+| `AI_GATEWAY_API_KEY` | optional | Vercel AI Gateway key for `AI_PROVIDER=gateway` outside Vercel (on Vercel, OIDC is used). |
+| `AI_MODEL` | optional | Model override. Defaults to `gemini-2.5-flash` (google) or `google/gemini-2.5-flash` (gateway). |
+| `AI_ZERO_DATA_RETENTION` | optional | Gateway only. Unset or `true` requires zero data retention on every request; `false` opts out (needed on a Vercel Hobby plan). |
 | `GOOGLE_MAPS_API_KEY` | optional | Geocoding + Distance Matrix. |
 | `OPENROUTESERVICE_API_KEY` | optional | Bike-distance fallback when the Maps key is unset. |
 | `PARSE_PDF_MAX_BYTES` | optional | Upload ceiling for PDF extraction. Defaults to 20 MB (Gemini's inline-file limit). |
+
+### AI and your data
+
+Reading a listing PDF and writing its summary is the one job sent to an AI model. Pick the backend with `AI_PROVIDER`:
+
+- **`google` (default)** — Gemini directly, with your `GOOGLE_GENERATIVE_AI_API_KEY`. No extra account. Google's [Gemini API terms](https://ai.google.dev/gemini-api/terms) depend on your tier: on the **unpaid** tier Google may use what you send to improve its products and human reviewers may read it; on the **paid** tier (billing enabled) it is not used to improve products, but is logged for a limited period for abuse monitoring. The Gemini API has no zero-retention setting.
+- **`gateway`** — [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) with [zero data retention](https://vercel.com/docs/ai-gateway/capabilities/zdr) required on every request: Vercel keeps nothing, and the request goes only to a provider with a zero-retention agreement (Gemini via Google Vertex AI) or fails. Needs a Vercel Pro or Enterprise plan; set `AI_ZERO_DATA_RETENTION=false` to use the gateway without it.
+
+The app logs which one is live at boot: `[ai] gateway — google/gemini-2.5-flash, zero data retention on`. The hosted flatpare.com runs `gateway`.
 
 ### Limits — **unset means unlimited**
 

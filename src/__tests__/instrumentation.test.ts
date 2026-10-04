@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 //   - the runtime guard, so this never runs on a non-node runtime
 //   - the [db] line, because `npm run dev` writes to PRODUCTION unless
 //     TURSO_DATABASE_URL is explicitly cleared (#195)
+//   - the [ai] line, because the hosted service's zero-data-retention claim
+//     depends on AI_PROVIDER=gateway being set (#333)
 //   - the rethrow, because Next logs a swallowed boot error only at debug
 //     level, which is how migration 0008 was missed in prod
 
@@ -55,15 +57,34 @@ describe("register (src/instrumentation.ts)", () => {
     // The point of the line is to say which database is about to be written
     // to. After the fact is too late.
     const order: string[] = [];
-    (console.log as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      order.push("log");
+    (console.log as unknown as ReturnType<typeof vi.fn>).mockImplementation((line: string) => {
+      order.push(line.startsWith("[db]") ? "log" : "other");
     });
     runMigrations.mockImplementation(async () => {
       order.push("migrate");
     });
 
     await register();
-    expect(order).toEqual(["log", "migrate"]);
+    expect(order.indexOf("log")).toBeLessThan(order.indexOf("migrate"));
+  });
+
+  // #333: which AI backend reads PDFs, and whether zero data retention is
+  // on. The landing page states ZDR for the hosted service; this line is
+  // where a deployment that lost the setting shows.
+  it("logs the AI backend", async () => {
+    vi.stubEnv("AI_PROVIDER", "gateway");
+    await register();
+    expect(console.log).toHaveBeenCalledWith(
+      "[ai] gateway — google/gemini-2.5-flash, zero data retention on"
+    );
+    vi.unstubAllEnvs();
+  });
+
+  it("fails boot on an invalid AI setting, before migrating", async () => {
+    vi.stubEnv("AI_PROVIDER", "Gateway");
+    await expect(register()).rejects.toThrow(/AI_PROVIDER/);
+    expect(runMigrations).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
   });
 
   it("warns when pointed at the cloud outside production", async () => {
