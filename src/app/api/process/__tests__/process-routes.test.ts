@@ -240,6 +240,17 @@ describe("POST /api/process/parse-pdf", () => {
     await rowsUnchanged();
   });
 
+  // #333: the hosted deployment uses AI Gateway and has no Google key.
+  it("runs extraction through the gateway without a Google key", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
+    vi.stubEnv("AI_PROVIDER", "gateway");
+    extractApartmentData.mockResolvedValue({ name: "Y", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    const res = await parsePdfPOST(multipart(pdf(16)));
+    expect(res.status).toBe(200);
+    expect((await res.json()).aiAvailable).toBe(true);
+    expect(extractApartmentData).toHaveBeenCalled();
+  });
+
   it("400s a non-PDF and 413s an oversized file", async () => {
     expect((await parsePdfPOST(multipart(null))).status).toBe(400);
     expect((await parsePdfPOST(multipart(pdf(16, "x.txt", "text/plain")))).status).toBe(400);

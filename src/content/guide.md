@@ -84,13 +84,13 @@ If no distance API is configured, you can enter times manually.
 
 - Single or bulk upload
 - **PDFs are encrypted in your browser before they are uploaded.** What gets stored is ciphertext; opening one decrypts it again on your device
-- Extraction uses Google Gemini
+- Extraction uses Gemini 2.5 Flash. On flatpare.com it runs through Vercel AI Gateway with zero data retention: nothing is kept by Vercel or by the model provider
 
 ### What the server can see
 
 Almost nothing. Your apartments, ratings, notes and PDFs are encrypted before they leave your browser.
 
-There is one deliberate exception, and it is worth knowing about: **geocoding an address, measuring a travel time, checking whether a listing is still online, and reading a PDF** cannot be done in your browser. For those, that single address, URL or file is sent in readable form and passed to Google. It is used for that one call, never written to the database, and never logged.
+There is one deliberate exception, and it is worth knowing about: **geocoding an address, measuring a travel time, checking whether a listing is still online, and reading a PDF** cannot be done in your browser. For those, that single item is sent in readable form: an address to Google Maps (or OpenRouteService on some self-hosted setups) for its location and travel times, a listing's URL fetched by our server from the listing site itself, and a PDF to the AI model that reads it. Our server uses it for that one call, never writes it to the database, and never logs it.
 
 ### Managing your key
 

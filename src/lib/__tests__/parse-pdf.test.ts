@@ -19,6 +19,9 @@ const mockedGenerateText = vi.mocked(generateText);
 
 beforeEach(() => {
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  delete process.env.AI_PROVIDER;
+  delete process.env.AI_MODEL;
+  delete process.env.AI_ZERO_DATA_RETENTION;
 });
 
 afterEach(() => {
@@ -508,5 +511,44 @@ describe("extractApartmentData — summary passthrough", () => {
 
     const result = await extractApartmentData("base64pdf");
     expect(result.summary).toBeNull();
+  });
+});
+
+// #333: the hosted deployment reads PDFs through Vercel AI Gateway, and every
+// request must demand zero data retention.
+describe("extractApartmentData — AI provider", () => {
+  const output = { name: "A", address: null, sizeM2: null, numRooms: null, numBathrooms: null,
+    numBalconies: null, hasWashingMachine: null, rentChf: null };
+
+  it("sends the gateway model with zeroDataRetention on the gateway path", async () => {
+    process.env.AI_PROVIDER = "gateway";
+    mockedGenerateText.mockResolvedValue({ output } as never);
+    await extractApartmentData("base64pdf");
+    const call = mockedGenerateText.mock.calls.at(-1)![0] as Record<string, unknown>;
+    expect(call.model).toBe("google/gemini-2.5-flash");
+    expect(call.providerOptions).toEqual({ gateway: { zeroDataRetention: true } });
+  });
+
+  it("uses AI_MODEL on the gateway path", async () => {
+    process.env.AI_PROVIDER = "gateway";
+    process.env.AI_MODEL = "anthropic/claude-haiku-4.5";
+    mockedGenerateText.mockResolvedValue({ output } as never);
+    await extractApartmentData("base64pdf");
+    const call = mockedGenerateText.mock.calls.at(-1)![0] as Record<string, unknown>;
+    expect(call.model).toBe("anthropic/claude-haiku-4.5");
+  });
+
+  it("sends no gateway options on the Google path", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue({ output } as never);
+    await extractApartmentData("base64pdf");
+    const call = mockedGenerateText.mock.calls.at(-1)![0] as Record<string, unknown>;
+    expect(call.model).toBe("gemini-model");
+    expect(call.providerOptions).toBeUndefined();
+  });
+
+  it("refuses to run with an invalid AI configuration", async () => {
+    process.env.AI_PROVIDER = "openai";
+    await expect(extractApartmentData("base64pdf")).rejects.toThrow(/AI_PROVIDER/);
   });
 });

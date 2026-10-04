@@ -12,6 +12,13 @@ export async function register(): Promise<void> {
   const warning = dbTargetWarning(target);
   if (warning) console.warn(`[db] WARNING: ${warning}`);
 
+  // Say which AI backend reads PDFs, and whether it is held to zero data
+  // retention (#333). The landing page states zero data retention for the
+  // hosted service, so this line is where a misconfigured deployment shows.
+  // An invalid AI_* value throws here and fails boot, like FLATPARE_ENCRYPTION.
+  const { readAiConfig, describeAi } = await import("@/lib/ai-provider");
+  console.log(`[ai] ${describeAi(readAiConfig())}`);
+
   const { runMigrations } = await import("@/lib/db/migrate");
   try {
     await runMigrations();

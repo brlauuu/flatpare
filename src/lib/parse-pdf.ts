@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { google } from "@ai-sdk/google";
+import { aiAvailable, aiModel, aiProviderOptions, readAiConfig } from "@/lib/ai-provider";
 import { z } from "zod";
 
 export const apartmentExtractionSchema = z.object({
@@ -87,21 +87,18 @@ function overrideLaundryFromEvidence(
   return result;
 }
 
-function getModel() {
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return google("gemini-2.5-flash");
-  }
-
-  throw new Error("No AI provider configured");
-}
 
 export async function extractApartmentData(
   pdfBase64: string
 ): Promise<ApartmentExtraction> {
-  const model = getModel();
+  // Which backend, and whether it must keep nothing, is decided in one place
+  // (#333): src/lib/ai-provider.ts.
+  const config = readAiConfig();
+  if (!aiAvailable(config)) throw new Error("No AI provider configured");
 
   const result = await generateText({
-    model,
+    model: aiModel(config),
+    providerOptions: aiProviderOptions(config),
     output: Output.object({
       schema: internalApartmentExtractionSchema,
     }),
