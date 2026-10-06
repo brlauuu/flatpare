@@ -1,16 +1,21 @@
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "next-themes";
 import { ThemeToggle } from "../theme-toggle";
 
 // next-themes calls window.matchMedia for system-theme detection; jsdom
-// doesn't ship it. Provide a no-op stub.
-beforeAll(() => {
+// doesn't ship it. The stub answers the dark-scheme query with `systemDark`.
+let systemDark = false;
+
+beforeEach(() => {
+  systemDark = false;
+  window.localStorage.clear();
+  document.documentElement.className = "";
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
-      matches: false,
+      matches: query.includes("dark") && systemDark,
       media: query,
       onchange: null,
       addEventListener: () => {},
@@ -24,59 +29,46 @@ beforeAll(() => {
 
 afterEach(() => cleanup());
 
-function renderWithProvider(
-  initial: "light" | "dark" | "system" = "system"
-) {
+// The same provider settings as src/components/theme-provider.tsx.
+function renderToggle(className?: string) {
   return render(
-    <ThemeProvider attribute="class" defaultTheme={initial} enableSystem>
-      <ThemeToggle />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeToggle className={className} />
     </ThemeProvider>
   );
 }
 
 describe("ThemeToggle", () => {
-  it("renders three buttons after hydration: Light, Dark, System", () => {
-    renderWithProvider();
-    expect(
-      screen.getByRole("button", { name: /Switch to Light theme/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Switch to Dark theme/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Switch to System theme/i })
-    ).toBeInTheDocument();
+  it("follows a light system preference until pressed", () => {
+    renderToggle();
+    expect(screen.getByRole("button", { name: "Switch to dark theme" })).toBeInTheDocument();
   });
 
-  it("calls setTheme when a non-active button is clicked", async () => {
+  it("follows a dark system preference until pressed", () => {
+    systemDark = true;
+    renderToggle();
+    expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeInTheDocument();
+  });
+
+  it("is one button that flips light and dark, with no separate System choice", async () => {
     const user = userEvent.setup();
-    renderWithProvider("light");
-    // Click Dark — should not throw and should be focusable/clickable.
-    const darkBtn = screen.getByRole("button", {
-      name: /Switch to Dark theme/i,
-    });
-    await user.click(darkBtn);
-    // Re-query after the rerender; the button is still in the document.
-    expect(
-      screen.getByRole("button", { name: /Switch to Dark theme/i })
-    ).toBeInTheDocument();
+    renderToggle();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    expect(document.documentElement).toHaveClass("dark");
+    expect(window.localStorage.getItem("theme")).toBe("dark");
+
+    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    expect(document.documentElement).toHaveClass("light");
+    expect(window.localStorage.getItem("theme")).toBe("light");
   });
 
-  it("highlights the active theme with the bg-background class", () => {
-    renderWithProvider("dark");
-    const darkBtn = screen.getByRole("button", {
-      name: /Switch to Dark theme/i,
-    });
-    const lightBtn = screen.getByRole("button", {
-      name: /Switch to Light theme/i,
-    });
-    expect(darkBtn.className).toContain("bg-background");
-    expect(lightBtn.className).not.toContain("bg-background");
+  // The landing page keeps its yellow edge in dark mode this way.
+  it("lets a caller replace the edge colour", () => {
+    renderToggle("border-(--lp-chip-line)");
+    const button = screen.getByRole("button");
+    expect(button).toHaveClass("border-(--lp-chip-line)");
+    expect(button).not.toHaveClass("border-frame");
   });
-
-  // Note: the SSR-safe placeholder branch (`if (!mounted) return …`) is
-  // unreachable from RTL — `useIsClient()` returns true on the second pass
-  // and React commits the mounted output before our assertions run. The
-  // remaining ~1 uncovered line is the placeholder return, which we accept
-  // as a framework-level branch.
 });
