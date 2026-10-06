@@ -8,11 +8,11 @@ import {
   WALKTHROUGH_DURATION,
   WALKTHROUGH_VIDEO_URL,
 } from "@/lib/site";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
 import type { PublicAccess } from "@/lib/public-access";
 import { landingFontVariables } from "./landing-fonts";
 import { HeroSketch } from "./hero-sketch";
-import { LandingThemeToggle } from "./landing-theme-toggle";
 import { ReleaseNotice } from "./release-notice";
 import { SignInButton, SignInProvider } from "./sign-in-dialog";
 import { BetaRequestForm } from "./beta-request-form";
@@ -126,7 +126,7 @@ function Nav({ release }: { release: ReleaseInfo | null }) {
           GitHub
         </a>
         <SignInButton className="lp-btn lp-btn-secondary min-h-11 px-4">Sign in</SignInButton>
-        <LandingThemeToggle />
+        <ThemeToggle className="border-(--lp-chip-line)" />
       </nav>
     </header>
   );

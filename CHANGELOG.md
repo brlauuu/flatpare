@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- Switching between light and dark mode inside the app now works like on the landing page: one button that flips between the two, starting from your system setting. (#335)
+
 ## 0.7.0 — 2026-10-04
 
 ### Changed
