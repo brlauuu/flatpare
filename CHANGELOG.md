@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.8.0 — 2026-10-07
+
 ### Added
 - A map page showing all your apartments and places on a clean street map, with your marks drawn by hand. Hover or tap a mark to see price, size, rooms and rating; click to open the apartment. The apartments page now links to it. (#330)
 
