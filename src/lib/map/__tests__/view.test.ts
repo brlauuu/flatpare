@@ -29,8 +29,11 @@ describe("initialView", () => {
 describe("cardPosition", () => {
   const box = { width: 390, height: 700 };
 
-  it("opens above the mark when there is room", () => {
-    expect(cardPosition({ x: 200, y: 400 }, box, 150)).toEqual({ left: 200 - CARD_WIDTH / 2, top: 400 - 30 - 150, placement: "above" });
+  it("opens above the mark when there is room, anchored by its bottom edge", () => {
+    // `top` is where the card's BOTTOM edge sits for "above" (the card is
+    // shifted up by its own height in CSS), so a card taller than the
+    // estimate grows upward and can never cover its mark.
+    expect(cardPosition({ x: 200, y: 400 }, box, 150)).toEqual({ left: 200 - CARD_WIDTH / 2, top: 400 - 30, placement: "above" });
   });
 
   it("opens below a mark near the top edge", () => {

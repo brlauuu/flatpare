@@ -5,8 +5,10 @@ import { formatRent, formatRooms, type ApartmentPoint, type LocationPoint } from
 // The apartment card is one link: on a phone, tapping it is how the
 // apartment opens (the first tap on the mark only shows the card).
 
-// Estimates used to decide whether the card fits above its mark.
-export const APARTMENT_CARD_HEIGHT = 150;
+// Estimates used to decide whether the card fits above its mark. The card
+// wraps on a phone (facts line, long code), so this errs tall; a taller
+// card than this still never covers its mark (see view.ts).
+export const APARTMENT_CARD_HEIGHT = 200;
 export const LOCATION_CARD_HEIGHT = 72;
 
 const frame = "block w-52 rounded-xl border-3 border-frame bg-card p-3 text-card-foreground shadow-frame";

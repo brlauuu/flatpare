@@ -47,7 +47,10 @@ export function cardPosition(
 ): { left: number; top: number; placement: "above" | "below" } {
   const maxLeft = Math.max(EDGE, container.width - CARD_WIDTH - EDGE);
   const left = Math.min(Math.max(anchor.x - CARD_WIDTH / 2, EDGE), maxLeft);
-  const above = anchor.y - CARD_GAP - cardHeight;
-  if (above >= EDGE) return { left, top: above, placement: "above" };
+  // "above" fits when the estimated height clears the top edge. Its `top`
+  // is where the card's bottom edge goes: the caller shifts the card up by
+  // its own height (translateY(-100%)), so a card that wraps taller than the
+  // estimate grows upward and never covers its mark.
+  if (anchor.y - CARD_GAP - cardHeight >= EDGE) return { left, top: anchor.y - CARD_GAP, placement: "above" };
   return { left, top: anchor.y + CARD_GAP, placement: "below" };
 }

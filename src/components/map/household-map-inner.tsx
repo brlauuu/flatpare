@@ -10,6 +10,7 @@ import { mapStyle, type MapTheme } from "@/lib/map/style";
 import { findActive, toMarks, type MapPoints, type MarkSpec } from "@/lib/map/points";
 import { cardPosition, initialView } from "@/lib/map/view";
 import { workerUrl } from "@/lib/map/worker";
+import { isFatalMapError } from "@/lib/map/errors";
 import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
@@ -75,10 +76,10 @@ export default function HouseholdMapInner({ points, onError }: Props) {
     map.on("load", () => {
       loaded = true;
     });
-    // Before the first load an error means the map cannot be drawn at all
-    // (tiles or style unreachable); afterwards it is one tile, ignored.
-    map.on("error", () => {
-      if (!loaded) onErrorRef.current();
+    // Only an error that means nothing can be drawn swaps in the failure
+    // screen; a single failed tile does not (see isFatalMapError).
+    map.on("error", (e) => {
+      if (isFatalMapError(e as { tile?: unknown; sourceId?: string }, loaded)) onErrorRef.current();
     });
     map.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
     map.on("click", (e: MapMouseEvent) => {
@@ -160,7 +161,12 @@ export default function HouseholdMapInner({ points, onError }: Props) {
       {position && (
         <div
           className="absolute z-10"
-          style={{ left: position.left, top: position.top }}
+          style={{
+            left: position.left,
+            top: position.top,
+            // view.ts: for "above", top is the card's bottom edge.
+            transform: position.placement === "above" ? "translateY(-100%)" : undefined,
+          }}
           onMouseEnter={card.cancelHide}
           onMouseLeave={card.hideSoon}
         >
