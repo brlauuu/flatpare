@@ -12,11 +12,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
-// The overview map pulls Leaflet through next/dynamic; stub the inner map.
-vi.mock("@/components/apartments-overview-map-inner", () => ({
-  default: () => <div data-testid="leaflet-map" />,
-}));
-
 import ApartmentsPage from "../page";
 
 const APARTMENTS = [
@@ -102,11 +97,10 @@ describe("Apartments page — store states", () => {
     expect(value.runMaintenance).toHaveBeenCalledTimes(1);
   });
 
-  it("runs the geocode pass the first time the map opens", async () => {
-    const user = userEvent.setup();
-    const { value } = renderPage();
-    await user.click(screen.getByRole("button", { name: /Map overview/i }));
-    expect(value.runMaintenance).toHaveBeenCalledWith("geocode");
+  it("links to the map page instead of embedding a map", () => {
+    renderPage();
+    expect(screen.getByRole("link", { name: /View on map/i })).toHaveAttribute("href", "/map");
+    expect(screen.queryByRole("button", { name: /Map overview/i })).toBeNull();
   });
 
   it("offers a retry for a failed enrichment", async () => {
