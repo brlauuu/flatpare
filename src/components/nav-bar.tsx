@@ -8,7 +8,7 @@ import { clearKeys } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { BookOpen, ChevronDown, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -23,8 +23,9 @@ const navItems = [
   { href: "/map", label: "Map" },
   { href: "/household", label: "Household" },
   { href: "/settings", label: "Settings" },
-  { href: "/guide", label: "Guide" },
 ];
+// Guide lives in the user menu (#330): seven items did not fit the phone's
+// bottom bar at 360px once Map was added.
 
 // Marks the link that was just clicked while its page is on the way (#302).
 // loading.tsx covers the page area; this covers the case where the loading
@@ -95,6 +96,10 @@ export function NavBar({ userName }: { userName: string }) {
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
+              <DropdownMenuItem render={<Link href="/guide" />}>
+                <BookOpen className="h-3.5 w-3.5" />
+                Guide
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="h-3.5 w-3.5" />
                 Sign out

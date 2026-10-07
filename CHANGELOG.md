@@ -12,6 +12,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 ### Added
 - A map page showing all your apartments and places on a clean street map, with your marks drawn by hand. Hover or tap a mark to see price, size, rooms and rating; click to open the apartment. The apartments page now links to it. (#330)
 
+### Changed
+- The Guide moved from the navigation bar into the menu under your name, so the bar fits on small phones. (#330)
+
 ## 0.7.1 — 2026-10-06
 
 ### Changed
