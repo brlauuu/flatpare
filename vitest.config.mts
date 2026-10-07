@@ -75,6 +75,11 @@ export default defineConfig({
       // Excluding them would make the 0% disappear without making anything
       // safer, and would silently swallow real logic added to them later.
       // The 0% is honest signal; leave it visible.
+      // Same for the map page's `src/components/map/household-map-inner.tsx`
+      // (#330), the only file that imports MapLibre: jsdom has no WebGL, so
+      // it cannot run under test. What it draws is decided by the pure,
+      // tested modules in src/lib/map. (#330 also removed the overview
+      // map's Leaflet inner; the detail page's is the one left.)
       //
       // Floor — we're well above as of #129; set here so a regression
       // (or a sneaky `if` slipping through without a test) fails CI.

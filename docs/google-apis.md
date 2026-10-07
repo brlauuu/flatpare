@@ -12,9 +12,10 @@ silently no-op.
 | Postcode + lat/lng geocoding | Geocoding API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 | Bike + transit travel times | Distance Matrix API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 
-**No Google API renders a map.** Both the overview map and the
-single-apartment pin are drawn client-side with [Leaflet](https://leafletjs.com)
-over OpenStreetMap tiles. The **Maps Embed API is not used and should not be
+**No Google API renders a map.** The map page (`/map`) is drawn client-side
+with [MapLibre](https://maplibre.org) over OpenFreeMap vector tiles (#330),
+and the single-apartment pin with [Leaflet](https://leafletjs.com) over
+OpenStreetMap tiles. The **Maps Embed API is not used and should not be
 enabled** — it was, until E3 deleted `src/lib/map-embed.ts`, and enabling an
 API a key does not need only widens what a leaked key can do.
 
@@ -87,12 +88,11 @@ is not a failed request.
 There is no server-side backfill route to call: geocoding a household's
 existing rows happens **in the browser**, through the store's
 `runMaintenance("geocode")`, since the addresses are encrypted and the server
-cannot read them. Opening the map overview panel on the apartments page
-triggers exactly that pass.
+cannot read them. Opening the map page (`/map`) triggers exactly that pass.
 
 ## Troubleshooting
 
-- **Map overview shows "0 apartments · 0 locations"**: backfill ran but
+- **Map page says apartments "aren't on the map yet"**: backfill ran but
   geocoding returned null. Almost always: Geocoding API not enabled on
   the Maps Platform key.
 - **Distances missing on apartment cards**: Distance Matrix API not

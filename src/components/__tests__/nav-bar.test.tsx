@@ -73,9 +73,19 @@ describe("NavBar sections", () => {
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"))
       .filter((h): h is string => h !== null);
-    for (const href of ["/apartments", "/apartments/new", "/compare", "/household", "/settings", "/guide"]) {
+    for (const href of ["/apartments", "/apartments/new", "/compare", "/map", "/household", "/settings"]) {
       expect(hrefs).toContain(href);
     }
+  });
+
+  it("keeps Guide in the user menu, not the bar, so the phone bar fits six items (#330)", async () => {
+    const user = userEvent.setup();
+    render(<NavBar userName="Alice" />);
+    expect(screen.queryByRole("link", { name: "Guide" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    const guide = await screen.findByRole("menuitem", { name: "Guide" });
+    expect(guide).toHaveAttribute("href", "/guide");
   });
 });
 

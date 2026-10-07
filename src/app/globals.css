@@ -478,3 +478,42 @@
     transform: none;
   }
 }
+
+/* Map page (#330). The grid matches the landing page's (`--lp-grid`),
+   which is scoped to `.landing`, so the map keeps its own copy. */
+:root {
+  --map-grid: #e4e9fa;
+}
+.dark {
+  --map-grid: #1c1b0e;
+}
+.map-grid-bg {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(var(--map-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.map-mark {
+  position: relative;
+  width: 64px;
+  height: 44px;
+  cursor: pointer;
+}
+.map-mark:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+.map-mark-label {
+  position: absolute;
+  left: 50px;
+  top: -8px;
+  white-space: nowrap;
+  font-family: var(--font-caveat), cursive;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+  transform: rotate(-4deg);
+  /* A halo so the handwriting reads over printed streets and names. */
+  text-shadow: 0 0 3px var(--background), 0 0 3px var(--background), 0 0 3px var(--background);
+}

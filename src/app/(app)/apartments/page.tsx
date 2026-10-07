@@ -11,6 +11,7 @@ import {
   Building2,
   LayoutGrid,
   List as ListIcon,
+  Map as MapIcon,
   Search,
   X,
 } from "lucide-react";
@@ -36,7 +37,6 @@ import {
   type SortField,
 } from "@/lib/apartment-sort";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
-import { ApartmentsOverviewMap } from "@/components/apartments-overview-map";
 import { ApartmentCard } from "./_components/apartment-card";
 import { ApartmentRow } from "./_components/apartment-row";
 
@@ -189,15 +189,10 @@ export default function ApartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <ApartmentsOverviewMap
-        apartments={apartments}
-        locations={locations}
-        onOpen={() => {
-          void runMaintenance("geocode").catch(() => {
-            // best-effort
-          });
-        }}
-      />
+      <Link href="/map" className={cn(buttonVariants({ variant: "outline" }), "h-11 sm:h-9")}>
+        <MapIcon className="h-4 w-4" />
+        View on map
+      </Link>
       {failedEnrichments.length > 0 && (
         <div
           role="status"

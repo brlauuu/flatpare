@@ -33,7 +33,7 @@
 | ⭐ **Per-user star ratings** | Each member rates kitchen, balconies, location, floorplan and overall. Averages roll up automatically — computed in the browser, since the server cannot read the scores. |
 | 📊 **Comparison grid** | Sortable side-by-side table — best price, biggest, shortest commute — with hide/show per apartment. |
 | 🚲 **Auto distance** | Bike + transit minutes from each apartment to your "locations of interest" (work, schools, family). |
-| 🗺️ **Map view** | Apartments overview map and a per-apartment pin, rendered client-side with [Leaflet](https://leafletjs.com). |
+| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org) + OpenFreeMap), and a per-apartment pin with [Leaflet](https://leafletjs.com). |
 | 👥 **Households + invitations** | Invite people by email; each member gets their own account and their own copy of the household key. |
 | ☁️ **Cloud or self-hosted** | One repo runs on Vercel + Turso + Vercel Blob, or fully self-hosted with SQLite + local disk and no third-party accounts at all. |
 
