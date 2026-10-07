@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+
+# MapLibre worker, copied from node_modules by next.config.ts (#330)
+/public/maplibre/
 /out/
 
 # production

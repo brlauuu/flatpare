@@ -4,11 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Map as MapLibreMap, Marker, NavigationControl, type MapMouseEvent } from "maplibre-gl";
+import { Map as MapLibreMap, Marker, NavigationControl, getVersion, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapStyle, type MapTheme } from "@/lib/map/style";
 import { findActive, toMarks, type MapPoints, type MarkSpec } from "@/lib/map/points";
 import { cardPosition, initialView } from "@/lib/map/view";
+import { workerUrl } from "@/lib/map/worker";
 import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
@@ -18,6 +19,10 @@ import { useCardState } from "./use-card-state";
 // components rendered into MapLibre's marker elements through portals.
 // jsdom has no WebGL, so this file is not unit tested — same posture as
 // the Leaflet *-map-inner.tsx components (see vitest.config.mts).
+
+// MapLibre looks for its worker beside its own script, which is a Next chunk
+// here; point it at the copy next.config.ts puts in public/.
+setWorkerUrl(workerUrl(getVersion()));
 
 interface Props {
   points: MapPoints;
@@ -127,7 +132,10 @@ export default function HouseholdMapInner({ points, onError }: Props) {
 
   return (
     <div className="map-grid-bg relative h-full w-full">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* h-full, not absolute inset-0: MapLibre's stylesheet sets
+          position: relative on .maplibregl-map, which would collapse an
+          absolutely positioned container to zero height. */}
+      <div ref={containerRef} className="h-full w-full" />
       {marks.map((m) => {
         const node = nodes.get(m.key);
         const href = m.href;
