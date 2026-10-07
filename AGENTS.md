@@ -243,6 +243,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **`src/components/ui/*` are edited shadcn files.** Re-running `npx shadcn add <component>` overwrites the restyle; re-apply it by hand. The Badge deliberately does not force uppercase: badges also show values, and uppercase turns `m²` into `M²`.
 - **Before/after screenshots:** `npm run build && npm run capture:screens -- screens/<name>` (gitignored). Same throwaway database and invented data as `capture:hero`.
 
+## Map page (#330)
+- **`/map` (`src/app/(app)/map/page.tsx`) shows every apartment and location of interest** on a MapLibre map drawn from OpenFreeMap vector tiles with our own style (`mapStyle`, `src/lib/map/style.ts`): streets, water, parks, street and neighbourhood names; **no buildings, house numbers or POIs, on purpose.** No key, no env var. Design: `docs/superpowers/specs/2026-10-06-map-page-design.md`.
+- **`src/components/map/household-map-inner.tsx` is the only file that imports `maplibre-gl`**, loaded through `next/dynamic` (`ssr: false`) so no other page carries it. It is not unit tested (no WebGL in jsdom) and stays counted in coverage, like the Leaflet inner; everything it decides comes from the tested pure modules in `src/lib/map/` (style, pencil marks, points, initial view, card position).
+- The household's marks are HTML markers rendered by React through portals, so they use theme tokens (`text-primary` apartments, `text-destructive` places) and Caveat (`map-fonts.ts`). The map's own colours are fixed constants in `style.ts`.
+- Mouse: hover shows the card, click opens the apartment. Touch: tap shows the card, the card is the link. The page runs the geocode maintenance pass once per visit (it used to run when the apartments page's overview map opened; that map is gone).
+- Tiles reveal the viewed area to the tile host — see `docs/security-notes.md`. Self-hosting per country is #339; it should only need `sources` in `style.ts` changed.
+
 ## Architecture checks (enola)
 
 - The baseline is pinned at the E1 merge (`dad02e1`), which **accepts one module

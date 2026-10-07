@@ -1,4 +1,5 @@
 import type { ApartmentView, LocationView } from "@/lib/household-data/types";
+import { seedFromId } from "./marks";
 
 // What the map draws, derived from the store's views (#330). Pure, so the
 // rules — corrupt rows never shown, rows without coordinates listed rather
@@ -84,4 +85,57 @@ export function describeApartment(a: ApartmentPoint): string {
   if (a.sizeM2 !== null) parts.push(`${a.sizeM2} m²`);
   parts.push("opens apartment");
   return parts.join(", ");
+}
+
+// One entry per mark on the map, apartments first. The map component only
+// has to place these; everything about a mark is decided here.
+export interface MarkSpec {
+  key: string;
+  kind: "apartment" | "location";
+  id: string;
+  label: string;
+  seed: number;
+  ariaLabel: string;
+  lngLat: [number, number];
+  // Where the mark opens; places open nothing.
+  href: string | null;
+}
+
+export function toMarks(points: MapPoints): MarkSpec[] {
+  return [
+    ...points.apartments.map((a) => ({
+      key: `apartment:${a.id}`,
+      kind: "apartment" as const,
+      id: a.id,
+      label: a.label,
+      seed: seedFromId(a.id),
+      ariaLabel: describeApartment(a),
+      lngLat: [a.longitude, a.latitude] as [number, number],
+      href: `/apartments/${a.id}`,
+    })),
+    ...points.locations.map((l) => ({
+      key: `location:${l.id}`,
+      kind: "location" as const,
+      id: l.id,
+      label: l.label,
+      seed: seedFromId(l.id),
+      ariaLabel: l.label,
+      lngLat: [l.longitude, l.latitude] as [number, number],
+      href: null,
+    })),
+  ];
+}
+
+export type ActivePoint = { kind: "apartment"; point: ApartmentPoint } | { kind: "location"; point: LocationPoint };
+
+// The point whose card is open, or null when none is — or when a store
+// refresh removed it while its card was showing.
+export function findActive(points: MapPoints, active: { kind: "apartment" | "location"; id: string } | null): ActivePoint | null {
+  if (active === null) return null;
+  if (active.kind === "apartment") {
+    const point = points.apartments.find((a) => a.id === active.id);
+    return point ? { kind: "apartment", point } : null;
+  }
+  const point = points.locations.find((l) => l.id === active.id);
+  return point ? { kind: "location", point } : null;
 }

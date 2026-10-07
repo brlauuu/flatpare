@@ -503,3 +503,16 @@ never enforces a paywall it would have no way to lift.
 The column is present so it need not be added later. No code path reads it — not E5,
 not E6. It is noted here because a future reader may reasonably assume an unused
 `tier` column is load-bearing entitlement state and build on it; it is not.
+
+## Map tiles — reviewed 2026-10-07 (#330)
+
+### Accepted: the tile host sees which area is being viewed
+
+The map page (`/map`) and the apartment detail page's small map load map
+tiles from a third party: OpenFreeMap (vector tiles) on `/map`, OpenStreetMap
+(raster tiles) on the detail page. A tile request names an area of the map,
+so the tile host learns which part of which city a household is looking at.
+It learns nothing else — no apartment, rating or address leaves the browser;
+the marks are drawn locally from the decrypted store. This was already true
+of the Leaflet maps before #330. Hosting our own per-country extract, which
+removes the third party, is #339.

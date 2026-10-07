@@ -7,12 +7,11 @@ import { useTheme } from "next-themes";
 import { Map as MapLibreMap, Marker, NavigationControl, type MapMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapStyle, type MapTheme } from "@/lib/map/style";
-import { seedFromId } from "@/lib/map/marks";
-import { describeApartment, type MapPoints } from "@/lib/map/points";
+import { findActive, toMarks, type MapPoints, type MarkSpec } from "@/lib/map/points";
 import { cardPosition, initialView } from "@/lib/map/view";
 import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
-import { useCardState, type ActiveMark } from "./use-card-state";
+import { useCardState } from "./use-card-state";
 
 // The only file that touches MapLibre (#330). Deliberately thin: what to
 // draw comes from src/lib/map, the marks and cards are ordinary React
@@ -31,8 +30,6 @@ interface Anchor {
   width: number;
   height: number;
 }
-
-const key = (kind: ActiveMark["kind"], id: string) => `${kind}:${id}`;
 
 export default function HouseholdMapInner({ points, onError }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -54,12 +51,8 @@ export default function HouseholdMapInner({ points, onError }: Props) {
 
   // One DOM node per mark. MapLibre positions the node; React renders the
   // mark into it through a portal.
-  const nodes = useMemo(() => {
-    const map = new Map<string, HTMLDivElement>();
-    for (const a of points.apartments) map.set(key("apartment", a.id), document.createElement("div"));
-    for (const l of points.locations) map.set(key("location", l.id), document.createElement("div"));
-    return map;
-  }, [points]);
+  const marks = useMemo(() => toMarks(points), [points]);
+  const nodes = useMemo(() => new Map(marks.map((m) => [m.key, document.createElement("div")])), [marks]);
 
   // Create the map once.
   useEffect(() => {
@@ -108,17 +101,9 @@ export default function HouseholdMapInner({ points, onError }: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const markers: Marker[] = [];
-    for (const a of points.apartments) {
-      const element = nodes.get(key("apartment", a.id));
-      if (element) markers.push(new Marker({ element }).setLngLat([a.longitude, a.latitude]).addTo(map));
-    }
-    for (const l of points.locations) {
-      const element = nodes.get(key("location", l.id));
-      if (element) markers.push(new Marker({ element }).setLngLat([l.longitude, l.latitude]).addTo(map));
-    }
+    const markers = marks.map((m) => new Marker({ element: nodes.get(m.key) }).setLngLat(m.lngLat).addTo(map));
     return () => markers.forEach((m) => m.remove());
-  }, [points, nodes]);
+  }, [marks, nodes]);
 
   // Follow the theme toggle. Markers are DOM and survive a style change.
   useEffect(() => {
@@ -127,61 +112,40 @@ export default function HouseholdMapInner({ points, onError }: Props) {
     mapRef.current?.setStyle(mapStyle(theme));
   }, [theme]);
 
-  function showAt(mark: ActiveMark, lngLat: [number, number]) {
+  function showAt(mark: MarkSpec) {
     const map = mapRef.current;
     const container = containerRef.current;
     if (!map || !container) return;
-    const p = map.project(lngLat);
+    const p = map.project(mark.lngLat);
     setAnchor({ x: p.x, y: p.y, width: container.clientWidth, height: container.clientHeight });
-    card.show(mark);
+    card.show({ kind: mark.kind, id: mark.id });
   }
 
-  const activeApartment = card.active?.kind === "apartment" ? points.apartments.find((a) => a.id === card.active?.id) : undefined;
-  const activeLocation = card.active?.kind === "location" ? points.locations.find((l) => l.id === card.active?.id) : undefined;
-  const position =
-    anchor && (activeApartment || activeLocation)
-      ? cardPosition(anchor, anchor, activeApartment ? APARTMENT_CARD_HEIGHT : LOCATION_CARD_HEIGHT)
-      : null;
+  const active = findActive(points, card.active);
+  const cardHeight = active?.kind === "apartment" ? APARTMENT_CARD_HEIGHT : LOCATION_CARD_HEIGHT;
+  const position = anchor && active ? cardPosition(anchor, anchor, cardHeight) : null;
 
   return (
     <div className="map-grid-bg relative h-full w-full">
       <div ref={containerRef} className="absolute inset-0" />
-      {points.apartments.map((a) => {
-        const node = nodes.get(key("apartment", a.id));
+      {marks.map((m) => {
+        const node = nodes.get(m.key);
+        const href = m.href;
         return node
           ? createPortal(
               <MapMark
-                kind="apartment"
-                label={a.label}
-                seed={seedFromId(a.id)}
-                ariaLabel={describeApartment(a)}
+                kind={m.kind}
+                label={m.label}
+                seed={m.seed}
+                ariaLabel={m.ariaLabel}
                 hoverCapable={hoverCapable}
-                onShow={() => showAt({ kind: "apartment", id: a.id }, [a.longitude, a.latitude])}
+                onShow={() => showAt(m)}
                 onHide={card.hideSoon}
                 onDismiss={card.hide}
-                onOpen={() => router.push(`/apartments/${a.id}`)}
+                onOpen={href ? () => router.push(href) : undefined}
               />,
               node,
-              key("apartment", a.id)
-            )
-          : null;
-      })}
-      {points.locations.map((l) => {
-        const node = nodes.get(key("location", l.id));
-        return node
-          ? createPortal(
-              <MapMark
-                kind="location"
-                label={l.label}
-                seed={seedFromId(l.id)}
-                ariaLabel={l.label}
-                hoverCapable={hoverCapable}
-                onShow={() => showAt({ kind: "location", id: l.id }, [l.longitude, l.latitude])}
-                onHide={card.hideSoon}
-                onDismiss={card.hide}
-              />,
-              node,
-              key("location", l.id)
+              m.key
             )
           : null;
       })}
@@ -192,7 +156,7 @@ export default function HouseholdMapInner({ points, onError }: Props) {
           onMouseEnter={card.cancelHide}
           onMouseLeave={card.hideSoon}
         >
-          {activeApartment ? <ApartmentCard apartment={activeApartment} /> : activeLocation && <LocationCard location={activeLocation} />}
+          {active?.kind === "apartment" ? <ApartmentCard apartment={active.point} /> : active && <LocationCard location={active.point} />}
         </div>
       )}
     </div>
