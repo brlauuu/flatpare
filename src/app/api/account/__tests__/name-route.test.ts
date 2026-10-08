@@ -13,7 +13,7 @@ vi.mock("@/lib/session", () => ({
   }),
 }));
 
-import { PUT } from "../name/route";
+import { GET, PUT } from "../name/route";
 
 const put = (body: unknown) =>
   PUT(new Request("http://localhost/api/account/name", { method: "PUT", body: typeof body === "string" ? body : JSON.stringify(body) }));
@@ -78,5 +78,18 @@ describe("PUT /api/account/name", () => {
     const res = await put({ name: "secret-name" });
     expect(res.status).toBe(500);
     expect(logged.join("\n")).not.toContain("secret-name");
+  });
+});
+
+describe("GET /api/account/name", () => {
+  it("returns the stored name (null when unset) and the email it falls back to", async () => {
+    expect(await (await GET()).json()).toEqual({ name: "Old", email: "me@example.com" });
+    await put({ name: "" });
+    expect(await (await GET()).json()).toEqual({ name: null, email: "me@example.com" });
+  });
+
+  it("is 401 without a session", async () => {
+    signedIn = false;
+    expect((await GET()).status).toBe(401);
   });
 });

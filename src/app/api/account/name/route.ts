@@ -17,6 +17,23 @@ import { requireHousehold } from "@/lib/session";
 // household data (see src/lib/display-name.ts). Nothing here logs it: a
 // validation failure answers a fixed message, and an unexpected error logs
 // its class only, since a database error can quote the value it was given.
+// The caller's stored name (null when unset) and the email shown in its
+// place, so the Settings field starts from what is stored rather than from
+// the fallback.
+export async function GET() {
+  try {
+    const { userId } = await requireHousehold();
+    const [row] = await db
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!row) throw new UnauthorizedError();
+    return NextResponse.json({ name: row.name, email: row.email });
+  } catch (e) {
+    return apiErrorResponse(e, "account:name");
+  }
+}
+
 export async function PUT(req: Request) {
   try {
     const { userId } = await requireHousehold();
