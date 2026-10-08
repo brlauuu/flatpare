@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { db } from "@/lib/db";
 import { apartments, households, householdMembers, ratings } from "@/lib/db/schema";
@@ -108,6 +109,15 @@ describe("GET /api/ratings", () => {
     const rows = await res.json();
     expect(rows.map((r: { userId: string }) => r.userId).sort()).toEqual(["m", "o"]);
     expect(rows.find((r: { userId: string }) => r.userId === "m").userName).toBe("M");
+  });
+
+  it("labels a rater with no name by their email, in the list and on save (#205, #327)", async () => {
+    await db.update(users).set({ name: null }).where(eq(users.id, "m"));
+    currentSession.userId = "m";
+    const saved = await ratePUT(json("PUT", { envelope: v1("m1") }), params(ID_A));
+    expect((await saved.json()).userName).toBe("m@example.com");
+    const rows = await (await listGET()).json();
+    expect(rows.find((r: { userId: string }) => r.userId === "m").userName).toBe("m@example.com");
   });
 
   it("401s without a session", async () => {
