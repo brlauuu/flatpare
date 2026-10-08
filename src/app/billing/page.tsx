@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
 import { resolveHouseholdIdentity } from "@/lib/session";
 import { readCreditBalance } from "@/lib/billing";
@@ -15,7 +14,6 @@ import { CheckoutPanel } from "./checkout-panel";
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage() {
-  const session = await auth();
   const identity = await resolveHouseholdIdentity();
   if (!identity) redirect("/");
 
@@ -28,7 +26,7 @@ export default async function BillingPage() {
 
   return (
     <>
-      <NavBar userName={session?.user?.name ?? "Unknown"} />
+      <NavBar userName={identity.userName} />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-10">
         <div className="space-y-3">
           <h1 className="title-page">

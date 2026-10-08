@@ -59,7 +59,7 @@ beforeEach(() => {
     throw new Error(`NEXT_REDIRECT:${url}`);
   });
   authMock.mockResolvedValue({ user: { name: "Ana" } });
-  resolveHouseholdIdentity.mockResolvedValue({ householdId: 1, userId: "o", role: "owner" });
+  resolveHouseholdIdentity.mockResolvedValue({ householdId: 1, userId: "o", userName: "Ana Neu", role: "owner" });
   readCreditBalance.mockResolvedValue(balance());
 });
 
@@ -117,9 +117,9 @@ describe("BillingPage", () => {
     expect(readCreditBalance).not.toHaveBeenCalled();
   });
 
-  it("falls back to 'Unknown' rather than crashing on a nameless session", async () => {
-    authMock.mockResolvedValue({ user: {} });
+  it("shows the identity's name, read from the database, not the stale session's (#327)", async () => {
+    authMock.mockResolvedValue({ user: { name: "Ana" } });
     expect(await renderPage()).toBe("rendered");
-    expect(screen.getByTestId("nav")).toHaveTextContent("Unknown");
+    expect(screen.getByTestId("nav")).toHaveTextContent("Ana Neu");
   });
 });
