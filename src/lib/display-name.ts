@@ -29,7 +29,7 @@ export type ParsedDisplayName = { ok: true; name: string | null } | { ok: false;
 // the input, so they are safe to return and to log.
 export function parseDisplayName(input: unknown): ParsedDisplayName {
   if (typeof input !== "string") return { ok: false, error: "Name must be text." };
-  if (FORBIDDEN.test(input)) return { ok: false, error: "Name can't contain line breaks or control characters." };
+  if (FORBIDDEN.test(input)) return { ok: false, error: "Name can't contain line breaks or hidden formatting characters." };
   const name = input.replace(/\s+/g, " ").trim();
   if (name === "") return { ok: true, name: null };
   if ([...name].length > MAX_DISPLAY_NAME) {
