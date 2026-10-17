@@ -26,8 +26,10 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  const userName = session?.user?.name ?? "Unknown";
   const identity = await resolveHouseholdIdentity();
+  // The identity's name is read from the database (#327); the session's is
+  // up to 24h old and only a fallback for a user with no household.
+  const userName = identity?.userName ?? session?.user?.name ?? "Unknown";
   // Read here, in a server component: MAX_MEMBERS / MAX_APARTMENTS must
   // never be read from a "use client" file.
   const limits = readLimits();

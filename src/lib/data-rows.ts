@@ -1,6 +1,7 @@
 import type { Envelope } from "@/lib/crypto";
 import type { ApartmentRecord, LocationRecord, RatingRecord } from "@/lib/db/schema";
 import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
+import { displayName } from "@/lib/display-name";
 
 // Drizzle gives timestamps back as Date (or null before the default fires
 // on an in-memory insert); the wire always carries ISO strings.
@@ -24,11 +25,14 @@ export function apartmentRow(r: ApartmentRecord): ApartmentRow {
   };
 }
 
-export function ratingRow(r: RatingRecord & { userName: string | null }): RatingRow {
+// `userName` is the rater's display name: their chosen name, or their email
+// until they set one (#327). The email is already visible to every member on
+// the Household page, so this shows the household nothing new.
+export function ratingRow(r: RatingRecord & { userName: string | null; userEmail: string }): RatingRow {
   return {
     apartmentId: r.apartmentId,
     userId: r.userId,
-    userName: r.userName ?? "Member",
+    userName: displayName(r.userName, r.userEmail),
     envelope: parseStoredEnvelope(r.envelope),
     updatedAt: isoOf(r.updatedAt),
   };

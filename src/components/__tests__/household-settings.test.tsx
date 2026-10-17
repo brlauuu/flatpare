@@ -102,6 +102,19 @@ describe("HouseholdSettings", () => {
     expect(within(ana).queryByText(/awaiting key/i)).not.toBeInTheDocument();
   });
 
+  it("shows a member with a blank name by their email, once (#327)", async () => {
+    members.push({ userId: "w", name: "   ", email: "wes@example.com", role: "member", hasWrap: true });
+    try {
+      renderAs({ userId: "o", role: "owner" });
+      const wes = (await screen.findByText("wes@example.com")).closest("li")!;
+      // The primary line is the email itself, not a blank name above it.
+      expect(wes.querySelector("p")).toHaveTextContent(/^wes@example\.com$/);
+      expect(within(wes).getAllByText("wes@example.com")).toHaveLength(1);
+    } finally {
+      members.pop();
+    }
+  });
+
   it("hides the badge when encryption is off", async () => {
     renderAs({ userId: "o", role: "owner" }, "off");
     await screen.findByText("Ana");

@@ -69,7 +69,7 @@ import AppLayout from "../(app)/layout";
 
 const LAYOUTS = [["shared", AppLayout]] as const;
 
-const IDENTITY = { householdId: 7, userId: "o", role: "owner" as const };
+const IDENTITY = { householdId: 7, userId: "o", userName: "Ana Neu", role: "owner" as const };
 
 async function renderLayout(
   Layout: (props: { children: React.ReactNode }) => Promise<React.ReactElement>
@@ -116,12 +116,17 @@ describe.each(LAYOUTS)("%s layout", (name, Layout) => {
     expect(JSON.parse(provider.dataset.identity!)).toEqual(IDENTITY);
   });
 
-  it("renders the nav with the session's name", async () => {
+  it("renders the nav with the identity's name, read from the database, not the session's (#327)", async () => {
+    // The session token is up to 24h old; a name changed on Settings must show.
     await renderLayout(Layout);
-    expect(screen.getByTestId("nav")).toHaveTextContent("Ana");
+    expect(screen.getByTestId("nav")).toHaveTextContent("Ana Neu");
   });
 
-  it("falls back to 'Unknown' for a nameless session", async () => {
+  it("falls back to the session's name, then 'Unknown', without a household", async () => {
+    resolveHouseholdIdentity.mockResolvedValue(null);
+    await renderLayout(Layout);
+    expect(screen.getByTestId("nav")).toHaveTextContent("Ana");
+    cleanup();
     authMock.mockResolvedValue({ user: {} });
     await renderLayout(Layout);
     expect(screen.getByTestId("nav")).toHaveTextContent("Unknown");

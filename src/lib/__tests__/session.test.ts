@@ -11,6 +11,9 @@ import type { Session } from "next-auth";
 const authMock = vi.fn();
 vi.mock("@/auth", () => ({ auth: () => authMock() }));
 
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema-auth";
 import { requireHousehold, resolveHouseholdIdentity } from "@/lib/session";
 import { UnauthorizedError } from "@/lib/household";
 
@@ -99,11 +102,30 @@ describe("resolveHouseholdIdentity", () => {
     await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ role: "member" });
   });
 
-  it("falls back to 'Member' when the session has no name", async () => {
-    // OAuth providers do not always supply one, and the store renders this.
-    authMock.mockResolvedValue(session({ user: { id: "u1" } }));
-    await expect(resolveHouseholdIdentity()).resolves.toMatchObject({
-      userName: "Member",
+  describe("the name comes from the database, not the session (#327)", () => {
+    // The session token is up to 24h old, so a name changed on Settings
+    // would not show until it expired.
+    beforeEach(async () => {
+      await db.delete(users).where(eq(users.id, "u1"));
+    });
+
+    it("prefers the stored name over a stale session name", async () => {
+      await db.insert(users).values({ id: "u1", email: "ana@example.com", name: "Ana Neu" });
+      authMock.mockResolvedValue(session());
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "Ana Neu" });
+    });
+
+    it("shows the email when no name is stored, even if the session still has one", async () => {
+      await db.insert(users).values({ id: "u1", email: "ana@example.com", name: null });
+      authMock.mockResolvedValue(session());
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "ana@example.com" });
+    });
+
+    it("falls back to the session, then 'Member', when the row cannot be read", async () => {
+      authMock.mockResolvedValue(session());
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "Ana" });
+      authMock.mockResolvedValue(session({ user: { id: "u1" } }));
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "Member" });
     });
   });
 

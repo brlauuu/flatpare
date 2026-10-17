@@ -20,6 +20,7 @@ export async function GET() {
         createdAt: ratings.createdAt,
         updatedAt: ratings.updatedAt,
         userName: users.name,
+        userEmail: users.email,
       })
       .from(ratings)
       .innerJoin(users, eq(users.id, ratings.userId))

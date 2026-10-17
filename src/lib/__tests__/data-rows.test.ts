@@ -83,6 +83,7 @@ describe("ratingRow", () => {
       apartmentId: "a1",
       userId: "u1",
       userName: "Ana",
+      userEmail: "ana@example.com",
       householdId: 1,
       envelope: TEXT,
       createdAt: AT,
@@ -91,19 +92,20 @@ describe("ratingRow", () => {
     expect(row).toMatchObject({ apartmentId: "a1", userId: "u1", userName: "Ana" });
   });
 
-  it("falls back to 'Member' for a user with no name", () => {
-    // OAuth providers do not always supply one, and the comparison table
-    // renders this string next to the scores.
+  it("falls back to the rater's email for a user with no name (#205, #327)", () => {
+    // OAuth providers do not always supply one, magic-link accounts never
+    // do, and two nameless raters must still be told apart.
     const row = ratingRow({
       apartmentId: "a1",
       userId: "u1",
       userName: null,
+      userEmail: "u1@example.com",
       householdId: 1,
       envelope: TEXT,
       createdAt: AT,
       updatedAt: AT,
     });
-    expect(row.userName).toBe("Member");
+    expect(row.userName).toBe("u1@example.com");
   });
 });
 

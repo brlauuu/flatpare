@@ -516,3 +516,26 @@ It learns nothing else — no apartment, rating or address leaves the browser;
 the marks are drawn locally from the decrypted store. This was already true
 of the Leaflet maps before #330. Hosting our own per-country extract, which
 removes the third party, is #339.
+
+## Display names — reviewed 2026-10-08 (#327)
+
+### Accepted: the display name is plaintext account data, and the email stands in for it
+
+A person sets their own name on Settings (`PUT /api/account/name`). It is stored
+in the Auth.js `users.name` column in plaintext, like the email beside it, and
+not in an envelope: it is account data the server needs to render the Household
+page and the invitation and removal emails, not household data.
+
+Until a name is set, the app shows the person's email in its place — on rating
+cards, the compare table, the Household page and the menu. Inside a household
+that discloses nothing new: the Household page has always listed every member's
+address to every member. Outside it, nothing changes: the emails and the
+`/invitations` page, which reach people who are not yet (or no longer) members,
+keep their own fallbacks ("Someone") rather than an address.
+
+The name is attacker-chosen. The route refuses control and Unicode format
+characters (line breaks reach email subjects; bidi overrides reorder text) and
+caps it at 60 characters, the same cap `safeName` applies in emails; React
+escapes it on screen and `escapeHtml` in email bodies. Validation failures answer
+a fixed message that never repeats the input, and an unexpected error logs its
+class only, so the name never reaches a log.

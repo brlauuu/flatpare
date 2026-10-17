@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "@/components/crypto/crypto-context";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { displayName } from "@/lib/display-name";
 
 interface Member {
   userId: string;
@@ -166,7 +167,7 @@ export function HouseholdSettings() {
   }
 
   function remove(member: Member) {
-    const label = member.name ?? member.email;
+    const label = displayName(member.name, member.email);
     const message = encryptionOn
       ? `Remove ${label} from the household? They lose access immediately, and the household key will be rotated — you will be shown a new recovery code to save.`
       : `Remove ${label} from the household? They lose access immediately.`;
@@ -224,8 +225,8 @@ export function HouseholdSettings() {
         {members.map((m) => (
           <li key={m.userId} className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
-              <p className="truncate text-sm">{m.name ?? m.email}</p>
-              {m.name && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
+              <p className="truncate text-sm">{displayName(m.name, m.email)}</p>
+              {m.name?.trim() && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{m.role}</Badge>

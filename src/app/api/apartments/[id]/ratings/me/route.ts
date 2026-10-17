@@ -50,10 +50,10 @@ export async function PUT(req: Request, ctx: Ctx) {
       })
       .returning();
     const [user] = await db
-      .select({ name: users.name })
+      .select({ name: users.name, email: users.email })
       .from(users)
       .where(eq(users.id, userId));
-    return NextResponse.json(ratingRow({ ...saved, userName: user?.name ?? null }));
+    return NextResponse.json(ratingRow({ ...saved, userName: user?.name ?? null, userEmail: user?.email ?? "" }));
   } catch (e) {
     return apiErrorResponse(e, "ratings:upsert");
   }
