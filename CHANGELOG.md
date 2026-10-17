@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.9.1 — 2026-10-17
+
 ### Changed
 - The landing page has a privacy section that says exactly what we can and cannot see, and which outside services handle a PDF, an address or a listing link when you ask. "Privacy first" links to it. (#323)
 - During the beta the landing page shows the price struck through and "Free beta" in its place. (#323)
