@@ -9,6 +9,7 @@ import {
   WALKTHROUGH_VIDEO_URL,
 } from "@/lib/site";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemedLogo } from "@/components/themed-logo";
 import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
 import type { PublicAccess } from "@/lib/public-access";
 import { landingFontVariables } from "./landing-fonts";
@@ -85,22 +86,7 @@ function GithubMark() {
 function Logo() {
   return (
     <a href="#top" aria-label="Flatpare home" className="flex items-center">
-      <Image
-        src="/flatpare_logo_blue.svg"
-        alt="Flatpare"
-        width={129}
-        height={40}
-        className="h-10 w-auto dark:hidden"
-        priority
-      />
-      <Image
-        src="/flatpare_logo_yellow.svg"
-        alt="Flatpare"
-        width={129}
-        height={40}
-        className="hidden h-10 w-auto dark:block"
-        priority
-      />
+      <ThemedLogo width={129} height={40} className="h-10 w-auto" priority />
     </a>
   );
 }

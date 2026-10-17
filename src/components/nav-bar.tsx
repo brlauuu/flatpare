@@ -1,7 +1,7 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-import Image from "next/image";
+import { ThemedLogo } from "@/components/themed-logo";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { clearKeys } from "@/lib/crypto";
@@ -61,14 +61,7 @@ export function NavBar({ userName }: { userName: string }) {
     <header className="border-b-3 border-frame bg-card print:hidden">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
-          <Image
-            src="/flatpare_logo.svg"
-            alt="Flatpare"
-            width={120}
-            height={37}
-            className="h-8 w-auto dark:invert"
-            priority
-          />
+          <ThemedLogo width={120} height={37} className="h-8 w-auto" priority />
         </Link>
         <nav className="hidden items-center gap-1 sm:flex">
           {navItems.map((item) => (
