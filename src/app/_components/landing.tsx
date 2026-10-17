@@ -282,7 +282,21 @@ function Privacy() {
             can read it, us included.
           </p>
           <p className="m-0 text-base leading-relaxed text-(--lp-body)">
-            Self-hosted, the same holds with your own server in our place.
+            What the server does see is what it needs to keep your household
+            apart from everyone else&apos;s:
+          </p>
+          <ul className="m-0 list-disc pl-5 text-[15px] leading-[1.7] text-(--lp-body)">
+            <li>your account: email address, and the name you set;</li>
+            <li>who is in your household;</li>
+            <li>
+              how many apartments, ratings and places you have, who rated what,
+              and when each was added or changed;
+            </li>
+            <li>the size of each stored PDF.</li>
+          </ul>
+          <p className="m-0 text-base leading-relaxed text-(--lp-body)">
+            Never what an apartment is. Self-hosted, the same holds with your
+            own server in our place.
           </p>
         </div>
         <div className="lp-card flex min-w-0 flex-[1_1_420px] flex-col gap-4 p-6 sm:p-9">

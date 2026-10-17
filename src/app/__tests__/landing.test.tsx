@@ -154,6 +154,16 @@ describe("Landing", () => {
       expect(privacy).toHaveTextContent(/do not describe this as zero-knowledge/i);
     });
 
+    // "Can and can't see": the metadata the server holds is named too
+    // (docs/security-notes.md, "the server sees metadata").
+    it("names the metadata the server does see", () => {
+      renderLanding();
+      const privacy = document.getElementById("privacy")!;
+      expect(privacy).toHaveTextContent(/who is in your household/);
+      expect(privacy).toHaveTextContent(/who rated what/);
+      expect(privacy).toHaveTextContent(/size of each stored PDF/);
+    });
+
     // True because the hosted deployment runs AI_PROVIDER=gateway (#333).
     it("says the hosted PDF reading has zero data retention, and links Vercel's terms", () => {
       renderLanding();
