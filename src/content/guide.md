@@ -8,7 +8,7 @@ Flatpare helps a household compare apartments together. Upload PDF listings, rat
 
 ### 1. Sign in
 
-Sign in with Google or GitHub, or with your household's shared password if that is how your Flatpare is set up. Your name appears on ratings so everyone knows who said what.
+Sign in with Google or with a link sent to your email, or with your household's shared password if that is how your Flatpare is set up. Set your name on the Settings page so everyone knows who said what; until you do, your household sees your email address on your ratings.
 
 ### 2. Choose a passphrase
 
