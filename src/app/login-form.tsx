@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import Image from "next/image";
+import { ThemedLogo } from "@/components/themed-logo";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -200,14 +200,7 @@ export function LoginForm({
           frame; a second frame and shadow here would box it twice (#324). */}
       <Card className="w-full border-0 shadow-none">
         <CardHeader className="items-center space-y-3">
-          <Image
-            src="/flatpare_logo.svg"
-            alt="Flatpare"
-            width={180}
-            height={56}
-            className="h-12 w-auto dark:invert"
-            priority
-          />
+          <ThemedLogo width={180} height={56} className="h-12 w-auto" priority />
           <p className="text-center text-xs text-muted-foreground">
             Compare apartments together
           </p>

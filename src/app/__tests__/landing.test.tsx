@@ -50,7 +50,20 @@ describe("Landing", () => {
   it("names the three things it is, in one list", () => {
     renderLanding();
     const tags = within(screen.getByRole("list", { name: /why flatpare/i })).getAllByRole("listitem");
-    expect(tags.map((t) => t.textContent)).toEqual(["Collaborative", "Privacy first", "Data driven"]);
+    expect(tags.map((t) => t.textContent)).toEqual(["Collaborative", "Privacy first*", "Data driven"]);
+  });
+
+  // The asterisk is a promise that the claim is qualified somewhere (#323).
+  it("links 'Privacy first*' to the privacy section", () => {
+    renderLanding();
+    expect(screen.getByRole("link", { name: "Privacy first*" })).toHaveAttribute("href", "#privacy");
+    expect(document.getElementById("privacy")).not.toBeNull();
+  });
+
+  // Design-file labels, not product copy (#323).
+  it("carries no 'FIG.' labels from the design", () => {
+    renderLanding();
+    expect(pageText()).not.toMatch(/FIG\./);
   });
 
   // The real grid, one capture per theme (scripts/capture-hero.mjs).
@@ -63,6 +76,14 @@ describe("Landing", () => {
     for (const name of ["compare-light.webp", "compare-dark.webp"]) {
       expect(fs.existsSync(path.join(process.cwd(), "public", "hero", name))).toBe(true);
     }
+  });
+
+  // A larger copy of the grid under the feature list (#323).
+  it("shows the comparison grid again under the feature list", () => {
+    renderLanding();
+    const features = screen.getByRole("heading", { name: "What's inside" }).closest("section")!;
+    const shots = within(features).getAllByRole("img", { name: /comparison grid/i });
+    expect(shots).toHaveLength(2);
   });
 
   it("links the nav to the sections it names", () => {
@@ -122,11 +143,44 @@ describe("Landing", () => {
 
     it("names the processing exception concretely, not in the abstract", () => {
       renderLanding();
-      const text = pageText();
-      expect(text).toMatch(/Google Maps/);
-      expect(text).toMatch(/Gemini/);
-      expect(text).toMatch(/never written to our database/i);
-      expect(text).toMatch(/never logged/i);
+      const privacy = document.getElementById("privacy")!;
+      expect(privacy).toHaveTextContent(PRIVACY_CLAIM);
+      expect(privacy).toHaveTextContent(/The exception, stated plainly/);
+      expect(privacy).toHaveTextContent(/Google Maps/);
+      expect(privacy).toHaveTextContent(/Gemini/);
+      expect(privacy).toHaveTextContent(/fetches the page from the listing site/);
+      expect(privacy).toHaveTextContent(/never written to our database/i);
+      expect(privacy).toHaveTextContent(/never logged/i);
+      expect(privacy).toHaveTextContent(/do not describe this as zero-knowledge/i);
+    });
+
+    // "Can and can't see": the metadata the server holds is named too
+    // (docs/security-notes.md, "the server sees metadata").
+    it("names the metadata the server does see", () => {
+      renderLanding();
+      const privacy = document.getElementById("privacy")!;
+      expect(privacy).toHaveTextContent(/who is in your household/);
+      expect(privacy).toHaveTextContent(/who rated what/);
+      expect(privacy).toHaveTextContent(/size of each stored PDF/);
+    });
+
+    // True because the hosted deployment runs AI_PROVIDER=gateway (#333).
+    it("says the hosted PDF reading has zero data retention, and links Vercel's terms", () => {
+      renderLanding();
+      const privacy = document.getElementById("privacy")!;
+      expect(privacy).toHaveTextContent(/Vercel AI Gateway/);
+      expect(within(privacy).getByRole("link", { name: "zero data retention" })).toHaveAttribute(
+        "href",
+        "https://vercel.com/docs/ai-gateway/security-and-compliance/zdr"
+      );
+    });
+
+    // It applies to self-hosting too, so it lives in its own section (#323).
+    it("keeps the exception out of the hosted pricing card", () => {
+      renderLanding();
+      const hosted = document.getElementById("hosted")!;
+      expect(hosted).not.toHaveTextContent(/zero-knowledge/i);
+      expect(hosted).not.toHaveTextContent(/never logged/i);
     });
 
     it("admits the data is unrecoverable rather than implying we can help", () => {
@@ -191,18 +245,23 @@ describe("Landing", () => {
     });
 
     // While the hosted deployment is a closed beta the invite form sits right
-    // under "CHF 5", which reads as "request an invite, then pay" (#322).
-    it("says the beta is free while sign-ups are closed", () => {
+    // under the price, which read as "request an invite, then pay" (#322).
+    // The price is struck through and the beta named in its place (#323).
+    it("strikes through the price and says the beta is free while sign-ups are closed", () => {
       renderLanding({ access: "closed" });
       const hosted = document.getElementById("hosted")!;
-      expect(hosted).toHaveTextContent(/free during the private beta/i);
-      expect(hosted).toHaveTextContent(/CHF 5 applies once sign-ups open/i);
+      const struck = hosted.querySelector("s");
+      expect(struck).toHaveTextContent(/CHF 5/);
+      expect(hosted).toHaveTextContent(/Free beta/);
       expect(hosted).toHaveTextContent(/neither your data nor your credits are taken back when the beta ends/i);
     });
 
-    it("does not mention a free beta once sign-ups are open", () => {
+    it("shows the price plainly once sign-ups are open", () => {
       renderLanding({ access: "open" });
-      expect(pageText()).not.toMatch(/free during the private beta/i);
+      const hosted = document.getElementById("hosted")!;
+      expect(hosted.querySelector("s")).toBeNull();
+      expect(hosted).toHaveTextContent(/CHF 5/);
+      expect(pageText()).not.toMatch(/free beta/i);
     });
   });
 

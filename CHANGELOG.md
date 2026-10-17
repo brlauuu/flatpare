@@ -9,6 +9,15 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- The landing page has a privacy section that says exactly what we can and cannot see, and which outside services handle a PDF, an address or a listing link when you ask. "Privacy first" links to it. (#323)
+- During the beta the landing page shows the price struck through and "Free beta" in its place. (#323)
+- A larger view of the comparison grid sits under "What's inside". (#323)
+- The app's navigation bar and the sign-in card use the same blue and yellow logo as the landing page. (#323)
+
+### Fixed
+- The guide no longer says you can sign in with GitHub; the hosted service offers Google and email links. (#323)
+
 ## 0.9.0 — 2026-10-17
 
 ### Added

@@ -111,3 +111,14 @@ describe("NavBar in print", () => {
     expect(document.querySelector("header")!.className).toContain("print:hidden");
   });
 });
+
+// The landing page's blue/yellow wordmark, not an inverted black one (#323).
+describe("NavBar logo", () => {
+  it("shows one logo per theme", () => {
+    render(<NavBar userName="Alice" />);
+    const sources = screen.getAllByRole("img", { name: "Flatpare" }).map((img) => img.getAttribute("src") ?? "");
+    expect(sources).toHaveLength(2);
+    expect(sources.some((src) => src.includes("flatpare_logo_blue.svg"))).toBe(true);
+    expect(sources.some((src) => src.includes("flatpare_logo_yellow.svg"))).toBe(true);
+  });
+});

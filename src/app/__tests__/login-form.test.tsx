@@ -297,3 +297,14 @@ describe("LoginForm — magic link (#310)", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/did not go through/i);
   });
 });
+
+// The landing page's blue/yellow wordmark, not an inverted black one (#323).
+describe("LoginForm — logo", () => {
+  it("shows one logo per theme", () => {
+    render(<LoginForm providers={["google"]} />);
+    const sources = screen.getAllByRole("img", { name: "Flatpare" }).map((img) => img.getAttribute("src") ?? "");
+    expect(sources).toHaveLength(2);
+    expect(sources.some((src) => src.includes("flatpare_logo_blue.svg"))).toBe(true);
+    expect(sources.some((src) => src.includes("flatpare_logo_yellow.svg"))).toBe(true);
+  });
+});

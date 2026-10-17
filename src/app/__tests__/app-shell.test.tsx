@@ -80,4 +80,13 @@ describe("GuidePage (src/app/guide/page.tsx)", () => {
     expect(container.querySelectorAll("h2").length).toBeGreaterThan(0);
     expect(container.querySelector(".guide-prose")).toBeInTheDocument();
   });
+
+  // The hosted service offers Google and email links, not GitHub (#323).
+  it("names the sign-in methods the hosted service offers", async () => {
+    render(await GuidePage());
+    const signIn = screen.getByRole("heading", { name: /sign in/i }).nextElementSibling;
+    expect(signIn).toHaveTextContent(/Google or with a link sent to your email/);
+    expect(signIn).not.toHaveTextContent(/GitHub/);
+    expect(signIn).toHaveTextContent(/Settings page/);
+  });
 });
