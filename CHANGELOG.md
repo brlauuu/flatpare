@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.9.0 — 2026-10-17
+
 ### Added
 - Set your own name on the Settings page. Until you do, your household sees your email address instead of "Member" or "Household member", so two people without a name can be told apart. (#327)
 
