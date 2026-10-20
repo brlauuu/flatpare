@@ -104,6 +104,8 @@ Dans **Réglages**, tu peux :
 
 ## Si tu utilises la version hébergée
 
+**Pendant la bêta privée, c’est gratuit.** Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.
+
 Flatpare coûte **CHF 5, une seule fois** — pas d’abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans un foyer.
 
 Les 40 comptent les appartements que tu **ajoutes**, pas ceux que tu gardes : en supprimer un libère de la place dans ta comparaison mais ne rend pas le crédit. Quand tu as utilisé tes 40, CHF 5 de plus ajoutent 40 appartements de plus.

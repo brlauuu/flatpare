@@ -86,3 +86,18 @@ describe("where the guide sends you for locations of interest", () => {
     expect(source("en")).toMatch(/On the \*\*Household\*\* page, save up to \*\*five\*\* places/);
   });
 });
+
+// While sign-ups are closed the hosted version is free, and the guide says so
+// in the landing page's words (#288). Remove at 1.0.0, with the landing
+// page's beta copy.
+describe.each(LOCALES)("the %s guide's beta note", (locale) => {
+  it("says the beta is free and that what it gives is kept", () => {
+    const landing = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "messages", locale, "landing.json"), "utf8")
+    ) as { paths: { hosted: { betaKeep: string } } };
+    // The landing line after its first sentence ("Request access below."),
+    // which does not apply inside the app.
+    const kept = landing.paths.hosted.betaKeep.replace(/^[^.]+\.\s*/, "");
+    expect(source(locale)).toContain(kept);
+  });
+});

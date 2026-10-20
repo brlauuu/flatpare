@@ -104,6 +104,8 @@ Under **Settings**, you can:
 
 ## If you are on the hosted version
 
+**During the private beta it is free.** What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.
+
 Flatpare is **CHF 5, once** — not a subscription. That covers up to 10 people and 40 apartments in one household.
 
 The 40 counts apartments you **add**, not apartments you keep: deleting one frees room in your comparison but does not give the credit back. When you have used your 40, another CHF 5 adds another 40.

@@ -104,6 +104,8 @@ Unter **Einstellungen** kannst du:
 
 ## Wenn du die gehostete Version nutzt
 
+**Während der privaten Beta ist es gratis.** Was ein Beta-Konto bekommt, gehört dir: Weder deine Daten noch dein Guthaben werden dir weggenommen, wenn die Beta endet.
+
 Flatpare kostet **CHF 5, einmalig** — kein Abo. Das deckt bis zu 10 Personen und 40 Wohnungen in einem Haushalt ab.
 
 Die 40 zählen Wohnungen, die du **hinzufügst**, nicht Wohnungen, die du behältst: Wenn du eine löschst, wird in deinem Vergleich Platz frei, das Guthaben bekommst du aber nicht zurück. Wenn du deine 40 aufgebraucht hast, fügen weitere CHF 5 weitere 40 hinzu.

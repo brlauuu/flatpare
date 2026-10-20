@@ -104,6 +104,8 @@ In **Impostazioni** puoi:
 
 ## Se usi la versione ospitata da noi
 
+**Durante la beta privata è gratuito.** Ciò che ottiene un account beta resta tuo: né i tuoi dati né i tuoi crediti ti vengono tolti quando la beta finisce.
+
 Flatpare costa **CHF 5, una sola volta** — non è un abbonamento. Copre fino a 10 persone e 40 appartamenti in un gruppo.
 
 Il 40 conta gli appartamenti che **aggiungi**, non quelli che tieni: eliminarne uno libera spazio nel confronto, ma non ti restituisce il credito. Quando hai usato i tuoi 40, altri CHF 5 aggiungono altri 40 appartamenti.

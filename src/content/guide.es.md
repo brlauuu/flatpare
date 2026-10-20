@@ -104,6 +104,8 @@ En **Ajustes**, puedes:
 
 ## Si usas la versión alojada
 
+**Durante la beta privada es gratis.** Lo que recibe una cuenta de la beta es tuyo: ni tus datos ni tus créditos se retiran cuando termine la beta.
+
 Flatpare cuesta **CHF 5, una sola vez**; no es una suscripción. Cubre hasta 10 personas y 40 pisos en un hogar.
 
 Los 40 cuentan los pisos que **añades**, no los que conservas: eliminar uno libera sitio en tu comparación, pero no te devuelve el crédito. Cuando hayas usado tus 40, otros CHF 5 añaden otros 40.
