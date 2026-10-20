@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } from "@/i18n/locales";
+import { languageOf, LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } from "@/i18n/locales";
 
 // The language selector (#288). Visible wherever the theme toggle is: the
 // app's nav bar and the landing page's. Each language is named in itself, so
@@ -23,7 +23,7 @@ import { LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } from "@/i18n/lo
 // that save is best-effort — the cookie already changed the page.
 export function LanguageMenu({ signedIn = false, className }: { signedIn?: boolean; className?: string }) {
   const t = useTranslations("language");
-  const locale = useLocale();
+  const locale = languageOf(useLocale());
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 

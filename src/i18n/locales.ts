@@ -15,14 +15,25 @@ export const DEFAULT_LOCALE: Locale = "en";
 export const LOCALE_COOKIE = "flatpare_locale";
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-// `<html lang>` and every number and date format.
-export const REGIONAL_TAG: Record<Locale, string> = {
+// `<html lang>` and every number and date format. This is the locale
+// next-intl is configured with (src/i18n/request.ts) — so a rent reads
+// "CHF 2'650" in German, not Germany's "2.650" — while the bare language
+// above names the catalogue and the cookie.
+export const REGIONAL_TAG = {
   en: "en",
   de: "de-CH",
   fr: "fr-CH",
   it: "it-CH",
   es: "es-ES",
-};
+} as const satisfies Record<Locale, string>;
+export type RegionalTag = (typeof REGIONAL_TAG)[Locale];
+
+// The language a regional tag belongs to: what useLocale() returns, mapped
+// back to the catalogue's name.
+export function languageOf(tag: string): Locale {
+  const language = tag.toLowerCase().split("-")[0];
+  return isLocale(language) ? language : DEFAULT_LOCALE;
+}
 
 // Each language named in itself, so someone who cannot read the current
 // one can still find theirs.

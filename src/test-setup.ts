@@ -3,6 +3,7 @@ import path from "node:path";
 import "@testing-library/jest-dom/vitest";
 import { beforeEach, vi } from "vitest";
 import { setTestLocale, testLocale } from "./i18n/__tests__/test-locale";
+import { REGIONAL_TAG } from "./i18n/locales";
 
 // testing-library's waitFor/findBy ceiling, left at the 1000ms default.
 //
@@ -67,10 +68,11 @@ const formatters: Record<string, unknown> = {};
 
 vi.mock("next-intl", async (importOriginal) => {
   const real = await importOriginal<typeof import("next-intl")>();
-  const config = () => ({ locale: testLocale(), messages: catalogues[testLocale()] as never, timeZone: "Europe/Zurich" });
+  const config = () => ({ locale: REGIONAL_TAG[testLocale()], messages: catalogues[testLocale()] as never, timeZone: "Europe/Zurich" });
   return {
     ...real,
-    useLocale: () => testLocale(),
+    // The regional tag, as src/i18n/request.ts configures the app.
+    useLocale: () => REGIONAL_TAG[testLocale()],
     useMessages: () => catalogues[testLocale()],
     useTimeZone: () => "Europe/Zurich",
     // Cached per locale and namespace: next-intl's own `t` keeps its identity
@@ -80,7 +82,7 @@ vi.mock("next-intl", async (importOriginal) => {
       const key = `${testLocale()}:${namespace ?? ""}`;
       return (translators[key] ??= real.createTranslator({ ...config(), namespace: namespace as never }));
     },
-    useFormatter: () => (formatters[testLocale()] ??= real.createFormatter({ locale: testLocale(), timeZone: "Europe/Zurich" })),
+    useFormatter: () => (formatters[testLocale()] ??= real.createFormatter({ locale: REGIONAL_TAG[testLocale()], timeZone: "Europe/Zurich" })),
     NextIntlClientProvider: ({ children }: { children: React.ReactNode }) => children,
   };
 });
@@ -90,15 +92,15 @@ vi.mock("next-intl/server", async (importOriginal) => {
   const { createTranslator, createFormatter } = await import("next-intl");
   return {
     ...real,
-    getLocale: async () => testLocale(),
+    getLocale: async () => REGIONAL_TAG[testLocale()],
     getMessages: async () => catalogues[testLocale()],
     getTranslations: async (arg?: string | { namespace?: string }) =>
       createTranslator({
-        locale: testLocale(),
+        locale: REGIONAL_TAG[testLocale()],
         messages: catalogues[testLocale()] as never,
         timeZone: "Europe/Zurich",
         namespace: (typeof arg === "string" ? arg : arg?.namespace) as never,
       }),
-    getFormatter: async () => createFormatter({ locale: testLocale(), timeZone: "Europe/Zurich" }),
+    getFormatter: async () => createFormatter({ locale: REGIONAL_TAG[testLocale()], timeZone: "Europe/Zurich" }),
   };
 });

@@ -14,9 +14,12 @@ vi.mock("@/auth", () => ({
     return session.value;
   },
 }));
+// Outside the Next compiler next-intl/server resolves to its client build,
+// which refuses getRequestConfig; as the identity, the test runs the config.
+vi.mock("next-intl/server", () => ({ getRequestConfig: (fn: unknown) => fn }));
 vi.mock("../account-locale", () => ({ readAccountLocale: async () => account.locale }));
 
-import { resolveLocale } from "../request";
+import requestConfig, { resolveLocale } from "../request";
 
 beforeEach(() => {
   jar.cookie = undefined;
@@ -64,5 +67,23 @@ describe("resolveLocale", () => {
     session.fails = true;
     jar.acceptLanguage = "it";
     expect(await resolveLocale()).toBe("it");
+  });
+});
+
+// next-intl formats numbers and dates with the locale it is configured
+// with. Configured with "de", a rent read "CHF 2.650" (Germany); Swiss
+// German writes 2'650. The catalogue is still the language's.
+describe("the request config", () => {
+  it("configures next-intl with the regional tag and the language's catalogue", async () => {
+    jar.cookie = "de";
+    const config = await (requestConfig as unknown as (p: { requestLocale: Promise<string | undefined> }) => Promise<{
+      locale: string;
+      messages: Record<string, Record<string, unknown>>;
+      timeZone: string;
+    }>)({ requestLocale: Promise.resolve(undefined) });
+    expect(config.locale).toBe("de-CH");
+    expect(config.timeZone).toBe("Europe/Zurich");
+    expect(config.messages.common.save).toBe("Speichern");
+    expect(new Intl.NumberFormat(config.locale).format(2650)).toMatch(/^2[’']650$/);
   });
 });

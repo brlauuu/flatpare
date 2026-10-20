@@ -3,7 +3,7 @@ import { getRequestConfig } from "next-intl/server";
 import { auth } from "@/auth";
 import { readAccountLocale } from "./account-locale";
 import { loadMessages } from "./messages";
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, negotiateLocale, type Locale } from "./locales";
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, negotiateLocale, REGIONAL_TAG, type Locale } from "./locales";
 
 // The language of one request (#288). Same URLs in every language: the
 // locale is never in the path, so nothing about routing, the proxy or
@@ -28,10 +28,12 @@ export async function resolveLocale(): Promise<Locale> {
 }
 
 export default getRequestConfig(async () => {
-  const locale = await resolveLocale();
+  const language = await resolveLocale();
   return {
-    locale,
-    messages: await loadMessages(locale),
+    // The regional tag, so numbers and dates follow Swiss conventions; the
+    // catalogue is the language's.
+    locale: REGIONAL_TAG[language],
+    messages: await loadMessages(language),
     // Fixed, so a date renders the same on the server and in the browser.
     timeZone: "Europe/Zurich",
   };

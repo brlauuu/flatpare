@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isLocale, LOCALE_NAMES, LOCALES, negotiateLocale, REGIONAL_TAG } from "../locales";
+import { isLocale, languageOf, LOCALE_NAMES, LOCALES, negotiateLocale, REGIONAL_TAG } from "../locales";
 
 describe("the five locales", () => {
   it("are English, German, French, Italian and Spanish", () => {
@@ -51,5 +51,17 @@ describe("negotiateLocale", () => {
     expect(negotiateLocale("")).toBeNull();
     expect(negotiateLocale(null)).toBeNull();
     expect(negotiateLocale("*")).toBeNull();
+  });
+});
+
+describe("languageOf", () => {
+  it("maps a regional tag back to its catalogue's language", () => {
+    expect(languageOf("de-CH")).toBe("de");
+    expect(languageOf("es-ES")).toBe("es");
+    expect(languageOf("en")).toBe("en");
+  });
+
+  it("falls back to English for anything else", () => {
+    expect(languageOf("pt-BR")).toBe("en");
   });
 });

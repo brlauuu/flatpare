@@ -3,7 +3,6 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SITE_URL } from "@/lib/site";
-import { REGIONAL_TAG } from "@/i18n/locales";
 import { appFontVariables } from "./fonts";
 import "./globals.css";
 
@@ -61,11 +60,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // The interface language (#288), so a screen reader reads German as
-  // German. The regional tag, not the bare language: de-CH, fr-CH, it-CH.
+  // German. next-intl's locale is already the regional tag: de-CH, fr-CH.
   const locale = await getLocale();
   return (
     <html
-      lang={REGIONAL_TAG[locale]}
+      lang={locale}
       className={`${appFontVariables} h-full antialiased`}
       suppressHydrationWarning
     >

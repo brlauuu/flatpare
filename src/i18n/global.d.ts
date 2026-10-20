@@ -11,7 +11,7 @@ import type auth from "../../messages/en/auth.json";
 import type invitations from "../../messages/en/invitations.json";
 import type billing from "../../messages/en/billing.json";
 import type errors from "../../messages/en/errors.json";
-import type { Locale } from "./locales";
+import type { RegionalTag } from "./locales";
 
 // English is the source catalogue (#288): a key used anywhere must exist in
 // messages/en/, and a locale outside the five does not type-check. That the
@@ -20,7 +20,9 @@ import type { Locale } from "./locales";
 // src/i18n/messages.ts.
 declare module "next-intl" {
   interface AppConfig {
-    Locale: Locale;
+    // next-intl is configured with the regional tag (de-CH, …); the
+    // catalogue and cookie use the bare language (src/i18n/locales.ts).
+    Locale: RegionalTag;
     Messages: {
       common: typeof common;
       language: typeof language;
