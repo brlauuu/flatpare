@@ -1,30 +1,122 @@
-// The hero's background (#301): a faint pencil sketch of a city map —
-// wobbly streets, a river, hand-circled spots in the accent colour and a few
-// handwritten notes. Purely decorative, so hidden from assistive technology
-// and from the pointer. The marks keep to the edges so the text stays
-// readable. Shown from `lg` up only: below that the hero stacks into one tall
-// column, `slice` scales the drawing to the height, and the marks land on
-// the headline instead of around it.
-const NOTES = [
-  { x: 200, y: 58, r: -6, text: "balcony!" },
-  { x: 672, y: 44, r: 4, text: "near the tram" },
-  { x: 1000, y: 738, r: -4, text: "our favourite" },
-  { x: 632, y: 742, r: 3, text: "too dark?" },
-  { x: 760, y: 694, r: -8, text: "12 min by bike", size: 20 },
-] as const;
+// The landing page's pencil sketches (#301, more places in #326): a faint
+// city map drawn by hand — wobbly streets, a river, a tram line, mock flats
+// circled in the accent colour and a few handwritten notes. Purely
+// decorative, so hidden from assistive technology and from the pointer. The
+// marks keep to the edges so the text stays readable.
+//
+// Drawn at a fixed scale, one unit to one pixel, 1920 wide and centred on
+// the page: the 1280-unit middle (x 0–1280) lines up with the 1160px content
+// column at every width, and the sides (x -320–0 and 1280–1600) only show on
+// wide screens. Scaled to the window instead, a 1920px screen showed only
+// the middle band of the hero and cropped every mark away (#326). Shown from
+// `xl` up only: below 1280px the hero's content reflows and any fixed
+// drawing lands on the headline.
+//
+// The hero is 672px tall from `xl` up, so it shows y 44–716 of its 760-unit
+// viewBox. Keep marks inside that band.
+//
+// No prices in here: the SVG text is page text, and the landing test that
+// every "CHF <n>" on the page is "CHF 5" would rightly fail on a mock rent.
+
+type Note = { x: number; y: number; r: number; text: string; size?: number };
+
+const STREET = {
+  fill: "none",
+  stroke: "var(--lp-map-ink)",
+  strokeOpacity: 0.14,
+  strokeWidth: 1.6,
+  strokeLinecap: "round",
+} as const;
+
+const MARK = {
+  fill: "none",
+  stroke: "var(--lp-map-mark)",
+  strokeOpacity: 0.65,
+  strokeWidth: 2.2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+} as const;
+
+const ROUTE = {
+  fill: "none",
+  stroke: "var(--lp-map-mark)",
+  strokeOpacity: 0.45,
+  strokeWidth: 2,
+  strokeDasharray: "2 9",
+  strokeLinecap: "round",
+} as const;
+
+// A loose pencil loop around a spot, open where the pencil lifted.
+function loop(cx: number, cy: number, rx = 34, ry = 26) {
+  return (
+    `M ${cx - rx + 4} ${cy + 2} ` +
+    `C ${cx - rx} ${cy - ry}, ${cx + rx - 6} ${cy - ry - 4}, ${cx + rx} ${cy - 4} ` +
+    `C ${cx + rx + 6} ${cy + ry}, ${cx - rx / 2} ${cy + ry + 4}, ${cx - rx + 8} ${cy + ry / 2} ` +
+    `C ${cx - rx - 2} ${cy + 4}, ${cx - rx + 2} ${cy - 10}, ${cx - rx + 18} ${cy - ry + 6}`
+  );
+}
+
+function Notes({ notes }: { notes: readonly Note[] }) {
+  return (
+    <g fill="var(--lp-map-ink)" fillOpacity="0.45" style={{ fontFamily: "var(--font-caveat), cursive" }} fontWeight="700">
+      {notes.map((n) => (
+        <text key={n.text} x={n.x} y={n.y} fontSize={n.size ?? 26} transform={`rotate(${n.r} ${n.x} ${n.y})`}>
+          {n.text}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+// A circled letter: how the mock flats are marked on both sketches.
+function Flat({ x, y, letter }: { x: number; y: number; letter: string }) {
+  return (
+    <g>
+      <path d={loop(x, y, 24, 20)} {...MARK} />
+      <text
+        x={x}
+        y={y + 9}
+        textAnchor="middle"
+        fontSize="28"
+        fontWeight="700"
+        fill="var(--lp-map-mark)"
+        fillOpacity="0.75"
+        style={{ fontFamily: "var(--font-caveat), cursive" }}
+      >
+        {letter}
+      </text>
+    </g>
+  );
+}
+
+const SKETCH_CLASS = "pointer-events-none absolute left-1/2 hidden w-[1920px] max-w-none -translate-x-1/2 xl:block";
+
+const HERO_NOTES: readonly Note[] = [
+  { x: 200, y: 82, r: -6, text: "balcony!" },
+  { x: 672, y: 72, r: 4, text: "near the tram" },
+  { x: 1002, y: 704, r: -4, text: "our favourite" },
+  { x: 566, y: 658, r: 3, text: "too dark?", size: 22 },
+  { x: 760, y: 676, r: -8, text: "12 min by bike", size: 20 },
+  { x: 936, y: 100, r: -3, text: "Flat A · big kitchen", size: 22 },
+  { x: 1104, y: 150, r: 4, text: "work · 20 min", size: 20 },
+  { x: 160, y: 694, r: 3, text: "Flat C · too far?", size: 22 },
+  // The sides, wide screens only.
+  { x: -250, y: 330, r: -4, text: "Flat D · no lift", size: 22 },
+  { x: 1376, y: 420, r: 4, text: "Flat E · quiet street", size: 22 },
+];
 
 export function HeroSketch() {
   return (
     <svg
       aria-hidden="true"
       focusable="false"
-      viewBox="0 0 1280 760"
+      viewBox="-320 0 1920 760"
       preserveAspectRatio="xMidYMid slice"
-      className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block"
+      className={`${SKETCH_CLASS} top-0 h-full`}
     >
       {/* The river. */}
       <path
-        d="M -40 470 C 160 430, 330 520, 520 500 S 860 430, 1000 520 S 1220 600, 1320 560"
+        d="M -360 450 C -160 500, -20 440, 160 450 C 330 470, 330 520, 520 500 S 860 430, 1000 520 S 1220 600, 1360 560 S 1560 500, 1640 520"
         fill="none"
         stroke="var(--lp-map-ink)"
         strokeOpacity="0.05"
@@ -32,63 +124,110 @@ export function HeroSketch() {
         strokeLinecap="round"
       />
       {/* Streets. */}
-      <g fill="none" stroke="var(--lp-map-ink)" strokeOpacity="0.14" strokeWidth="1.6" strokeLinecap="round">
-        <path d="M -20 182 C 200 172, 420 204, 640 186 S 1100 168, 1300 194" />
+      <g {...STREET}>
+        <path d="M -340 170 C -120 190, 40 176, 200 174 C 330 178, 420 204, 640 186 S 1100 168, 1300 194 S 1520 210, 1620 186" />
         <path d="M -20 196 C 210 188, 430 216, 650 199" />
+        <path d="M -160 -20 C -180 200, -140 460, -170 780" />
+        <path d="M 1440 -20 C 1420 240, 1460 480, 1436 780" />
         <path d="M 262 -20 C 250 200, 276 420, 256 780" />
         <path d="M 904 -20 C 918 260, 890 500, 906 780" />
-        <path d="M -20 640 C 300 580, 700 662, 1300 540" />
+        <path d="M -340 600 C -120 660, 60 610, 300 600 C 500 600, 700 662, 1300 540 S 1520 520, 1620 560" />
         <path d="M 520 -20 C 560 120, 610 160, 700 260" />
-        <path d="M 1040 300 C 1110 330, 1180 330, 1300 310" />
+        <path d="M 1040 300 C 1110 330, 1180 330, 1300 310 S 1520 280, 1620 320" />
+        <path d="M 760 -20 C 780 60, 830 110, 904 130" />
+        <path d="M -340 690 C -100 720, 120 690, 260 712 S 380 704, 420 704" />
+      </g>
+      {/* The tram line, near the note that mentions it: a track with ties. */}
+      <g fill="none" stroke="var(--lp-map-ink)" strokeOpacity="0.16">
+        <path d="M 330 136 C 450 120, 560 132, 700 112 S 900 90, 1010 128" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M 330 136 C 450 120, 560 132, 700 112 S 900 90, 1010 128" strokeWidth="8" strokeDasharray="1.4 13" />
       </g>
       {/* Circled spots: a house, a star, a heart, a crossed-out one. */}
-      <g
-        fill="none"
-        stroke="var(--lp-map-mark)"
-        strokeOpacity="0.65"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M 118 66 C 118 40, 178 36, 188 62 C 198 88, 150 104, 126 92 C 110 84, 114 64, 134 56" />
-        <path d="M 614 56 L 620 42 L 626 56 L 640 56 L 629 65 L 633 79 L 620 71 L 607 79 L 611 65 L 600 56 Z" />
-        <path d="M 586 50 C 590 24, 650 22, 660 48 C 668 74, 628 92, 600 82 C 584 76, 582 60, 596 52" />
-        <path d="M 1158 650 C 1150 620, 1220 610, 1232 640 C 1244 672, 1196 690, 1170 678 C 1150 668, 1150 648, 1166 640" />
-        <path d="M 1196 660 C 1186 648, 1172 656, 1182 668 L 1196 680 L 1210 668 C 1220 656, 1206 648, 1196 660 Z" />
-        <path d="M 586 690 L 614 718 M 614 690 L 586 718" />
-        <path d="M 1130 716 C 1150 712, 1160 700, 1164 688 M 1154 692 L 1164 686 L 1168 698" />
+      <g {...MARK}>
+        <path d="M 118 90 C 118 64, 178 60, 188 86 C 198 112, 150 128, 126 116 C 110 108, 114 88, 134 80" />
+        <path d="M 614 78 L 620 64 L 626 78 L 640 78 L 629 87 L 633 101 L 620 93 L 607 101 L 611 87 L 600 78 Z" />
+        <path d="M 586 72 C 590 46, 650 44, 660 70 C 668 96, 628 114, 600 104 C 584 98, 582 82, 596 74" />
+        <path d="M 1158 630 C 1150 600, 1220 590, 1232 620 C 1244 652, 1196 670, 1170 658 C 1150 648, 1150 628, 1166 620" />
+        <path d="M 1196 640 C 1186 628, 1172 636, 1182 648 L 1196 660 L 1210 648 C 1220 636, 1206 628, 1196 640 Z" />
+        <path d="M 586 668 L 614 696 M 614 668 L 586 696" />
+        <path d="M 1130 696 C 1150 692, 1160 680, 1164 668 M 1154 672 L 1164 666 L 1168 678" />
       </g>
+      <Flat x={904} y={92} letter="A" />
+      <Flat x={128} y={686} letter="C" />
+      <Flat x={-284} y={322} letter="D" />
+      <Flat x={1342} y={412} letter="E" />
+      {/* Work, with the commute rings drawn loosely around it. */}
+      <g fill="none" stroke="var(--lp-map-mark)" strokeOpacity="0.3" strokeWidth="1.6" strokeDasharray="5 7" strokeLinecap="round">
+        <path d={loop(1196, 108, 30, 24)} />
+        <path d={loop(1196, 108, 58, 46)} />
+      </g>
+      <path d="M 1184 104 H 1208 V 120 H 1184 Z M 1190 104 V 98 H 1202 V 104" {...MARK} strokeWidth={1.8} />
       {/* The dotted route between two spots. */}
+      <path d="M 624 684 C 760 744, 980 580, 1150 630" {...ROUTE} />
       <path
-        d="M 624 704 C 760 764, 980 600, 1150 650"
-        fill="none"
-        stroke="var(--lp-map-mark)"
-        strokeOpacity="0.45"
-        strokeWidth="2"
-        strokeDasharray="2 9"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 140 76 L 152 64 L 164 76 M 144 74 V 86 H 160 V 74"
+        d="M 140 100 L 152 88 L 164 100 M 144 98 V 110 H 160 V 98"
         fill="none"
         stroke="var(--lp-map-ink)"
         strokeOpacity="0.4"
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <g fill="var(--lp-map-ink)" fillOpacity="0.45" style={{ fontFamily: "var(--font-caveat), cursive" }} fontWeight="700">
-        {NOTES.map((n) => (
-          <text
-            key={n.text}
-            x={n.x}
-            y={n.y}
-            fontSize={"size" in n ? n.size : 26}
-            transform={`rotate(${n.r} ${n.x} ${n.y})`}
-          >
-            {n.text}
-          </text>
-        ))}
+      <Notes notes={HERO_NOTES} />
+    </svg>
+  );
+}
+
+const INSIDE_NOTES: readonly Note[] = [
+  { x: 676, y: 92, r: -4, text: "Flat B · both love it!", size: 24 },
+  { x: 1026, y: 80, r: 4, text: "viewing Sat", size: 22 },
+  { x: 1016, y: 104, r: 4, text: "bring a tape measure", size: 18 },
+];
+
+// The "What's inside" section's top band (#326): the hunt from the hero,
+// a step further on. Sits in the space right of the heading; the band is
+// 1280 × 170 units, anchored to the top of the section.
+export function InsideSketch() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="-320 0 1920 170"
+      preserveAspectRatio="xMidYMin slice"
+      className={`${SKETCH_CLASS} top-0 h-[170px]`}
+    >
+      <g {...STREET}>
+        <path d="M 400 30 C 560 50, 740 20, 900 44 S 1160 60, 1300 40 S 1520 20, 1620 44" />
+        <path d="M 820 -20 C 830 50, 812 110, 826 190" />
+        <path d="M 1236 -20 C 1246 60, 1262 120, 1254 190" />
+        <path d="M 440 150 C 600 136, 760 160, 960 140" />
       </g>
+      <Flat x={636} y={84} letter="B" />
+      <path d="M 636 116 C 632 108, 622 112, 628 120 L 636 128 L 644 120 C 650 112, 640 108, 636 116 Z" {...MARK} strokeWidth={1.8} />
+      <path d="M 900 100 C 930 126, 960 116, 984 96" {...ROUTE} />
+      <path d={loop(1090, 88, 100, 42)} fill="none" stroke="var(--lp-map-ink)" strokeOpacity="0.2" strokeWidth="1.6" strokeLinecap="round" />
+      <Notes notes={INSIDE_NOTES} />
+    </svg>
+  );
+}
+
+const DECIDED_NOTES: readonly Note[] = [{ x: 1000, y: 74, r: -5, text: "decided: Flat B", size: 26 }];
+
+// And the end of the story, in the space under the big comparison grid.
+export function DecidedSketch() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="-320 0 1920 100"
+      preserveAspectRatio="xMidYMax slice"
+      className={`${SKETCH_CLASS} bottom-0 h-[100px]`}
+    >
+      <g {...STREET}>
+        <path d="M -340 52 C -120 70, 60 44, 200 54 C 300 58, 420 74, 640 58 S 1000 40, 1300 66 S 1520 76, 1620 54" />
+      </g>
+      <path d="M 300 64 C 520 90, 760 30, 960 62" {...ROUTE} />
+      <path d="M 968 56 L 978 68 L 994 42" {...MARK} strokeWidth={2.6} />
+      <Notes notes={DECIDED_NOTES} />
     </svg>
   );
 }

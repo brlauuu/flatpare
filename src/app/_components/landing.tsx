@@ -13,7 +13,7 @@ import { ThemedLogo } from "@/components/themed-logo";
 import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
 import type { PublicAccess } from "@/lib/public-access";
 import { landingFontVariables } from "./landing-fonts";
-import { HeroSketch } from "./hero-sketch";
+import { DecidedSketch, HeroSketch, InsideSketch } from "./hero-sketch";
 import { ReleaseNotice } from "./release-notice";
 import { SignInButton, SignInProvider } from "./sign-in-dialog";
 import { BetaRequestForm } from "./beta-request-form";
@@ -455,8 +455,10 @@ function Paths({ access }: { access: PublicAccess }) {
 
 function Features() {
   return (
-    <section className="lp-grid-bg border-y-[3px] border-(--lp-line)">
-      <div className="mx-auto flex max-w-[1160px] flex-col gap-8 px-4 py-22 sm:px-6">
+    <section className="lp-grid-bg relative overflow-hidden border-y-[3px] border-(--lp-line)">
+      <InsideSketch />
+      <DecidedSketch />
+      <div className="relative mx-auto flex max-w-[1160px] flex-col gap-8 px-4 py-22 sm:px-6">
         <h2 className="lp-head m-0 text-[30px] sm:text-[36px]">What&apos;s inside</h2>
         <div className="grid grid-cols-1 gap-[3px] sm:grid-cols-2 lg:grid-cols-3 overflow-hidden border-[3px] border-(--lp-card-line) bg-(--lp-card-line) shadow-(--lp-card-shadow)">
           {FEATURES.map(({ title, body }, i) => (
