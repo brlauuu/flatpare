@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "title": "Flatpare — comparad pisos juntos",
+    "description": "Un espacio compartido para quienes buscan piso juntos. Anuncios, valoraciones y notas se cifran en tu navegador, con una clave que el servidor nunca tiene."
+  },
+  "nav": {
+    "label": "Principal",
+    "home": "Inicio de Flatpare",
+    "howItWorks": "Cómo funciona",
+    "pricing": "Precio",
+    "signIn": "Iniciar sesión"
+  },
+  "hero": {
+    "eyebrow": "BUSCAR PISO, JUNTOS",
+    "titleLine1": "Compara pisos.",
+    "titleLine2": "Decidid juntos.",
+    "tagsLabel": "Por qué Flatpare",
+    "tags": {
+      "collaborative": "Colaborativo",
+      "privacy": "Privacidad primero*",
+      "data": "Basado en datos"
+    },
+    "lead": "Un espacio compartido para quienes buscan piso. Sube los PDF de los anuncios, valora cada sitio por tu cuenta y compara los trayectos.",
+    "requestInvite": "Pedir una invitación a la beta",
+    "getStarted": "Empezar",
+    "runItYourself": "Instálalo tú mismo"
+  },
+  "shot": {
+    "alt": "La tabla comparativa de Flatpare: cinco pisos uno al lado del otro con alquiler, superficie, habitaciones, tiempos de trayecto y las estrellas de cada persona"
+  },
+  "video": {
+    "title": "Mira cómo funciona",
+    "eyebrow": "RECORRIDO",
+    "eyebrowWithDuration": "RECORRIDO · {duration}",
+    "play": "Ver el recorrido de Flatpare en YouTube",
+    "watch": "Ver en YouTube",
+    "comingSoon": "Vídeo del recorrido, muy pronto"
+  },
+  "privacy": {
+    "eyebrow": "PRIVACIDAD*",
+    "title": "Lo que podemos ver y lo que no",
+    "encryptedTitle": "Cifrado en tu navegador",
+    "claim": "No podemos leer tus datos. Sí procesamos PDF y direcciones en memoria cuando nos lo pides, y nunca los guardamos.",
+    "encryptedBody": "Cada anuncio, valoración, nota y PDF se cifra en tu navegador antes de guardarse, con una clave que el servidor nunca tiene. Lo que guardamos es texto cifrado: sin tu frase de contraseña o tu código de recuperación nadie puede leerlo, ni siquiera nosotros.",
+    "seesIntro": "Lo que el servidor sí ve es lo que necesita para mantener tu hogar separado de los demás:",
+    "seesAccount": "tu cuenta: la dirección de correo y el nombre que pongas;",
+    "seesMembers": "quién forma parte de tu hogar;",
+    "seesCounts": "cuántos pisos, valoraciones y lugares tienes, quién valoró qué y cuándo se añadió o cambió cada cosa;",
+    "seesPdfSize": "el tamaño de cada PDF guardado.",
+    "seesNever": "Nunca qué es un piso. Si lo instalas tú, vale lo mismo, con tu propio servidor en nuestro lugar.",
+    "exceptionTitle": "La excepción, sin rodeos",
+    "exceptionIntro": "Algunas cosas no se pueden hacer en un navegador. Para ellas, ese único elemento se envía legible, se usa solo para esa llamada, nunca se escribe en nuestra base de datos y nunca se registra:",
+    "exceptionPdf": "<b>Un PDF</b> va a un modelo de IA que extrae los datos y escribe un breve resumen. En flatpare.com eso pasa por Vercel AI Gateway con <zdr>retención de datos cero</zdr>: solo usa proveedores de modelos que se han comprometido a no guardar la petición. Si lo instalas tú, es Google Gemini salvo que configures otro.",
+    "exceptionAddress": "<b>Una dirección</b> va a Google Maps, para su ubicación y los tiempos en bici y en transporte público (OpenRouteService en una instalación propia sin Maps).",
+    "exceptionListing": "<b>El enlace de un anuncio</b> lo abre nuestro servidor, que descarga la página del sitio del anuncio para comprobar que sigue en línea.",
+    "tiles": "Los mapas cargan sus calles de OpenFreeMap u OpenStreetMap, que ven la parte de la ciudad que hay en pantalla, nunca tus pisos.",
+    "disavowal": "Por eso no lo describimos como zero-knowledge."
+  },
+  "paths": {
+    "eyebrow": "DOS FORMAS DE EMPEZAR",
+    "title": "La misma app. Privada en ambos casos.",
+    "hosted": {
+      "badge": "ALOJADO",
+      "beta": "BETA PRIVADA",
+      "titleLine1": "Nosotros lo gestionamos.",
+      "titleLine2": "Privado gracias al cifrado.",
+      "body": "Todo se cifra en tu navegador antes de guardarse, con una clave que el servidor nunca tiene (<link>qué significa</link>). Nada que instalar, ninguna clave de API que gestionar.",
+      "afterBeta": "Después de la beta: ",
+      "freeBeta": "Beta gratuita",
+      "thenOnce": "después, un único pago · por hogar · sin suscripción",
+      "once": "pago único · por hogar · sin suscripción",
+      "betaKeep": "Pide acceso abajo. Lo que recibe una cuenta de la beta es tuyo: ni tus datos ni tus créditos se retiran cuando termine la beta.",
+      "limits": "Hasta 10 personas y 40 pisos.",
+      "more": "¿Necesitas más? Otros CHF 5 añaden otros 40 pisos.",
+      "quota": "Los 40 cuentan los pisos que añades: borrar uno no te devuelve el crédito.",
+      "noReset": "Tu clave sale de tu frase de contraseña, más un código de recuperación que imprimes. No hay restablecimiento: si pierdes los dos, los datos se pierden, también para nosotros.",
+      "createAccount": "Crea tu cuenta →"
+    },
+    "selfHost": {
+      "badge": "INSTALACIÓN PROPIA",
+      "licence": "CÓDIGO FUENTE DISPONIBLE · O'SAASY",
+      "titleLine1": "Instálalo tú, para ti.",
+      "titleLine2": "Privado por definición.",
+      "body": "Tu servidor, tu base de datos, tus claves. Instálalo en un portátil, en un servidor en casa o en tu propia cuenta en la nube: tu búsqueda nunca sale de tu instalación, y no hay límites.",
+      "free": "Gratis",
+      "keys": "con tus propias claves de Gemini y Maps",
+      "viewOnGithub": "Ver en GitHub →"
+    }
+  },
+  "features": {
+    "title": "Qué incluye",
+    "pdf": { "title": "Entra un PDF, salen los datos", "body": "Sube un anuncio y el alquiler, las habitaciones, la superficie y la dirección se rellenan solos." },
+    "rate": { "title": "Valora por tu cuenta", "body": "Cada persona puntúa por separado; las valoraciones aparecen una al lado de la otra para ver en qué coincidís." },
+    "grid": { "title": "Una sola tabla comparativa", "body": "Ordena, oculta y compara cada anuncio hasta que el ganador esté claro." },
+    "commutes": { "title": "Trayectos, calculados", "body": "Tiempos en bici y en transporte público hasta cinco lugares que te importan." },
+    "household": { "title": "Hecho para un hogar", "body": "Pensado para parejas y compañeros de piso que buscan juntos, no para equipos ni agencias." },
+    "private": { "title": "Privado en ambos casos", "body": "En tu propia instalación, o cifrado de extremo a extremo cuando lo alojamos nosotros." }
+  },
+  "footer": {
+    "createdBy": "flatpare.com lo ha creado <author></author>",
+    "changelog": "Novedades"
+  },
+  "beta": {
+    "label": "Pedir una invitación a la beta",
+    "placeholder": "tu@ejemplo.com",
+    "submit": "Pedir invitación →",
+    "sending": "Enviando…",
+    "thanks": "<b>Gracias, ya estás en la lista.</b> Te enviaremos el enlace de invitación a esa dirección cuando haya una plaza libre.",
+    "failed": "Algo ha fallado. Inténtalo de nuevo.",
+    "unreachable": "No se ha podido contactar con el servidor. Inténtalo de nuevo.",
+    "honeypot": "Sitio web",
+    "privacy": "Solo se usa para enviarte la invitación y nunca para nada más.",
+    "invalidEmail": "Introduce una dirección de correo válida",
+    "tooMany": "Demasiadas solicitudes hoy. Inténtalo de nuevo mañana."
+  },
+  "release": {
+    "newRelease": "Nueva versión",
+    "whatsChanged": "Qué ha cambiado →",
+    "dismiss": "Cerrar el aviso de nueva versión"
+  },
+  "signIn": {
+    "title": "Iniciar sesión",
+    "close": "Cerrar"
+  },
+  "sketch": {
+    "balcony": "¡balcón!",
+    "tram": "cerca del tranvía",
+    "favourite": "nuestro favorito",
+    "tooDark": "¿muy oscuro?",
+    "byBike": "12 min en bici",
+    "flatA": "Piso A · cocina grande",
+    "work": "trabajo · 20 min",
+    "flatC": "Piso C · ¿muy lejos?",
+    "flatD": "Piso D · sin ascensor",
+    "flatE": "Piso E · calle tranquila",
+    "flatB": "Piso B · ¡nos encanta!",
+    "viewing": "visita el sáb",
+    "tape": "llevar metro",
+    "decided": "decidido: Piso B"
+  }
+}
