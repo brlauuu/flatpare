@@ -23,5 +23,11 @@
   },
   "mark": {
     "opensApartment": "opens apartment"
+  },
+  "controls": {
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "toggleAttribution": "Toggle attribution",
+    "mapTitle": "Map"
   }
 }
