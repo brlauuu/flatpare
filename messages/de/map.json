@@ -1,0 +1,33 @@
+{
+  "page": {
+    "title": "Karte",
+    "loading": "Karte wird geladen...",
+    "loadError": "Die Karte konnte nicht geladen werden"
+  },
+  "map": {
+    "loading": "Karte wird geladen",
+    "noApartments": "Noch keine Wohnungen. <upload>Lade ein Inserat hoch</upload>, und es erscheint hier, sobald es eine Adresse hat.",
+    "nothingPlaced": "Noch nichts anzuzeigen — füge eine Wohnung mit Adresse hinzu.",
+    "failed": "Die Karte konnte nicht geladen werden.",
+    "yourApartments": "Deine Wohnungen: <links></links>",
+    "missing": "{count, plural, one {# Wohnung ist} other {# Wohnungen sind}} noch nicht auf der Karte: <links></links>",
+    "listSeparator": ", "
+  },
+  "card": {
+    "rent": "CHF {amount}",
+    "size": "{value} m²",
+    "rooms": "{count, plural, one {# Zimmer} other {# Zimmer}}",
+    "notRated": "Nicht bewertet",
+    "rating": "★ {value}",
+    "open": "Öffnen →"
+  },
+  "mark": {
+    "opensApartment": "öffnet die Wohnung"
+  },
+  "controls": {
+    "zoomIn": "Vergrössern",
+    "zoomOut": "Verkleinern",
+    "toggleAttribution": "Quellenangaben ein-/ausblenden",
+    "mapTitle": "Karte"
+  }
+}

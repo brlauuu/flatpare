@@ -1,0 +1,24 @@
+{
+  "items": {
+    "apartments": "Pisos",
+    "upload": "Subir",
+    "compare": "Comparar",
+    "map": "Mapa",
+    "household": "Hogar",
+    "settings": "Ajustes"
+  },
+  "short": {
+    "apartments": "Pisos",
+    "upload": "Subir",
+    "compare": "Comparar",
+    "map": "Mapa",
+    "household": "Hogar",
+    "settings": "Ajustes"
+  },
+  "menu": {
+    "guide": "Guía",
+    "signOut": "Cerrar sesión"
+  },
+  "confirmSignOut": "Tienes cambios sin guardar en una valoración. ¿Cerrar sesión de todos modos? Lo que has escrito se perderá.",
+  "unknownUser": "Desconocido"
+}

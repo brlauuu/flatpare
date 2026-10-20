@@ -1,0 +1,40 @@
+{
+  "page": {
+    "title": "Vergleichen",
+    "loading": "Vergleich wird geladen...",
+    "loadError": "Die Vergleichsdaten konnten nicht geladen werden",
+    "pdfError": "Das PDF konnte nicht geöffnet werden",
+    "emptyTitle": "Noch keine Wohnungen zum Vergleichen",
+    "emptyBody": "Lade mindestens zwei Inserate hoch, um mit dem Vergleichen zu beginnen",
+    "emptyCta": "Inserat hochladen",
+    "sortBy": "Sortieren nach",
+    "ascending": "Aufsteigend",
+    "descending": "Absteigend",
+    "showAll": "Alle anzeigen ({count} ausgeblendet)"
+  },
+  "header": {
+    "viewPdf": "PDF zu {name} ansehen",
+    "originalListing": "Originalinserat zu {name}",
+    "hide": "{name} ausblenden"
+  },
+  "table": {
+    "metric": {
+      "rentChf": "Miete (CHF)",
+      "sizeM2": "Fläche (m²)",
+      "numRooms": "Zimmer",
+      "numBathrooms": "Badezimmer",
+      "numBalconies": "Balkone"
+    },
+    "travelTo": "Velo + ÖV nach {label}",
+    "minutes": "{value} Min.",
+    "noMinutes": "— Min.",
+    "washingMachine": "Waschmaschine",
+    "washingYes": "Ja",
+    "washingNo": "Nein (oder gemeinsam)",
+    "washingUnknown": "Unbekannt",
+    "userRatings": "Bewertungen von {name}",
+    "overall": "Gesamt",
+    "comment": "Kommentar",
+    "averageRatings": "Durchschnittliche Bewertungen"
+  }
+}

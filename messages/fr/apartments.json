@@ -1,0 +1,176 @@
+{
+  "list": {
+    "loading": "Chargement des appartements…",
+    "loadError": "Impossible de charger les appartements",
+    "emptyTitle": "Pas encore d’appartements",
+    "emptyBody": "Ajoute une annonce en PDF pour commencer",
+    "uploadFirst": "Ajouter ta première annonce",
+    "viewOnMap": "Voir sur la carte",
+    "enrichmentFailed": "L’enrichissement a échoué pour {name} : {error}",
+    "retry": "Réessayer",
+    "searchLabel": "Rechercher des appartements",
+    "searchPlaceholder": "Rechercher par nom, code ou adresse…",
+    "clearSearch": "Effacer la recherche",
+    "title": "Appartements",
+    "heldCount": "{count} sur {max}",
+    "sortBy": "Trier par",
+    "ascending": "Croissant",
+    "descending": "Décroissant",
+    "view": "Affichage",
+    "gridView": "Vue en grille",
+    "listView": "Vue en liste",
+    "limitTitle": "Ce foyer est limité à {max} appartements",
+    "limitReached": "Limite atteinte",
+    "uploadNew": "Ajouter",
+    "noMatch": "Aucun appartement ne correspond à « {query} »",
+    "showAll": "Afficher tous les appartements"
+  },
+  "badges": {
+    "gone": "Retirée",
+    "rated": "Évalué",
+    "notRated": "Pas encore évalué",
+    "rent": "CHF {amount, number}",
+    "rooms": "{count, number} pièces",
+    "roomsShort": "{count, number} p.",
+    "size": "{size, number} m²"
+  },
+  "corrupt": {
+    "title": "Cet appartement n’a pas pu être déchiffré",
+    "body": "L’enregistrement n’a pas pu être ouvert avec la clé du foyer. Il ne peut qu’être supprimé.",
+    "deleteConfirm": "Supprimer cet appartement ? C’est irréversible.",
+    "delete": "Supprimer",
+    "deleting": "Suppression…"
+  },
+  "detail": {
+    "loading": "Chargement…",
+    "loadError": "Impossible de charger l’appartement",
+    "notFound": "Appartement introuvable",
+    "deleteFailed": "Impossible de supprimer l’appartement",
+    "pdfOpenFailed": "Impossible d’ouvrir le PDF",
+    "reprocessConfirm": "Retraiter cet appartement ? Les champs que tu n’as pas modifiés seront mis à jour à partir du PDF. Ceux que tu as modifiés resteront tels quels.",
+    "reprocessFailed": "Impossible de retraiter l’appartement",
+    "nameRequired": "Le nom est obligatoire",
+    "saveFailed": "Impossible d’enregistrer les modifications",
+    "ratingSaveFailed": "Impossible d’enregistrer l’évaluation",
+    "availableFrom": "Disponible dès le : {date}"
+  },
+  "actions": {
+    "viewPdf": "Voir le PDF",
+    "originalListing": "Annonce d’origine",
+    "urlMissing": "URL manquante",
+    "edit": "Modifier",
+    "reprocess": "Retraiter",
+    "reprocessing": "Retraitement…",
+    "delete": "Supprimer",
+    "deleting": "Suppression…"
+  },
+  "metrics": {
+    "rentPerMonth": "CHF {amount, number}/mois",
+    "bathrooms": "{count, plural, one {# sdb} other {# sdb}}",
+    "balconies": "{count, plural, one {# balcon} other {# balcons}}",
+    "washingYes": "Lave-linge : oui",
+    "washingNo": "Lave-linge : non (ou commun)",
+    "washingUnknown": "Lave-linge : inconnu",
+    "yes": "Oui",
+    "no": "Non",
+    "unknown": "?"
+  },
+  "pager": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "position": "{position} sur {total}"
+  },
+  "distance": {
+    "title": "Distance aux lieux",
+    "bikeDirections": "Itinéraire à vélo jusqu’à {label}",
+    "bike": "{minutes} min à vélo",
+    "bikeNone": "— à vélo",
+    "transit": "{minutes} min en transports",
+    "transitNone": "— en transports"
+  },
+  "new": {
+    "pdfStoreWarning": "Le PDF n’a pas pu être stocké — l’appartement sera enregistré sans lui",
+    "readFailed": "Impossible de lire le fichier",
+    "parseFailed": "L’analyse a échoué",
+    "fileLost": "Référence du fichier perdue — ajoute-le à nouveau",
+    "noPdfs": "Aucun fichier PDF sélectionné",
+    "nothingToSave": "Aucun appartement à enregistrer",
+    "itemSaveFailed": "Échec de l’enregistrement",
+    "nameRequired": "Le nom est obligatoire",
+    "saveFailed": "Impossible d’enregistrer l’appartement",
+    "processing": "Traitement ({done}/{total})"
+  },
+  "upload": {
+    "title": "Ajouter des annonces",
+    "drop": "Glisse un ou plusieurs PDF ici, ou",
+    "choose": "Choisir des fichiers",
+    "manual": "Ou ajouter manuellement sans PDF"
+  },
+  "review": {
+    "title": "Vérifier les appartements",
+    "uploadMore": "En ajouter d’autres",
+    "saving": "Enregistrement…",
+    "save": "{count, plural, =1 {Enregistrer l’appartement} other {Tout enregistrer (#)}}",
+    "allSaved": "Tous les appartements sont enregistrés. Redirection…",
+    "rent": "CHF {amount}",
+    "size": "{size} m²",
+    "rooms": "{count} pièces",
+    "retry": "Réessayer"
+  },
+  "single": {
+    "title": "Ajouter un appartement manuellement",
+    "subtitle": "Remplis les informations de l’appartement",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer l’appartement"
+  },
+  "status": {
+    "saved": "Enregistré",
+    "queued": "En attente",
+    "uploading": "Envoi…",
+    "parsed": "Analysé",
+    "error": "Erreur"
+  },
+  "form": {
+    "summary": "Résumé",
+    "summaryPlaceholder": "Brève description en anglais (générée par l’IA)",
+    "name": "Nom *",
+    "namePlaceholder": "Nom de l’appartement",
+    "address": "Adresse",
+    "addressPlaceholder": "Rue, NPA, localité",
+    "rent": "Loyer (CHF/mois)",
+    "size": "Surface (m²)",
+    "availableFrom": "Disponible dès le",
+    "rooms": "Pièces",
+    "baths": "Salles de bain",
+    "balconies": "Balcons",
+    "washingMachine": "Lave-linge",
+    "listingUrl": "URL de l’annonce",
+    "yes": "Oui",
+    "no": "Non",
+    "unknown": "Inconnu"
+  },
+  "edit": {
+    "title": "Modifier l’appartement",
+    "saving": "Enregistrement…"
+  },
+  "map": {
+    "loading": "Chargement de la carte…"
+  },
+  "rating": {
+    "yours": "Ton évaluation ({name})",
+    "comment": "Commentaire",
+    "commentPlaceholder": "Notes sur cet appartement…",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer l’évaluation",
+    "other": "Évaluation de {name}"
+  },
+  "credits": {
+    "left": "{count, plural, one {Encore <n>{count}</n> appartement à ajouter} other {Encore <n>{count}</n> appartements à ajouter}}",
+    "runningLow": "(bientôt épuisé)",
+    "noneLeft": "(plus aucun)",
+    "buyMore": "En acheter plus"
+  },
+  "errors": {
+    "staleKey": "La clé du foyer a été changée par le propriétaire. Tes données ont été rechargées ; réessaie, s’il te plaît."
+  }
+}

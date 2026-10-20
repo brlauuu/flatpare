@@ -1,0 +1,33 @@
+{
+  "save": "Salva",
+  "saving": "Salvataggio…",
+  "cancel": "Annulla",
+  "delete": "Elimina",
+  "edit": "Modifica",
+  "close": "Chiudi",
+  "back": "Indietro",
+  "retry": "Riprova",
+  "loading": "Caricamento…",
+  "yes": "Sì",
+  "no": "No",
+  "unknown": "Sconosciuto",
+  "ratingCategory": {
+    "kitchen": "Cucina",
+    "balconies": "Balconi",
+    "location": "Posizione",
+    "floorplan": "Planimetria",
+    "overallFeeling": "Impressione generale"
+  },
+  "sort": {
+    "createdAt": "Data di aggiunta",
+    "rentChf": "Prezzo",
+    "sizeM2": "Superficie",
+    "numRooms": "Locali",
+    "numBathrooms": "Bagni",
+    "numBalconies": "Balconi",
+    "avgOverall": "Valutazione media",
+    "shortCode": "Codice breve",
+    "bikeTo": "In bici fino a {place}",
+    "transitTo": "Coi mezzi fino a {place}"
+  }
+}

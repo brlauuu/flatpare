@@ -1,0 +1,104 @@
+{
+  "passphrase": {
+    "label": "Passphrase",
+    "confirm": "Passphrase bestätigen",
+    "new": "Neue Passphrase",
+    "confirmNew": "Neue Passphrase bestätigen",
+    "current": "Aktuelle Passphrase",
+    "tooShort": "Verwende mindestens {min} Zeichen.",
+    "mismatch": "Die Passphrasen stimmen nicht überein."
+  },
+  "setup": {
+    "title": "Wähle eine Passphrase",
+    "introCreator": "Flatpare verschlüsselt die Daten deines Haushalts in deinem Browser. Diese Passphrase schützt deine Schlüssel; Flatpare sieht sie nie und kann sie nicht für dich zurücksetzen. Auf dem nächsten Bildschirm bekommst du ein Wiederherstellungs-Kit — bewahre es sicher auf.",
+    "introJoiner": "Flatpare verschlüsselt die Daten deines Haushalts in deinem Browser. Diese Passphrase schützt deine Schlüssel; Flatpare sieht sie nie und kann sie nicht für dich zurücksetzen. Sobald deine Schlüssel erstellt sind, lässt dich jemand aus deinem Haushalt automatisch hinein, wenn diese Person Flatpare das nächste Mal öffnet.",
+    "submit": "Meine Schlüssel erstellen",
+    "submitting": "Schlüssel werden erstellt…",
+    "failed": "Einrichtung fehlgeschlagen"
+  },
+  "unlock": {
+    "title": "Flatpare entsperren",
+    "intro": "Gib deine Passphrase ein, um die Daten deines Haushalts auf diesem Gerät zu entschlüsseln.",
+    "notPersistent": "Dieser Browser kann deine Schlüssel nicht zwischen Besuchen speichern (privates Surfen?), deshalb wirst du jedes Mal nach deiner Passphrase gefragt.",
+    "submit": "Entsperren",
+    "submitting": "Wird entsperrt…",
+    "failed": "Entsperren fehlgeschlagen"
+  },
+  "pending": {
+    "title": "Fast geschafft",
+    "waiting": "Wir warten, bis jemand aus deinem Haushalt Flatpare öffnet. Diese Person muss nichts tun — es passiert automatisch.",
+    "polling": "{seconds, plural, one {Diese Seite prüft jede Sekunde erneut.} other {Diese Seite prüft alle # Sekunden erneut.}}"
+  },
+  "householdKey": {
+    "title": "Ein neuer Haushalt",
+    "intro": "Dieser Haushalt hat noch keinen Verschlüsselungsschlüssel. Wenn du einen erstellst, gehört der Haushalt dir: Alles, was du hinzufügst, wird damit verschlüsselt, und du bekommst einen neuen Wiederherstellungscode zum Aufbewahren.",
+    "submit": "Haushaltsschlüssel erstellen",
+    "submitting": "Wird erstellt…",
+    "failed": "Der Haushaltsschlüssel konnte nicht erstellt werden"
+  },
+  "recoveryKit": {
+    "title": "Dein Wiederherstellungs-Kit",
+    "intro": "Schreib diesen Code auf oder drucke ihn aus und bewahre ihn an einem sicheren Ort auf. Er ist der einzige Weg, die Daten deines Haushalts zurückzubekommen, wenn du deine Passphrase vergisst und niemand sonst in deinem Haushalt dich hineinlassen kann. Er wird nur einmal angezeigt.",
+    "copy": "Kopieren",
+    "print": "Drucken",
+    "copied": "Kopiert.",
+    "acknowledge": "Mir ist klar: Wenn ich sowohl meine Passphrase als auch dieses Wiederherstellungs-Kit verliere, kann niemand die Daten meines Haushalts wiederherstellen, auch Flatpare nicht.",
+    "continue": "Weiter"
+  },
+  "forgot": {
+    "open": "Passphrase vergessen?",
+    "cannotReset": "Flatpare kann deine Passphrase nicht zurücksetzen.",
+    "startOver": "Flatpare kann deine Passphrase nicht zurücksetzen. Du kannst mit neuen Schlüsseln neu beginnen und dich von jemandem aus deinem Haushalt wieder hineinlassen lassen.",
+    "startOverOrKit": "Flatpare kann deine Passphrase nicht zurücksetzen. Du kannst mit neuen Schlüsseln neu beginnen und dich von jemandem aus deinem Haushalt wieder hineinlassen lassen, oder dein Wiederherstellungs-Kit verwenden.",
+    "soleHolder": "Niemand sonst in deinem Haushalt hat den Schlüssel, daher könnte ein Zurücksetzen nicht abgeschlossen werden — verwende dein Wiederherstellungs-Kit.",
+    "resetButton": "Meine Schlüssel zurücksetzen",
+    "useKitButton": "Mein Wiederherstellungs-Kit verwenden",
+    "reset": {
+      "title": "Meine Schlüssel zurücksetzen",
+      "intro": "Du bekommst neue Schlüssel mit einer neuen Passphrase und wartest, bis jemand aus deinem Haushalt Flatpare öffnet. Wenn du das einzige Mitglied bist, verwende stattdessen dein Wiederherstellungs-Kit — ein Zurücksetzen allein bringt die Daten nicht zurück.",
+      "submit": "Zurücksetzen und warten",
+      "submitting": "Wird zurückgesetzt…",
+      "failed": "Zurücksetzen fehlgeschlagen"
+    },
+    "recover": {
+      "title": "Mein Wiederherstellungs-Kit verwenden",
+      "code": "Wiederherstellungscode",
+      "submit": "Wiederherstellen",
+      "submitting": "Wird wiederhergestellt…",
+      "done": "Wiederhergestellt. Dein altes Wiederherstellungs-Kit funktioniert nicht mehr — hier ist das neue.",
+      "failed": "Wiederherstellung fehlgeschlagen"
+    }
+  },
+  "settings": {
+    "title": "Verschlüsselung",
+    "off": "Verschlüsselung: aus — von dieser Installation so festgelegt.",
+    "change": "Passphrase ändern",
+    "changed": "Passphrase geändert.",
+    "changeFailed": "Die Passphrase konnte nicht geändert werden",
+    "lock": "Dieses Gerät sperren",
+    "regenerate": "Wiederherstellungs-Kit neu erstellen",
+    "regenerateFailed": "Das Kit konnte nicht neu erstellt werden",
+    "explain": "Beim Sperren werden die Schlüssel aus diesem Browser gelöscht; beim nächsten Mal brauchst du deine Passphrase. Wenn du das Wiederherstellungs-Kit neu erstellst, ersetzt es den alten Code — der alte funktioniert sofort nicht mehr."
+  },
+  "provider": {
+    "adoptFailed": "Der Schlüssel, den wir erhalten haben, liess sich nicht öffnen. Setze deine Schlüssel zurück, damit dir ein Mitglied einen neuen senden kann, oder verwende dein Wiederherstellungs-Kit.",
+    "somethingWrong": "Etwas ist schiefgelaufen",
+    "nowIn": "{count, plural, one {{names} kann Flatpare jetzt öffnen.} other {{names} können Flatpare jetzt öffnen.}}"
+  },
+  "errors": {
+    "wrongPassphrase": "Falsche Passphrase",
+    "badRecoveryCode": "Dieser Wiederherstellungscode ist nicht gültig",
+    "noKeysToUnlock": "Keine Schlüssel zum Entsperren",
+    "invalidGeneratedCode": "Es wurde ein ungültiger Wiederherstellungscode erzeugt",
+    "keysExist": "Schlüssel sind bereits vorhanden",
+    "ownerOnlyHouseholdKey": "Nur die Inhaberin oder der Inhaber kann den Haushaltsschlüssel erstellen",
+    "householdKeyExists": "Der Haushaltsschlüssel ist bereits vorhanden",
+    "noHouseholdKey": "Du hast den Haushaltsschlüssel nicht",
+    "noWrapYet": "Es ist noch kein Schlüssel für dich angekommen",
+    "noRecoveryKit": "Dieser Haushalt hat kein Wiederherstellungs-Kit",
+    "statusNotLoaded": "Status nicht geladen",
+    "keysNotLoaded": "Schlüssel nicht geladen",
+    "ownerOnlyRotate": "Nur die Inhaberin oder der Inhaber kann den Haushaltsschlüssel erneuern",
+    "olderHouseholdKey": "Dieses Gerät hat einen älteren Haushaltsschlüssel; lade die Seite neu und versuch es nochmals"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Hogar"
+  },
+  "members": {
+    "title": "Miembros",
+    "count": "{used} de {max}",
+    "role": {
+      "owner": "titular",
+      "member": "miembro"
+    },
+    "awaitingKey": "esperando la clave",
+    "remove": "Quitar",
+    "leave": "Salir del hogar",
+    "leaveNote": "Tus valoraciones y los pisos que has añadido se quedan en el hogar.",
+    "leaveConfirmEncrypted": "¿Salir de este hogar? Pierdes el acceso a sus pisos de inmediato, y todo lo que has añadido se queda en él. Recibirás un hogar vacío propio.",
+    "leaveConfirm": "¿Salir de este hogar? Pierdes el acceso a sus pisos de inmediato, y todo lo que has añadido se queda en él.",
+    "removeConfirmEncrypted": "¿Quitar a {name} del hogar? Pierde el acceso de inmediato, y la clave del hogar se renovará: verás un nuevo código de recuperación que tendrás que guardar.",
+    "removeConfirm": "¿Quitar a {name} del hogar? Pierde el acceso de inmediato.",
+    "removedEmailed": "Se ha quitado a {name} y se le ha avisado por correo.",
+    "removedEmailFailed": "Se ha quitado a {name}, pero no se ha podido enviar el correo para avisarle.",
+    "removed": "Se ha quitado a {name}.",
+    "removedRotationFailed": "Se ha quitado a {name}, pero no se ha podido renovar la clave del hogar: {reason}. Renuévala abajo cuando quieras.",
+    "unknownError": "error desconocido"
+  },
+  "invite": {
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "nombre@ejemplo.com",
+    "submit": "Invitar",
+    "emailed": "Invitación enviada por correo a {email}.",
+    "emailFailed": "Invitación creada, pero no se ha podido enviar el correo a {email}. Pídele que inicie sesión con esa dirección.",
+    "created": "Invitación creada. Pídele que inicie sesión con {email}.",
+    "atLimit": "Este hogar tiene un límite de {max} miembros. Quita a un miembro o revoca una invitación pendiente para invitar a otra persona.",
+    "noEmail": "No se envía ningún correo. Dile que inicie sesión con esa dirección; la invitación le estará esperando durante 7 días.",
+    "pending": "Pendiente · caduca el {date}",
+    "revoke": "Revocar"
+  },
+  "key": {
+    "title": "Clave del hogar",
+    "version": "versión {version}",
+    "rotationDue": "Se ha quitado a un miembro, pero desde entonces la clave del hogar no se ha renovado. Hasta que se renueve, todo lo que se escriba ahora se puede leer con la clave que todavía guarda su dispositivo.",
+    "explain": "Renovar vuelve a cifrar todo con una clave nueva y la entrega automáticamente a todos los miembros. Ocurre por sí solo cuando quitas a alguien; también puedes hacerlo a mano. Verás un nuevo código de recuperación: el anterior deja de funcionar.",
+    "pdfFailures": "{count, plural, one {Clave del hogar renovada, pero # PDF no se ha podido volver a cifrar y se ha dejado como estaba.} other {Clave del hogar renovada, pero # PDF no se han podido volver a cifrar y se han dejado como estaban.}}",
+    "rotating": "Renovando…",
+    "rotate": "Renovar la clave del hogar",
+    "rotateError": "No se ha podido renovar la clave"
+  },
+  "errors": {
+    "requestFailedStatus": "La solicitud ha fallado ({status})",
+    "requestFailed": "La solicitud ha fallado",
+    "loadFailed": "No se ha podido cargar el hogar"
+  },
+  "locations": {
+    "title": "Lugares de interés ({count} de {max})",
+    "add": "Añadir lugar",
+    "empty": "Todavía no hay lugares. Los pisos no mostrarán la sección de distancias hasta que añadas uno.",
+    "moveUp": "Subir {label}",
+    "moveDown": "Bajar {label}",
+    "edit": "Editar {label}",
+    "delete": "Eliminar {label}",
+    "deleteConfirm": "¿Eliminar «{label}»? Los pisos perderán esta distancia.",
+    "formAdd": "Añadir lugar",
+    "formEdit": "Editar lugar",
+    "labelLabel": "Nombre",
+    "labelPlaceholder": "Trabajo, Casa, Gimnasio, …",
+    "addressLabel": "Dirección",
+    "addressPlaceholder": "Calle, código postal, ciudad",
+    "iconLabel": "Icono",
+    "pickIcon": "Elegir icono",
+    "change": "Cambiar",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saveError": "No se ha podido guardar el lugar",
+    "deleteError": "No se ha podido eliminar el lugar",
+    "reorderError": "No se ha podido reordenar",
+    "loadError": "No se han podido cargar los lugares",
+    "recomputeTitle": "Recalcular distancias",
+    "recomputeBody": "Vuelve a calcular los minutos en bici y en transporte público para cada combinación de piso y lugar.",
+    "recomputeError": "No se han podido recalcular las distancias",
+    "recomputingProgress": "Recalculando… {done} de {total}",
+    "recomputing": "Recalculando…",
+    "recompute": "Recalcular todo",
+    "recomputed": "Recalculados {updated} pisos{failed, plural, =0 {} other { (# con error)}}{skipped, plural, =0 {} other { (# omitidos: sin dirección)}}"
+  },
+  "iconPicker": {
+    "title": "Elige un icono",
+    "close": "Cerrar",
+    "icons": {
+      "Train": "Tren",
+      "Bus": "Autobús",
+      "Briefcase": "Maletín",
+      "Heart": "Corazón",
+      "Coffee": "Café",
+      "Dumbbell": "Mancuerna",
+      "ShoppingCart": "Carrito de la compra",
+      "GraduationCap": "Birrete",
+      "Plane": "Avión",
+      "Home": "Casa",
+      "Stethoscope": "Estetoscopio",
+      "Music": "Música"
+    }
+  }
+}

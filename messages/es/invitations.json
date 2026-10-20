@@ -1,0 +1,15 @@
+{
+  "title": "Unirse a un hogar",
+  "loading": "Cargando…",
+  "loadFailed": "No se han podido cargar las invitaciones",
+  "requestFailed": "La solicitud ha fallado",
+  "requestFailedStatus": "La solicitud ha fallado ({status})",
+  "invitedAndExpires": "Te ha invitado {name}. Caduca el {date}.",
+  "expires": "Caduca el {date}.",
+  "accept": "Aceptar",
+  "none": "No tienes invitaciones pendientes. Pide a quien administra el hogar que invite la dirección de correo con la que has iniciado sesión, o crea tu propio hogar.",
+  "declineAndStartOwn": "No, gracias; crear mi propio hogar",
+  "startOwn": "Crear mi propio hogar",
+  "signOut": "Cerrar sesión",
+  "polling": "Esta página busca invitaciones nuevas cada {seconds} segundos."
+}

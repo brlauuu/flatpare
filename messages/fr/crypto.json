@@ -1,0 +1,104 @@
+{
+  "passphrase": {
+    "label": "Phrase secrète",
+    "confirm": "Confirmer la phrase secrète",
+    "new": "Nouvelle phrase secrète",
+    "confirmNew": "Confirmer la nouvelle phrase secrète",
+    "current": "Phrase secrète actuelle",
+    "tooShort": "Utilise au moins {min} caractères.",
+    "mismatch": "Les phrases secrètes ne correspondent pas."
+  },
+  "setup": {
+    "title": "Choisis une phrase secrète",
+    "introCreator": "Flatpare chiffre les données de ton foyer dans ton navigateur. Cette phrase secrète protège tes clés ; Flatpare ne la voit jamais et ne peut pas la réinitialiser pour toi. Tu recevras un kit de récupération à l’écran suivant — garde-le en lieu sûr.",
+    "introJoiner": "Flatpare chiffre les données de ton foyer dans ton navigateur. Cette phrase secrète protège tes clés ; Flatpare ne la voit jamais et ne peut pas la réinitialiser pour toi. Une fois tes clés créées, quelqu’un de ton foyer te fera entrer automatiquement la prochaine fois qu’il ou elle ouvrira Flatpare.",
+    "submit": "Créer mes clés",
+    "submitting": "Création des clés…",
+    "failed": "La configuration a échoué"
+  },
+  "unlock": {
+    "title": "Déverrouiller Flatpare",
+    "intro": "Saisis ta phrase secrète pour déchiffrer les données de ton foyer sur cet appareil.",
+    "notPersistent": "Ce navigateur ne peut pas garder tes clés d’une visite à l’autre (navigation privée ?), ta phrase secrète te sera donc demandée à chaque fois.",
+    "submit": "Déverrouiller",
+    "submitting": "Déverrouillage…",
+    "failed": "Le déverrouillage a échoué"
+  },
+  "pending": {
+    "title": "Presque prêt",
+    "waiting": "En attente que quelqu’un de ton foyer ouvre Flatpare. Cette personne n’a rien à faire — cela se fait automatiquement.",
+    "polling": "{seconds, plural, one {Cette page vérifie à nouveau chaque seconde.} other {Cette page vérifie à nouveau toutes les # secondes.}}"
+  },
+  "householdKey": {
+    "title": "Un nouveau foyer",
+    "intro": "Ce foyer n’a pas encore de clé de chiffrement. En créer une le rend tien : tout ce que tu ajoutes est chiffré avec elle, et tu recevras un nouveau code de récupération à conserver.",
+    "submit": "Créer la clé du foyer",
+    "submitting": "Création…",
+    "failed": "Impossible de créer la clé du foyer"
+  },
+  "recoveryKit": {
+    "title": "Ton kit de récupération",
+    "intro": "Note ce code ou imprime-le, et garde-le en lieu sûr. C’est le seul moyen de récupérer les données de ton foyer si tu oublies ta phrase secrète et que personne d’autre dans ton foyer ne peut te faire entrer. Il n’est affiché qu’une fois.",
+    "copy": "Copier",
+    "print": "Imprimer",
+    "copied": "Copié.",
+    "acknowledge": "Je comprends que si je perds à la fois ma phrase secrète et ce kit de récupération, les données de mon foyer ne pourront être récupérées par personne, Flatpare compris.",
+    "continue": "Continuer"
+  },
+  "forgot": {
+    "open": "Phrase secrète oubliée ?",
+    "cannotReset": "Flatpare ne peut pas réinitialiser ta phrase secrète.",
+    "startOver": "Flatpare ne peut pas réinitialiser ta phrase secrète. Tu peux repartir avec de nouvelles clés et être réintégré·e par quelqu’un de ton foyer.",
+    "startOverOrKit": "Flatpare ne peut pas réinitialiser ta phrase secrète. Tu peux repartir avec de nouvelles clés et être réintégré·e par quelqu’un de ton foyer, ou utiliser ton kit de récupération.",
+    "soleHolder": "Personne d’autre dans ton foyer ne détient la clé, une réinitialisation ne pourrait donc pas aboutir — utilise ton kit de récupération.",
+    "resetButton": "Réinitialiser mes clés",
+    "useKitButton": "Utiliser mon kit de récupération",
+    "reset": {
+      "title": "Réinitialiser mes clés",
+      "intro": "Tu recevras de nouvelles clés protégées par une nouvelle phrase secrète, puis tu attendras que quelqu’un de ton foyer ouvre Flatpare. Si tu es le seul membre, utilise plutôt ton kit de récupération — une réinitialisation seule ne peut pas récupérer les données.",
+      "submit": "Réinitialiser et attendre",
+      "submitting": "Réinitialisation…",
+      "failed": "La réinitialisation a échoué"
+    },
+    "recover": {
+      "title": "Utiliser mon kit de récupération",
+      "code": "Code de récupération",
+      "submit": "Récupérer",
+      "submitting": "Récupération…",
+      "done": "Récupéré. Ton ancien kit de récupération ne fonctionne plus — voici le nouveau.",
+      "failed": "La récupération a échoué"
+    }
+  },
+  "settings": {
+    "title": "Chiffrement",
+    "off": "Chiffrement désactivé — choix de ce déploiement.",
+    "change": "Changer la phrase secrète",
+    "changed": "Phrase secrète changée.",
+    "changeFailed": "Impossible de changer la phrase secrète",
+    "lock": "Verrouiller cet appareil",
+    "regenerate": "Régénérer le kit de récupération",
+    "regenerateFailed": "Impossible de régénérer le kit",
+    "explain": "Verrouiller efface les clés de ce navigateur ; il te faudra ta phrase secrète la prochaine fois. Régénérer le kit de récupération remplace l’ancien code — l’ancien cesse de fonctionner immédiatement."
+  },
+  "provider": {
+    "adoptFailed": "La clé reçue n’a pas pu être ouverte. Réinitialise tes clés pour qu’un membre puisse t’en envoyer une nouvelle, ou utilise ton kit de récupération.",
+    "somethingWrong": "Une erreur s’est produite",
+    "nowIn": "{count, plural, one {{names} peut maintenant ouvrir Flatpare.} other {{names} peuvent maintenant ouvrir Flatpare.}}"
+  },
+  "errors": {
+    "wrongPassphrase": "Phrase secrète incorrecte",
+    "badRecoveryCode": "Ce code de récupération n’est pas valable",
+    "noKeysToUnlock": "Aucune clé à déverrouiller",
+    "invalidGeneratedCode": "Le code de récupération généré n’est pas valable",
+    "keysExist": "Les clés existent déjà",
+    "ownerOnlyHouseholdKey": "Seul le propriétaire peut créer la clé du foyer",
+    "householdKeyExists": "La clé du foyer existe déjà",
+    "noHouseholdKey": "Tu ne détiens pas la clé du foyer",
+    "noWrapYet": "Aucune clé ne t’a encore été transmise",
+    "noRecoveryKit": "Ce foyer n’a pas de kit de récupération",
+    "statusNotLoaded": "État non chargé",
+    "keysNotLoaded": "Clés non chargées",
+    "ownerOnlyRotate": "Seul le propriétaire peut renouveler la clé du foyer",
+    "olderHouseholdKey": "Cet appareil détient une ancienne clé du foyer ; recharge la page et réessaie"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Haushalt"
+  },
+  "members": {
+    "title": "Mitglieder",
+    "count": "{used} von {max}",
+    "role": {
+      "owner": "Inhaber:in",
+      "member": "Mitglied"
+    },
+    "awaitingKey": "wartet auf Schlüssel",
+    "remove": "Entfernen",
+    "leave": "Haushalt verlassen",
+    "leaveNote": "Deine Bewertungen und die Wohnungen, die du hinzugefügt hast, bleiben beim Haushalt.",
+    "leaveConfirmEncrypted": "Diesen Haushalt verlassen? Du verlierst sofort den Zugriff auf seine Wohnungen, und alles, was du hinzugefügt hast, bleibt dort. Du bekommst einen eigenen, leeren Haushalt.",
+    "leaveConfirm": "Diesen Haushalt verlassen? Du verlierst sofort den Zugriff auf seine Wohnungen, und alles, was du hinzugefügt hast, bleibt dort.",
+    "removeConfirmEncrypted": "{name} aus dem Haushalt entfernen? Der Zugriff endet sofort, und der Haushaltsschlüssel wird erneuert — du bekommst einen neuen Wiederherstellungscode zum Aufbewahren.",
+    "removeConfirm": "{name} aus dem Haushalt entfernen? Der Zugriff endet sofort.",
+    "removedEmailed": "{name} wurde entfernt und per E-Mail benachrichtigt.",
+    "removedEmailFailed": "{name} wurde entfernt, aber die E-Mail mit der Benachrichtigung konnte nicht gesendet werden.",
+    "removed": "{name} wurde entfernt.",
+    "removedRotationFailed": "{name} wurde entfernt, aber der Haushaltsschlüssel konnte nicht erneuert werden: {reason}. Erneuere ihn unten, sobald du bereit bist.",
+    "unknownError": "unbekannter Fehler"
+  },
+  "invite": {
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "name@beispiel.ch",
+    "submit": "Einladen",
+    "emailed": "Einladung an {email} gesendet.",
+    "emailFailed": "Einladung erstellt, aber die E-Mail an {email} konnte nicht gesendet werden. Bitte die Person, sich mit dieser Adresse anzumelden.",
+    "created": "Einladung erstellt. Bitte die Person, sich mit {email} anzumelden.",
+    "atLimit": "Dieser Haushalt ist auf {max} Mitglieder beschränkt. Entferne ein Mitglied oder widerrufe eine offene Einladung, um jemand anderen einzuladen.",
+    "noEmail": "Es wird keine E-Mail gesendet. Sag der Person, sie soll sich mit dieser Adresse anmelden; die Einladung wartet dort 7 Tage auf sie.",
+    "pending": "Offen · läuft ab am {date}",
+    "revoke": "Widerrufen"
+  },
+  "key": {
+    "title": "Haushaltsschlüssel",
+    "version": "Version {version}",
+    "rotationDue": "Ein Mitglied wurde entfernt, aber der Haushaltsschlüssel wurde seither nicht erneuert. Bis dahin ist alles, was jetzt gespeichert wird, mit dem Schlüssel lesbar, den sein Gerät noch hat.",
+    "explain": "Beim Erneuern wird alles mit einem neuen Schlüssel neu verschlüsselt, und alle Mitglieder bekommen den neuen Schlüssel automatisch. Das passiert von selbst, wenn du jemanden entfernst; du kannst es auch von Hand auslösen. Du bekommst einen neuen Wiederherstellungscode — der alte funktioniert dann nicht mehr.",
+    "pdfFailures": "{count, plural, one {Haushaltsschlüssel erneuert, aber # PDF konnte nicht neu verschlüsselt werden und ist unverändert geblieben.} other {Haushaltsschlüssel erneuert, aber # PDFs konnten nicht neu verschlüsselt werden und sind unverändert geblieben.}}",
+    "rotating": "Wird erneuert…",
+    "rotate": "Haushaltsschlüssel erneuern",
+    "rotateError": "Der Schlüssel konnte nicht erneuert werden"
+  },
+  "errors": {
+    "requestFailedStatus": "Anfrage fehlgeschlagen ({status})",
+    "requestFailed": "Anfrage fehlgeschlagen",
+    "loadFailed": "Der Haushalt konnte nicht geladen werden"
+  },
+  "locations": {
+    "title": "Wichtige Orte ({count} von {max})",
+    "add": "Ort hinzufügen",
+    "empty": "Noch keine Orte. Bei den Wohnungen bleibt der Abschnitt mit den Distanzen ausgeblendet, bis du einen hinzufügst.",
+    "moveUp": "{label} nach oben",
+    "moveDown": "{label} nach unten",
+    "edit": "{label} bearbeiten",
+    "delete": "{label} löschen",
+    "deleteConfirm": "«{label}» löschen? Die Wohnungen verlieren diese Distanz.",
+    "formAdd": "Ort hinzufügen",
+    "formEdit": "Ort bearbeiten",
+    "labelLabel": "Bezeichnung",
+    "labelPlaceholder": "Arbeit, Zuhause, Fitness, …",
+    "addressLabel": "Adresse",
+    "addressPlaceholder": "Strasse, PLZ, Ort",
+    "iconLabel": "Symbol",
+    "pickIcon": "Symbol wählen",
+    "change": "Ändern",
+    "saving": "Wird gespeichert…",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saveError": "Der Ort konnte nicht gespeichert werden",
+    "deleteError": "Der Ort konnte nicht gelöscht werden",
+    "reorderError": "Die Reihenfolge konnte nicht geändert werden",
+    "loadError": "Die Orte konnten nicht geladen werden",
+    "recomputeTitle": "Distanzen neu berechnen",
+    "recomputeBody": "Berechnet die Velo- und ÖV-Minuten für jede Kombination aus Wohnung und Ort neu.",
+    "recomputeError": "Die Distanzen konnten nicht neu berechnet werden",
+    "recomputingProgress": "Wird neu berechnet… {done} von {total}",
+    "recomputing": "Wird neu berechnet…",
+    "recompute": "Alle neu berechnen",
+    "recomputed": "{updated} Wohnungen neu berechnet{failed, plural, =0 {} other { (# fehlgeschlagen)}}{skipped, plural, =0 {} other { (# übersprungen — ohne Adresse)}}"
+  },
+  "iconPicker": {
+    "title": "Symbol wählen",
+    "close": "Schliessen",
+    "icons": {
+      "Train": "Zug",
+      "Bus": "Bus",
+      "Briefcase": "Aktentasche",
+      "Heart": "Herz",
+      "Coffee": "Kaffee",
+      "Dumbbell": "Hantel",
+      "ShoppingCart": "Einkaufswagen",
+      "GraduationCap": "Doktorhut",
+      "Plane": "Flugzeug",
+      "Home": "Zuhause",
+      "Stethoscope": "Stethoskop",
+      "Music": "Musik"
+    }
+  }
+}

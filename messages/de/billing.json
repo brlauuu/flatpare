@@ -1,0 +1,16 @@
+{
+  "page": {
+    "titleReturning": "40 weitere Wohnungen hinzufügen",
+    "titleFirst": "Einmal bezahlen, dann gehört es dir",
+    "usage": "Du hast {used} von {granted} Wohnungen genutzt. Für weitere CHF 5 kommen 40 dazu.",
+    "pitch": "Flatpare kostet CHF 5, einmalig — kein Abo. Das reicht für bis zu 10 Personen und 40 Wohnungen in deinem Haushalt.",
+    "quota": "Gezählt werden die Wohnungen, die du <strong>hinzufügst</strong>, nicht die, die du behältst: Wenn du eine löschst, wird Platz in deinem Vergleich frei, das Guthaben bekommst du aber nicht zurück. Ein PDF auszulesen und Reisezeiten zu messen kostet uns pro Wohnung Geld, und genau dafür bezahlst du.",
+    "stripe": "Die Zahlung läuft über Stripe. Flatpare sieht deine Kartendaten nie, und Stripe sieht deine Wohnungen nie — sie werden in deinem Browser verschlüsselt."
+  },
+  "checkout": {
+    "startFailed": "Die Bezahlung konnte nicht gestartet werden. Bitte versuch es nochmals.",
+    "retry": "Nochmals versuchen",
+    "buy": "40 Wohnungen kaufen — CHF 5",
+    "waiting": "Wir haben von Stripe noch nichts gehört. Wenn deine Zahlung durchgegangen ist, kommt sie meist innert Sekunden an — lade diese Seite in einer Minute neu, dann sind deine Wohnungen da. Wenn nicht, wurde dir nichts belastet, und es ist nichts verloren."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "items": {
+    "apartments": "Wohnungen",
+    "upload": "Hochladen",
+    "compare": "Vergleichen",
+    "map": "Karte",
+    "household": "Haushalt",
+    "settings": "Einstellungen"
+  },
+  "short": {
+    "apartments": "Wohnungen",
+    "upload": "Neu",
+    "compare": "Vergleich",
+    "map": "Karte",
+    "household": "Haushalt",
+    "settings": "Konto"
+  },
+  "menu": {
+    "guide": "Anleitung",
+    "signOut": "Abmelden"
+  },
+  "confirmSignOut": "Du hast ungespeicherte Änderungen an einer Bewertung. Trotzdem abmelden? Deine Eingaben gehen verloren.",
+  "unknownUser": "Unbekannt"
+}

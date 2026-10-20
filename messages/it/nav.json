@@ -1,0 +1,24 @@
+{
+  "items": {
+    "apartments": "Appartamenti",
+    "upload": "Carica",
+    "compare": "Confronta",
+    "map": "Mappa",
+    "household": "Gruppo",
+    "settings": "Impostazioni"
+  },
+  "short": {
+    "apartments": "Annunci",
+    "upload": "Carica",
+    "compare": "Confronta",
+    "map": "Mappa",
+    "household": "Gruppo",
+    "settings": "Profilo"
+  },
+  "menu": {
+    "guide": "Guida",
+    "signOut": "Esci"
+  },
+  "confirmSignOut": "Hai modifiche alle valutazioni non salvate. Vuoi uscire lo stesso? Quello che hai inserito andrà perso.",
+  "unknownUser": "Sconosciuto"
+}

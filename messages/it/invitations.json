@@ -1,0 +1,15 @@
+{
+  "title": "Unisciti a un gruppo",
+  "loading": "Caricamento…",
+  "loadFailed": "Non è stato possibile caricare gli inviti",
+  "requestFailed": "Richiesta non riuscita",
+  "requestFailedStatus": "Richiesta non riuscita ({status})",
+  "invitedAndExpires": "Invitato/a da {name}. Scade il {date}.",
+  "expires": "Scade il {date}.",
+  "accept": "Accetta",
+  "none": "Non hai inviti in sospeso. Chiedi a chi gestisce il gruppo di invitare l'indirizzo e-mail con cui hai effettuato l'accesso, oppure crea il tuo gruppo.",
+  "declineAndStartOwn": "No grazie, crea il mio gruppo",
+  "startOwn": "Crea il mio gruppo",
+  "signOut": "Esci",
+  "polling": "Questa pagina controlla se ci sono nuovi inviti ogni {seconds} secondi."
+}

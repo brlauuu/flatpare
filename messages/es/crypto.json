@@ -1,0 +1,104 @@
+{
+  "passphrase": {
+    "label": "Frase de contraseña",
+    "confirm": "Confirma la frase de contraseña",
+    "new": "Nueva frase de contraseña",
+    "confirmNew": "Confirma la nueva frase de contraseña",
+    "current": "Frase de contraseña actual",
+    "tooShort": "Usa al menos {min} caracteres.",
+    "mismatch": "Las frases de contraseña no coinciden."
+  },
+  "setup": {
+    "title": "Elige una frase de contraseña",
+    "introCreator": "Flatpare cifra los datos de tu hogar en tu navegador. Esta frase de contraseña protege tus claves; Flatpare nunca la ve y no puede restablecerla por ti. En la siguiente pantalla recibirás un kit de recuperación: guárdalo en un lugar seguro.",
+    "introJoiner": "Flatpare cifra los datos de tu hogar en tu navegador. Esta frase de contraseña protege tus claves; Flatpare nunca la ve y no puede restablecerla por ti. Cuando tus claves existan, alguien de tu hogar te dará acceso automáticamente la próxima vez que abra Flatpare.",
+    "submit": "Crear mis claves",
+    "submitting": "Creando las claves…",
+    "failed": "No se ha podido completar la configuración"
+  },
+  "unlock": {
+    "title": "Desbloquear Flatpare",
+    "intro": "Introduce tu frase de contraseña para descifrar los datos de tu hogar en este dispositivo.",
+    "notPersistent": "Este navegador no puede recordar tus claves entre visitas (¿navegación privada?), así que te pediremos la frase de contraseña cada vez.",
+    "submit": "Desbloquear",
+    "submitting": "Desbloqueando…",
+    "failed": "No se ha podido desbloquear"
+  },
+  "pending": {
+    "title": "Ya casi está",
+    "waiting": "Esperando a que alguien de tu hogar abra Flatpare. No tiene que hacer nada: ocurre automáticamente.",
+    "polling": "{seconds, plural, one {Esta página vuelve a comprobarlo cada segundo.} other {Esta página vuelve a comprobarlo cada # segundos.}}"
+  },
+  "householdKey": {
+    "title": "Un hogar nuevo",
+    "intro": "Este hogar todavía no tiene clave de cifrado. Al crearla pasa a ser tuyo: todo lo que añadas se cifra con ella, y recibirás un nuevo código de recuperación que tendrás que guardar.",
+    "submit": "Crear la clave del hogar",
+    "submitting": "Creando…",
+    "failed": "No se ha podido crear la clave del hogar"
+  },
+  "recoveryKit": {
+    "title": "Tu kit de recuperación",
+    "intro": "Apunta este código o imprímelo y guárdalo en un lugar seguro. Es la única forma de recuperar los datos de tu hogar si olvidas tu frase de contraseña y nadie más de tu hogar puede darte acceso. Solo se muestra una vez.",
+    "copy": "Copiar",
+    "print": "Imprimir",
+    "copied": "Copiado.",
+    "acknowledge": "Entiendo que, si pierdo tanto mi frase de contraseña como este kit de recuperación, nadie podrá recuperar los datos de mi hogar, tampoco Flatpare.",
+    "continue": "Continuar"
+  },
+  "forgot": {
+    "open": "¿Has olvidado tu frase de contraseña?",
+    "cannotReset": "Flatpare no puede restablecer tu frase de contraseña.",
+    "startOver": "Flatpare no puede restablecer tu frase de contraseña. Puedes empezar de nuevo con claves nuevas y que alguien de tu hogar te vuelva a dar acceso.",
+    "startOverOrKit": "Flatpare no puede restablecer tu frase de contraseña. Puedes empezar de nuevo con claves nuevas y que alguien de tu hogar te vuelva a dar acceso, o usar tu kit de recuperación.",
+    "soleHolder": "Nadie más de tu hogar tiene la clave, así que un restablecimiento no podría completarse: usa tu kit de recuperación.",
+    "resetButton": "Restablecer mis claves",
+    "useKitButton": "Usar mi kit de recuperación",
+    "reset": {
+      "title": "Restablecer mis claves",
+      "intro": "Recibirás claves nuevas con una nueva frase de contraseña y esperarás a que alguien de tu hogar abra Flatpare. Si eres el único miembro, usa tu kit de recuperación: un restablecimiento por sí solo no puede devolverte los datos.",
+      "submit": "Restablecer y esperar",
+      "submitting": "Restableciendo…",
+      "failed": "No se ha podido restablecer"
+    },
+    "recover": {
+      "title": "Usar mi kit de recuperación",
+      "code": "Código de recuperación",
+      "submit": "Recuperar",
+      "submitting": "Recuperando…",
+      "done": "Recuperado. Tu kit de recuperación anterior ya no funciona; aquí tienes el nuevo.",
+      "failed": "No se ha podido recuperar"
+    }
+  },
+  "settings": {
+    "title": "Cifrado",
+    "off": "Cifrado: desactivado (lo decide esta instalación).",
+    "change": "Cambiar la frase de contraseña",
+    "changed": "Frase de contraseña cambiada.",
+    "changeFailed": "No se ha podido cambiar la frase de contraseña",
+    "lock": "Bloquear este dispositivo",
+    "regenerate": "Generar un nuevo kit de recuperación",
+    "regenerateFailed": "No se ha podido generar el kit",
+    "explain": "Bloquear borra las claves de este navegador; la próxima vez necesitarás tu frase de contraseña. Generar un nuevo kit de recuperación sustituye el código anterior: el anterior deja de funcionar de inmediato."
+  },
+  "provider": {
+    "adoptFailed": "No se ha podido abrir la clave que hemos recibido. Restablece tus claves para que un miembro pueda enviarte una nueva, o usa tu kit de recuperación.",
+    "somethingWrong": "Algo ha salido mal",
+    "nowIn": "{count, plural, one {{names} ya puede abrir Flatpare.} other {{names} ya pueden abrir Flatpare.}}"
+  },
+  "errors": {
+    "wrongPassphrase": "Frase de contraseña incorrecta",
+    "badRecoveryCode": "Ese código de recuperación no es válido",
+    "noKeysToUnlock": "No hay claves que desbloquear",
+    "invalidGeneratedCode": "Se ha generado un código de recuperación no válido",
+    "keysExist": "Las claves ya existen",
+    "ownerOnlyHouseholdKey": "Solo quien administra el hogar puede crear su clave",
+    "householdKeyExists": "La clave del hogar ya existe",
+    "noHouseholdKey": "No tienes la clave del hogar",
+    "noWrapYet": "Todavía no ha llegado la clave",
+    "noRecoveryKit": "Este hogar no tiene kit de recuperación",
+    "statusNotLoaded": "Estado no cargado",
+    "keysNotLoaded": "Claves no cargadas",
+    "ownerOnlyRotate": "Solo quien administra el hogar puede renovar su clave",
+    "olderHouseholdKey": "Este dispositivo tiene una clave del hogar antigua; recarga la página e inténtalo de nuevo"
+  }
+}

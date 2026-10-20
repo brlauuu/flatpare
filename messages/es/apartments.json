@@ -1,0 +1,176 @@
+{
+  "list": {
+    "loading": "Cargando pisos...",
+    "loadError": "No se han podido cargar los pisos",
+    "emptyTitle": "Todavía no hay pisos",
+    "emptyBody": "Sube el PDF de un anuncio para empezar",
+    "uploadFirst": "Sube tu primer anuncio",
+    "viewOnMap": "Ver en el mapa",
+    "enrichmentFailed": "No se han podido completar los datos de {name}: {error}",
+    "retry": "Reintentar",
+    "searchLabel": "Buscar pisos",
+    "searchPlaceholder": "Buscar por nombre, código o dirección...",
+    "clearSearch": "Borrar la búsqueda",
+    "title": "Pisos",
+    "heldCount": "{count} de {max}",
+    "sortBy": "Ordenar por",
+    "ascending": "Ascendente",
+    "descending": "Descendente",
+    "view": "Vista",
+    "gridView": "Vista de cuadrícula",
+    "listView": "Vista de lista",
+    "limitTitle": "Este hogar tiene un límite de {max} pisos",
+    "limitReached": "Límite alcanzado",
+    "uploadNew": "Subir nuevo",
+    "noMatch": "Ningún piso coincide con «{query}»",
+    "showAll": "Mostrar todos los pisos"
+  },
+  "badges": {
+    "gone": "Retirado",
+    "rated": "Valorado",
+    "notRated": "Sin valorar",
+    "rent": "CHF {amount, number}",
+    "rooms": "{count, number} hab.",
+    "roomsShort": "{count, number} hab.",
+    "size": "{size, number} m²"
+  },
+  "corrupt": {
+    "title": "No se ha podido descifrar este piso",
+    "body": "El registro guardado no se ha podido abrir con la clave del hogar. Solo se puede eliminar.",
+    "deleteConfirm": "¿Eliminar este piso? No se puede deshacer.",
+    "delete": "Eliminar",
+    "deleting": "Eliminando..."
+  },
+  "detail": {
+    "loading": "Cargando...",
+    "loadError": "No se ha podido cargar el piso",
+    "notFound": "Piso no encontrado",
+    "deleteFailed": "No se ha podido eliminar el piso",
+    "pdfOpenFailed": "No se ha podido abrir el PDF",
+    "reprocessConfirm": "¿Volver a procesar este piso? Los campos que no has editado se actualizarán a partir del PDF. Los que has editado se mantendrán.",
+    "reprocessFailed": "No se ha podido volver a procesar el piso",
+    "nameRequired": "El nombre es obligatorio",
+    "saveFailed": "No se han podido guardar los cambios",
+    "ratingSaveFailed": "No se ha podido guardar la valoración",
+    "availableFrom": "Disponible desde: {date}"
+  },
+  "actions": {
+    "viewPdf": "Ver PDF",
+    "originalListing": "Anuncio original",
+    "urlMissing": "Falta la URL",
+    "edit": "Editar",
+    "reprocess": "Volver a procesar",
+    "reprocessing": "Procesando...",
+    "delete": "Eliminar",
+    "deleting": "Eliminando..."
+  },
+  "metrics": {
+    "rentPerMonth": "CHF {amount, number}/mes",
+    "bathrooms": "{count, plural, one {# baño} other {# baños}}",
+    "balconies": "{count, plural, one {# balcón} other {# balcones}}",
+    "washingYes": "Lavadora: sí",
+    "washingNo": "Lavadora: no (o compartida)",
+    "washingUnknown": "Lavadora: se desconoce",
+    "yes": "Sí",
+    "no": "No",
+    "unknown": "?"
+  },
+  "pager": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "position": "{position} de {total}"
+  },
+  "distance": {
+    "title": "Distancia a los lugares",
+    "bikeDirections": "Ruta en bici a {label}",
+    "bike": "{minutes} min en bici",
+    "bikeNone": "— en bici",
+    "transit": "{minutes} min en transporte público",
+    "transitNone": "— en transporte público"
+  },
+  "new": {
+    "pdfStoreWarning": "No se ha podido guardar el PDF; el piso se guardará sin él",
+    "readFailed": "No se ha podido leer el archivo",
+    "parseFailed": "No se ha podido analizar",
+    "fileLost": "Se ha perdido la referencia al archivo; vuelve a subirlo",
+    "noPdfs": "No has seleccionado ningún PDF",
+    "nothingToSave": "No hay pisos que guardar",
+    "itemSaveFailed": "No se ha podido guardar",
+    "nameRequired": "El nombre es obligatorio",
+    "saveFailed": "No se ha podido guardar el piso",
+    "processing": "Procesando ({done}/{total})"
+  },
+  "upload": {
+    "title": "Subir anuncios",
+    "drop": "Arrastra aquí uno o varios PDF, o",
+    "choose": "Elegir archivos",
+    "manual": "O añádelo a mano, sin PDF"
+  },
+  "review": {
+    "title": "Revisar pisos",
+    "uploadMore": "Subir más",
+    "saving": "Guardando...",
+    "save": "{count, plural, =1 {Guardar piso} other {Guardar los #}}",
+    "allSaved": "Todos los pisos guardados. Redirigiendo...",
+    "rent": "CHF {amount}",
+    "size": "{size} m²",
+    "rooms": "{count} hab.",
+    "retry": "Reintentar"
+  },
+  "single": {
+    "title": "Añadir un piso a mano",
+    "subtitle": "Rellena los datos del piso",
+    "saving": "Guardando...",
+    "save": "Guardar piso"
+  },
+  "status": {
+    "saved": "Guardado",
+    "queued": "En cola",
+    "uploading": "Subiendo...",
+    "parsed": "Analizado",
+    "error": "Error"
+  },
+  "form": {
+    "summary": "Resumen",
+    "summaryPlaceholder": "Descripción breve en inglés (generada por IA)",
+    "name": "Nombre *",
+    "namePlaceholder": "Nombre del piso",
+    "address": "Dirección",
+    "addressPlaceholder": "Calle, código postal, ciudad",
+    "rent": "Alquiler (CHF/mes)",
+    "size": "Superficie (m²)",
+    "availableFrom": "Disponible desde",
+    "rooms": "Habitaciones",
+    "baths": "Baños",
+    "balconies": "Balcones",
+    "washingMachine": "Lavadora",
+    "listingUrl": "URL del anuncio",
+    "yes": "Sí",
+    "no": "No",
+    "unknown": "Desconocido"
+  },
+  "edit": {
+    "title": "Editar piso",
+    "saving": "Guardando..."
+  },
+  "map": {
+    "loading": "Cargando el mapa…"
+  },
+  "rating": {
+    "yours": "Tu valoración ({name})",
+    "comment": "Comentario",
+    "commentPlaceholder": "Notas sobre este piso...",
+    "saving": "Guardando...",
+    "save": "Guardar valoración",
+    "other": "Valoración de {name}"
+  },
+  "credits": {
+    "left": "Te {count, plural, one {queda} other {quedan}} <n>{count}</n> {count, plural, one {piso} other {pisos}} por añadir",
+    "runningLow": "(quedan pocos)",
+    "noneLeft": "(no queda ninguno)",
+    "buyMore": "Comprar más"
+  },
+  "errors": {
+    "staleKey": "Quien administra el hogar ha cambiado la clave del hogar. Tus datos se han vuelto a cargar; inténtalo de nuevo."
+  }
+}

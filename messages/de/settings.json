@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Einstellungen",
+    "moved": "Mitglieder, Einladungen und wichtige Orte findest du jetzt auf der Seite <household>Haushalt</household>."
+  },
+  "name": {
+    "title": "Dein Name",
+    "label": "Dein Name",
+    "help": "Wird den Mitgliedern deines Haushalts bei Bewertungen, im Vergleich und auf der Seite Haushalt angezeigt.",
+    "untilSet": " Bis du einen festlegst, sehen sie deine E-Mail-Adresse, {email}.",
+    "loadError": "Dein Name konnte nicht geladen werden. Lade die Seite neu, um es nochmals zu versuchen.",
+    "saveError": "Dein Name konnte nicht gespeichert werden.",
+    "saved": "Gespeichert.",
+    "save": "Name speichern"
+  }
+}

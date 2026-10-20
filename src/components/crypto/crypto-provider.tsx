@@ -296,7 +296,7 @@ export function CryptoProvider({
           role="status"
           className="fixed bottom-20 left-1/2 -translate-x-1/2 border-3 border-frame bg-card px-4 py-2 text-sm font-semibold shadow-frame sm:bottom-6"
         >
-          {t("provider.nowIn", { names: format.list(notice, { type: "unit" }) })}
+          {t("provider.nowIn", { names: format.list(notice, { type: "unit" }), count: notice.length })}
         </div>
       )}
     </CryptoContext.Provider>

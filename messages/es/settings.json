@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Ajustes",
+    "moved": "Los miembros, las invitaciones y los lugares de interés se han trasladado a la página <household>Hogar</household>."
+  },
+  "name": {
+    "title": "Tu nombre",
+    "label": "Tu nombre",
+    "help": "Lo ven los miembros de tu hogar en las valoraciones, la comparación y la página Hogar.",
+    "untilSet": " Hasta que pongas uno, ven tu correo, {email}.",
+    "loadError": "No se ha podido cargar tu nombre. Recarga la página para volver a intentarlo.",
+    "saveError": "No se ha podido guardar tu nombre.",
+    "saved": "Guardado.",
+    "save": "Guardar nombre"
+  }
+}

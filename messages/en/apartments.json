@@ -66,7 +66,7 @@
   },
   "metrics": {
     "rentPerMonth": "CHF {amount, number}/mo",
-    "bathrooms": "{count, number} bath",
+    "bathrooms": "{count, plural, one {# bath} other {# bath}}",
     "balconies": "{count, plural, one {# balcony} other {# balconies}}",
     "washingYes": "Washing machine: yes",
     "washingNo": "Washing machine: no (or shared)",

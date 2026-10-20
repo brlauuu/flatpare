@@ -1,0 +1,104 @@
+{
+  "passphrase": {
+    "label": "Passphrase",
+    "confirm": "Conferma la passphrase",
+    "new": "Nuova passphrase",
+    "confirmNew": "Conferma la nuova passphrase",
+    "current": "Passphrase attuale",
+    "tooShort": "Usa almeno {min} caratteri.",
+    "mismatch": "Le passphrase non coincidono."
+  },
+  "setup": {
+    "title": "Scegli una passphrase",
+    "introCreator": "Flatpare cifra i dati del tuo gruppo nel tuo browser. Questa passphrase protegge le tue chiavi; Flatpare non la vede mai e non può reimpostarla per te. Nella prossima schermata riceverai un kit di recupero — conservalo in un posto sicuro.",
+    "introJoiner": "Flatpare cifra i dati del tuo gruppo nel tuo browser. Questa passphrase protegge le tue chiavi; Flatpare non la vede mai e non può reimpostarla per te. Una volta create le tue chiavi, qualcuno del tuo gruppo ti farà entrare automaticamente la prossima volta che apre Flatpare.",
+    "submit": "Crea le mie chiavi",
+    "submitting": "Creazione delle chiavi…",
+    "failed": "Configurazione non riuscita"
+  },
+  "unlock": {
+    "title": "Sblocca Flatpare",
+    "intro": "Inserisci la tua passphrase per decifrare i dati del tuo gruppo su questo dispositivo.",
+    "notPersistent": "Questo browser non riesce a ricordare le tue chiavi tra una visita e l'altra (navigazione privata?), quindi ti verrà chiesta la passphrase ogni volta.",
+    "submit": "Sblocca",
+    "submitting": "Sblocco in corso…",
+    "failed": "Sblocco non riuscito"
+  },
+  "pending": {
+    "title": "Ci siamo quasi",
+    "waiting": "In attesa che qualcuno del tuo gruppo apra Flatpare. Non deve fare nulla — succede automaticamente.",
+    "polling": "{seconds, plural, one {Questa pagina ricontrolla ogni secondo.} other {Questa pagina ricontrolla ogni # secondi.}}"
+  },
+  "householdKey": {
+    "title": "Un nuovo gruppo",
+    "intro": "Questo gruppo non ha ancora una chiave di cifratura. Crearne una lo rende tuo: tutto ciò che aggiungi viene cifrato con questa chiave e riceverai un nuovo codice di recupero da conservare.",
+    "submit": "Crea la chiave del gruppo",
+    "submitting": "Creazione…",
+    "failed": "Non è stato possibile creare la chiave del gruppo"
+  },
+  "recoveryKit": {
+    "title": "Il tuo kit di recupero",
+    "intro": "Scrivi questo codice o stampalo e conservalo in un posto sicuro. È l'unico modo per recuperare i dati del tuo gruppo se dimentichi la passphrase e nessun altro del tuo gruppo può farti entrare. Viene mostrato una sola volta.",
+    "copy": "Copia",
+    "print": "Stampa",
+    "copied": "Copiato.",
+    "acknowledge": "Ho capito che, se perdo sia la passphrase sia questo kit di recupero, i dati del mio gruppo non potranno essere recuperati da nessuno, nemmeno da Flatpare.",
+    "continue": "Continua"
+  },
+  "forgot": {
+    "open": "Hai dimenticato la passphrase?",
+    "cannotReset": "Flatpare non può reimpostare la tua passphrase.",
+    "startOver": "Flatpare non può reimpostare la tua passphrase. Puoi ricominciare con nuove chiavi e farti riammettere da qualcuno del tuo gruppo.",
+    "startOverOrKit": "Flatpare non può reimpostare la tua passphrase. Puoi ricominciare con nuove chiavi e farti riammettere da qualcuno del tuo gruppo, oppure usare il tuo kit di recupero.",
+    "soleHolder": "Nessun altro del tuo gruppo ha la chiave, quindi una reimpostazione non potrebbe essere completata — usa il tuo kit di recupero.",
+    "resetButton": "Reimposta le mie chiavi",
+    "useKitButton": "Usa il mio kit di recupero",
+    "reset": {
+      "title": "Reimposta le mie chiavi",
+      "intro": "Riceverai nuove chiavi con una nuova passphrase e aspetterai che qualcuno del tuo gruppo apra Flatpare. Se sei l'unico membro, usa invece il tuo kit di recupero — una reimpostazione da sola non può riportare indietro i dati.",
+      "submit": "Reimposta e attendi",
+      "submitting": "Reimpostazione…",
+      "failed": "Reimpostazione non riuscita"
+    },
+    "recover": {
+      "title": "Usa il mio kit di recupero",
+      "code": "Codice di recupero",
+      "submit": "Recupera",
+      "submitting": "Recupero in corso…",
+      "done": "Recuperato. Il tuo vecchio kit di recupero non funziona più — ecco quello nuovo.",
+      "failed": "Recupero non riuscito"
+    }
+  },
+  "settings": {
+    "title": "Cifratura",
+    "off": "Cifratura: disattivata — impostazione di questa installazione.",
+    "change": "Cambia passphrase",
+    "changed": "Passphrase cambiata.",
+    "changeFailed": "Non è stato possibile cambiare la passphrase",
+    "lock": "Blocca questo dispositivo",
+    "regenerate": "Rigenera il kit di recupero",
+    "regenerateFailed": "Non è stato possibile rigenerare il kit",
+    "explain": "Il blocco cancella le chiavi da questo browser; la prossima volta ti servirà la passphrase. Rigenerare il kit di recupero sostituisce il vecchio codice — quello vecchio smette subito di funzionare."
+  },
+  "provider": {
+    "adoptFailed": "Non è stato possibile aprire la chiave ricevuta. Reimposta le tue chiavi così che un membro possa inviartene una nuova, oppure usa il tuo kit di recupero.",
+    "somethingWrong": "Qualcosa è andato storto",
+    "nowIn": "{count, plural, one {{names} ora può aprire Flatpare.} other {{names} ora possono aprire Flatpare.}}"
+  },
+  "errors": {
+    "wrongPassphrase": "Passphrase errata",
+    "badRecoveryCode": "Questo codice di recupero non è valido",
+    "noKeysToUnlock": "Nessuna chiave da sbloccare",
+    "invalidGeneratedCode": "È stato generato un codice di recupero non valido",
+    "keysExist": "Le chiavi esistono già",
+    "ownerOnlyHouseholdKey": "Solo il proprietario può creare la chiave del gruppo",
+    "householdKeyExists": "La chiave del gruppo esiste già",
+    "noHouseholdKey": "Non hai la chiave del gruppo",
+    "noWrapYet": "Non è ancora arrivata nessuna chiave",
+    "noRecoveryKit": "Questo gruppo non ha un kit di recupero",
+    "statusNotLoaded": "Stato non caricato",
+    "keysNotLoaded": "Chiavi non caricate",
+    "ownerOnlyRotate": "Solo il proprietario può rinnovare la chiave del gruppo",
+    "olderHouseholdKey": "Questo dispositivo ha una versione precedente della chiave del gruppo; ricarica e riprova"
+  }
+}

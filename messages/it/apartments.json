@@ -1,0 +1,176 @@
+{
+  "list": {
+    "loading": "Caricamento degli appartamenti…",
+    "loadError": "Non è stato possibile caricare gli appartamenti",
+    "emptyTitle": "Ancora nessun appartamento",
+    "emptyBody": "Carica l'annuncio in PDF per iniziare",
+    "uploadFirst": "Carica il tuo primo annuncio",
+    "viewOnMap": "Vedi sulla mappa",
+    "enrichmentFailed": "Completamento dei dati non riuscito per {name}: {error}",
+    "retry": "Riprova",
+    "searchLabel": "Cerca appartamenti",
+    "searchPlaceholder": "Cerca per nome, codice o indirizzo…",
+    "clearSearch": "Cancella ricerca",
+    "title": "Appartamenti",
+    "heldCount": "{count} di {max}",
+    "sortBy": "Ordina per",
+    "ascending": "Crescente",
+    "descending": "Decrescente",
+    "view": "Vista",
+    "gridView": "Vista a griglia",
+    "listView": "Vista a elenco",
+    "limitTitle": "Questo gruppo può avere al massimo {max} appartamenti",
+    "limitReached": "Limite raggiunto",
+    "uploadNew": "Carica nuovo",
+    "noMatch": "Nessun appartamento corrisponde a «{query}»",
+    "showAll": "Mostra tutti gli appartamenti"
+  },
+  "badges": {
+    "gone": "Non più disponibile",
+    "rated": "Valutato",
+    "notRated": "Non ancora valutato",
+    "rent": "CHF {amount, number}",
+    "rooms": "{count, number} locali",
+    "roomsShort": "{count, number} loc.",
+    "size": "{size, number} m²"
+  },
+  "corrupt": {
+    "title": "Non è stato possibile decifrare questo appartamento",
+    "body": "Il record salvato non si apre con la chiave del gruppo. Si può solo eliminare.",
+    "deleteConfirm": "Eliminare questo appartamento? L'operazione non si può annullare.",
+    "delete": "Elimina",
+    "deleting": "Eliminazione…"
+  },
+  "detail": {
+    "loading": "Caricamento…",
+    "loadError": "Non è stato possibile caricare l'appartamento",
+    "notFound": "Appartamento non trovato",
+    "deleteFailed": "Non è stato possibile eliminare l'appartamento",
+    "pdfOpenFailed": "Non è stato possibile aprire il PDF",
+    "reprocessConfirm": "Rielaborare questo appartamento? I campi che non hai modificato verranno aggiornati dal PDF. Quelli che hai modificato resteranno invariati.",
+    "reprocessFailed": "Non è stato possibile rielaborare l'appartamento",
+    "nameRequired": "Il nome è obbligatorio",
+    "saveFailed": "Non è stato possibile salvare le modifiche",
+    "ratingSaveFailed": "Non è stato possibile salvare la valutazione",
+    "availableFrom": "Disponibile dal: {date}"
+  },
+  "actions": {
+    "viewPdf": "Vedi PDF",
+    "originalListing": "Annuncio originale",
+    "urlMissing": "URL mancante",
+    "edit": "Modifica",
+    "reprocess": "Rielabora",
+    "reprocessing": "Rielaborazione…",
+    "delete": "Elimina",
+    "deleting": "Eliminazione…"
+  },
+  "metrics": {
+    "rentPerMonth": "CHF {amount, number}/mese",
+    "bathrooms": "{count, plural, one {# bagno} other {# bagni}}",
+    "balconies": "{count, plural, one {# balcone} other {# balconi}}",
+    "washingYes": "Lavatrice: sì",
+    "washingNo": "Lavatrice: no (o in comune)",
+    "washingUnknown": "Lavatrice: non si sa",
+    "yes": "Sì",
+    "no": "No",
+    "unknown": "?"
+  },
+  "pager": {
+    "previous": "Precedente",
+    "next": "Successivo",
+    "position": "{position} di {total}"
+  },
+  "distance": {
+    "title": "Distanza dai luoghi",
+    "bikeDirections": "Percorso in bici fino a {label}",
+    "bike": "{minutes} min in bici",
+    "bikeNone": "— in bici",
+    "transit": "{minutes} min coi mezzi",
+    "transitNone": "— coi mezzi"
+  },
+  "new": {
+    "pdfStoreWarning": "Non è stato possibile salvare il PDF — l'appartamento verrà salvato senza",
+    "readFailed": "Impossibile leggere il file",
+    "parseFailed": "Lettura non riuscita",
+    "fileLost": "Riferimento al file perso — caricalo di nuovo",
+    "noPdfs": "Nessun file PDF selezionato",
+    "nothingToSave": "Nessun appartamento da salvare",
+    "itemSaveFailed": "Salvataggio non riuscito",
+    "nameRequired": "Il nome è obbligatorio",
+    "saveFailed": "Non è stato possibile salvare l'appartamento",
+    "processing": "Elaborazione ({done}/{total})"
+  },
+  "upload": {
+    "title": "Carica annunci",
+    "drop": "Trascina qui uno o più PDF, oppure",
+    "choose": "Scegli file",
+    "manual": "Oppure aggiungi a mano senza PDF"
+  },
+  "review": {
+    "title": "Controlla gli appartamenti",
+    "uploadMore": "Carica altri",
+    "saving": "Salvataggio…",
+    "save": "{count, plural, =1 {Salva appartamento} other {Salva tutti e #}}",
+    "allSaved": "Tutti gli appartamenti sono salvati. Reindirizzamento…",
+    "rent": "CHF {amount}",
+    "size": "{size} m²",
+    "rooms": "{count} locali",
+    "retry": "Riprova"
+  },
+  "single": {
+    "title": "Aggiungi un appartamento a mano",
+    "subtitle": "Compila i dati dell'appartamento",
+    "saving": "Salvataggio…",
+    "save": "Salva appartamento"
+  },
+  "status": {
+    "saved": "Salvato",
+    "queued": "In coda",
+    "uploading": "Caricamento…",
+    "parsed": "Letto",
+    "error": "Errore"
+  },
+  "form": {
+    "summary": "Riassunto",
+    "summaryPlaceholder": "Breve descrizione in inglese (generata dall'IA)",
+    "name": "Nome *",
+    "namePlaceholder": "Nome dell'appartamento",
+    "address": "Indirizzo",
+    "addressPlaceholder": "Via, NPA, località",
+    "rent": "Affitto (CHF/mese)",
+    "size": "Superficie (m²)",
+    "availableFrom": "Disponibile dal",
+    "rooms": "Locali",
+    "baths": "Bagni",
+    "balconies": "Balconi",
+    "washingMachine": "Lavatrice",
+    "listingUrl": "URL dell'annuncio",
+    "yes": "Sì",
+    "no": "No",
+    "unknown": "Non si sa"
+  },
+  "edit": {
+    "title": "Modifica appartamento",
+    "saving": "Salvataggio…"
+  },
+  "map": {
+    "loading": "Caricamento della mappa…"
+  },
+  "rating": {
+    "yours": "La tua valutazione ({name})",
+    "comment": "Commento",
+    "commentPlaceholder": "Note su questo appartamento…",
+    "saving": "Salvataggio…",
+    "save": "Salva valutazione",
+    "other": "Valutazione di {name}"
+  },
+  "credits": {
+    "left": "Puoi ancora aggiungere <n>{count}</n> {count, plural, one {appartamento} other {appartamenti}}",
+    "runningLow": "(stanno finendo)",
+    "noneLeft": "(esauriti)",
+    "buyMore": "Acquistane altri"
+  },
+  "errors": {
+    "staleKey": "Il proprietario ha cambiato la chiave del gruppo. I tuoi dati sono stati ricaricati; riprova."
+  }
+}

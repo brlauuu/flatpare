@@ -40,7 +40,7 @@
     "version": "version {version}",
     "rotationDue": "A member was removed but the household key has not been rotated since. Until it is, anything written now is readable with the key their device still holds.",
     "explain": "Rotating re-encrypts everything under a new key and gives every member the new key automatically. It happens on its own when you remove someone; you can also run it by hand. You will be shown a new recovery code — the old one stops working.",
-    "pdfFailures": "Household key rotated, but {count} PDF(s) could not be re-encrypted and were left as they were.",
+    "pdfFailures": "{count, plural, one {Household key rotated, but # PDF could not be re-encrypted and was left as it was.} other {Household key rotated, but # PDFs could not be re-encrypted and were left as they were.}}",
     "rotating": "Rotating…",
     "rotate": "Rotate household key",
     "rotateError": "Could not rotate the key"

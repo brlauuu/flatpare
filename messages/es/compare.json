@@ -1,0 +1,40 @@
+{
+  "page": {
+    "title": "Comparar",
+    "loading": "Cargando la comparación...",
+    "loadError": "No se han podido cargar los datos de la comparación",
+    "pdfError": "No se ha podido abrir el PDF",
+    "emptyTitle": "Todavía no hay pisos que comparar",
+    "emptyBody": "Sube al menos dos anuncios para empezar a comparar",
+    "emptyCta": "Subir un anuncio",
+    "sortBy": "Ordenar por",
+    "ascending": "Ascendente",
+    "descending": "Descendente",
+    "showAll": "Mostrar todos ({count} ocultos)"
+  },
+  "header": {
+    "viewPdf": "Ver el PDF de {name}",
+    "originalListing": "Anuncio original de {name}",
+    "hide": "Ocultar {name}"
+  },
+  "table": {
+    "metric": {
+      "rentChf": "Alquiler (CHF)",
+      "sizeM2": "Superficie (m²)",
+      "numRooms": "Habitaciones",
+      "numBathrooms": "Baños",
+      "numBalconies": "Balcones"
+    },
+    "travelTo": "Bici + transporte público a {label}",
+    "minutes": "{value} min",
+    "noMinutes": "— min",
+    "washingMachine": "Lavadora",
+    "washingYes": "Sí",
+    "washingNo": "No (o compartida)",
+    "washingUnknown": "Desconocido",
+    "userRatings": "Valoraciones de {name}",
+    "overall": "General",
+    "comment": "Comentario",
+    "averageRatings": "Valoraciones medias"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "boundary": {
+    "title": "Algo ha salido mal",
+    "body": "No se ha podido cargar la página. Puedes reintentarlo o desplegar los detalles de abajo para ver qué ha pasado.",
+    "unexpected": "Error inesperado",
+    "retry": "Reintentar"
+  },
+  "details": {
+    "show": "Mostrar detalles",
+    "status": "Estado:",
+    "url": "URL:",
+    "message": "Mensaje:",
+    "time": "Hora:",
+    "copied": "Copiado",
+    "copy": "Copiar detalles"
+  }
+}

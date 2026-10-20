@@ -83,7 +83,7 @@
   "provider": {
     "adoptFailed": "The key we received could not be opened. Reset your keys so a member can send a new one, or use your recovery kit.",
     "somethingWrong": "Something went wrong",
-    "nowIn": "{names} can now open Flatpare."
+    "nowIn": "{count, plural, one {{names} can now open Flatpare.} other {{names} can now open Flatpare.}}"
   },
   "errors": {
     "wrongPassphrase": "Wrong passphrase",

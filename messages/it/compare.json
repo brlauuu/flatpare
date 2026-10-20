@@ -1,0 +1,40 @@
+{
+  "page": {
+    "title": "Confronto",
+    "loading": "Caricamento del confronto…",
+    "loadError": "Non è stato possibile caricare i dati del confronto",
+    "pdfError": "Non è stato possibile aprire il PDF",
+    "emptyTitle": "Ancora nessun appartamento da confrontare",
+    "emptyBody": "Carica almeno due annunci per iniziare il confronto",
+    "emptyCta": "Carica un annuncio",
+    "sortBy": "Ordina per",
+    "ascending": "Crescente",
+    "descending": "Decrescente",
+    "showAll": "Mostra tutti ({count} nascosti)"
+  },
+  "header": {
+    "viewPdf": "Vedi il PDF di {name}",
+    "originalListing": "Annuncio originale di {name}",
+    "hide": "Nascondi {name}"
+  },
+  "table": {
+    "metric": {
+      "rentChf": "Affitto (CHF)",
+      "sizeM2": "Superficie (m²)",
+      "numRooms": "Locali",
+      "numBathrooms": "Bagni",
+      "numBalconies": "Balconi"
+    },
+    "travelTo": "Bici + mezzi pubblici fino a {label}",
+    "minutes": "{value} min",
+    "noMinutes": "— min",
+    "washingMachine": "Lavatrice",
+    "washingYes": "Sì",
+    "washingNo": "No (o in comune)",
+    "washingUnknown": "Sconosciuto",
+    "userRatings": "Valutazioni di {name}",
+    "overall": "Generale",
+    "comment": "Commento",
+    "averageRatings": "Valutazioni medie"
+  }
+}
