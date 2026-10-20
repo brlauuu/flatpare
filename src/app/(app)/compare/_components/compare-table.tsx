@@ -16,9 +16,9 @@ interface CompareTableProps {
 
 export function CompareTable({ visible, sortedVisible, locations, onHide, onViewPdf }: CompareTableProps) {
   // Group by userId — the stable, unique identity — and resolve a display
-  // label separately. userName is a left-joined column: nullable, and not
-  // unique across OAuth accounts, so it can never be the grouping key
-  // (two members sharing a first name, or an account with no name set,
+  // label separately. userName is the rater's chosen name, or their email
+  // until they set one (displayName, #327) — not unique across accounts, so
+  // it can never be the grouping key (two members sharing a first name
   // would silently collapse into one row).
   const userLabels = new Map<string, string>();
   for (const a of visible) {
@@ -145,7 +145,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
           </tr>
 
           {allUserIds.map((userId) => {
-            const label = userLabels.get(userId) || "Household member";
+            const label = userLabels.get(userId);
             return (
               <Fragment key={`user-${userId}`}>
                 <tr className="border-b bg-muted/30">
