@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse, parseBody } from "@/lib/api-route";
 import { requireHousehold } from "@/lib/session";
-import { saveAccountLocale } from "@/lib/user-locale";
+import { saveAccountLocale } from "@/i18n/account-locale";
 import { LOCALES } from "@/i18n/locales";
 
 // Saves the caller's interface language on their account (#288), so it

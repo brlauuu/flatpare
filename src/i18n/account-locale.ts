@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema-auth";
-import { isLocale, type Locale } from "@/i18n/locales";
+import { isLocale, type Locale } from "./locales";
 
 // The interface language saved on the account (#288), so a choice follows
 // a person to a new device and an email sent to them uses it. Plaintext

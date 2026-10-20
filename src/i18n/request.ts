@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { auth } from "@/auth";
-import { readAccountLocale } from "@/lib/user-locale";
+import { readAccountLocale } from "./account-locale";
 import { loadMessages } from "./messages";
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, negotiateLocale, type Locale } from "./locales";
 
