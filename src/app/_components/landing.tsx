@@ -10,7 +10,7 @@ import {
 } from "@/lib/site";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageMenu } from "@/components/language-menu";
-import { languageOf } from "@/i18n/locales";
+import { languageOf } from "@/locales/locales";
 import { ThemedLogo } from "@/components/themed-logo";
 import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
 import type { PublicAccess } from "@/lib/public-access";

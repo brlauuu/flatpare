@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveLocale } from "@/i18n/request";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-error";
 import { apiErrorResponse, parseBody } from "@/lib/api-route";
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     // After the insert, and never able to fail it: the invitation stands
     // whether or not the email arrives. `emailed` lets the Household page say
     // which, so an owner is not left assuming a message went out (#300).
-    const emailed = await sendInvitationEmail(created);
+    const emailed = await sendInvitationEmail(created, await resolveLocale());
     return NextResponse.json({ ...publicShape(created), emailed }, { status: 201 });
   } catch (e) {
     return apiErrorResponse(e, "invitations:POST");

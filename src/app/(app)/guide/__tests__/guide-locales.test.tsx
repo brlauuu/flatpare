@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import GuidePage from "../page";
-import { LOCALES, type Locale } from "@/i18n/locales";
+import { LOCALES, type Locale } from "@/locales/locales";
 import { setTestLocale } from "@/i18n/__tests__/test-locale";
 
 // The guide in five languages (#288). Each one has the English guide's

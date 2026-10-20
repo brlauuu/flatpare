@@ -5,6 +5,9 @@ import Credentials from "next-auth/providers/credentials";
 import Resend from "next-auth/providers/resend";
 import { emailEnabled, emailFrom, sendEmail } from "@/lib/email";
 import { magicLinkEmail } from "@/lib/email-templates";
+import { emailLocale, emailText } from "@/locales/email-text";
+import { LOCALE_COOKIE, negotiateLocale } from "@/locales/locales";
+import { cookies, headers } from "next/headers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import {
@@ -35,6 +38,29 @@ const hasEmail = emailEnabled();
 // How long a link stays valid. Auth.js's default is a day; a sign-in link
 // that works tomorrow is a day of exposure for no benefit.
 export const MAGIC_LINK_MAX_AGE_SECONDS = 15 * 60;
+
+// The magic link's language (#288): the account's choice when the address
+// already has one, then the language of the page the link was asked from
+// (its cookie, then Accept-Language), then English. Read here rather than
+// through src/i18n, which reads the session through this file.
+export async function magicLinkLocale(address: string) {
+  const [row] = await db
+    .select({ locale: users.locale })
+    .from(users)
+    .where(eq(users.email, address))
+    .limit(1)
+    .catch(() => []);
+  // cookies() and headers() throw, synchronously, outside a request scope.
+  let cookie: string | undefined;
+  let acceptLanguage: string | null = null;
+  try {
+    cookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+    acceptLanguage = (await headers()).get("accept-language");
+  } catch {
+    // No request: the account's choice or English.
+  }
+  return emailLocale(row?.locale, cookie, negotiateLocale(acceptLanguage));
+}
 
 // The login page (src/app/page.tsx) needs to know which providers to render
 // buttons for, without reading env vars itself in client-shipped code. This
@@ -134,6 +160,7 @@ export const providers = [
               url,
               siteHost: new URL(url).host,
               minutes: MAGIC_LINK_MAX_AGE_SECONDS / 60,
+              t: emailText(await magicLinkLocale(identifier)),
             });
             const result = await sendEmail({
               to: identifier,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { apiErrorResponse, parseBody } from "@/lib/api-route";
 import { requireHousehold } from "@/lib/session";
 import { saveAccountLocale } from "@/i18n/account-locale";
-import { LOCALES } from "@/i18n/locales";
+import { LOCALES } from "@/locales/locales";
 
 // Saves the caller's interface language on their account (#288), so it
 // follows them to another device and picks the language of emails sent to

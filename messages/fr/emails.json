@@ -1,0 +1,33 @@
+{
+  "someone": "Quelqu’un",
+  "fallbackLink": "Si le bouton ne fonctionne pas, ouvre {url}",
+  "magicLink": {
+    "subject": "Ton lien de connexion à Flatpare",
+    "intro": "Voici ton lien de connexion à Flatpare ({host}).",
+    "expiry": "Il ne fonctionne qu’une fois et expire dans {minutes, plural, one {# minute} other {# minutes}}. Ouvre-le dans le navigateur depuis lequel tu l’as demandé.",
+    "ignore": "Si tu ne l’as pas demandé, ignore cet e-mail ; rien ne se passe sans le lien.",
+    "button": "Se connecter à Flatpare"
+  },
+  "memberRemoved": {
+    "subject": "Tu as été retiré·e d’un foyer sur Flatpare",
+    "removed": "{name} t’a retiré·e de son foyer sur Flatpare.",
+    "access": "Tu n’as plus accès à ses appartements, évaluations et lieux. Ton compte ne change pas : connecte-toi et tu trouveras un foyer vide à toi, et toute invitation que tu accepteras plus tard fonctionnera toujours.",
+    "ask": "Si c’est inattendu, c’est à la personne qui t’a retiré·e qu’il faut demander.",
+    "button": "Ouvrir Flatpare"
+  },
+  "invitation": {
+    "subject": "{name} t’invite sur Flatpare",
+    "invited": "{name} t’invite à comparer des appartements ensemble sur Flatpare.",
+    "signIn": "Connecte-toi avec {email} et l’invitation t’attendra. Elle est valable jusqu’au {until}.",
+    "ignore": "Si tu ne t’y attendais pas, tu peux ignorer cet e-mail et rien ne se passera.",
+    "button": "Ouvrir Flatpare"
+  },
+  "betaInvite": {
+    "subject": "Ton invitation à la bêta de Flatpare",
+    "invited": "Tu es invité·e à la bêta privée de Flatpare : un espace partagé pour comparer des appartements avec la personne avec qui tu emménages.",
+    "open": "Ouvre le lien ci-dessous, puis connecte-toi. Le lien ouvre la porte à ton compte.",
+    "openUntil": "Ouvre le lien ci-dessous, puis connecte-toi. Le lien ouvre la porte à ton compte et est valable jusqu’au {until}.",
+    "keep": "Les comptes bêta sont gratuits ; tes données et tes crédits t’appartiennent et ne te seront pas repris à la fin de la bêta.",
+    "button": "Rejoindre la bêta"
+  }
+}

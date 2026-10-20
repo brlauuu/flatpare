@@ -6,6 +6,8 @@ import { ApiError } from "@/lib/api-error";
 import { emailEnabled, sendEmail } from "@/lib/email";
 import { householdInvitationEmail, memberRemovedEmail } from "@/lib/email-templates";
 import { SITE_URL } from "@/lib/site";
+import { emailLocale, emailText } from "@/locales/email-text";
+import type { Locale } from "@/locales/locales";
 
 // How many invitations one household may create in 24 hours while email is
 // on. Inviting sends mail to an address the owner typed, so without a ceiling
@@ -33,8 +35,13 @@ export type InvitationEmailOutcome = "sent" | "failed" | "off";
 // Tells the invitee. The invitation already exists when this runs and is
 // valid whether or not the email arrives, so this reports an outcome and
 // never throws: a mail provider being down must not undo an invitation.
+//
+// In the invitee's language if their address already has an account that
+// chose one, otherwise in the inviter's: `senderLocale` is the language the
+// inviter is using the app in (#288).
 export async function sendInvitationEmail(
-  invitation: Pick<Invitation, "id" | "email" | "expiresAt" | "invitedBy">
+  invitation: Pick<Invitation, "id" | "email" | "expiresAt" | "invitedBy">,
+  senderLocale: Locale
 ): Promise<InvitationEmailOutcome> {
   if (!emailEnabled()) return "off";
 
@@ -43,12 +50,18 @@ export async function sendInvitationEmail(
     .from(users)
     .where(eq(users.id, invitation.invitedBy))
     .limit(1);
+  const [invitee] = await db
+    .select({ locale: users.locale })
+    .from(users)
+    .where(eq(users.email, invitation.email))
+    .limit(1);
 
   const rendered = householdInvitationEmail({
     inviterName: inviter?.name,
     invitedEmail: invitation.email,
     siteUrl: SITE_URL,
     expiresAt: invitation.expiresAt,
+    t: emailText(emailLocale(invitee?.locale, senderLocale)),
   });
   const result = await sendEmail({
     to: invitation.email,
@@ -62,14 +75,17 @@ export async function sendInvitationEmail(
 // mail failure cannot leave someone in who should be out; like the invitation
 // email it reports and never throws. Names who did it and nothing about the
 // household. The removed user's row still exists — only the membership went.
+// In the removed member's own language, or the remover's when they never
+// chose one (#288).
 export async function sendMemberRemovedEmail(
   removedUserId: string,
-  removedBy: string
+  removedBy: string,
+  senderLocale: Locale
 ): Promise<InvitationEmailOutcome> {
   if (!emailEnabled()) return "off";
 
   const [removed] = await db
-    .select({ email: users.email })
+    .select({ email: users.email, locale: users.locale })
     .from(users)
     .where(eq(users.id, removedUserId))
     .limit(1);
@@ -80,7 +96,11 @@ export async function sendMemberRemovedEmail(
     .where(eq(users.id, removedBy))
     .limit(1);
 
-  const rendered = memberRemovedEmail({ removerName: remover?.name, siteUrl: SITE_URL });
+  const rendered = memberRemovedEmail({
+    removerName: remover?.name,
+    siteUrl: SITE_URL,
+    t: emailText(emailLocale(removed.locale, senderLocale)),
+  });
   const result = await sendEmail({
     to: removed.email,
     ...rendered,

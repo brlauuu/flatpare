@@ -1,4 +1,5 @@
-// The five interface languages (#288). A leaf: no app imports, so the proxy,
+// The five interface languages (#288). A leaf module (src/locales imports
+// nothing from the app), so the proxy, src/auth.ts, src/lib, src/i18n,
 // route handlers, the email layer and client components can all read it.
 //
 // A locale here is a language. Formatting uses the regional tag beside it:

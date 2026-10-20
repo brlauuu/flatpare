@@ -19,7 +19,7 @@ export const users = sqliteTable(
     emailVerified: integer("email_verified", { mode: "timestamp_ms" }),
     image: text("image"),
     // The interface language the person chose (#288): one of LOCALES in
-    // src/i18n/locales.ts, or null until they pick one. A preference about
+    // src/locales/locales.ts, or null until they pick one. A preference about
     // the interface, not household data, so plaintext like `name`.
     locale: text("locale"),
   },

@@ -1,0 +1,33 @@
+{
+  "someone": "Alguien",
+  "fallbackLink": "Si el botón no funciona, abre {url}",
+  "magicLink": {
+    "subject": "Tu enlace para iniciar sesión en Flatpare",
+    "intro": "Aquí tienes tu enlace para iniciar sesión en Flatpare ({host}).",
+    "expiry": "Funciona una sola vez y caduca en {minutes, plural, one {# minuto} other {# minutos}}. Ábrelo en el mismo navegador desde el que lo pediste.",
+    "ignore": "Si no lo has pedido, ignora este correo; sin el enlace no pasa nada.",
+    "button": "Iniciar sesión en Flatpare"
+  },
+  "memberRemoved": {
+    "subject": "Te han quitado de un hogar en Flatpare",
+    "removed": "{name} te ha quitado de su hogar en Flatpare.",
+    "access": "Ya no tienes acceso a sus pisos, valoraciones ni lugares. Tu cuenta sigue igual: inicia sesión y encontrarás un hogar vacío propio, y cualquier invitación que aceptes más adelante seguirá funcionando.",
+    "ask": "Si no te lo esperabas, pregunta a la persona que te ha quitado.",
+    "button": "Abrir Flatpare"
+  },
+  "invitation": {
+    "subject": "{name} te ha invitado a Flatpare",
+    "invited": "{name} te ha invitado a comparar pisos juntos en Flatpare.",
+    "signIn": "Inicia sesión con {email} y la invitación te estará esperando. Es válida hasta el {until}.",
+    "ignore": "Si no te lo esperabas, puedes ignorar este correo y no pasará nada.",
+    "button": "Abrir Flatpare"
+  },
+  "betaInvite": {
+    "subject": "Tu invitación a la beta de Flatpare",
+    "invited": "Estás invitado a la beta privada de Flatpare: un espacio compartido para comparar pisos con la persona con la que te vas a vivir.",
+    "open": "Abre el enlace de abajo y luego inicia sesión. El enlace abre la puerta a tu cuenta.",
+    "openUntil": "Abre el enlace de abajo y luego inicia sesión. El enlace abre la puerta a tu cuenta y es válido hasta el {until}.",
+    "keep": "Las cuentas de la beta son gratuitas; tus datos y tus créditos son tuyos y no se retiran cuando termine la beta.",
+    "button": "Unirme a la beta"
+  }
+}

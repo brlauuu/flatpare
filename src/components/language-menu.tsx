@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { languageOf, LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } from "@/i18n/locales";
+import { languageOf, LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } from "@/locales/locales";
 
 // The language selector (#288). Visible wherever the theme toggle is: the
 // app's nav bar and the landing page's. Each language is named in itself, so
