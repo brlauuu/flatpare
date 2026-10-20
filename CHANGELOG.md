@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.12.0 — 2026-10-20
+
 ### Added
 - The guide in German, French, Italian and Spanish, following the language you chose. (#288)
 
