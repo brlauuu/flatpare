@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.9.2 — 2026-10-20
+
 ### Changed
 - The landing page's pencil map has more of the hunt on it: mock flats circled around the city with notes ("Flat A · big kitchen", "Flat C · too far?"), a workplace with its commute, a tram line, and a sketch in "What's inside" that ends with the household's decision. (#326)
 
