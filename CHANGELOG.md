@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.11.0 — 2026-10-20
+
 ### Added
 - The landing page in German, French, Italian and Spanish, with the language menu in its navigation. Its privacy statement and every promise about price, recovery and the beta say the same thing in each language. (#288)
 
