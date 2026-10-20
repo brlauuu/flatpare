@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const refreshMock = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => "/apartments",
+  useRouter: () => ({ refresh: refreshMock }),
 }));
 
 const signOutMock = vi.fn();

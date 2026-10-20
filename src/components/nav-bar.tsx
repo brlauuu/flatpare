@@ -8,6 +8,7 @@ import { clearKeys } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageMenu } from "@/components/language-menu";
 import { BookOpen, ChevronDown, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -81,6 +82,7 @@ export function NavBar({ userName }: { userName: string }) {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <LanguageMenu signedIn />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">

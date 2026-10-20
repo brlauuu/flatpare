@@ -162,6 +162,13 @@
       "when": 1791019277788,
       "tag": "0022_beta_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1792523081702,
+      "tag": "0023_user_locale",
+      "breakpoints": true
     }
   ]
 }
