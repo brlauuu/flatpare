@@ -1,0 +1,24 @@
+{
+  "items": {
+    "apartments": "Appartements",
+    "upload": "Ajouter",
+    "compare": "Comparer",
+    "map": "Carte",
+    "household": "Foyer",
+    "settings": "Réglages"
+  },
+  "short": {
+    "apartments": "Apparts",
+    "upload": "Ajouter",
+    "compare": "Comparer",
+    "map": "Carte",
+    "household": "Foyer",
+    "settings": "Réglages"
+  },
+  "menu": {
+    "guide": "Guide",
+    "signOut": "Se déconnecter"
+  },
+  "confirmSignOut": "Tu as des modifications d’évaluation non enregistrées. Te déconnecter quand même ? Ta saisie sera perdue.",
+  "unknownUser": "Inconnu"
+}

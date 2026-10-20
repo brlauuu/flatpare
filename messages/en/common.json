@@ -1,0 +1,33 @@
+{
+  "save": "Save",
+  "saving": "Saving…",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "close": "Close",
+  "back": "Back",
+  "retry": "Try again",
+  "loading": "Loading…",
+  "yes": "Yes",
+  "no": "No",
+  "unknown": "Unknown",
+  "ratingCategory": {
+    "kitchen": "Kitchen",
+    "balconies": "Balconies",
+    "location": "Location",
+    "floorplan": "Floorplan",
+    "overallFeeling": "Overall feeling"
+  },
+  "sort": {
+    "createdAt": "Date added",
+    "rentChf": "Price",
+    "sizeM2": "Size",
+    "numRooms": "Rooms",
+    "numBathrooms": "Bathrooms",
+    "numBalconies": "Balconies",
+    "avgOverall": "Avg rating",
+    "shortCode": "Short code",
+    "bikeTo": "Bike to {place}",
+    "transitTo": "Transit to {place}"
+  }
+}

@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "./crypto-context";
+import { useFlowErrorText } from "./use-flow-error-text";
 
 export const MIN_PASSPHRASE_LENGTH = 12;
 
 export function SetupScreen() {
+  const t = useTranslations("crypto");
+  const errorText = useFlowErrorText();
   const { status, setup } = useCrypto();
   const [passphrase, setPassphrase] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -21,35 +25,30 @@ export function SetupScreen() {
     e.preventDefault();
     setError(null);
     if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
-      setError(`Use at least ${MIN_PASSPHRASE_LENGTH} characters.`);
+      setError(t("passphrase.tooShort", { min: MIN_PASSPHRASE_LENGTH }));
       return;
     }
     if (passphrase !== confirm) {
-      setError("The passphrases do not match.");
+      setError(t("passphrase.mismatch"));
       return;
     }
     setBusy(true);
     try {
       await setup(passphrase);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
+      setError(errorText(err, "setup.failed"));
       setBusy(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="title-page">Choose a passphrase</h1>
+      <h1 className="title-page">{t("setup.title")}</h1>
       <p className="text-sm text-muted-foreground">
-        Flatpare encrypts your household&apos;s data in your browser. This
-        passphrase protects your keys; Flatpare never sees it and cannot reset
-        it for you.
-        {creator
-          ? " You will get a recovery kit on the next screen — keep it safe."
-          : " Once your keys exist, someone in your household will let you in automatically the next time they open Flatpare."}
+        {creator ? t("setup.introCreator") : t("setup.introJoiner")}
       </p>
       <div className="space-y-1">
-        <Label htmlFor="setup-passphrase">Passphrase</Label>
+        <Label htmlFor="setup-passphrase">{t("passphrase.label")}</Label>
         <Input
           weight="frame"
           id="setup-passphrase"
@@ -60,7 +59,7 @@ export function SetupScreen() {
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="setup-confirm">Confirm passphrase</Label>
+        <Label htmlFor="setup-confirm">{t("passphrase.confirm")}</Label>
         <Input
           weight="frame"
           id="setup-confirm"
@@ -72,7 +71,7 @@ export function SetupScreen() {
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={busy}>
-        {busy ? "Creating keys…" : "Create my keys"}
+        {busy ? t("setup.submitting") : t("setup.submit")}
       </Button>
     </form>
   );

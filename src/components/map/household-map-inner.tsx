@@ -14,6 +14,8 @@ import { isFatalMapError } from "@/lib/map/errors";
 import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
+import { useMapText } from "./use-map-text";
+import { useTranslations } from "next-intl";
 
 // The only file that touches MapLibre (#330). Deliberately thin: what to
 // draw comes from src/lib/map, the marks and cards are ordinary React
@@ -57,7 +59,18 @@ export default function HouseholdMapInner({ points, onError }: Props) {
 
   // One DOM node per mark. MapLibre positions the node; React renders the
   // mark into it through a portal.
-  const marks = useMemo(() => toMarks(points), [points]);
+  const text = useMapText();
+  // MapLibre's own control labels, in the active language (#288). Read once,
+  // when the map is created; a language change reloads the page's data and
+  // the next visit builds the map with the new words.
+  const tControls = useTranslations("map.controls");
+  const controlText = useRef({
+    "NavigationControl.ZoomIn": tControls("zoomIn"),
+    "NavigationControl.ZoomOut": tControls("zoomOut"),
+    "AttributionControl.ToggleAttribution": tControls("toggleAttribution"),
+    "Map.Title": tControls("mapTitle"),
+  });
+  const marks = useMemo(() => toMarks(points, text), [points, text]);
   const nodes = useMemo(() => new Map(marks.map((m) => [m.key, document.createElement("div")])), [marks]);
 
   // Create the map once.
@@ -66,7 +79,12 @@ export default function HouseholdMapInner({ points, onError }: Props) {
     if (!container) return;
     let map: MapLibreMap;
     try {
-      map = new MapLibreMap({ container, style: mapStyle(appliedTheme.current), attributionControl: { compact: true } });
+      map = new MapLibreMap({
+        container,
+        style: mapStyle(appliedTheme.current),
+        attributionControl: { compact: true },
+        locale: controlText.current,
+      });
     } catch {
       // No WebGL, most likely.
       onErrorRef.current();

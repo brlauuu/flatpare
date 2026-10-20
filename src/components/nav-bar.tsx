@@ -4,10 +4,12 @@ import Link, { useLinkStatus } from "next/link";
 import { ThemedLogo } from "@/components/themed-logo";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { clearKeys } from "@/lib/crypto";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageMenu } from "@/components/language-menu";
 import { BookOpen, ChevronDown, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,14 +18,17 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
+// `key` names the label in the `nav` catalogue: `items.<key>` on the desktop
+// bar, `short.<key>` on the phone's bottom bar, where six share 360px and a
+// translation may need a shorter word (#288).
 const navItems = [
-  { href: "/apartments", label: "Apartments" },
-  { href: "/apartments/new", label: "Upload" },
-  { href: "/compare", label: "Compare" },
-  { href: "/map", label: "Map" },
-  { href: "/household", label: "Household" },
-  { href: "/settings", label: "Settings" },
-];
+  { href: "/apartments", key: "apartments" },
+  { href: "/apartments/new", key: "upload" },
+  { href: "/compare", key: "compare" },
+  { href: "/map", key: "map" },
+  { href: "/household", key: "household" },
+  { href: "/settings", key: "settings" },
+] as const;
 // Guide lives in the user menu (#330): seven items did not fit the phone's
 // bottom bar at 360px once Map was added.
 
@@ -45,12 +50,11 @@ function NavLabel({ children }: { children: React.ReactNode }) {
 
 export function NavBar({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   async function handleSignOut() {
     if (getUnsavedRating()) {
-      const ok = window.confirm(
-        "You have unsaved rating changes. Sign out anyway? Your input will be discarded."
-      );
+      const ok = window.confirm(t("confirmSignOut"));
       if (!ok) return;
     }
     await clearKeys();
@@ -76,11 +80,12 @@ export function NavBar({ userName }: { userName: string }) {
                   : "text-foreground hover:bg-muted"
               )}
             >
-              <NavLabel>{item.label}</NavLabel>
+              <NavLabel>{t(`items.${item.key}`)}</NavLabel>
             </Link>
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <LanguageMenu signedIn />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">
@@ -91,11 +96,11 @@ export function NavBar({ userName }: { userName: string }) {
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
               <DropdownMenuItem render={<Link href="/guide" />}>
                 <BookOpen className="h-3.5 w-3.5" />
-                Guide
+                {t("menu.guide")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="h-3.5 w-3.5" />
-                Sign out
+                {t("menu.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -115,7 +120,7 @@ export function NavBar({ userName }: { userName: string }) {
                 : "text-muted-foreground"
             )}
           >
-            <NavLabel>{item.label}</NavLabel>
+            <NavLabel>{t(`short.${item.key}`)}</NavLabel>
           </Link>
         ))}
       </nav>

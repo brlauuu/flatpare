@@ -1,0 +1,15 @@
+{
+  "title": "Rejoindre un foyer",
+  "loading": "Chargement…",
+  "loadFailed": "Impossible de charger les invitations",
+  "requestFailed": "La requête a échoué",
+  "requestFailedStatus": "La requête a échoué ({status})",
+  "invitedAndExpires": "Invitation de {name}. Expire le {date}.",
+  "expires": "Expire le {date}.",
+  "accept": "Accepter",
+  "none": "Tu n’as aucune invitation en attente. Demande au propriétaire du foyer d’inviter l’adresse e-mail avec laquelle tu t’es connecté·e, ou crée ton propre foyer.",
+  "declineAndStartOwn": "Non merci, créer mon propre foyer",
+  "startOwn": "Créer mon propre foyer",
+  "signOut": "Se déconnecter",
+  "polling": "Cette page vérifie les nouvelles invitations toutes les {seconds} secondes."
+}

@@ -1,0 +1,33 @@
+{
+  "save": "Speichern",
+  "saving": "Wird gespeichert…",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "edit": "Bearbeiten",
+  "close": "Schliessen",
+  "back": "Zurück",
+  "retry": "Nochmals versuchen",
+  "loading": "Wird geladen…",
+  "yes": "Ja",
+  "no": "Nein",
+  "unknown": "Unbekannt",
+  "ratingCategory": {
+    "kitchen": "Küche",
+    "balconies": "Balkone",
+    "location": "Lage",
+    "floorplan": "Grundriss",
+    "overallFeeling": "Gesamteindruck"
+  },
+  "sort": {
+    "createdAt": "Hinzugefügt am",
+    "rentChf": "Preis",
+    "sizeM2": "Fläche",
+    "numRooms": "Zimmer",
+    "numBathrooms": "Badezimmer",
+    "numBalconies": "Balkone",
+    "avgOverall": "Ø Bewertung",
+    "shortCode": "Kurzcode",
+    "bikeTo": "Velo nach {place}",
+    "transitTo": "ÖV nach {place}"
+  }
+}

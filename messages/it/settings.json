@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Impostazioni",
+    "moved": "Membri, inviti e luoghi di interesse sono stati spostati nella pagina <household>Gruppo</household>."
+  },
+  "name": {
+    "title": "Il tuo nome",
+    "label": "Il tuo nome",
+    "help": "Mostrato ai membri del tuo gruppo nelle valutazioni, nel confronto e nella pagina Gruppo.",
+    "untilSet": " Finché non ne imposti uno, vedono la tua e-mail, {email}.",
+    "loadError": "Non è stato possibile caricare il tuo nome. Ricarica la pagina per riprovare.",
+    "saveError": "Non è stato possibile salvare il tuo nome.",
+    "saved": "Salvato.",
+    "save": "Salva nome"
+  }
+}

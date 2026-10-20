@@ -25,7 +25,7 @@ afterEach(() => {
 
 async function load() {
   return (await import("../layout")) as {
-    default: (p: { children: React.ReactNode }) => React.ReactElement;
+    default: (p: { children: React.ReactNode }) => Promise<React.ReactElement>;
     metadata: Metadata;
     viewport: Viewport;
   };
@@ -100,7 +100,7 @@ describe("RootLayout element", () => {
     // jsdom's existing document nests a second one, which React warns about
     // and which tests nothing the structure does not already show.
     const { default: RootLayout } = await load();
-    const tree = RootLayout({ children: "CHILD" });
+    const tree = await RootLayout({ children: "CHILD" });
 
     expect(tree.type).toBe("html");
     const html = tree.props as { lang: string; className: string; children: React.ReactElement };
@@ -114,11 +114,21 @@ describe("RootLayout element", () => {
     expect(body.type).toBe("body");
   });
 
+  // A screen reader is told the interface language (#288): the regional
+  // tag, since German, French and Italian follow Swiss conventions.
+  it("sets lang from the interface language", async () => {
+    const { setTestLocale } = await import("@/i18n/__tests__/test-locale");
+    setTestLocale("de");
+    const { default: RootLayout } = await load();
+    const tree = await RootLayout({ children: null });
+    expect((tree.props as { lang: string }).lang).toBe("de-CH");
+  });
+
   it("marks html with suppressHydrationWarning for next-themes", async () => {
     // next-themes sets the class on <html> before React hydrates; without
     // this the console fills with hydration mismatches on every load.
     const { default: RootLayout } = await load();
-    const tree = RootLayout({ children: null });
+    const tree = await RootLayout({ children: null });
     expect((tree.props as { suppressHydrationWarning?: boolean }).suppressHydrationWarning).toBe(true);
   });
 });

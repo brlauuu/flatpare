@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ErrorDisplay } from "@/components/error-display";
@@ -11,11 +12,12 @@ interface UploadStepProps {
 }
 
 export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
+  const t = useTranslations("apartments.upload");
   const [dragOver, setDragOver] = useState(false);
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="title-page">Upload Listings</h1>
+      <h1 className="title-page">{t("title")}</h1>
 
       <div
         onDragOver={(e) => {
@@ -35,9 +37,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
             : "border-muted-foreground/25"
         )}
       >
-        <p className="text-muted-foreground">
-          Drag and drop one or more PDFs here, or
-        </p>
+        <p className="text-muted-foreground">{t("drop")}</p>
         <input
           type="file"
           accept=".pdf"
@@ -55,7 +55,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
             document.getElementById("pdf-file-input")?.click();
           }}
         >
-          Choose files
+          {t("choose")}
         </Button>
       </div>
 
@@ -63,7 +63,7 @@ export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
 
       <div className="text-center">
         <Button variant="link" className="h-11 sm:h-8" onClick={onManualEntry}>
-          Or add manually without PDF
+          {t("manual")}
         </Button>
       </div>
     </div>

@@ -1,0 +1,33 @@
+{
+  "page": {
+    "title": "Mapa",
+    "loading": "Cargando el mapa...",
+    "loadError": "No se ha podido cargar el mapa"
+  },
+  "map": {
+    "loading": "Cargando el mapa",
+    "noApartments": "Todavía no hay pisos. <upload>Sube un anuncio</upload> y aparecerá aquí en cuanto tenga dirección.",
+    "nothingPlaced": "Todavía no hay nada que mostrar: añade un piso con dirección.",
+    "failed": "No se ha podido cargar el mapa.",
+    "yourApartments": "Tus pisos: <links></links>",
+    "missing": "{count, plural, one {# piso todavía no está} other {# pisos todavía no están}} en el mapa: <links></links>",
+    "listSeparator": ", "
+  },
+  "card": {
+    "rent": "CHF {amount}",
+    "size": "{value} m²",
+    "rooms": "{count, plural, one {# habitación} other {# habitaciones}}",
+    "notRated": "Sin valorar",
+    "rating": "★ {value}",
+    "open": "Abrir →"
+  },
+  "mark": {
+    "opensApartment": "abre el piso"
+  },
+  "controls": {
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "toggleAttribution": "Mostrar u ocultar la atribución",
+    "mapTitle": "Mapa"
+  }
+}

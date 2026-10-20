@@ -2,11 +2,13 @@
 
 import { CreditBalance } from "@/components/credit-balance";
 import { useCallback, useEffect, useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "@/components/crypto/crypto-context";
+import { useFlowErrorText } from "@/components/crypto/use-flow-error-text";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { displayName } from "@/lib/display-name";
 
@@ -25,18 +27,26 @@ interface Invitation {
   createdAt: string;
 }
 
-async function readError(res: Response): Promise<string> {
+// The route's own error text is shown as sent (English until server errors
+// are translated); only the fallback is in the catalogue.
+async function readError(res: Response, fallback: (status: number) => string): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string };
-    return body.error ?? `Request failed (${res.status})`;
+    return body.error ?? fallback(res.status);
   } catch {
-    return `Request failed (${res.status})`;
+    return fallback(res.status);
   }
 }
 
 export function HouseholdSettings() {
+  const t = useTranslations("household");
+  const format = useFormatter();
+  const failed = useCallback((status: number) => t("errors.requestFailedStatus", { status }), [t]);
   const { state, status: cryptoStatus, showRecoveryKit } = useCrypto();
   const { limits, rotateDataKey } = useHouseholdData();
+  // Rotation errors are thrown in English by the flow; this puts the known
+  // ones in the reader's language (#288).
+  const flowText = useFlowErrorText();
   const encryptionOn = state !== "off";
   const [rotating, setRotating] = useState(false);
   const [rotationNote, setRotationNote] = useState<string | null>(null);
@@ -57,19 +67,19 @@ export function HouseholdSettings() {
 
   const loadMembers = useCallback(async () => {
     const res = await fetch("/api/household/members", { cache: "no-store" });
-    if (!res.ok) throw new Error(await readError(res));
+    if (!res.ok) throw new Error(await readError(res, failed));
     const body = (await res.json()) as { members: Member[]; me: { userId: string; role: "owner" | "member" } };
     setMembers(body.members);
     setMe(body.me);
     return body.me;
-  }, []);
+  }, [failed]);
 
   const loadInvitations = useCallback(async () => {
     const res = await fetch("/api/invitations", { cache: "no-store" });
-    if (!res.ok) throw new Error(await readError(res));
+    if (!res.ok) throw new Error(await readError(res, failed));
     const body = (await res.json()) as { invitations: Invitation[] };
     setInvitations(body.invitations);
-  }, []);
+  }, [failed]);
 
   useEffect(() => {
     (async () => {
@@ -77,10 +87,10 @@ export function HouseholdSettings() {
         const who = await loadMembers();
         if (who.role === "owner") await loadInvitations();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not load household");
+        setError(err instanceof Error ? err.message : t("errors.loadFailed"));
       }
     })();
-  }, [loadMembers, loadInvitations]);
+  }, [loadMembers, loadInvitations, t]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -88,7 +98,7 @@ export function HouseholdSettings() {
     try {
       await action();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      setError(err instanceof Error ? err.message : t("errors.requestFailed"));
     } finally {
       setBusy(false);
     }
@@ -103,7 +113,7 @@ export function HouseholdSettings() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) throw new Error(await readError(res));
+      if (!res.ok) throw new Error(await readError(res, failed));
       const created = (await res.json()) as Invitation & {
         emailed?: "sent" | "failed" | "off";
       };
@@ -113,10 +123,10 @@ export function HouseholdSettings() {
       // way; what changes is whether the owner has to tell the person.
       setInviteNote(
         created.emailed === "sent"
-          ? `Invitation emailed to ${created.email}.`
+          ? t("invite.emailed", { email: created.email })
           : created.emailed === "failed"
-            ? `Invitation created, but the email to ${created.email} could not be sent. Ask them to sign in with that address.`
-            : `Invitation created. Ask them to sign in with ${created.email}.`
+            ? t("invite.emailFailed", { email: created.email })
+            : t("invite.created", { email: created.email })
       );
     });
   }
@@ -124,7 +134,7 @@ export function HouseholdSettings() {
   function revoke(id: number) {
     void run(async () => {
       const res = await fetch(`/api/invitations/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(await readError(res));
+      if (!res.ok) throw new Error(await readError(res, failed));
       setInvitations((prev) => prev.filter((i) => i.id !== id));
     });
   }
@@ -140,9 +150,7 @@ export function HouseholdSettings() {
     try {
       const { recoveryCode, report } = await rotateDataKey();
       if (report.pdfFailures.length > 0) {
-        setRotationNote(
-          `Household key rotated, but ${report.pdfFailures.length} PDF(s) could not be re-encrypted and were left as they were.`
-        );
+        setRotationNote(t("key.pdfFailures", { count: report.pdfFailures.length }));
       }
       showRecoveryKit(recoveryCode);
     } finally {
@@ -154,13 +162,11 @@ export function HouseholdSettings() {
   // session is refreshed server-side and lands on a fresh household of the
   // leaver's own; a full navigation makes the proxy read the new cookie.
   function leave() {
-    const message = encryptionOn
-      ? "Leave this household? You lose access to its apartments immediately, and everything you added stays with it. You will get an empty household of your own."
-      : "Leave this household? You lose access to its apartments immediately, and everything you added stays with it.";
+    const message = encryptionOn ? t("members.leaveConfirmEncrypted") : t("members.leaveConfirm");
     if (!window.confirm(message)) return;
     void run(async () => {
       const res = await fetch("/api/household/leave", { method: "POST" });
-      if (!res.ok) throw new Error(await readError(res));
+      if (!res.ok) throw new Error(await readError(res, failed));
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/apartments");
     });
@@ -169,12 +175,12 @@ export function HouseholdSettings() {
   function remove(member: Member) {
     const label = displayName(member.name, member.email);
     const message = encryptionOn
-      ? `Remove ${label} from the household? They lose access immediately, and the household key will be rotated — you will be shown a new recovery code to save.`
-      : `Remove ${label} from the household? They lose access immediately.`;
+      ? t("members.removeConfirmEncrypted", { name: label })
+      : t("members.removeConfirm", { name: label });
     if (!window.confirm(message)) return;
     void run(async () => {
       const res = await fetch(`/api/household/members/${member.userId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(await readError(res));
+      if (!res.ok) throw new Error(await readError(res, failed));
       const { emailed } = (await res.json().catch(() => ({}))) as {
         emailed?: "sent" | "failed" | "off";
       };
@@ -183,19 +189,17 @@ export function HouseholdSettings() {
       // owner knows whether the person has been told (#298).
       setInviteNote(
         emailed === "sent"
-          ? `${label} was removed and told by email.`
+          ? t("members.removedEmailed", { name: label })
           : emailed === "failed"
-            ? `${label} was removed, but the email telling them could not be sent.`
-            : `${label} was removed.`
+            ? t("members.removedEmailFailed", { name: label })
+            : t("members.removed", { name: label })
       );
       if (state !== "unlocked") return;
       try {
         await rotate();
       } catch (err) {
-        const reason = err instanceof Error ? err.message : "unknown error";
-        throw new Error(
-          `${label} was removed, but the household key could not be rotated: ${reason}. Rotate it below when you are ready.`
-        );
+        const reason = err instanceof Error ? flowText(err, "provider.somethingWrong") : t("members.unknownError");
+        throw new Error(t("members.removedRotationFailed", { name: label, reason }));
       }
     });
   }
@@ -203,12 +207,12 @@ export function HouseholdSettings() {
   return (
     <section className="space-y-4">
       <div className="flex items-baseline gap-2">
-        <h2 className="title-section">Members</h2>
+        <h2 className="title-section">{t("members.title")}</h2>
         {/* Only when a cap is configured — a self-hoster must not see a
             counter implying a limit that does not exist. */}
         {limits.maxMembers !== null && (
           <span className="text-sm text-muted-foreground">
-            {members.length + invitations.length} of {limits.maxMembers}
+            {t("members.count", { used: members.length + invitations.length, max: limits.maxMembers })}
           </span>
         )}
       </div>
@@ -229,11 +233,11 @@ export function HouseholdSettings() {
               {m.name?.trim() && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">{m.role}</Badge>
-              {encryptionOn && !m.hasWrap && <Badge variant="secondary">awaiting key</Badge>}
+              <Badge variant="outline">{t(`members.role.${m.role}`)}</Badge>
+              {encryptionOn && !m.hasWrap && <Badge variant="secondary">{t("members.awaitingKey")}</Badge>}
               {isOwner && m.userId !== me?.userId && (
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => remove(m)}>
-                  Remove
+                  {t("members.remove")}
                 </Button>
               )}
             </div>
@@ -244,10 +248,10 @@ export function HouseholdSettings() {
       {me && !isOwner && (
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={leave}>
-            Leave household
+            {t("members.leave")}
           </Button>
           <span className="text-sm text-muted-foreground">
-            Your ratings and the apartments you added stay with the household.
+            {t("members.leaveNote")}
           </span>
         </div>
       )}
@@ -256,26 +260,26 @@ export function HouseholdSettings() {
         <>
           <form onSubmit={invite} className="flex flex-wrap items-end gap-2">
             <div className="min-w-0 flex-1 space-y-1">
-              <Label htmlFor="invite-email">Email</Label>
+              <Label htmlFor="invite-email">{t("invite.emailLabel")}</Label>
               <Input
                 id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
+                placeholder={t("invite.emailPlaceholder")}
               />
             </div>
             <Button
               type="submit"
               disabled={busy || email.trim().length === 0 || atMemberLimit}
             >
-              Invite
+              {t("invite.submit")}
             </Button>
           </form>
           <p className="text-sm text-muted-foreground">
             {atMemberLimit
-              ? `This household is limited to ${limits.maxMembers} members. Remove a member or revoke a pending invitation to invite someone else.`
-              : "No email is sent. Tell them to sign in with that address; the invitation is waiting for them there for 7 days."}
+              ? t("invite.atLimit", { max: limits.maxMembers ?? 0 })
+              : t("invite.noEmail")}
           </p>
           {invitations.length > 0 && (
             <ul className="divide-y rounded-md border">
@@ -284,11 +288,11 @@ export function HouseholdSettings() {
                   <div className="min-w-0">
                     <p className="truncate text-sm">{inv.email}</p>
                     <p className="text-xs text-muted-foreground">
-                      Pending · expires {new Date(inv.expiresAt).toLocaleDateString()}
+                      {t("invite.pending", { date: format.dateTime(new Date(inv.expiresAt), { dateStyle: "short" }) })}
                     </p>
                   </div>
                   <Button size="sm" variant="ghost" disabled={busy} onClick={() => revoke(inv.id)}>
-                    Revoke
+                    {t("invite.revoke")}
                   </Button>
                 </li>
               ))}
@@ -300,23 +304,18 @@ export function HouseholdSettings() {
       {encryptionOn && isOwner && (
         <div className="space-y-2 rounded-md border p-3">
           <div className="flex items-baseline justify-between gap-2">
-            <h3 className="font-medium">Household key</h3>
+            <h3 className="font-medium">{t("key.title")}</h3>
             <span className="text-xs text-muted-foreground">
-              version {cryptoStatus?.keyVersion ?? 1}
+              {t("key.version", { version: cryptoStatus?.keyVersion ?? 1 })}
             </span>
           </div>
           {cryptoStatus?.rotationDue ? (
             <p role="alert" className="text-sm text-destructive">
-              A member was removed but the household key has not been rotated
-              since. Until it is, anything written now is readable with the key
-              their device still holds.
+              {t("key.rotationDue")}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Rotating re-encrypts everything under a new key and gives every
-              member the new key automatically. It happens on its own when you
-              remove someone; you can also run it by hand. You will be shown a
-              new recovery code — the old one stops working.
+              {t("key.explain")}
             </p>
           )}
           {rotationNote && <p className="text-sm">{rotationNote}</p>}
@@ -327,11 +326,11 @@ export function HouseholdSettings() {
             disabled={busy || rotating || state !== "unlocked"}
             onClick={() =>
               void rotate().catch((err) =>
-                setError(err instanceof Error ? err.message : "Could not rotate the key")
+                setError(err instanceof Error ? flowText(err, "provider.somethingWrong") : t("key.rotateError"))
               )
             }
           >
-            {rotating ? "Rotating…" : "Rotate household key"}
+            {rotating ? t("key.rotating") : t("key.rotate")}
           </Button>
         </div>
       )}

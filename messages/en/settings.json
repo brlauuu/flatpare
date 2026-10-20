@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Settings",
+    "moved": "Members, invitations and locations of interest have moved to the <household>Household</household> page."
+  },
+  "name": {
+    "title": "Your name",
+    "label": "Your name",
+    "help": "Shown to the members of your household on ratings, the comparison and the Household page.",
+    "untilSet": " Until you set one, they see your email, {email}.",
+    "loadError": "Couldn't load your name. Reload the page to try again.",
+    "saveError": "Couldn't save your name.",
+    "saved": "Saved.",
+    "save": "Save name"
+  }
+}

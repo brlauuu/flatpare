@@ -1,0 +1,17 @@
+{
+  "boundary": {
+    "title": "Etwas ist schiefgelaufen",
+    "body": "Die Seite konnte nicht geladen werden. Du kannst es nochmals versuchen oder unten die Details aufklappen, um zu sehen, was passiert ist.",
+    "unexpected": "Unerwarteter Fehler",
+    "retry": "Nochmals versuchen"
+  },
+  "details": {
+    "show": "Details anzeigen",
+    "status": "Status:",
+    "url": "URL:",
+    "message": "Meldung:",
+    "time": "Zeit:",
+    "copied": "Kopiert",
+    "copy": "Details kopieren"
+  }
+}

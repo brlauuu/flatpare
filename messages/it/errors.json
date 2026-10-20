@@ -1,0 +1,17 @@
+{
+  "boundary": {
+    "title": "Qualcosa è andato storto",
+    "body": "La pagina non si è caricata. Puoi riprovare, oppure aprire i dettagli qui sotto per vedere cos'è successo.",
+    "unexpected": "Errore imprevisto",
+    "retry": "Riprova"
+  },
+  "details": {
+    "show": "Mostra dettagli",
+    "status": "Stato:",
+    "url": "URL:",
+    "message": "Messaggio:",
+    "time": "Ora:",
+    "copied": "Copiato",
+    "copy": "Copia dettagli"
+  }
+}

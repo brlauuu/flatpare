@@ -1,6 +1,6 @@
 import type { ApartmentDistance } from "@/lib/household-data/types";
 
-type StaticSortField =
+export type StaticSortField =
   | "createdAt"
   | "rentChf"
   | "sizeM2"
@@ -75,16 +75,13 @@ function extract(apt: SortableApartment, field: SortField): number | string | nu
   }
 }
 
-const STATIC_LIST_SORT_LABELS: Record<StaticSortField, string> = {
-  createdAt: "Date added",
-  rentChf: "Price",
-  sizeM2: "Size",
-  numRooms: "Rooms",
-  numBathrooms: "Bathrooms",
-  numBalconies: "Balconies",
-  avgOverall: "Avg rating",
-  shortCode: "Short code",
-};
+// The words for each option come from the caller (#288): this module stays
+// pure, and the pages build a SortText from the `common.sort` catalogue.
+export interface SortText {
+  field(id: StaticSortField): string;
+  bikeTo(place: string): string;
+  transitTo(place: string): string;
+}
 
 // Apartments-list sort dropdown defaults — a curated subset of static fields
 // shown even when no locations are configured.
@@ -104,36 +101,21 @@ export interface LocationLite {
 
 type SortFieldOption = { id: SortField; label: string };
 
-export function listSortOptions(locations: LocationLite[]): SortFieldOption[] {
-  const base: SortFieldOption[] = STATIC_LIST_SORT_FIELDS.map((id) => ({
-    id,
-    label: STATIC_LIST_SORT_LABELS[id],
-  }));
-  const dynamic: SortFieldOption[] = locations.flatMap((loc) => [
-    { id: `bikeTo:${loc.id}` as SortField, label: `Bike to ${loc.label}` },
-    {
-      id: `transitTo:${loc.id}` as SortField,
-      label: `Transit to ${loc.label}`,
-    },
+function locationOptions(locations: LocationLite[], text: SortText): SortFieldOption[] {
+  return locations.flatMap((loc) => [
+    { id: `bikeTo:${loc.id}` as SortField, label: text.bikeTo(loc.label) },
+    { id: `transitTo:${loc.id}` as SortField, label: text.transitTo(loc.label) },
   ]);
-  return [...base, ...dynamic];
 }
 
-export function compareSortOptions(
-  locations: LocationLite[]
-): SortFieldOption[] {
-  const base: SortFieldOption[] = STATIC_FIELDS.map((id) => ({
-    id,
-    label: STATIC_LIST_SORT_LABELS[id],
-  }));
-  const dynamic: SortFieldOption[] = locations.flatMap((loc) => [
-    { id: `bikeTo:${loc.id}` as SortField, label: `Bike to ${loc.label}` },
-    {
-      id: `transitTo:${loc.id}` as SortField,
-      label: `Transit to ${loc.label}`,
-    },
-  ]);
-  return [...base, ...dynamic];
+export function listSortOptions(locations: LocationLite[], text: SortText): SortFieldOption[] {
+  const base = STATIC_LIST_SORT_FIELDS.map((id) => ({ id, label: text.field(id) }));
+  return [...base, ...locationOptions(locations, text)];
+}
+
+export function compareSortOptions(locations: LocationLite[], text: SortText): SortFieldOption[] {
+  const base = STATIC_FIELDS.map((id) => ({ id, label: text.field(id) }));
+  return [...base, ...locationOptions(locations, text)];
 }
 
 function compareValues(

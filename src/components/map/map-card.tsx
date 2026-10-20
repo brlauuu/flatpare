@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { formatRent, formatRooms, type ApartmentPoint, type LocationPoint } from "@/lib/map/points";
+import { useFormatter, useTranslations } from "next-intl";
+import type { ApartmentPoint, LocationPoint } from "@/lib/map/points";
+import { useMapText } from "./use-map-text";
 
 // The card a mark opens on the map (#330). Framed like every other card.
 // The apartment card is one link: on a phone, tapping it is how the
@@ -14,10 +16,13 @@ export const LOCATION_CARD_HEIGHT = 72;
 const frame = "block w-52 rounded-xl border-3 border-frame bg-card p-3 text-card-foreground shadow-frame";
 
 export function ApartmentCard({ apartment: a }: { apartment: ApartmentPoint }) {
+  const t = useTranslations("map.card");
+  const format = useFormatter();
+  const text = useMapText();
   const facts = [
-    a.rentChf !== null ? formatRent(a.rentChf) : null,
-    a.sizeM2 !== null ? `${a.sizeM2} m²` : null,
-    a.numRooms !== null ? formatRooms(a.numRooms) : null,
+    a.rentChf !== null ? text.rent(a.rentChf) : null,
+    a.sizeM2 !== null ? text.size(a.sizeM2) : null,
+    a.numRooms !== null ? text.rooms(a.numRooms) : null,
   ].filter((f): f is string => f !== null);
   return (
     <Link href={`/apartments/${a.id}`} className={frame}>
@@ -30,10 +35,12 @@ export function ApartmentCard({ apartment: a }: { apartment: ApartmentPoint }) {
         </span>
       )}
       <span className="mt-1 block font-mono text-sm">
-        {a.avgOverall === null ? "Not rated" : `★ ${a.avgOverall.toFixed(1)}`}
+        {a.avgOverall === null
+          ? t("notRated")
+          : t("rating", { value: format.number(a.avgOverall, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}
       </span>
       <span className="mt-1 block truncate text-xs text-muted-foreground">{a.name}</span>
-      <span className="mt-2 block font-mono text-xs font-semibold underline">Open →</span>
+      <span className="mt-2 block font-mono text-xs font-semibold underline">{t("open")}</span>
     </Link>
   );
 }

@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Gruppo"
+  },
+  "members": {
+    "title": "Membri",
+    "count": "{used} di {max}",
+    "role": {
+      "owner": "proprietario",
+      "member": "membro"
+    },
+    "awaitingKey": "in attesa della chiave",
+    "remove": "Rimuovi",
+    "leave": "Lascia il gruppo",
+    "leaveNote": "Le tue valutazioni e gli appartamenti che hai aggiunto restano al gruppo.",
+    "leaveConfirmEncrypted": "Lasciare questo gruppo? Perdi subito l'accesso ai suoi appartamenti e tutto ciò che hai aggiunto resta al gruppo. Riceverai un gruppo tuo, vuoto.",
+    "leaveConfirm": "Lasciare questo gruppo? Perdi subito l'accesso ai suoi appartamenti e tutto ciò che hai aggiunto resta al gruppo.",
+    "removeConfirmEncrypted": "Rimuovere {name} dal gruppo? Perde subito l'accesso e la chiave del gruppo verrà rinnovata — ti verrà mostrato un nuovo codice di recupero da conservare.",
+    "removeConfirm": "Rimuovere {name} dal gruppo? Perde subito l'accesso.",
+    "removedEmailed": "{name} è stato rimosso ed è stato avvisato per e-mail.",
+    "removedEmailFailed": "{name} è stato rimosso, ma non è stato possibile inviare l'e-mail per avvisarlo.",
+    "removed": "{name} è stato rimosso.",
+    "removedRotationFailed": "{name} è stato rimosso, ma non è stato possibile rinnovare la chiave del gruppo: {reason}. Rinnovala qui sotto quando vuoi.",
+    "unknownError": "errore sconosciuto"
+  },
+  "invite": {
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "nome@esempio.ch",
+    "submit": "Invita",
+    "emailed": "Invito inviato per e-mail a {email}.",
+    "emailFailed": "Invito creato, ma non è stato possibile inviare l'e-mail a {email}. Chiedigli di accedere con quell'indirizzo.",
+    "created": "Invito creato. Chiedigli di accedere con {email}.",
+    "atLimit": "Questo gruppo può avere al massimo {max} membri. Rimuovi un membro o revoca un invito in sospeso per invitare qualcun altro.",
+    "noEmail": "Non viene inviata nessuna e-mail. Digli di accedere con quell'indirizzo; l'invito lo aspetta lì per 7 giorni.",
+    "pending": "In sospeso · scade il {date}",
+    "revoke": "Revoca"
+  },
+  "key": {
+    "title": "Chiave del gruppo",
+    "version": "versione {version}",
+    "rotationDue": "È stato rimosso un membro, ma da allora la chiave del gruppo non è stata rinnovata. Finché non lo sarà, tutto ciò che viene scritto ora è leggibile con la chiave che il suo dispositivo conserva ancora.",
+    "explain": "Il rinnovo cifra di nuovo tutto con una nuova chiave e la consegna automaticamente a ogni membro. Avviene da solo quando rimuovi qualcuno; puoi anche avviarlo a mano. Ti verrà mostrato un nuovo codice di recupero — quello vecchio smette di funzionare.",
+    "pdfFailures": "{count, plural, one {Chiave del gruppo rinnovata, ma non è stato possibile cifrare di nuovo # PDF, che è rimasto com’era.} other {Chiave del gruppo rinnovata, ma non è stato possibile cifrare di nuovo # PDF, che sono rimasti com’erano.}}",
+    "rotating": "Rinnovo in corso…",
+    "rotate": "Rinnova la chiave del gruppo",
+    "rotateError": "Non è stato possibile rinnovare la chiave"
+  },
+  "errors": {
+    "requestFailedStatus": "Richiesta non riuscita ({status})",
+    "requestFailed": "Richiesta non riuscita",
+    "loadFailed": "Non è stato possibile caricare il gruppo"
+  },
+  "locations": {
+    "title": "Luoghi di interesse ({count} di {max})",
+    "add": "Aggiungi luogo",
+    "empty": "Ancora nessun luogo. Gli appartamenti nascondono la sezione delle distanze finché non ne aggiungi uno.",
+    "moveUp": "Sposta {label} in alto",
+    "moveDown": "Sposta {label} in basso",
+    "edit": "Modifica {label}",
+    "delete": "Elimina {label}",
+    "deleteConfirm": "Eliminare «{label}»? Gli appartamenti perderanno questa distanza.",
+    "formAdd": "Aggiungi luogo",
+    "formEdit": "Modifica luogo",
+    "labelLabel": "Nome",
+    "labelPlaceholder": "Lavoro, Casa, Palestra, …",
+    "addressLabel": "Indirizzo",
+    "addressPlaceholder": "Via, NPA, località",
+    "iconLabel": "Icona",
+    "pickIcon": "Scegli icona",
+    "change": "Cambia",
+    "saving": "Salvataggio…",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "saveError": "Non è stato possibile salvare il luogo",
+    "deleteError": "Non è stato possibile eliminare il luogo",
+    "reorderError": "Non è stato possibile riordinare",
+    "loadError": "Non è stato possibile caricare i luoghi",
+    "recomputeTitle": "Ricalcola le distanze",
+    "recomputeBody": "Ricalcola i minuti in bici e coi mezzi per ogni coppia appartamento × luogo.",
+    "recomputeError": "Non è stato possibile ricalcolare le distanze",
+    "recomputingProgress": "Ricalcolo… {done} di {total}",
+    "recomputing": "Ricalcolo…",
+    "recompute": "Ricalcola tutto",
+    "recomputed": "Ricalcolati {updated} appartamenti{failed, plural, =0 {} other { (# non riusciti)}}{skipped, plural, =0 {} other { (# saltati — senza indirizzo)}}"
+  },
+  "iconPicker": {
+    "title": "Scegli un'icona",
+    "close": "Chiudi",
+    "icons": {
+      "Train": "Treno",
+      "Bus": "Autobus",
+      "Briefcase": "Valigetta",
+      "Heart": "Cuore",
+      "Coffee": "Caffè",
+      "Dumbbell": "Manubrio",
+      "ShoppingCart": "Carrello",
+      "GraduationCap": "Tocco accademico",
+      "Plane": "Aereo",
+      "Home": "Casa",
+      "Stethoscope": "Stetoscopio",
+      "Music": "Musica"
+    }
+  }
+}

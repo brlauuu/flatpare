@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { ErrorDisplay } from "@/components/error-display";
 import { HouseholdMap } from "@/components/map/household-map";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
@@ -9,6 +10,7 @@ import { mapFontVariables } from "./map-fonts";
 // Every apartment and place of the household on one map (#330). Full width,
 // like /compare, so there is no section layout here.
 export default function MapPage() {
+  const t = useTranslations("map.page");
   const { status, error, apartments, locations, runMaintenance } = useHouseholdData();
 
   // Apartments added before they had coordinates get them now, once per
@@ -25,7 +27,7 @@ export default function MapPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading map...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -33,14 +35,14 @@ export default function MapPage() {
   if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={error ?? "Couldn't load the map"} />
+        <ErrorDisplay headline={error ?? t("loadError")} />
       </div>
     );
   }
 
   return (
     <div className={`space-y-4 ${mapFontVariables}`}>
-      <h1 className="title-page">Map</h1>
+      <h1 className="title-page">{t("title")}</h1>
       <HouseholdMap apartments={apartments} locations={locations} />
     </div>
   );

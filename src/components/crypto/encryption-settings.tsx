@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "./crypto-context";
 import { runChangePassphrase, runRegenerateRecovery } from "./flows";
 import { MIN_PASSPHRASE_LENGTH } from "./setup-screen";
+import { useFlowErrorText } from "./use-flow-error-text";
 
 export function EncryptionSettings() {
+  const t = useTranslations("crypto");
+  const errorText = useFlowErrorText();
   const { state, status, keys, lock, refresh, showRecoveryKit } = useCrypto();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -20,10 +24,8 @@ export function EncryptionSettings() {
   if (state === "off" || !status) {
     return (
       <section className="space-y-2">
-        <h2 className="title-section">Encryption</h2>
-        <p className="text-sm text-muted-foreground">
-          Encryption: off — set by this deployment.
-        </p>
+        <h2 className="title-section">{t("settings.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("settings.off")}</p>
       </section>
     );
   }
@@ -34,9 +36,9 @@ export function EncryptionSettings() {
     setError(null);
     setMessage(null);
     if (next.length < MIN_PASSPHRASE_LENGTH) {
-      return setError(`Use at least ${MIN_PASSPHRASE_LENGTH} characters.`);
+      return setError(t("passphrase.tooShort", { min: MIN_PASSPHRASE_LENGTH }));
     }
-    if (next !== confirm) return setError("The passphrases do not match.");
+    if (next !== confirm) return setError(t("passphrase.mismatch"));
     setBusy(true);
     try {
       await runChangePassphrase(status, current, next);
@@ -44,9 +46,9 @@ export function EncryptionSettings() {
       setCurrent("");
       setNext("");
       setConfirm("");
-      setMessage("Passphrase changed.");
+      setMessage(t("settings.changed"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not change passphrase");
+      setError(errorText(err, "settings.changeFailed"));
     } finally {
       setBusy(false);
     }
@@ -61,7 +63,7 @@ export function EncryptionSettings() {
       await refresh();
       showRecoveryKit(recoveryCode);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not regenerate the kit");
+      setError(errorText(err, "settings.regenerateFailed"));
     } finally {
       setBusy(false);
     }
@@ -69,11 +71,11 @@ export function EncryptionSettings() {
 
   return (
     <section className="space-y-4">
-      <h2 className="title-section">Encryption</h2>
+      <h2 className="title-section">{t("settings.title")}</h2>
 
       <form onSubmit={changePassphrase} className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="enc-current">Current passphrase</Label>
+          <Label htmlFor="enc-current">{t("passphrase.current")}</Label>
           <Input
             id="enc-current"
             type="password"
@@ -83,7 +85,7 @@ export function EncryptionSettings() {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="enc-next">New passphrase</Label>
+          <Label htmlFor="enc-next">{t("passphrase.new")}</Label>
           <Input
             id="enc-next"
             type="password"
@@ -93,7 +95,7 @@ export function EncryptionSettings() {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="enc-confirm">Confirm new passphrase</Label>
+          <Label htmlFor="enc-confirm">{t("passphrase.confirmNew")}</Label>
           <Input
             id="enc-confirm"
             type="password"
@@ -105,25 +107,21 @@ export function EncryptionSettings() {
         {error && <p className="text-sm text-destructive">{error}</p>}
         {message && <p className="text-sm">{message}</p>}
         <Button type="submit" disabled={busy}>
-          Change passphrase
+          {t("settings.change")}
         </Button>
       </form>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" onClick={() => void lock()}>
-          Lock this device
+          {t("settings.lock")}
         </Button>
         {status.role === "owner" && (
           <Button type="button" variant="outline" disabled={busy} onClick={regenerate}>
-            Regenerate recovery kit
+            {t("settings.regenerate")}
           </Button>
         )}
       </div>
-      <p className="text-sm text-muted-foreground">
-        Locking clears the keys from this browser; you will need your
-        passphrase next time. Regenerating the recovery kit replaces the old
-        code — the old one stops working immediately.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("settings.explain")}</p>
     </section>
   );
 }

@@ -1,0 +1,33 @@
+{
+  "page": {
+    "title": "Mappa",
+    "loading": "Caricamento della mappa…",
+    "loadError": "Non è stato possibile caricare la mappa"
+  },
+  "map": {
+    "loading": "Caricamento della mappa",
+    "noApartments": "Ancora nessun appartamento. <upload>Carica un annuncio</upload> e apparirà qui non appena avrà un indirizzo.",
+    "nothingPlaced": "Ancora niente da mostrare — aggiungi un appartamento con un indirizzo.",
+    "failed": "Non è stato possibile caricare la mappa.",
+    "yourApartments": "I tuoi appartamenti: <links></links>",
+    "missing": "{count, plural, one {# appartamento non è ancora} other {# appartamenti non sono ancora}} sulla mappa: <links></links>",
+    "listSeparator": ", "
+  },
+  "card": {
+    "rent": "CHF {amount}",
+    "size": "{value} m²",
+    "rooms": "{count, plural, one {# locale} other {# locali}}",
+    "notRated": "Non valutato",
+    "rating": "★ {value}",
+    "open": "Apri →"
+  },
+  "mark": {
+    "opensApartment": "apre l'appartamento"
+  },
+  "controls": {
+    "zoomIn": "Ingrandisci",
+    "zoomOut": "Riduci",
+    "toggleAttribution": "Mostra/nascondi attribuzione",
+    "mapTitle": "Mappa"
+  }
+}

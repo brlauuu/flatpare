@@ -18,6 +18,10 @@ export const users = sqliteTable(
     email: text("email").notNull(),
     emailVerified: integer("email_verified", { mode: "timestamp_ms" }),
     image: text("image"),
+    // The interface language the person chose (#288): one of LOCALES in
+    // src/i18n/locales.ts, or null until they pick one. A preference about
+    // the interface, not household data, so plaintext like `name`.
+    locale: text("locale"),
   },
   // One row per address. Auth.js already assumes this — its OAuth flow looks
   // a user up by email before creating one, and answers OAuthAccountNotLinked

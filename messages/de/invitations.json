@@ -1,0 +1,15 @@
+{
+  "title": "Einem Haushalt beitreten",
+  "loading": "Wird geladen…",
+  "loadFailed": "Einladungen konnten nicht geladen werden",
+  "requestFailed": "Anfrage fehlgeschlagen",
+  "requestFailedStatus": "Anfrage fehlgeschlagen ({status})",
+  "invitedAndExpires": "Eingeladen von {name}. Läuft ab am {date}.",
+  "expires": "Läuft ab am {date}.",
+  "accept": "Annehmen",
+  "none": "Du hast keine offenen Einladungen. Bitte die Person, der der Haushalt gehört, die E-Mail-Adresse einzuladen, mit der du dich angemeldet hast, oder gründe deinen eigenen Haushalt.",
+  "declineAndStartOwn": "Nein danke, eigenen Haushalt gründen",
+  "startOwn": "Eigenen Haushalt gründen",
+  "signOut": "Abmelden",
+  "polling": "Diese Seite sucht alle {seconds} Sekunden nach neuen Einladungen."
+}

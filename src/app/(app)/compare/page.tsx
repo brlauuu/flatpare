@@ -1,7 +1,9 @@
 "use client";
 
+import { useSortText } from "@/components/use-sort-text";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, BarChart3 } from "lucide-react";
 import { ErrorDisplay } from "@/components/error-display";
@@ -36,6 +38,7 @@ interface ErrorState {
 }
 
 export default function ComparePage() {
+  const t = useTranslations("compare.page");
   const { status, error: loadError, apartments, locations, identity, dataKey } =
     useHouseholdData();
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
@@ -53,7 +56,8 @@ export default function ComparePage() {
     isSortDirection
   );
 
-  const sortOptions = useMemo(() => compareSortOptions(locations), [locations]);
+  const sortText = useSortText();
+  const sortOptions = useMemo(() => compareSortOptions(locations, sortText), [locations, sortText]);
   // Handed to the Select so its trigger shows the option's label ("Rent")
   // instead of the raw value ("rentChf"), which Base UI renders otherwise.
   const sortItems = useMemo(
@@ -82,14 +86,14 @@ export default function ComparePage() {
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setError(null);
     } catch (err) {
-      setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
+      setError({ headline: t("pdfError"), details: errorDetailsFromException(err) });
     }
   }
 
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading comparison...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -98,7 +102,7 @@ export default function ComparePage() {
     return (
       <div className="py-8">
         <ErrorDisplay
-          headline="Couldn't load comparison data"
+          headline={t("loadError")}
           details={{ message: loadError ?? undefined, timestamp: new Date().toISOString() }}
         />
       </div>
@@ -112,13 +116,13 @@ export default function ComparePage() {
           <BarChart3 className="h-8 w-8 text-muted-foreground" />
         </div>
         <div className="text-center">
-          <p className="font-medium">No apartments to compare yet</p>
+          <p className="font-medium">{t("emptyTitle")}</p>
           <p className="text-sm text-muted-foreground">
-            Upload at least two listings to start comparing
+            {t("emptyBody")}
           </p>
         </div>
         <Link href="/apartments/new" className={buttonVariants()}>
-          Upload a listing
+          {t("emptyCta")}
         </Link>
       </div>
     );
@@ -127,7 +131,7 @@ export default function ComparePage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="title-page">Compare</h1>
+        <h1 className="title-page">{t("title")}</h1>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
           <Select
             items={sortItems}
@@ -136,7 +140,7 @@ export default function ComparePage() {
           >
             <SelectTrigger
               weight="frame"
-              aria-label="Sort by"
+              aria-label={t("sortBy")}
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >
               <SelectValue />
@@ -153,7 +157,7 @@ export default function ComparePage() {
             type="button"
             variant="outline"
             size="sm"
-            aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
+            aria-label={sortDirection === "asc" ? t("ascending") : t("descending")}
             onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
             className="h-11 w-11 p-0 sm:h-8 sm:w-8"
           >
@@ -165,7 +169,7 @@ export default function ComparePage() {
           </Button>
           {hiddenIds.size > 0 && (
             <Button variant="outline" size="sm" onClick={() => setHiddenIds(new Set())}>
-              Show all ({hiddenIds.size} hidden)
+              {t("showAll", { count: hiddenIds.size })}
             </Button>
           )}
         </div>

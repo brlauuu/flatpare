@@ -1,0 +1,33 @@
+{
+  "page": {
+    "title": "Map",
+    "loading": "Loading map...",
+    "loadError": "Couldn't load the map"
+  },
+  "map": {
+    "loading": "Loading map",
+    "noApartments": "No apartments yet. <upload>Upload a listing</upload> and it appears here once it has an address.",
+    "nothingPlaced": "Nothing to show yet — add an apartment with an address.",
+    "failed": "The map couldn't load.",
+    "yourApartments": "Your apartments: <links></links>",
+    "missing": "{count, plural, one {# apartment isn't} other {# apartments aren't}} on the map yet: <links></links>",
+    "listSeparator": ", "
+  },
+  "card": {
+    "rent": "CHF {amount}",
+    "size": "{value} m²",
+    "rooms": "{count, plural, one {# room} other {# rooms}}",
+    "notRated": "Not rated",
+    "rating": "★ {value}",
+    "open": "Open →"
+  },
+  "mark": {
+    "opensApartment": "opens apartment"
+  },
+  "controls": {
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "toggleAttribution": "Toggle attribution",
+    "mapTitle": "Map"
+  }
+}

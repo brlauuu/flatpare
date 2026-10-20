@@ -1,0 +1,40 @@
+{
+  "page": {
+    "title": "Compare",
+    "loading": "Loading comparison...",
+    "loadError": "Couldn't load comparison data",
+    "pdfError": "Couldn't open PDF",
+    "emptyTitle": "No apartments to compare yet",
+    "emptyBody": "Upload at least two listings to start comparing",
+    "emptyCta": "Upload a listing",
+    "sortBy": "Sort by",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "showAll": "Show all ({count} hidden)"
+  },
+  "header": {
+    "viewPdf": "View PDF for {name}",
+    "originalListing": "Original listing for {name}",
+    "hide": "Hide {name}"
+  },
+  "table": {
+    "metric": {
+      "rentChf": "Rent (CHF)",
+      "sizeM2": "Size (m²)",
+      "numRooms": "Rooms",
+      "numBathrooms": "Bathrooms",
+      "numBalconies": "Balconies"
+    },
+    "travelTo": "Bike + transit to {label}",
+    "minutes": "{value} min",
+    "noMinutes": "— min",
+    "washingMachine": "Washing machine",
+    "washingYes": "Yes",
+    "washingNo": "No (or shared)",
+    "washingUnknown": "Unknown",
+    "userRatings": "{name}'s ratings",
+    "overall": "Overall",
+    "comment": "Comment",
+    "averageRatings": "Average Ratings"
+  }
+}

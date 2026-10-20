@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 
@@ -20,6 +21,7 @@ export const LOW_CREDITS = 5;
 // which is a different number from the "N of 40" held-at-once counter that
 // can sit right beside it.
 export function CreditBalance({ className }: { className?: string }) {
+  const t = useTranslations("apartments.credits");
   const { credits } = useHouseholdData();
   if (!credits) return null;
 
@@ -28,24 +30,28 @@ export function CreditBalance({ className }: { className?: string }) {
 
   return (
     <p className={cn("text-sm text-muted-foreground", className)} data-testid="credit-balance">
-      <span
-        data-level={level}
-        className={cn(
-          "font-mono font-medium tabular-nums",
-          level === "ok" && "text-foreground",
-          level === "low" && "text-warning",
-          level === "empty" && "text-destructive"
-        )}
-      >
-        {remaining}
-      </span>{" "}
-      {remaining === 1 ? "apartment" : "apartments"} left to add
+      {t.rich("left", {
+        count: remaining,
+        n: (chunks) => (
+          <span
+            data-level={level}
+            className={cn(
+              "font-mono font-medium tabular-nums",
+              level === "ok" && "text-foreground",
+              level === "low" && "text-warning",
+              level === "empty" && "text-destructive"
+            )}
+          >
+            {chunks}
+          </span>
+        ),
+      })}
       {/* Colour alone does not reach everyone. */}
-      {level === "low" && <span className="sr-only"> (running low)</span>}
-      {level === "empty" && <span className="sr-only"> (none left)</span>}
+      {level === "low" && <span className="sr-only"> {t("runningLow")}</span>}
+      {level === "empty" && <span className="sr-only"> {t("noneLeft")}</span>}
       {" · "}
       <Link href="/billing" className="underline underline-offset-2 hover:text-foreground">
-        Buy more
+        {t("buyMore")}
       </Link>
     </p>
   );

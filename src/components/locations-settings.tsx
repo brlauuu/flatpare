@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,8 @@ import { useHouseholdData } from "@/components/household-data/use-household-data
 import { newRowId } from "@/lib/household-data/ids";
 import type { LocationView } from "@/lib/household-data/types";
 import { MAX_LOCATIONS, type LocationIconName } from "@/lib/location-icons";
-import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import type { ErrorDetails } from "@/lib/fetch-error";
+import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 
 interface ErrorState {
   headline: string;
@@ -40,6 +42,7 @@ type Editing =
 // enforce that: the distance route serves every member's own enrichment,
 // so this is a UI decision keyed on the session's role.
 export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
+  const t = useTranslations("household.locations");
   const {
     status,
     error: loadError,
@@ -50,6 +53,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     moveLocation,
     runMaintenance,
   } = useHouseholdData();
+  const storeErrorDetails = useStoreErrorDetails();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -103,8 +107,8 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
       setError(null);
     } catch (err) {
       setError({
-        headline: "Couldn't save location",
-        details: errorDetailsFromException(err),
+        headline: t("saveError"),
+        details: storeErrorDetails(err),
       });
     } finally {
       setSaving(false);
@@ -112,13 +116,13 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
   }
 
   async function handleDelete(id: string, label: string) {
-    if (!confirm(`Delete "${label}"? Apartments will lose this distance.`)) return;
+    if (!confirm(t("deleteConfirm", { label }))) return;
     try {
       await deleteLocation(id);
     } catch (err) {
       setError({
-        headline: "Couldn't delete location",
-        details: errorDetailsFromException(err),
+        headline: t("deleteError"),
+        details: storeErrorDetails(err),
       });
     }
   }
@@ -127,7 +131,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     try {
       await moveLocation(id, direction);
     } catch (err) {
-      setError({ headline: "Couldn't reorder", details: errorDetailsFromException(err) });
+      setError({ headline: t("reorderError"), details: storeErrorDetails(err) });
     }
   }
 
@@ -140,15 +144,13 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
         setRecomputeProgress([done, total])
       );
       setRecomputeResult(
-        `Recomputed ${report.updated} apartments` +
-          (report.failed.length > 0 ? ` (${report.failed.length} failed)` : "") +
-          (report.skipped > 0 ? ` (${report.skipped} skipped — no address)` : "")
+        t("recomputed", { updated: report.updated, failed: report.failed.length, skipped: report.skipped })
       );
       setError(null);
     } catch (err) {
       setError({
-        headline: "Couldn't recompute distances",
-        details: errorDetailsFromException(err),
+        headline: t("recomputeError"),
+        details: storeErrorDetails(err),
       });
     } finally {
       setRecomputing(false);
@@ -173,7 +175,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     <div className="space-y-8">
       {status === "error" && (
         <ErrorDisplay
-          headline="Couldn't load locations"
+          headline={t("loadError")}
           details={{ message: loadError ?? undefined, timestamp: new Date().toISOString() }}
         />
       )}
@@ -182,7 +184,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="title-section">
-            Locations of interest ({locations.length} of {MAX_LOCATIONS})
+            {t("title", { count: locations.length, max: MAX_LOCATIONS })}
           </h2>
           <Button
             size="sm"
@@ -192,14 +194,13 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
             className="h-11 gap-1 sm:h-8"
           >
             <Plus className="h-4 w-4" />
-            Add location
+            {t("add")}
           </Button>
         </div>
 
         {loaded && locations.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            No locations yet. Apartments will hide their distance section until you
-            add one.
+            {t("empty")}
           </p>
         )}
 
@@ -219,7 +220,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
                   variant="ghost"
                   size="sm"
                   className="h-11 w-11 p-0 sm:h-8 sm:w-8"
-                  aria-label={`Move ${loc.label} up`}
+                  aria-label={t("moveUp", { label: loc.label })}
                   onClick={() => void handleMove(loc.id, "up")}
                   disabled={i === 0}
                 >
@@ -229,7 +230,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
                   variant="ghost"
                   size="sm"
                   className="h-11 w-11 p-0 sm:h-8 sm:w-8"
-                  aria-label={`Move ${loc.label} down`}
+                  aria-label={t("moveDown", { label: loc.label })}
                   onClick={() => void handleMove(loc.id, "down")}
                   disabled={i === locations.length - 1}
                 >
@@ -239,7 +240,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
                   variant="ghost"
                   size="sm"
                   className="h-11 w-11 p-0 sm:h-8 sm:w-8"
-                  aria-label={`Edit ${loc.label}`}
+                  aria-label={t("edit", { label: loc.label })}
                   onClick={() => startEdit(loc)}
                 >
                   <Pencil className="h-4 w-4" />
@@ -248,7 +249,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
                   variant="ghost"
                   size="sm"
                   className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
-                  aria-label={`Delete ${loc.label}`}
+                  aria-label={t("delete", { label: loc.label })}
                   onClick={() => void handleDelete(loc.id, loc.label)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -261,46 +262,46 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
         {editing && (
           <div className="space-y-3 rounded-md border bg-muted/30 p-4">
             <h3 className="text-sm font-semibold">
-              {editing.kind === "create" ? "Add location" : "Edit location"}
+              {editing.kind === "create" ? t("formAdd") : t("formEdit")}
             </h3>
             <div className="space-y-2">
-              <Label htmlFor="loc-label">Label</Label>
+              <Label htmlFor="loc-label">{t("labelLabel")}</Label>
               <Input
                 id="loc-label"
                 value={editing.label}
                 onChange={(e) => setEditing({ ...editing, label: e.target.value })}
-                placeholder="Work, Home, Gym, …"
+                placeholder={t("labelPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc-address">Address</Label>
+              <Label htmlFor="loc-address">{t("addressLabel")}</Label>
               <Input
                 id="loc-address"
                 value={editing.address}
                 onChange={(e) => setEditing({ ...editing, address: e.target.value })}
-                placeholder="Street, postcode, city"
+                placeholder={t("addressPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Icon</Label>
+              <Label>{t("iconLabel")}</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setIconPickerOpen(true)}
                 className="gap-2"
-                aria-label="Pick icon"
+                aria-label={t("pickIcon")}
               >
                 <LocationIconDisplay name={editing.icon} className="h-4 w-4" />
-                Change
+                {t("change")}
               </Button>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <Button onClick={() => void handleSave()} disabled={!editingDirty || saving}>
-                {saving ? "Saving…" : "Save"}
+                {saving ? t("saving") : t("save")}
               </Button>
               <Button variant="outline" onClick={cancelEdit} disabled={saving}>
-                Cancel
+                {t("cancel")}
               </Button>
             </div>
           </div>
@@ -309,9 +310,9 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
 
       {canRecompute && (
       <section className="space-y-2">
-        <h2 className="title-section">Recompute distances</h2>
+        <h2 className="title-section">{t("recomputeTitle")}</h2>
         <p className="text-sm text-muted-foreground">
-          Rebuild bike and transit minutes for every apartment × location pair.
+          {t("recomputeBody")}
         </p>
         <div className="flex items-center gap-3">
           <Button
@@ -322,9 +323,9 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
           >
             {recomputing
               ? recomputeProgress
-                ? `Recomputing… ${recomputeProgress[0]} of ${recomputeProgress[1]}`
-                : "Recomputing…"
-              : "Recompute all"}
+                ? t("recomputingProgress", { done: recomputeProgress[0], total: recomputeProgress[1] })
+                : t("recomputing")
+              : t("recompute")}
           </Button>
           {recomputeResult && (
             <span className="text-sm text-muted-foreground">{recomputeResult}</span>

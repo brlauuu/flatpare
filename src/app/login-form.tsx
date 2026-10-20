@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { ThemedLogo } from "@/components/themed-logo";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,20 +35,15 @@ export type SignInNotice =
 // (it opens in a dialog there), so this points at it instead of a link. Existing accounts
 // and beta invitations still sign in, so the buttons stay.
 function ClosedNotice() {
+  const t = useTranslations("auth.closed");
   return (
     <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground space-y-2">
       <p>
-        <strong className="font-medium text-foreground">
-          Flatpare is in a private beta.
-        </strong>{" "}
-        New sign-ups are closed while billing is finished; we expect to open
-        later this year. Existing accounts and beta invitations still sign in
-        below.
+        {t.rich("lead", {
+          strong: (chunks) => <strong className="font-medium text-foreground">{chunks}</strong>,
+        })}
       </p>
-      <p>
-        Want a place in the beta? Request an invite with the form on this
-        page.
-      </p>
+      <p>{t("ask")}</p>
     </div>
   );
 }
@@ -59,6 +55,7 @@ function NoticeFor({
   notice: SignInNotice;
   access: PublicAccess;
 }) {
+  const t = useTranslations("auth.notice");
   switch (notice) {
     case "sign-up-refused":
       // Only meaningful while the door is shut: a bookmarked redirect URL
@@ -69,12 +66,8 @@ function NoticeFor({
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
         >
-          <p className="font-medium text-destructive">Sign-ups are closed for now</p>
-          <p className="mt-1 text-muted-foreground">
-            There is no account for that address yet, and this browser holds
-            no beta invitation. If you were given a beta link, open it first
-            and then sign in again.
-          </p>
+          <p className="font-medium text-destructive">{t("signUpRefusedTitle")}</p>
+          <p className="mt-1 text-muted-foreground">{t("signUpRefusedBody")}</p>
         </div>
       );
     case "beta-invalid":
@@ -83,13 +76,8 @@ function NoticeFor({
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
         >
-          <p className="font-medium text-destructive">
-            That beta link is no longer valid
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            It may have expired, been used up, or been revoked. Ask the person
-            who sent it for a new one.
-          </p>
+          <p className="font-medium text-destructive">{t("betaInvalidTitle")}</p>
+          <p className="mt-1 text-muted-foreground">{t("betaInvalidBody")}</p>
         </div>
       );
     case "beta-ready":
@@ -98,23 +86,20 @@ function NoticeFor({
           role="status"
           className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm"
         >
-          <strong className="font-medium">Your beta invitation is ready.</strong>{" "}
-          Sign in below to create your account. Beta accounts are free, and
-          what you get is yours to keep: neither your data nor your credits
-          are taken back when the beta ends.
+          {/* One message: the landing page states the same permanence. */}
+          {t.rich("betaReady", { strong: (chunks) => <strong className="font-medium">{chunks}</strong> })}
         </p>
       );
     case "link-expired":
       return (
         <p role="status" className="rounded-md border p-3 text-sm">
-          That sign-in link has expired or was already used. Enter your email
-          below and we will send a fresh one.
+          {t("linkExpired")}
         </p>
       );
     case "sign-in-failed":
       return (
         <p role="status" className="rounded-md border p-3 text-sm">
-          Sign-in did not go through. Please try again.
+          {t("signInFailed")}
         </p>
       );
     default:
@@ -131,6 +116,8 @@ export function LoginForm({
   access?: PublicAccess;
   notice?: SignInNotice;
 }) {
+  const t = useTranslations("auth.card");
+  const te = useTranslations("auth.errors");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [linkSentTo, setLinkSentTo] = useState<string | null>(null);
@@ -152,12 +139,12 @@ export function LoginForm({
         return;
       }
       if (!res || res.error) {
-        setError("Couldn't send the sign-in link. Check the address and try again.");
+        setError(te("linkNotSent"));
         return;
       }
       setLinkSentTo(email.trim());
     } catch {
-      setError("Couldn't send the sign-in link. Check the address and try again.");
+      setError(te("linkNotSent"));
     } finally {
       setLoading(false);
     }
@@ -169,7 +156,7 @@ export function LoginForm({
     try {
       await signIn(provider, { callbackUrl: "/apartments" });
     } catch {
-      setError("Couldn't reach the sign-in provider.");
+      setError(te("providerUnreachable"));
       setLoading(false);
     }
   }
@@ -186,7 +173,7 @@ export function LoginForm({
     });
 
     if (!res || res.error) {
-      setError("Wrong password");
+      setError(te("wrongPassword"));
       setLoading(false);
       return;
     }
@@ -201,12 +188,8 @@ export function LoginForm({
       <Card className="w-full border-0 shadow-none">
         <CardHeader className="items-center space-y-3">
           <ThemedLogo width={180} height={56} className="h-12 w-auto" priority />
-          <p className="text-center text-xs text-muted-foreground">
-            Compare apartments together
-          </p>
-          <p className="text-center text-sm text-muted-foreground pt-2">
-            Sign in to continue
-          </p>
+          <p className="text-center text-xs text-muted-foreground">{t("tagline")}</p>
+          <p className="text-center text-sm text-muted-foreground pt-2">{t("prompt")}</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Outside the credentials block on purpose: an OAuth failure sets
@@ -223,7 +206,7 @@ export function LoginForm({
               disabled={loading}
               onClick={() => handleOAuth("google")}
             >
-              Continue with Google
+              {t("continueWithGoogle")}
             </Button>
           )}
           {providers.includes("github") && (
@@ -234,20 +217,21 @@ export function LoginForm({
               disabled={loading}
               onClick={() => handleOAuth("github")}
             >
-              Continue with GitHub
+              {t("continueWithGithub")}
             </Button>
           )}
           {providers.includes("resend") &&
             (linkSentTo ? (
               <p role="status" className="rounded-md border p-3 text-sm">
-                <strong className="font-medium">Check your email.</strong> We sent a
-                sign-in link to {linkSentTo}. It works once and expires in 15
-                minutes; open it in this browser.
+                {t.rich("linkSent", {
+                  email: linkSentTo,
+                  strong: (chunks) => <strong className="font-medium">{chunks}</strong>,
+                })}
               </p>
             ) : (
               <form onSubmit={handleEmail} className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("emailLabel")}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -256,31 +240,31 @@ export function LoginForm({
                     className="h-11"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t("emailPlaceholder")}
                     required
                   />
                 </div>
                 <Button type="submit" variant="outline" className="h-11 w-full" disabled={loading}>
-                  {loading ? "Sending…" : "Email me a sign-in link"}
+                  {loading ? t("sendingLink") : t("sendLink")}
                 </Button>
               </form>
             ))}
           {providers.includes("credentials") && (
             <form onSubmit={handlePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("passwordLabel")}</Label>
                 <Input
                   id="password"
                   type="password"
                   className="h-11"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder={t("passwordPlaceholder")}
                   autoFocus
                 />
               </div>
               <Button type="submit" className="h-11 w-full" disabled={loading}>
-                {loading ? "Checking..." : "Continue"}
+                {loading ? t("checkingPassword") : t("continue")}
               </Button>
             </form>
           )}

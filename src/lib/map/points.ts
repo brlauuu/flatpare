@@ -71,19 +71,21 @@ export function toMapPoints(apartments: ApartmentView[], locations: LocationView
   return result;
 }
 
-export function formatRent(chf: number): string {
-  return `CHF ${chf.toLocaleString("de-CH")}`;
+// The words and number formats a mark and its card use, in the active
+// language (#288). Built by useMapText in src/components/map, so this
+// module stays pure and testable without a provider.
+export interface MapText {
+  rent: (chf: number) => string;
+  size: (m2: number) => string;
+  rooms: (n: number) => string;
+  opensApartment: string;
 }
 
-export function formatRooms(n: number): string {
-  return n === 1 ? "1 room" : `${n} rooms`;
-}
-
-export function describeApartment(a: ApartmentPoint): string {
+export function describeApartment(a: ApartmentPoint, text: MapText): string {
   const parts = [a.label];
-  if (a.rentChf !== null) parts.push(formatRent(a.rentChf));
-  if (a.sizeM2 !== null) parts.push(`${a.sizeM2} m²`);
-  parts.push("opens apartment");
+  if (a.rentChf !== null) parts.push(text.rent(a.rentChf));
+  if (a.sizeM2 !== null) parts.push(text.size(a.sizeM2));
+  parts.push(text.opensApartment);
   return parts.join(", ");
 }
 
@@ -101,7 +103,7 @@ export interface MarkSpec {
   href: string | null;
 }
 
-export function toMarks(points: MapPoints): MarkSpec[] {
+export function toMarks(points: MapPoints, text: MapText): MarkSpec[] {
   return [
     ...points.apartments.map((a) => ({
       key: `apartment:${a.id}`,
@@ -109,7 +111,7 @@ export function toMarks(points: MapPoints): MarkSpec[] {
       id: a.id,
       label: a.label,
       seed: seedFromId(a.id),
-      ariaLabel: describeApartment(a),
+      ariaLabel: describeApartment(a, text),
       lngLat: [a.longitude, a.latitude] as [number, number],
       href: `/apartments/${a.id}`,
     })),

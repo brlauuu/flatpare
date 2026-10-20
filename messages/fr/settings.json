@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Réglages",
+    "moved": "Les membres, les invitations et les lieux importants se trouvent désormais sur la page <household>Foyer</household>."
+  },
+  "name": {
+    "title": "Ton nom",
+    "label": "Ton nom",
+    "help": "Visible par les membres de ton foyer sur les évaluations, la comparaison et la page Foyer.",
+    "untilSet": " Tant que tu n’en as pas défini, ils voient ton adresse e-mail, {email}.",
+    "loadError": "Impossible de charger ton nom. Recharge la page pour réessayer.",
+    "saveError": "Impossible d’enregistrer ton nom.",
+    "saved": "Enregistré.",
+    "save": "Enregistrer le nom"
+  }
+}

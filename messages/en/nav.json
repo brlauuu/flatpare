@@ -1,0 +1,24 @@
+{
+  "items": {
+    "apartments": "Apartments",
+    "upload": "Upload",
+    "compare": "Compare",
+    "map": "Map",
+    "household": "Household",
+    "settings": "Settings"
+  },
+  "short": {
+    "apartments": "Apartments",
+    "upload": "Upload",
+    "compare": "Compare",
+    "map": "Map",
+    "household": "Household",
+    "settings": "Settings"
+  },
+  "menu": {
+    "guide": "Guide",
+    "signOut": "Sign out"
+  },
+  "confirmSignOut": "You have unsaved rating changes. Sign out anyway? Your input will be discarded.",
+  "unknownUser": "Unknown"
+}

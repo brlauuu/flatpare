@@ -104,13 +104,23 @@ const SCREENS_DIR = SCREENS_FLAG === -1 ? null : process.argv[SCREENS_FLAG + 1];
 if (SCREENS_FLAG !== -1 && !SCREENS_DIR) {
   throw new Error("usage: capture-hero.mjs --screens <outDir>");
 }
+// `--locale <de|fr|it|es>` with --screens renders those screens in that
+// language (#288): the cookie the language menu sets, added after signing
+// in. The source of the native-speaker review screenshots; the phone shot
+// shows whether the bottom bar's labels fit.
+const LOCALE_FLAG = process.argv.indexOf("--locale");
+const LOCALE = LOCALE_FLAG === -1 ? null : process.argv[LOCALE_FLAG + 1];
+if (LOCALE_FLAG !== -1 && !["en", "de", "fr", "it", "es"].includes(LOCALE)) {
+  throw new Error("usage: capture-hero.mjs --screens <outDir> --locale <en|de|fr|it|es>");
+}
+const PHONE = { width: 360, height: 780 };
 const SCREENS = [
-  { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { name: "Apartments" }).waitFor() },
+  { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "upload", path: "/apartments/new", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "compare", path: "/compare", ready: (p) => p.getByRole("table").waitFor() },
-  { name: "household", path: "/household", ready: (p) => p.getByRole("heading", { name: "Household" }).waitFor() },
-  { name: "settings", path: "/settings", ready: (p) => p.getByRole("heading", { name: "Settings" }).waitFor() },
+  { name: "household", path: "/household", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  { name: "settings", path: "/settings", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "guide", path: "/guide", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "invitations", path: "/invitations", ready: (p) => p.waitForLoadState("networkidle") },
 ];
@@ -236,10 +246,12 @@ try {
       await page.getByLabel("Password").fill(PASSWORD);
       await page.getByRole("button", { name: "Continue" }).click();
       await page.waitForURL("**/apartments");
+      if (LOCALE) await context.addCookies([{ name: "flatpare_locale", value: LOCALE, url: BASE }]);
       if (SCREENS_DIR) {
         mkdirSync(SCREENS_DIR, { recursive: true });
         // The landing page and its sign-in dialog, signed out, first.
         const signedOut = await browser.newContext({ viewport: VIEWPORT, colorScheme: theme });
+        if (LOCALE) await signedOut.addCookies([{ name: "flatpare_locale", value: LOCALE, url: BASE }]);
         await signedOut.addInitScript((t) => window.localStorage.setItem("theme", t), theme);
         const lp = await signedOut.newPage();
         await lp.goto(`${BASE}/`);
@@ -257,6 +269,14 @@ try {
           const out = `${SCREENS_DIR}/${s.name}-${theme}.png`;
           await page.screenshot({ path: out, fullPage: true });
           console.log(`[capture-hero] wrote ${out}`);
+        }
+        if (LOCALE) {
+          await page.setViewportSize(PHONE);
+          await page.goto(`${BASE}/apartments`);
+          await page.getByRole("heading", { level: 1 }).waitFor();
+          await page.waitForTimeout(800);
+          await page.screenshot({ path: `${SCREENS_DIR}/apartments-phone-${theme}.png` });
+          await page.setViewportSize(VIEWPORT);
         }
       } else {
         await page.goto(`${BASE}/compare`);

@@ -1,0 +1,33 @@
+{
+  "page": {
+    "title": "Carte",
+    "loading": "Chargement de la carte…",
+    "loadError": "Impossible de charger la carte"
+  },
+  "map": {
+    "loading": "Chargement de la carte",
+    "noApartments": "Pas encore d’appartements. <upload>Ajoute une annonce</upload> et elle apparaîtra ici dès qu’elle aura une adresse.",
+    "nothingPlaced": "Rien à afficher pour l’instant — ajoute un appartement avec une adresse.",
+    "failed": "La carte n’a pas pu se charger.",
+    "yourApartments": "Tes appartements : <links></links>",
+    "missing": "{count, plural, one {# appartement n’est pas encore} other {# appartements ne sont pas encore}} sur la carte : <links></links>",
+    "listSeparator": ", "
+  },
+  "card": {
+    "rent": "CHF {amount}",
+    "size": "{value} m²",
+    "rooms": "{count, plural, one {# pièce} other {# pièces}}",
+    "notRated": "Pas évalué",
+    "rating": "★ {value}",
+    "open": "Ouvrir →"
+  },
+  "mark": {
+    "opensApartment": "ouvre l’appartement"
+  },
+  "controls": {
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "toggleAttribution": "Afficher ou masquer les crédits",
+    "mapTitle": "Carte"
+  }
+}

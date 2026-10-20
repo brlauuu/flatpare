@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "./crypto-context";
 import { runRecover, runResetKeys } from "./flows";
 import { MIN_PASSPHRASE_LENGTH } from "./setup-screen";
+import { useFlowErrorText } from "./use-flow-error-text";
 
 type Mode = "closed" | "menu" | "reset" | "recover";
 
-function validateNew(passphrase: string, confirm: string): string | null {
-  if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
-    return `Use at least ${MIN_PASSPHRASE_LENGTH} characters.`;
-  }
-  if (passphrase !== confirm) return "The passphrases do not match.";
+type Problem = "tooShort" | "mismatch";
+
+function validateNew(passphrase: string, confirm: string): Problem | null {
+  if (passphrase.length < MIN_PASSPHRASE_LENGTH) return "tooShort";
+  if (passphrase !== confirm) return "mismatch";
   return null;
 }
 
@@ -29,10 +31,11 @@ function NewPassphraseFields({
   onPassphrase: (v: string) => void;
   onConfirm: (v: string) => void;
 }) {
+  const t = useTranslations("crypto");
   return (
     <>
       <div className="space-y-1">
-        <Label htmlFor="forgot-new">New passphrase</Label>
+        <Label htmlFor="forgot-new">{t("passphrase.new")}</Label>
         <Input
           weight="frame"
           id="forgot-new"
@@ -43,7 +46,7 @@ function NewPassphraseFields({
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="forgot-confirm">Confirm new passphrase</Label>
+        <Label htmlFor="forgot-confirm">{t("passphrase.confirmNew")}</Label>
         <Input
           weight="frame"
           id="forgot-confirm"
@@ -57,16 +60,10 @@ function NewPassphraseFields({
   );
 }
 
-function menuIntro(canReset: boolean, hasKit: boolean): string {
-  if (!canReset) return "Flatpare cannot reset your passphrase.";
-  const kit = hasKit ? ", or use your recovery kit" : "";
-  return (
-    "Flatpare cannot reset your passphrase. You can start over with new keys " +
-    `and be let back in by someone in your household${kit}.`
-  );
-}
-
 export function ForgotPassphrase() {
+  const t = useTranslations("crypto");
+  const tc = useTranslations("common");
+  const errorText = useFlowErrorText();
   const { status, refresh, showRecoveryKit } = useCrypto();
   const [mode, setMode] = useState<Mode>("closed");
   const [code, setCode] = useState("");
@@ -81,19 +78,22 @@ export function ForgotPassphrase() {
   // to the new public key. For a sole key holder a reset is a one-way trip
   // into pending-wrap with nobody to wait for, so it is not offered at all.
   const canReset = Boolean(status?.othersHaveWraps);
+  const menuIntro = !canReset ? t("forgot.cannotReset") : hasKit ? t("forgot.startOverOrKit") : t("forgot.startOver");
+  const problemText = (p: Problem) =>
+    p === "tooShort" ? t("passphrase.tooShort", { min: MIN_PASSPHRASE_LENGTH }) : t("passphrase.mismatch");
 
   async function submitReset(e: React.FormEvent) {
     e.preventDefault();
     if (!status) return;
     const problem = validateNew(passphrase, confirm);
-    if (problem) return setError(problem);
+    if (problem) return setError(problemText(problem));
     setError(null);
     setBusy(true);
     try {
       await runResetKeys(status, passphrase);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset failed");
+      setError(errorText(err, "forgot.reset.failed"));
       setBusy(false);
     }
   }
@@ -102,16 +102,16 @@ export function ForgotPassphrase() {
     e.preventDefault();
     if (!status) return;
     const problem = validateNew(passphrase, confirm);
-    if (problem) return setError(problem);
+    if (problem) return setError(problemText(problem));
     setError(null);
     setBusy(true);
     try {
       const { recoveryCode } = await runRecover(status, code, passphrase);
-      setDone("Recovered. Your old recovery kit no longer works — here is the new one.");
+      setDone(t("forgot.recover.done"));
       showRecoveryKit(recoveryCode);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Recovery failed");
+      setError(errorText(err, "forgot.recover.failed"));
       setBusy(false);
     }
   }
@@ -119,7 +119,7 @@ export function ForgotPassphrase() {
   if (mode === "closed") {
     return (
       <button type="button" className="text-sm underline" onClick={() => setMode("menu")}>
-        Forgot your passphrase?
+        {t("forgot.open")}
       </button>
     );
   }
@@ -127,26 +127,21 @@ export function ForgotPassphrase() {
   if (mode === "menu") {
     return (
       <div className="space-y-3 rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">{menuIntro(canReset, hasKit)}</p>
-        {!canReset && (
-          <p className="text-sm text-muted-foreground">
-            Nobody else in your household holds the key, so a reset could not
-            be completed — use your recovery kit.
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground">{menuIntro}</p>
+        {!canReset && <p className="text-sm text-muted-foreground">{t("forgot.soleHolder")}</p>}
         <div className="flex flex-wrap gap-2">
           {canReset && (
             <Button type="button" variant="outline" onClick={() => setMode("reset")}>
-              Reset my keys
+              {t("forgot.resetButton")}
             </Button>
           )}
           {hasKit && (
             <Button type="button" variant="outline" onClick={() => setMode("recover")}>
-              Use my recovery kit
+              {t("forgot.useKitButton")}
             </Button>
           )}
           <Button type="button" variant="ghost" onClick={() => setMode("closed")}>
-            Cancel
+            {tc("cancel")}
           </Button>
         </div>
       </div>
@@ -156,12 +151,8 @@ export function ForgotPassphrase() {
   if (mode === "reset") {
     return (
       <form onSubmit={submitReset} className="space-y-4 rounded-md border p-4">
-        <h2 className="title-section">Reset my keys</h2>
-        <p className="text-sm text-muted-foreground">
-          You will get new keys under a new passphrase and wait for someone in
-          your household to open Flatpare. If you are the only member, use your
-          recovery kit instead — a reset alone cannot bring the data back.
-        </p>
+        <h2 className="title-section">{t("forgot.reset.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("forgot.reset.intro")}</p>
         <NewPassphraseFields
           passphrase={passphrase}
           confirm={confirm}
@@ -171,10 +162,10 @@ export function ForgotPassphrase() {
         {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex gap-2">
           <Button type="submit" disabled={busy}>
-            {busy ? "Resetting…" : "Reset and wait"}
+            {busy ? t("forgot.reset.submitting") : t("forgot.reset.submit")}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setMode("menu")}>
-            Back
+            {tc("back")}
           </Button>
         </div>
       </form>
@@ -183,9 +174,9 @@ export function ForgotPassphrase() {
 
   return (
     <form onSubmit={submitRecover} className="space-y-4 rounded-md border p-4">
-      <h2 className="title-section">Use my recovery kit</h2>
+      <h2 className="title-section">{t("forgot.recover.title")}</h2>
       <div className="space-y-1">
-        <Label htmlFor="forgot-code">Recovery code</Label>
+        <Label htmlFor="forgot-code">{t("forgot.recover.code")}</Label>
         <Input
           weight="frame"
           id="forgot-code"
@@ -204,10 +195,10 @@ export function ForgotPassphrase() {
       {done && <p className="text-sm">{done}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>
-          {busy ? "Recovering…" : "Recover"}
+          {busy ? t("forgot.recover.submitting") : t("forgot.recover.submit")}
         </Button>
         <Button type="button" variant="ghost" onClick={() => setMode("menu")}>
-          Back
+          {tc("back")}
         </Button>
       </div>
     </form>

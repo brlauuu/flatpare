@@ -1,0 +1,104 @@
+{
+  "passphrase": {
+    "label": "Passphrase",
+    "confirm": "Confirm passphrase",
+    "new": "New passphrase",
+    "confirmNew": "Confirm new passphrase",
+    "current": "Current passphrase",
+    "tooShort": "Use at least {min} characters.",
+    "mismatch": "The passphrases do not match."
+  },
+  "setup": {
+    "title": "Choose a passphrase",
+    "introCreator": "Flatpare encrypts your household's data in your browser. This passphrase protects your keys; Flatpare never sees it and cannot reset it for you. You will get a recovery kit on the next screen — keep it safe.",
+    "introJoiner": "Flatpare encrypts your household's data in your browser. This passphrase protects your keys; Flatpare never sees it and cannot reset it for you. Once your keys exist, someone in your household will let you in automatically the next time they open Flatpare.",
+    "submit": "Create my keys",
+    "submitting": "Creating keys…",
+    "failed": "Setup failed"
+  },
+  "unlock": {
+    "title": "Unlock Flatpare",
+    "intro": "Enter your passphrase to decrypt your household's data on this device.",
+    "notPersistent": "This browser can't remember your keys between visits (private browsing?), so you'll be asked for your passphrase each time.",
+    "submit": "Unlock",
+    "submitting": "Unlocking…",
+    "failed": "Unlock failed"
+  },
+  "pending": {
+    "title": "Almost there",
+    "waiting": "Waiting for someone in your household to open Flatpare. They don't need to do anything — it happens automatically.",
+    "polling": "{seconds, plural, one {This page checks again every second.} other {This page checks again every # seconds.}}"
+  },
+  "householdKey": {
+    "title": "A new household",
+    "intro": "This household has no encryption key yet. Creating one makes it yours: everything you add is encrypted under it, and you will get a new recovery code to keep.",
+    "submit": "Create the household key",
+    "submitting": "Creating…",
+    "failed": "Could not create the household key"
+  },
+  "recoveryKit": {
+    "title": "Your recovery kit",
+    "intro": "Write this code down or print it and keep it somewhere safe. It is the only way to get your household's data back if you forget your passphrase and nobody else in your household can let you in. It is shown once.",
+    "copy": "Copy",
+    "print": "Print",
+    "copied": "Copied.",
+    "acknowledge": "I understand that if I lose both my passphrase and this recovery kit, my household's data cannot be recovered by anyone, including Flatpare.",
+    "continue": "Continue"
+  },
+  "forgot": {
+    "open": "Forgot your passphrase?",
+    "cannotReset": "Flatpare cannot reset your passphrase.",
+    "startOver": "Flatpare cannot reset your passphrase. You can start over with new keys and be let back in by someone in your household.",
+    "startOverOrKit": "Flatpare cannot reset your passphrase. You can start over with new keys and be let back in by someone in your household, or use your recovery kit.",
+    "soleHolder": "Nobody else in your household holds the key, so a reset could not be completed — use your recovery kit.",
+    "resetButton": "Reset my keys",
+    "useKitButton": "Use my recovery kit",
+    "reset": {
+      "title": "Reset my keys",
+      "intro": "You will get new keys under a new passphrase and wait for someone in your household to open Flatpare. If you are the only member, use your recovery kit instead — a reset alone cannot bring the data back.",
+      "submit": "Reset and wait",
+      "submitting": "Resetting…",
+      "failed": "Reset failed"
+    },
+    "recover": {
+      "title": "Use my recovery kit",
+      "code": "Recovery code",
+      "submit": "Recover",
+      "submitting": "Recovering…",
+      "done": "Recovered. Your old recovery kit no longer works — here is the new one.",
+      "failed": "Recovery failed"
+    }
+  },
+  "settings": {
+    "title": "Encryption",
+    "off": "Encryption: off — set by this deployment.",
+    "change": "Change passphrase",
+    "changed": "Passphrase changed.",
+    "changeFailed": "Could not change passphrase",
+    "lock": "Lock this device",
+    "regenerate": "Regenerate recovery kit",
+    "regenerateFailed": "Could not regenerate the kit",
+    "explain": "Locking clears the keys from this browser; you will need your passphrase next time. Regenerating the recovery kit replaces the old code — the old one stops working immediately."
+  },
+  "provider": {
+    "adoptFailed": "The key we received could not be opened. Reset your keys so a member can send a new one, or use your recovery kit.",
+    "somethingWrong": "Something went wrong",
+    "nowIn": "{count, plural, one {{names} can now open Flatpare.} other {{names} can now open Flatpare.}}"
+  },
+  "errors": {
+    "wrongPassphrase": "Wrong passphrase",
+    "badRecoveryCode": "That recovery code is not valid",
+    "noKeysToUnlock": "No keys to unlock",
+    "invalidGeneratedCode": "Generated an invalid recovery code",
+    "keysExist": "Keys already exist",
+    "ownerOnlyHouseholdKey": "Only the owner can create the household key",
+    "householdKeyExists": "The household key already exists",
+    "noHouseholdKey": "You do not hold the household key",
+    "noWrapYet": "No wrap has arrived yet",
+    "noRecoveryKit": "This household has no recovery kit",
+    "statusNotLoaded": "Status not loaded",
+    "keysNotLoaded": "Keys not loaded",
+    "ownerOnlyRotate": "Only the owner can rotate the household key",
+    "olderHouseholdKey": "This device holds an older household key; refresh and try again"
+  }
+}

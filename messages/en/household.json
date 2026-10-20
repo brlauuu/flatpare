@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Household"
+  },
+  "members": {
+    "title": "Members",
+    "count": "{used} of {max}",
+    "role": {
+      "owner": "owner",
+      "member": "member"
+    },
+    "awaitingKey": "awaiting key",
+    "remove": "Remove",
+    "leave": "Leave household",
+    "leaveNote": "Your ratings and the apartments you added stay with the household.",
+    "leaveConfirmEncrypted": "Leave this household? You lose access to its apartments immediately, and everything you added stays with it. You will get an empty household of your own.",
+    "leaveConfirm": "Leave this household? You lose access to its apartments immediately, and everything you added stays with it.",
+    "removeConfirmEncrypted": "Remove {name} from the household? They lose access immediately, and the household key will be rotated — you will be shown a new recovery code to save.",
+    "removeConfirm": "Remove {name} from the household? They lose access immediately.",
+    "removedEmailed": "{name} was removed and told by email.",
+    "removedEmailFailed": "{name} was removed, but the email telling them could not be sent.",
+    "removed": "{name} was removed.",
+    "removedRotationFailed": "{name} was removed, but the household key could not be rotated: {reason}. Rotate it below when you are ready.",
+    "unknownError": "unknown error"
+  },
+  "invite": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "name@example.com",
+    "submit": "Invite",
+    "emailed": "Invitation emailed to {email}.",
+    "emailFailed": "Invitation created, but the email to {email} could not be sent. Ask them to sign in with that address.",
+    "created": "Invitation created. Ask them to sign in with {email}.",
+    "atLimit": "This household is limited to {max} members. Remove a member or revoke a pending invitation to invite someone else.",
+    "noEmail": "No email is sent. Tell them to sign in with that address; the invitation is waiting for them there for 7 days.",
+    "pending": "Pending · expires {date}",
+    "revoke": "Revoke"
+  },
+  "key": {
+    "title": "Household key",
+    "version": "version {version}",
+    "rotationDue": "A member was removed but the household key has not been rotated since. Until it is, anything written now is readable with the key their device still holds.",
+    "explain": "Rotating re-encrypts everything under a new key and gives every member the new key automatically. It happens on its own when you remove someone; you can also run it by hand. You will be shown a new recovery code — the old one stops working.",
+    "pdfFailures": "{count, plural, one {Household key rotated, but # PDF could not be re-encrypted and was left as it was.} other {Household key rotated, but # PDFs could not be re-encrypted and were left as they were.}}",
+    "rotating": "Rotating…",
+    "rotate": "Rotate household key",
+    "rotateError": "Could not rotate the key"
+  },
+  "errors": {
+    "requestFailedStatus": "Request failed ({status})",
+    "requestFailed": "Request failed",
+    "loadFailed": "Could not load household"
+  },
+  "locations": {
+    "title": "Locations of interest ({count} of {max})",
+    "add": "Add location",
+    "empty": "No locations yet. Apartments will hide their distance section until you add one.",
+    "moveUp": "Move {label} up",
+    "moveDown": "Move {label} down",
+    "edit": "Edit {label}",
+    "delete": "Delete {label}",
+    "deleteConfirm": "Delete \"{label}\"? Apartments will lose this distance.",
+    "formAdd": "Add location",
+    "formEdit": "Edit location",
+    "labelLabel": "Label",
+    "labelPlaceholder": "Work, Home, Gym, …",
+    "addressLabel": "Address",
+    "addressPlaceholder": "Street, postcode, city",
+    "iconLabel": "Icon",
+    "pickIcon": "Pick icon",
+    "change": "Change",
+    "saving": "Saving…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveError": "Couldn't save location",
+    "deleteError": "Couldn't delete location",
+    "reorderError": "Couldn't reorder",
+    "loadError": "Couldn't load locations",
+    "recomputeTitle": "Recompute distances",
+    "recomputeBody": "Rebuild bike and transit minutes for every apartment × location pair.",
+    "recomputeError": "Couldn't recompute distances",
+    "recomputingProgress": "Recomputing… {done} of {total}",
+    "recomputing": "Recomputing…",
+    "recompute": "Recompute all",
+    "recomputed": "Recomputed {updated} apartments{failed, plural, =0 {} other { (# failed)}}{skipped, plural, =0 {} other { (# skipped — no address)}}"
+  },
+  "iconPicker": {
+    "title": "Pick an icon",
+    "close": "Close",
+    "icons": {
+      "Train": "Train",
+      "Bus": "Bus",
+      "Briefcase": "Briefcase",
+      "Heart": "Heart",
+      "Coffee": "Coffee",
+      "Dumbbell": "Dumbbell",
+      "ShoppingCart": "ShoppingCart",
+      "GraduationCap": "GraduationCap",
+      "Plane": "Plane",
+      "Home": "Home",
+      "Stethoscope": "Stethoscope",
+      "Music": "Music"
+    }
+  }
+}

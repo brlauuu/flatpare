@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
@@ -9,6 +10,7 @@ import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
 export function ApartmentCard({ apt }: { apt: ApartmentView }) {
+  const t = useTranslations("apartments.badges");
   if (apt.corrupt) return <ApartmentCorruptCard apt={apt} />;
   return (
     <Link href={`/apartments/${apt.id}`}>
@@ -35,13 +37,11 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
           )}
           <div className="flex flex-wrap gap-2">
             {apt.rentChf && (
-              <Badge variant="secondary">
-                CHF {apt.rentChf.toLocaleString()}
-              </Badge>
+              <Badge variant="secondary">{t("rent", { amount: apt.rentChf })}</Badge>
             )}
-            {apt.sizeM2 && <Badge variant="secondary">{apt.sizeM2} m²</Badge>}
+            {apt.sizeM2 && <Badge variant="secondary">{t("size", { size: apt.sizeM2 })}</Badge>}
             {apt.numRooms && (
-              <Badge variant="secondary">{apt.numRooms} rooms</Badge>
+              <Badge variant="secondary">{t("rooms", { count: apt.numRooms })}</Badge>
             )}
           </div>
         </CardContent>

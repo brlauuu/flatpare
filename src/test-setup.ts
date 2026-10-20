@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import "@testing-library/jest-dom/vitest";
+// Every test renders with real translations, without a provider (#288):
+// the next-intl stand-in lives with the i18n tests, so the harness reaches
+// into src/i18n only through its test helpers.
+import "./i18n/__tests__/next-intl-stand-in";
 
 // testing-library's waitFor/findBy ceiling, left at the 1000ms default.
 //

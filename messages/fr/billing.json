@@ -1,0 +1,16 @@
+{
+  "page": {
+    "titleReturning": "Ajouter 40 appartements de plus",
+    "titleFirst": "Un seul paiement, et c’est à toi",
+    "usage": "Tu as utilisé {used} appartements sur {granted}. Pour CHF 5 de plus, tu en ajoutes 40.",
+    "pitch": "Flatpare coûte CHF 5, une seule fois — ce n’est pas un abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans ton foyer.",
+    "quota": "Les 40 comptent les appartements que tu <strong>ajoutes</strong>, pas ceux que tu gardes : en supprimer un libère de la place dans ta comparaison, mais ne rend pas le crédit. Lire un PDF et calculer les temps de trajet nous coûte de l’argent pour chaque appartement, et c’est cela que tu paies.",
+    "stripe": "Le paiement est géré par Stripe. Flatpare ne voit jamais les données de ta carte, et Stripe ne voit jamais tes appartements — ils sont chiffrés dans ton navigateur."
+  },
+  "checkout": {
+    "startFailed": "Impossible de lancer le paiement. Réessaie, s’il te plaît.",
+    "retry": "Réessayer",
+    "buy": "Acheter 40 appartements — CHF 5",
+    "waiting": "Nous n’avons pas encore reçu de réponse de Stripe. Si ton paiement est passé, il arrive en général en quelques secondes — recharge cette page dans une minute et tes appartements seront là. Sinon, tu n’as pas été débité·e et rien n’est perdu."
+  }
+}

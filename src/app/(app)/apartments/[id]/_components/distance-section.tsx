@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { iconComponentFor } from "@/lib/location-icons";
 import type { ApartmentDistance } from "@/lib/household-data/types";
 import type { LocationLite } from "./types";
@@ -13,10 +14,11 @@ export function DistanceSection({
   distances,
   apartmentAddress,
 }: DistanceSectionProps) {
+  const t = useTranslations("apartments.distance");
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Distance to locations
+        {t("title")}
       </h2>
       <div className="space-y-1.5">
         {locations.map((loc) => {
@@ -34,7 +36,7 @@ export function DistanceSection({
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Bike directions to ${loc.label}`}
+                  aria-label={t("bikeDirections", { label: loc.label })}
                   className="tap-target text-muted-foreground hover:text-foreground"
                 >
                   <Icon className="h-4 w-4" />
@@ -47,9 +49,9 @@ export function DistanceSection({
               )}
               <span className="font-medium">{loc.label}</span>
               <span className="text-muted-foreground">
-                {bike != null ? `${bike} min bike` : "— bike"}
+                {bike != null ? t("bike", { minutes: bike }) : t("bikeNone")}
                 {" · "}
-                {transit != null ? `${transit} min transit` : "— transit"}
+                {transit != null ? t("transit", { minutes: transit }) : t("transitNone")}
               </span>
             </div>
           );

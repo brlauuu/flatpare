@@ -1,0 +1,17 @@
+{
+  "boundary": {
+    "title": "Une erreur s’est produite",
+    "body": "La page n’a pas pu se charger. Tu peux réessayer, ou afficher les détails ci-dessous pour voir ce qui s’est passé.",
+    "unexpected": "Erreur inattendue",
+    "retry": "Réessayer"
+  },
+  "details": {
+    "show": "Afficher les détails",
+    "status": "Statut :",
+    "url": "URL :",
+    "message": "Message :",
+    "time": "Heure :",
+    "copied": "Copié",
+    "copy": "Copier les détails"
+  }
+}

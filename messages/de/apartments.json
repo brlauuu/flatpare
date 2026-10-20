@@ -1,0 +1,176 @@
+{
+  "list": {
+    "loading": "Wohnungen werden geladen...",
+    "loadError": "Die Wohnungen konnten nicht geladen werden",
+    "emptyTitle": "Noch keine Wohnungen",
+    "emptyBody": "Lade ein Inserat als PDF hoch, um loszulegen",
+    "uploadFirst": "Erstes Inserat hochladen",
+    "viewOnMap": "Auf der Karte ansehen",
+    "enrichmentFailed": "Ergänzen der Angaben zu {name} fehlgeschlagen: {error}",
+    "retry": "Nochmals",
+    "searchLabel": "Wohnungen durchsuchen",
+    "searchPlaceholder": "Nach Name, Code oder Adresse suchen...",
+    "clearSearch": "Suche löschen",
+    "title": "Wohnungen",
+    "heldCount": "{count} von {max}",
+    "sortBy": "Sortieren nach",
+    "ascending": "Aufsteigend",
+    "descending": "Absteigend",
+    "view": "Ansicht",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht",
+    "limitTitle": "Dieser Haushalt ist auf {max} Wohnungen beschränkt",
+    "limitReached": "Limite erreicht",
+    "uploadNew": "Neu hochladen",
+    "noMatch": "Keine Wohnung passt zu «{query}»",
+    "showAll": "Alle Wohnungen anzeigen"
+  },
+  "badges": {
+    "gone": "Weg",
+    "rated": "Bewertet",
+    "notRated": "Noch nicht bewertet",
+    "rent": "CHF {amount, number}",
+    "rooms": "{count, number} Zimmer",
+    "roomsShort": "{count, number} Zi.",
+    "size": "{size, number} m²"
+  },
+  "corrupt": {
+    "title": "Diese Wohnung konnte nicht entschlüsselt werden",
+    "body": "Der gespeicherte Eintrag liess sich mit dem Haushaltsschlüssel nicht öffnen. Er kann nur gelöscht werden.",
+    "deleteConfirm": "Diese Wohnung löschen? Das kann nicht rückgängig gemacht werden.",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht..."
+  },
+  "detail": {
+    "loading": "Wird geladen...",
+    "loadError": "Die Wohnung konnte nicht geladen werden",
+    "notFound": "Wohnung nicht gefunden",
+    "deleteFailed": "Die Wohnung konnte nicht gelöscht werden",
+    "pdfOpenFailed": "Das PDF konnte nicht geöffnet werden",
+    "reprocessConfirm": "Diese Wohnung neu verarbeiten? Felder, die du nicht bearbeitet hast, werden aus dem PDF aktualisiert. Felder, die du bearbeitet hast, bleiben, wie sie sind.",
+    "reprocessFailed": "Die Wohnung konnte nicht neu verarbeitet werden",
+    "nameRequired": "Ein Name ist erforderlich",
+    "saveFailed": "Die Änderungen konnten nicht gespeichert werden",
+    "ratingSaveFailed": "Die Bewertung konnte nicht gespeichert werden",
+    "availableFrom": "Frei ab: {date}"
+  },
+  "actions": {
+    "viewPdf": "PDF ansehen",
+    "originalListing": "Originalinserat",
+    "urlMissing": "URL fehlt",
+    "edit": "Bearbeiten",
+    "reprocess": "Neu verarbeiten",
+    "reprocessing": "Wird neu verarbeitet...",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht..."
+  },
+  "metrics": {
+    "rentPerMonth": "CHF {amount, number}/Mt.",
+    "bathrooms": "{count, plural, one {# Bad} other {# Bäder}}",
+    "balconies": "{count, plural, one {# Balkon} other {# Balkone}}",
+    "washingYes": "Waschmaschine: ja",
+    "washingNo": "Waschmaschine: nein (oder gemeinsam)",
+    "washingUnknown": "Waschmaschine: unbekannt",
+    "yes": "Ja",
+    "no": "Nein",
+    "unknown": "?"
+  },
+  "pager": {
+    "previous": "Zurück",
+    "next": "Weiter",
+    "position": "{position} von {total}"
+  },
+  "distance": {
+    "title": "Distanz zu den Orten",
+    "bikeDirections": "Velo-Route nach {label}",
+    "bike": "{minutes} Min. Velo",
+    "bikeNone": "— Velo",
+    "transit": "{minutes} Min. ÖV",
+    "transitNone": "— ÖV"
+  },
+  "new": {
+    "pdfStoreWarning": "Das PDF konnte nicht gespeichert werden — die Wohnung wird ohne PDF gespeichert",
+    "readFailed": "Die Datei konnte nicht gelesen werden",
+    "parseFailed": "Auslesen fehlgeschlagen",
+    "fileLost": "Die Datei ist nicht mehr verfügbar — bitte nochmals hochladen",
+    "noPdfs": "Keine PDF-Dateien ausgewählt",
+    "nothingToSave": "Keine Wohnungen zum Speichern",
+    "itemSaveFailed": "Speichern fehlgeschlagen",
+    "nameRequired": "Ein Name ist erforderlich",
+    "saveFailed": "Die Wohnung konnte nicht gespeichert werden",
+    "processing": "Wird verarbeitet ({done}/{total})"
+  },
+  "upload": {
+    "title": "Inserate hochladen",
+    "drop": "Zieh ein oder mehrere PDFs hierher, oder",
+    "choose": "Dateien auswählen",
+    "manual": "Oder ohne PDF von Hand erfassen"
+  },
+  "review": {
+    "title": "Wohnungen prüfen",
+    "uploadMore": "Weitere hochladen",
+    "saving": "Wird gespeichert...",
+    "save": "{count, plural, =1 {Wohnung speichern} other {Alle # speichern}}",
+    "allSaved": "Alle Wohnungen gespeichert. Weiterleitung...",
+    "rent": "CHF {amount}",
+    "size": "{size} m²",
+    "rooms": "{count} Zimmer",
+    "retry": "Nochmals"
+  },
+  "single": {
+    "title": "Wohnung von Hand erfassen",
+    "subtitle": "Gib die Angaben zur Wohnung ein",
+    "saving": "Wird gespeichert...",
+    "save": "Wohnung speichern"
+  },
+  "status": {
+    "saved": "Gespeichert",
+    "queued": "In der Warteschlange",
+    "uploading": "Wird hochgeladen...",
+    "parsed": "Ausgelesen",
+    "error": "Fehler"
+  },
+  "form": {
+    "summary": "Zusammenfassung",
+    "summaryPlaceholder": "Kurze Beschreibung auf Englisch (von KI erstellt)",
+    "name": "Name *",
+    "namePlaceholder": "Name der Wohnung",
+    "address": "Adresse",
+    "addressPlaceholder": "Strasse, PLZ, Ort",
+    "rent": "Miete (CHF/Mt.)",
+    "size": "Fläche (m²)",
+    "availableFrom": "Frei ab",
+    "rooms": "Zimmer",
+    "baths": "Bäder",
+    "balconies": "Balkone",
+    "washingMachine": "Waschmaschine",
+    "listingUrl": "URL des Inserats",
+    "yes": "Ja",
+    "no": "Nein",
+    "unknown": "Unbekannt"
+  },
+  "edit": {
+    "title": "Wohnung bearbeiten",
+    "saving": "Wird gespeichert..."
+  },
+  "map": {
+    "loading": "Karte wird geladen…"
+  },
+  "rating": {
+    "yours": "Deine Bewertung ({name})",
+    "comment": "Kommentar",
+    "commentPlaceholder": "Notizen zu dieser Wohnung...",
+    "saving": "Wird gespeichert...",
+    "save": "Bewertung speichern",
+    "other": "Bewertung von {name}"
+  },
+  "credits": {
+    "left": "Noch <n>{count}</n> {count, plural, one {Wohnung} other {Wohnungen}} hinzuzufügen",
+    "runningLow": "(wird knapp)",
+    "noneLeft": "(keine mehr)",
+    "buyMore": "Mehr kaufen"
+  },
+  "errors": {
+    "staleKey": "Der Haushaltsschlüssel wurde von der Inhaberin oder dem Inhaber geändert. Deine Daten wurden neu geladen; bitte versuch es nochmals."
+  }
+}

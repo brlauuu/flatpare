@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ import { MAX_DISPLAY_NAME } from "@/lib/display-name";
 // from the shared layout) and the store reloads (ratings carry the rater's
 // name), so the new name shows everywhere without a full reload.
 export function AccountNameSettings() {
+  const t = useTranslations("settings.name");
   const router = useRouter();
   const { reload } = useHouseholdData();
   const [name, setName] = useState("");
@@ -39,12 +41,12 @@ export function AccountNameSettings() {
         setLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setError("Couldn't load your name. Reload the page to try again.");
+        if (!cancelled) setError(t("loadError"));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -59,15 +61,17 @@ export function AccountNameSettings() {
       });
       const body = (await res.json().catch(() => ({}))) as { name?: string | null; error?: string };
       if (!res.ok) {
-        setError(body.error ?? "Couldn't save your name.");
+        // The route's validation message (src/lib/display-name.ts) is shown
+        // as sent: English until server errors are translated.
+        setError(body.error ?? t("saveError"));
         return;
       }
       setName(body.name ?? "");
-      setMessage("Saved.");
+      setMessage(t("saved"));
       router.refresh();
       await reload();
     } catch {
-      setError("Couldn't save your name.");
+      setError(t("saveError"));
     } finally {
       setBusy(false);
     }
@@ -75,10 +79,10 @@ export function AccountNameSettings() {
 
   return (
     <section className="space-y-4">
-      <h2 className="title-section">Your name</h2>
+      <h2 className="title-section">{t("title")}</h2>
       <form onSubmit={save} className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="account-name">Your name</Label>
+          <Label htmlFor="account-name">{t("label")}</Label>
           <Input
             id="account-name"
             autoComplete="name"
@@ -89,13 +93,13 @@ export function AccountNameSettings() {
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          Shown to the members of your household on ratings, the comparison and the Household page.
-          {email && name.trim() === "" && <> Until you set one, they see your email, {email}.</>}
+          {t("help")}
+          {email && name.trim() === "" && t("untilSet", { email })}
         </p>
         {error && <p className="text-sm text-destructive">{error}</p>}
         {message && <p className="text-sm">{message}</p>}
         <Button type="submit" disabled={busy || !loaded}>
-          Save name
+          {t("save")}
         </Button>
       </form>
     </section>

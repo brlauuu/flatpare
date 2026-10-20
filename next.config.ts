@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import { parseLatestRelease } from "./src/lib/release";
 import { copyMaplibreWorker } from "./src/lib/map/copy-worker";
 
@@ -33,4 +34,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// The interface language, resolved per request from a cookie, the account
+// or Accept-Language — never from the URL (#288, src/i18n/request.ts).
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

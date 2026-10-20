@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +16,7 @@ interface ErrorDisplayProps {
 }
 
 export function ErrorDisplay({ headline, details, className }: ErrorDisplayProps) {
+  const t = useTranslations("errors.details");
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -41,27 +43,27 @@ export function ErrorDisplay({ headline, details, className }: ErrorDisplayProps
       {details && (
         <details className="mt-2 text-xs">
           <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-            Show details
+            {t("show")}
           </summary>
           <div className="mt-2 space-y-1 font-mono text-muted-foreground">
             {details.status !== undefined && (
               <div>
-                <span className="text-foreground/80">Status:</span> {details.status}
+                <span className="text-foreground/80">{t("status")}</span> {details.status}
               </div>
             )}
             {details.url && (
               <div className="break-all">
-                <span className="text-foreground/80">URL:</span> {details.url}
+                <span className="text-foreground/80">{t("url")}</span> {details.url}
               </div>
             )}
             {details.message && (
               <div className="break-words">
-                <span className="text-foreground/80">Message:</span>{" "}
+                <span className="text-foreground/80">{t("message")}</span>{" "}
                 {details.message}
               </div>
             )}
             <div>
-              <span className="text-foreground/80">Time:</span>{" "}
+              <span className="text-foreground/80">{t("time")}</span>{" "}
               {details.timestamp}
             </div>
             {details.stack && (
@@ -77,12 +79,12 @@ export function ErrorDisplay({ headline, details, className }: ErrorDisplayProps
               {copied ? (
                 <>
                   <Check className="h-3 w-3" />
-                  Copied
+                  {t("copied")}
                 </>
               ) : (
                 <>
                   <Copy className="h-3 w-3" />
-                  Copy details
+                  {t("copy")}
                 </>
               )}
             </button>

@@ -1,0 +1,104 @@
+{
+  "page": {
+    "title": "Foyer"
+  },
+  "members": {
+    "title": "Membres",
+    "count": "{used} sur {max}",
+    "role": {
+      "owner": "propriétaire",
+      "member": "membre"
+    },
+    "awaitingKey": "en attente de la clé",
+    "remove": "Retirer",
+    "leave": "Quitter le foyer",
+    "leaveNote": "Tes évaluations et les appartements que tu as ajoutés restent dans le foyer.",
+    "leaveConfirmEncrypted": "Quitter ce foyer ? Tu perds immédiatement l’accès à ses appartements, et tout ce que tu as ajouté y reste. Tu recevras un foyer vide à toi.",
+    "leaveConfirm": "Quitter ce foyer ? Tu perds immédiatement l’accès à ses appartements, et tout ce que tu as ajouté y reste.",
+    "removeConfirmEncrypted": "Retirer {name} du foyer ? Cette personne perd l’accès immédiatement, et la clé du foyer sera renouvelée — un nouveau code de récupération te sera montré, à conserver.",
+    "removeConfirm": "Retirer {name} du foyer ? Cette personne perd l’accès immédiatement.",
+    "removedEmailed": "{name} a été retiré·e et prévenu·e par e-mail.",
+    "removedEmailFailed": "{name} a été retiré·e, mais l’e-mail pour le ou la prévenir n’a pas pu être envoyé.",
+    "removed": "{name} a été retiré·e.",
+    "removedRotationFailed": "{name} a été retiré·e, mais la clé du foyer n’a pas pu être renouvelée : {reason}. Renouvelle-la ci-dessous quand tu es prêt·e.",
+    "unknownError": "erreur inconnue"
+  },
+  "invite": {
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "nom@exemple.ch",
+    "submit": "Inviter",
+    "emailed": "Invitation envoyée par e-mail à {email}.",
+    "emailFailed": "Invitation créée, mais l’e-mail à {email} n’a pas pu être envoyé. Demande-lui de se connecter avec cette adresse.",
+    "created": "Invitation créée. Demande-lui de se connecter avec {email}.",
+    "atLimit": "Ce foyer est limité à {max} membres. Retire un membre ou révoque une invitation en attente pour inviter quelqu’un d’autre.",
+    "noEmail": "Aucun e-mail n’est envoyé. Dis-lui de se connecter avec cette adresse ; l’invitation l’y attend pendant 7 jours.",
+    "pending": "En attente · expire le {date}",
+    "revoke": "Révoquer"
+  },
+  "key": {
+    "title": "Clé du foyer",
+    "version": "version {version}",
+    "rotationDue": "Un membre a été retiré, mais la clé du foyer n’a pas été renouvelée depuis. Tant qu’elle ne l’est pas, tout ce qui est écrit maintenant peut être lu avec la clé que son appareil détient encore.",
+    "explain": "Renouveler la clé chiffre à nouveau tout sous une nouvelle clé et la transmet automatiquement à chaque membre. Cela se fait tout seul quand tu retires quelqu’un ; tu peux aussi le lancer à la main. Un nouveau code de récupération te sera montré — l’ancien ne fonctionnera plus.",
+    "pdfFailures": "{count, plural, one {Clé du foyer renouvelée, mais # PDF n’a pas pu être chiffré à nouveau et a été laissé tel quel.} other {Clé du foyer renouvelée, mais # PDF n’ont pas pu être chiffrés à nouveau et ont été laissés tels quels.}}",
+    "rotating": "Renouvellement…",
+    "rotate": "Renouveler la clé du foyer",
+    "rotateError": "Impossible de renouveler la clé"
+  },
+  "errors": {
+    "requestFailedStatus": "La requête a échoué ({status})",
+    "requestFailed": "La requête a échoué",
+    "loadFailed": "Impossible de charger le foyer"
+  },
+  "locations": {
+    "title": "Lieux importants ({count} sur {max})",
+    "add": "Ajouter un lieu",
+    "empty": "Pas encore de lieux. Les appartements n’afficheront pas de distances tant que tu n’en auras pas ajouté un.",
+    "moveUp": "Monter {label}",
+    "moveDown": "Descendre {label}",
+    "edit": "Modifier {label}",
+    "delete": "Supprimer {label}",
+    "deleteConfirm": "Supprimer « {label} » ? Les appartements perdront cette distance.",
+    "formAdd": "Ajouter un lieu",
+    "formEdit": "Modifier le lieu",
+    "labelLabel": "Nom",
+    "labelPlaceholder": "Travail, Maison, Salle de sport, …",
+    "addressLabel": "Adresse",
+    "addressPlaceholder": "Rue, NPA, localité",
+    "iconLabel": "Icône",
+    "pickIcon": "Choisir une icône",
+    "change": "Changer",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saveError": "Impossible d’enregistrer le lieu",
+    "deleteError": "Impossible de supprimer le lieu",
+    "reorderError": "Impossible de réorganiser",
+    "loadError": "Impossible de charger les lieux",
+    "recomputeTitle": "Recalculer les distances",
+    "recomputeBody": "Recalcule les minutes à vélo et en transports pour chaque paire appartement × lieu.",
+    "recomputeError": "Impossible de recalculer les distances",
+    "recomputingProgress": "Recalcul… {done} sur {total}",
+    "recomputing": "Recalcul…",
+    "recompute": "Tout recalculer",
+    "recomputed": "{updated} appartements recalculés{failed, plural, =0 {} other { (# en échec)}}{skipped, plural, =0 {} other { (# ignorés — pas d’adresse)}}"
+  },
+  "iconPicker": {
+    "title": "Choisir une icône",
+    "close": "Fermer",
+    "icons": {
+      "Train": "Train",
+      "Bus": "Bus",
+      "Briefcase": "Mallette",
+      "Heart": "Cœur",
+      "Coffee": "Café",
+      "Dumbbell": "Haltère",
+      "ShoppingCart": "Caddie",
+      "GraduationCap": "Toque de diplômé",
+      "Plane": "Avion",
+      "Home": "Maison",
+      "Stethoscope": "Stéthoscope",
+      "Music": "Musique"
+    }
+  }
+}
