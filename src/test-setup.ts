@@ -62,6 +62,9 @@ for (const [file, mod] of Object.entries(files)) {
   (catalogues[locale] ??= {})[ns] = mod.default;
 }
 
+const translators: Record<string, unknown> = {};
+const formatters: Record<string, unknown> = {};
+
 vi.mock("next-intl", async (importOriginal) => {
   const real = await importOriginal<typeof import("next-intl")>();
   const config = () => ({ locale: testLocale(), messages: catalogues[testLocale()] as never, timeZone: "Europe/Zurich" });
@@ -70,8 +73,14 @@ vi.mock("next-intl", async (importOriginal) => {
     useLocale: () => testLocale(),
     useMessages: () => catalogues[testLocale()],
     useTimeZone: () => "Europe/Zurich",
-    useTranslations: (namespace?: string) => real.createTranslator({ ...config(), namespace: namespace as never }),
-    useFormatter: () => real.createFormatter({ locale: testLocale(), timeZone: "Europe/Zurich" }),
+    // Cached per locale and namespace: next-intl's own `t` keeps its identity
+    // across renders, and a component that lists `t` in an effect's
+    // dependencies must not loop here when it doesn't in the app.
+    useTranslations: (namespace?: string) => {
+      const key = `${testLocale()}:${namespace ?? ""}`;
+      return (translators[key] ??= real.createTranslator({ ...config(), namespace: namespace as never }));
+    },
+    useFormatter: () => (formatters[testLocale()] ??= real.createFormatter({ locale: testLocale(), timeZone: "Europe/Zurich" })),
     NextIntlClientProvider: ({ children }: { children: React.ReactNode }) => children,
   };
 });
