@@ -33,8 +33,10 @@ export const REPO_URL = "https://github.com/brlauuu/flatpare";
 // (docs/superpowers/specs/2026-09-01-accounts-e2ee-billing-design.md,
 // "The privacy claim, stated exactly"). The spec requires this exact wording
 // wherever the encryption is marketed, and forbids claiming "zero-knowledge"
-// without the qualification. Exported as a constant so the landing page and
-// its test assert on one string rather than two copies that can drift.
+// without the qualification. The landing page renders it from the catalogue
+// (`landing.privacy.claim`, #288); this constant is what the English
+// catalogue is tested against, and each other language renders its own
+// translation (src/app/__tests__/landing-locales.test.tsx).
 export const PRIVACY_CLAIM =
   "We can't read your data. We do process PDFs and addresses in memory when you ask us to, and we never store them.";
 
