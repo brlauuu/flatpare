@@ -78,3 +78,11 @@ describe.each(LOCALES)("guide.%s.md", (locale) => {
     }
   });
 });
+
+// Locations of interest moved to the Household page in #298; the guide said
+// Settings until #288's translators noticed.
+describe("where the guide sends you for locations of interest", () => {
+  it("is the Household page", () => {
+    expect(source("en")).toMatch(/On the \*\*Household\*\* page, save up to \*\*five\*\* places/);
+  });
+});

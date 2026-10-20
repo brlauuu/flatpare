@@ -67,7 +67,7 @@ Go to **Compare** for all apartments in one table. It highlights the best value 
 
 ### Locations of interest
 
-Under **Settings**, save up to **five** places you actually go — work, the gym, your sister. Every apartment then shows how long it takes to reach each of them by bike and by public transport.
+On the **Household** page, save up to **five** places you actually go — work, the gym, your sister. Every apartment then shows how long it takes to reach each of them by bike and by public transport.
 
 These are yours to choose; Flatpare does not assume where you commute to.
 
