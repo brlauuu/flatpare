@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { BarChart3, Lock, Play, Users } from "lucide-react";
 import {
   AUTHOR,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/site";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageMenu } from "@/components/language-menu";
+import { languageOf } from "@/i18n/locales";
 import { ThemedLogo } from "@/components/themed-logo";
 import { isReleaseFresh, type ReleaseInfo } from "@/lib/release";
 import type { PublicAccess } from "@/lib/public-access";
@@ -171,10 +172,12 @@ function Hero({ access }: { access: PublicAccess }) {
 
 // The real comparison grid with invented data, captured from a production
 // build by scripts/capture-hero.mjs — re-run it when the grid changes. One
-// image per theme. Shown in the hero and again, full width, under the
+// image per language and theme. Shown in the hero and again, full width, under the
 // feature list (#323).
 function CompareShot({ sizes, priority = false }: { sizes: string; priority?: boolean }) {
   const alt = useTranslations("landing.shot")("alt");
+  // The grid in the reader's language (#288): one capture per language.
+  const locale = languageOf(useLocale());
   return (
     <figure className="m-0 border-[3px] border-(--lp-card-line) bg-(--lp-surface) shadow-(--lp-hero-shadow)">
       <div className="flex items-center gap-2 border-b-[3px] border-(--lp-card-line) px-3.5 py-2.5">
@@ -184,7 +187,7 @@ function CompareShot({ sizes, priority = false }: { sizes: string; priority?: bo
         <span className="lp-mono ml-2 text-xs text-(--lp-muted)">flatpare.com / compare</span>
       </div>
       <Image
-        src="/hero/compare-light.webp"
+        src={`/hero/compare-${locale}-light.webp`}
         alt={alt}
         width={1600}
         height={1000}
@@ -193,7 +196,7 @@ function CompareShot({ sizes, priority = false }: { sizes: string; priority?: bo
         priority={priority}
       />
       <Image
-        src="/hero/compare-dark.webp"
+        src={`/hero/compare-${locale}-dark.webp`}
         alt={alt}
         width={1600}
         height={1000}

@@ -89,12 +89,30 @@
   },
   "features": {
     "title": "Was drin ist",
-    "pdf": { "title": "PDF rein, Fakten raus", "body": "Lade eine Dokumentation hoch, und Miete, Zimmer, Fläche und Adresse werden für dich ausgefüllt." },
-    "rate": { "title": "Jede Person bewertet selbst", "body": "Alle vergeben ihre Punkte separat; die Bewertungen stehen nebeneinander, damit du siehst, wo ihr euch einig seid." },
-    "grid": { "title": "Eine Vergleichstabelle", "body": "Sortiere, blende aus und vergleiche jedes Inserat, bis der Favorit klar ist." },
-    "commutes": { "title": "Arbeitswege, berechnet", "body": "Velo- und ÖV-Zeiten zu bis zu fünf Orten, die dir wichtig sind." },
-    "household": { "title": "Gemacht für einen Haushalt", "body": "Für Paare und WG-Mitbewohner, die gemeinsam suchen, nicht für Teams oder Makler." },
-    "private": { "title": "So oder so privat", "body": "Selbst betrieben auf deiner eigenen Umgebung, oder Ende-zu-Ende-verschlüsselt, wenn wir es betreiben." }
+    "pdf": {
+      "title": "PDF rein, Fakten raus",
+      "body": "Lade eine Dokumentation hoch, und Miete, Zimmer, Fläche und Adresse werden für dich ausgefüllt."
+    },
+    "rate": {
+      "title": "Jede Person bewertet selbst",
+      "body": "Alle vergeben ihre Punkte separat; die Bewertungen stehen nebeneinander, damit du siehst, wo ihr euch einig seid."
+    },
+    "grid": {
+      "title": "Eine Vergleichstabelle",
+      "body": "Sortiere, blende aus und vergleiche jedes Inserat, bis der Favorit klar ist."
+    },
+    "commutes": {
+      "title": "Arbeitswege, berechnet",
+      "body": "Velo- und ÖV-Zeiten zu bis zu fünf Orten, die dir wichtig sind."
+    },
+    "household": {
+      "title": "Gemacht für einen Haushalt",
+      "body": "Für Paare und WG-Mitbewohner, die gemeinsam suchen, nicht für Teams oder Makler."
+    },
+    "private": {
+      "title": "So oder so privat",
+      "body": "Selbst betrieben auf deiner eigenen Umgebung, oder Ende-zu-Ende-verschlüsselt, wenn wir es betreiben."
+    }
   },
   "footer": {
     "createdBy": "flatpare.com wird erstellt von <author></author>",
@@ -132,7 +150,7 @@
     "work": "Arbeit · 20 Min.",
     "flatC": "Wohnung C · zu weit?",
     "flatD": "Wohnung D · kein Lift",
-    "flatE": "Wohnung E · ruhige Strasse",
+    "flatE": "Wohnung E · ruhige Lage",
     "flatB": "Wohnung B · beide lieben sie!",
     "viewing": "Besichtigung Sa",
     "tape": "Massband mitnehmen",

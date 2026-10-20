@@ -279,15 +279,20 @@ try {
           await page.setViewportSize(VIEWPORT);
         }
       } else {
-        await page.goto(`${BASE}/compare`);
-        await page.getByRole("table").waitFor();
-        // Let fonts and the theme settle.
-        await page.waitForTimeout(800);
+        // One grid per language (#288): the landing page shows the app in the
+        // reader's language, so each gets a capture of its own.
+        for (const locale of ["en", "de", "fr", "it", "es"]) {
+          await context.addCookies([{ name: "flatpare_locale", value: locale, url: BASE }]);
+          await page.goto(`${BASE}/compare`);
+          await page.getByRole("table").waitFor();
+          // Let fonts and the theme settle.
+          await page.waitForTimeout(800);
 
-        const png = await page.screenshot();
-        const out = `${OUT_DIR}/compare-${theme}.webp`;
-        await sharp(png).resize({ width: 1600 }).webp({ quality: 86 }).toFile(out);
-        console.log(`[capture-hero] wrote ${out}`);
+          const png = await page.screenshot();
+          const out = `${OUT_DIR}/compare-${locale}-${theme}.webp`;
+          await sharp(png).resize({ width: 1600 }).webp({ quality: 86 }).toFile(out);
+          console.log(`[capture-hero] wrote ${out}`);
+        }
       }
     } catch (err) {
       await page.screenshot({ path: `data/hero-capture-failure-${theme}.png` }).catch(() => {});

@@ -73,11 +73,22 @@ describe("Landing", () => {
     renderLanding();
     const shots = screen.getAllByRole("img", { name: /comparison grid/i });
     const sources = shots.map((img) => img.getAttribute("src") ?? "");
-    expect(sources.some((src) => src.includes("compare-light"))).toBe(true);
-    expect(sources.some((src) => src.includes("compare-dark"))).toBe(true);
-    for (const name of ["compare-light.webp", "compare-dark.webp"]) {
+    expect(sources.some((src) => src.includes("compare-en-light"))).toBe(true);
+    expect(sources.some((src) => src.includes("compare-en-dark"))).toBe(true);
+    // One capture per language and theme (#288).
+    for (const name of ["en", "de", "fr", "it", "es"].flatMap((l) => [`compare-${l}-light.webp`, `compare-${l}-dark.webp`])) {
       expect(fs.existsSync(path.join(process.cwd(), "public", "hero", name))).toBe(true);
     }
+  });
+
+  // The landing page shows the app in the reader's language (#288).
+  it("shows the comparison grid in the reader's language", async () => {
+    const { setTestLocale } = await import("@/i18n/__tests__/test-locale");
+    setTestLocale("de");
+    renderLanding();
+    const sources = screen.getAllByRole("img", { name: /.+/ }).map((img) => img.getAttribute("src") ?? "");
+    expect(sources.some((src) => src.includes("compare-de-light"))).toBe(true);
+    expect(sources.some((src) => src.includes("compare-en-"))).toBe(false);
   });
 
   // A larger copy of the grid under the feature list (#323).

@@ -12,7 +12,7 @@
   },
   "hero": {
     "eyebrow": "BUSCAR PISO, JUNTOS",
-    "titleLine1": "Compara pisos.",
+    "titleLine1": "Comparad pisos.",
     "titleLine2": "Decidid juntos.",
     "tagsLabel": "Por qué Flatpare",
     "tags": {
@@ -89,12 +89,30 @@
   },
   "features": {
     "title": "Qué incluye",
-    "pdf": { "title": "Entra un PDF, salen los datos", "body": "Sube un anuncio y el alquiler, las habitaciones, la superficie y la dirección se rellenan solos." },
-    "rate": { "title": "Valora por tu cuenta", "body": "Cada persona puntúa por separado; las valoraciones aparecen una al lado de la otra para ver en qué coincidís." },
-    "grid": { "title": "Una sola tabla comparativa", "body": "Ordena, oculta y compara cada anuncio hasta que el ganador esté claro." },
-    "commutes": { "title": "Trayectos, calculados", "body": "Tiempos en bici y en transporte público hasta cinco lugares que te importan." },
-    "household": { "title": "Hecho para un hogar", "body": "Pensado para parejas y compañeros de piso que buscan juntos, no para equipos ni agencias." },
-    "private": { "title": "Privado en ambos casos", "body": "En tu propia instalación, o cifrado de extremo a extremo cuando lo alojamos nosotros." }
+    "pdf": {
+      "title": "Entra un PDF, salen los datos",
+      "body": "Sube un anuncio y el alquiler, las habitaciones, la superficie y la dirección se rellenan solos."
+    },
+    "rate": {
+      "title": "Valora por tu cuenta",
+      "body": "Cada persona puntúa por separado; las valoraciones aparecen una al lado de la otra para ver en qué coincidís."
+    },
+    "grid": {
+      "title": "Una sola tabla comparativa",
+      "body": "Ordena, oculta y compara cada anuncio hasta que el ganador esté claro."
+    },
+    "commutes": {
+      "title": "Trayectos, calculados",
+      "body": "Tiempos en bici y en transporte público hasta cinco lugares que te importan."
+    },
+    "household": {
+      "title": "Hecho para un hogar",
+      "body": "Pensado para parejas y compañeros de piso que buscan juntos, no para equipos ni agencias."
+    },
+    "private": {
+      "title": "Privado en ambos casos",
+      "body": "En tu propia instalación, o cifrado de extremo a extremo cuando lo alojamos nosotros."
+    }
   },
   "footer": {
     "createdBy": "flatpare.com lo ha creado <author></author>",
