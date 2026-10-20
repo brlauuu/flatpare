@@ -1,0 +1,33 @@
+{
+  "someone": "Jemand",
+  "fallbackLink": "Falls der Knopf nicht funktioniert, öffne {url}",
+  "magicLink": {
+    "subject": "Dein Anmeldelink für Flatpare",
+    "intro": "Hier ist dein Anmeldelink für Flatpare ({host}).",
+    "expiry": "Er funktioniert einmal und läuft in {minutes, plural, one {# Minute} other {# Minuten}} ab. Öffne ihn im selben Browser, in dem du ihn angefordert hast.",
+    "ignore": "Wenn du ihn nicht angefordert hast, ignoriere diese E-Mail; ohne den Link passiert nichts.",
+    "button": "Bei Flatpare anmelden"
+  },
+  "memberRemoved": {
+    "subject": "Du wurdest aus einem Haushalt auf Flatpare entfernt",
+    "removed": "{name} hat dich aus dem eigenen Haushalt auf Flatpare entfernt.",
+    "access": "Du hast keinen Zugriff mehr auf dessen Wohnungen, Bewertungen und Orte. Dein Konto bleibt unverändert: Melde dich an, und du findest einen leeren eigenen Haushalt; jede Einladung, die du später annimmst, funktioniert weiterhin.",
+    "ask": "Wenn das unerwartet kommt, frag die Person, die dich entfernt hat.",
+    "button": "Flatpare öffnen"
+  },
+  "invitation": {
+    "subject": "{name} hat dich zu Flatpare eingeladen",
+    "invited": "{name} hat dich eingeladen, auf Flatpare gemeinsam Wohnungen zu vergleichen.",
+    "signIn": "Melde dich mit {email} an, dann wartet die Einladung auf dich. Sie gilt bis {until}.",
+    "ignore": "Wenn du das nicht erwartet hast, kannst du diese E-Mail ignorieren; dann passiert nichts.",
+    "button": "Flatpare öffnen"
+  },
+  "betaInvite": {
+    "subject": "Deine Einladung zur Flatpare-Beta",
+    "invited": "Du bist zur privaten Beta von Flatpare eingeladen: ein gemeinsamer Ort, um Wohnungen mit der Person zu vergleichen, mit der du zusammenziehst.",
+    "open": "Öffne den Link unten und melde dich dann an. Der Link öffnet die Tür für dein Konto.",
+    "openUntil": "Öffne den Link unten und melde dich dann an. Der Link öffnet die Tür für dein Konto und gilt bis {until}.",
+    "keep": "Beta-Konten sind gratis; deine Daten und dein Guthaben gehören dir und werden dir nicht weggenommen, wenn die Beta endet.",
+    "button": "Der Beta beitreten"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "someone": "Qualcuno",
+  "fallbackLink": "Se il pulsante non funziona, apri {url}",
+  "magicLink": {
+    "subject": "Il tuo link di accesso a Flatpare",
+    "intro": "Ecco il tuo link di accesso a Flatpare ({host}).",
+    "expiry": "Funziona una sola volta e scade tra {minutes, plural, one {# minuto} other {# minuti}}. Aprilo nello stesso browser da cui l’hai richiesto.",
+    "ignore": "Se non l’hai richiesto, ignora questa e-mail; senza il link non succede nulla.",
+    "button": "Accedi a Flatpare"
+  },
+  "memberRemoved": {
+    "subject": "Sei stato rimosso da un gruppo su Flatpare",
+    "removed": "{name} ti ha rimosso dal proprio gruppo su Flatpare.",
+    "access": "Non hai più accesso ai suoi appartamenti, valutazioni e luoghi. Il tuo account resta invariato: accedi e troverai un gruppo vuoto tutto tuo, e ogni invito che accetterai in seguito funzionerà ancora.",
+    "ask": "Se è inaspettato, chiedi alla persona che ti ha rimosso.",
+    "button": "Apri Flatpare"
+  },
+  "invitation": {
+    "subject": "{name} ti ha invitato su Flatpare",
+    "invited": "{name} ti ha invitato a confrontare appartamenti insieme su Flatpare.",
+    "signIn": "Accedi con {email} e l’invito ti aspetterà. È valido fino al {until}.",
+    "ignore": "Se non te lo aspettavi, puoi ignorare questa e-mail e non succederà nulla.",
+    "button": "Apri Flatpare"
+  },
+  "betaInvite": {
+    "subject": "Il tuo invito alla beta di Flatpare",
+    "invited": "Sei invitato alla beta privata di Flatpare: uno spazio condiviso per confrontare appartamenti con la persona con cui vai a vivere.",
+    "open": "Apri il link qui sotto, poi accedi. Il link apre la porta al tuo account.",
+    "openUntil": "Apri il link qui sotto, poi accedi. Il link apre la porta al tuo account ed è valido fino al {until}.",
+    "keep": "Gli account beta sono gratuiti; i tuoi dati e i tuoi crediti restano tuoi e non ti vengono tolti quando la beta finisce.",
+    "button": "Unisciti alla beta"
+  }
+}
