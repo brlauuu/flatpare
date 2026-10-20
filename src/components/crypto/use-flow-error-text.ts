@@ -21,6 +21,10 @@ const STATE_KEYS = {
   "This household has no recovery kit": "noRecoveryKit",
   "Status not loaded": "statusNotLoaded",
   "Keys not loaded": "keysNotLoaded",
+  // Thrown by the key rotation (src/components/household-data/rotation.ts),
+  // shown on the Household page.
+  "Only the owner can rotate the household key": "ownerOnlyRotate",
+  "This device holds an older household key; refresh and try again": "olderHouseholdKey",
 } as const;
 
 type FallbackKey =

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  type SortText,
   compareApartments,
   listSortOptions,
   compareSortOptions,
@@ -29,6 +30,14 @@ const withBike = (min: number | null) => ({
 const withTransit = (min: number | null) => ({
   "loc-1": { bikeMin: null, transitMin: min },
 });
+
+
+// The words come from the caller; these stand in for the English catalogue.
+const TEXT: SortText = {
+  field: (id) => id,
+  bikeTo: (place) => `Bike to ${place}`,
+  transitTo: (place) => `Transit to ${place}`,
+};
 
 describe("compareApartments", () => {
   it("sorts numeric fields ascending and descending", () => {
@@ -134,16 +143,16 @@ describe("sort options", () => {
   ];
 
   it("lists the six static fields then bike/transit per location", () => {
-    const ids = listSortOptions(locations).map((o) => o.id);
+    const ids = listSortOptions(locations, TEXT).map((o) => o.id);
     expect(ids).toEqual([
       "createdAt", "rentChf", "sizeM2", "numRooms", "avgOverall", "shortCode",
       "bikeTo:loc-1", "transitTo:loc-1", "bikeTo:loc-2", "transitTo:loc-2",
     ]);
-    expect(listSortOptions(locations).find((o) => o.id === "bikeTo:loc-1")?.label).toBe("Bike to Work");
+    expect(listSortOptions(locations, TEXT).find((o) => o.id === "bikeTo:loc-1")?.label).toBe("Bike to Work");
   });
 
   it("compare options include all eight static fields", () => {
-    const ids = compareSortOptions(locations).map((o) => o.id);
+    const ids = compareSortOptions(locations, TEXT).map((o) => o.id);
     expect(ids.slice(0, 8)).toEqual([
       "createdAt", "rentChf", "sizeM2", "numRooms", "numBathrooms", "numBalconies", "avgOverall", "shortCode",
     ]);

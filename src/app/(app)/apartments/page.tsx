@@ -1,5 +1,6 @@
 "use client";
 
+import { useSortText } from "@/components/use-sort-text";
 import { CreditBalance } from "@/components/credit-balance";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -130,7 +131,8 @@ export default function ApartmentsPage() {
     [filteredApartments, sortField, sortDirection]
   );
 
-  const sortOptions = useMemo(() => listSortOptions(locations), [locations]);
+  const sortText = useSortText();
+  const sortOptions = useMemo(() => listSortOptions(locations, sortText), [locations, sortText]);
   // Handed to the Select so its trigger shows the option's label ("Rent")
   // instead of the raw value ("rentChf"), which Base UI renders otherwise.
   const sortItems = useMemo(

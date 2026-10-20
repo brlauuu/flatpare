@@ -1,5 +1,6 @@
 "use client";
 
+import { useSortText } from "@/components/use-sort-text";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -55,7 +56,8 @@ export default function ComparePage() {
     isSortDirection
   );
 
-  const sortOptions = useMemo(() => compareSortOptions(locations), [locations]);
+  const sortText = useSortText();
+  const sortOptions = useMemo(() => compareSortOptions(locations, sortText), [locations, sortText]);
   // Handed to the Select so its trigger shows the option's label ("Rent")
   // instead of the raw value ("rentChf"), which Base UI renders otherwise.
   const sortItems = useMemo(

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCrypto } from "@/components/crypto/crypto-context";
+import { useFlowErrorText } from "@/components/crypto/use-flow-error-text";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { displayName } from "@/lib/display-name";
 
@@ -43,6 +44,9 @@ export function HouseholdSettings() {
   const failed = useCallback((status: number) => t("errors.requestFailedStatus", { status }), [t]);
   const { state, status: cryptoStatus, showRecoveryKit } = useCrypto();
   const { limits, rotateDataKey } = useHouseholdData();
+  // Rotation errors are thrown in English by the flow; this puts the known
+  // ones in the reader's language (#288).
+  const flowText = useFlowErrorText();
   const encryptionOn = state !== "off";
   const [rotating, setRotating] = useState(false);
   const [rotationNote, setRotationNote] = useState<string | null>(null);
@@ -194,7 +198,7 @@ export function HouseholdSettings() {
       try {
         await rotate();
       } catch (err) {
-        const reason = err instanceof Error ? err.message : t("members.unknownError");
+        const reason = err instanceof Error ? flowText(err, "provider.somethingWrong") : t("members.unknownError");
         throw new Error(t("members.removedRotationFailed", { name: label, reason }));
       }
     });
@@ -322,7 +326,7 @@ export function HouseholdSettings() {
             disabled={busy || rotating || state !== "unlocked"}
             onClick={() =>
               void rotate().catch((err) =>
-                setError(err instanceof Error ? err.message : t("key.rotateError"))
+                setError(err instanceof Error ? flowText(err, "provider.somethingWrong") : t("key.rotateError"))
               )
             }
           >

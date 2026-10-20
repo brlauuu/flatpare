@@ -15,7 +15,8 @@ import { useHouseholdData } from "@/components/household-data/use-household-data
 import { newRowId } from "@/lib/household-data/ids";
 import type { LocationView } from "@/lib/household-data/types";
 import { MAX_LOCATIONS, type LocationIconName } from "@/lib/location-icons";
-import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import type { ErrorDetails } from "@/lib/fetch-error";
+import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 
 interface ErrorState {
   headline: string;
@@ -52,6 +53,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     moveLocation,
     runMaintenance,
   } = useHouseholdData();
+  const storeErrorDetails = useStoreErrorDetails();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -106,7 +108,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     } catch (err) {
       setError({
         headline: t("saveError"),
-        details: errorDetailsFromException(err),
+        details: storeErrorDetails(err),
       });
     } finally {
       setSaving(false);
@@ -120,7 +122,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     } catch (err) {
       setError({
         headline: t("deleteError"),
-        details: errorDetailsFromException(err),
+        details: storeErrorDetails(err),
       });
     }
   }
@@ -129,7 +131,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     try {
       await moveLocation(id, direction);
     } catch (err) {
-      setError({ headline: t("reorderError"), details: errorDetailsFromException(err) });
+      setError({ headline: t("reorderError"), details: storeErrorDetails(err) });
     }
   }
 
@@ -148,7 +150,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     } catch (err) {
       setError({
         headline: t("recomputeError"),
-        details: errorDetailsFromException(err),
+        details: storeErrorDetails(err),
       });
     } finally {
       setRecomputing(false);

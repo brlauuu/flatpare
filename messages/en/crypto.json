@@ -97,6 +97,8 @@
     "noWrapYet": "No wrap has arrived yet",
     "noRecoveryKit": "This household has no recovery kit",
     "statusNotLoaded": "Status not loaded",
-    "keysNotLoaded": "Keys not loaded"
+    "keysNotLoaded": "Keys not loaded",
+    "ownerOnlyRotate": "Only the owner can rotate the household key",
+    "olderHouseholdKey": "This device holds an older household key; refresh and try again"
   }
 }
