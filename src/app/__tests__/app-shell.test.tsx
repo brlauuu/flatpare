@@ -66,7 +66,7 @@ describe("ErrorBoundary (src/app/error.tsx)", () => {
 describe("GuidePage (src/app/guide/page.tsx)", () => {
   it("renders the guide markdown as HTML", async () => {
     render(await GuidePage());
-    // Reads src/content/guide.md off disk for real — the point of the page is
+    // Reads src/content/guide.en.md off disk for real — the point of the page is
     // that the file is found and converted, so mocking fs would test nothing.
     expect(
       screen.getByRole("heading", { name: /flatpare user guide/i })
