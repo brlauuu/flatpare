@@ -1,0 +1,159 @@
+{
+  "meta": {
+    "title": "Flatpare — comparer des appartements à plusieurs",
+    "description": "Un espace partagé pour deux personnes qui cherchent un appartement. Annonces, évaluations et notes sont chiffrées dans ton navigateur, avec une clé que le serveur ne détient jamais."
+  },
+  "nav": {
+    "label": "Principal",
+    "home": "Accueil Flatpare",
+    "howItWorks": "Comment ça marche",
+    "pricing": "Tarifs",
+    "signIn": "Se connecter"
+  },
+  "hero": {
+    "eyebrow": "CHERCHER UN APPART, ENSEMBLE",
+    "titleLine1": "Comparez les appartements.",
+    "titleLine2": "Décidez ensemble.",
+    "tagsLabel": "Pourquoi Flatpare",
+    "tags": {
+      "collaborative": "Collaboratif",
+      "privacy": "Vie privée d’abord*",
+      "data": "Basé sur les données"
+    },
+    "lead": "Un espace partagé pour les personnes qui cherchent un appartement. Dépose les PDF des annonces, évalue chaque logement de ton côté, compare les trajets.",
+    "requestInvite": "Demander une invitation à la bêta",
+    "getStarted": "Commencer",
+    "runItYourself": "L’héberger soi-même"
+  },
+  "shot": {
+    "alt": "La grille de comparaison de Flatpare : cinq appartements côte à côte avec loyer, surface, pièces, temps de trajet et les étoiles de chaque personne"
+  },
+  "video": {
+    "title": "Comment ça marche",
+    "eyebrow": "DÉMONSTRATION",
+    "eyebrowWithDuration": "DÉMONSTRATION · {duration}",
+    "play": "Lancer la démonstration de Flatpare sur YouTube",
+    "watch": "Regarder sur YouTube",
+    "comingSoon": "Vidéo de démonstration bientôt disponible"
+  },
+  "privacy": {
+    "eyebrow": "VIE PRIVÉE*",
+    "title": "Ce que nous voyons et ne voyons pas",
+    "encryptedTitle": "Chiffré dans ton navigateur",
+    "claim": "Nous ne pouvons pas lire tes données. Nous traitons les PDF et les adresses en mémoire quand tu nous le demandes, et nous ne les conservons jamais.",
+    "encryptedBody": "Chaque annonce, évaluation, note et PDF est chiffré dans ton navigateur avant d’être enregistré, avec une clé que le serveur ne détient jamais. Ce que nous gardons est du texte chiffré : sans ta phrase secrète ou ton code de récupération, personne ne peut le lire, nous compris.",
+    "seesIntro": "Ce que le serveur voit, c’est ce dont il a besoin pour séparer ton foyer de tous les autres :",
+    "seesAccount": "ton compte : ton adresse e-mail et le nom que tu as choisi ;",
+    "seesMembers": "qui fait partie de ton foyer ;",
+    "seesCounts": "combien d’appartements, d’évaluations et de lieux tu as, qui a évalué quoi, et quand chacun a été ajouté ou modifié ;",
+    "seesPdfSize": "la taille de chaque PDF enregistré.",
+    "seesNever": "Jamais ce qu’est un appartement. En auto-hébergement, c’est pareil, avec ton propre serveur à notre place.",
+    "exceptionTitle": "L’exception, sans détour",
+    "exceptionIntro": "Certaines choses ne peuvent pas se faire dans un navigateur. Pour celles-ci, l’élément concerné est envoyé en clair, utilisé pour ce seul appel, jamais écrit dans notre base de données et jamais journalisé :",
+    "exceptionPdf": "<b>Un PDF</b> est envoyé à un modèle d’IA qui en extrait les informations et rédige un court résumé. Sur flatpare.com, cela passe par Vercel AI Gateway avec <zdr>zéro conservation des données</zdr> : seuls les fournisseurs de modèles qui se sont engagés à ne pas conserver la requête sont utilisés. En auto-hébergement, c’est Google Gemini, sauf si tu en configures un autre.",
+    "exceptionAddress": "<b>Une adresse</b> est envoyée à Google Maps, pour sa position et les temps de trajet à vélo et en transports (OpenRouteService pour une installation auto-hébergée sans Maps).",
+    "exceptionListing": "<b>Le lien d’une annonce</b> est ouvert par notre serveur, qui récupère la page sur le site d’annonces pour vérifier qu’elle est toujours en ligne.",
+    "tiles": "Les cartes chargent leurs rues depuis OpenFreeMap ou OpenStreetMap, qui voient la partie de la ville affichée à l’écran, jamais tes appartements.",
+    "disavowal": "C’est pourquoi nous ne présentons pas ce système comme « zero-knowledge »."
+  },
+  "paths": {
+    "eyebrow": "DEUX FAÇONS D’Y ACCÉDER",
+    "title": "La même app. Privée dans les deux cas.",
+    "hosted": {
+      "badge": "HÉBERGÉ",
+      "beta": "BÊTA PRIVÉE",
+      "titleLine1": "Nous l’hébergeons pour toi.",
+      "titleLine2": "Privé grâce au chiffrement.",
+      "body": "Tout est chiffré dans ton navigateur avant d’être enregistré, avec une clé que le serveur ne détient jamais (<link>ce que cela signifie</link>). Rien à installer, aucune clé d’API à gérer.",
+      "afterBeta": "Après la bêta : ",
+      "freeBeta": "Bêta gratuite",
+      "thenOnce": "puis un paiement unique · par foyer · sans abonnement",
+      "once": "paiement unique · par foyer · sans abonnement",
+      "betaKeep": "Demande l’accès ci-dessous. Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.",
+      "limits": "Jusqu’à 10 personnes et 40 appartements.",
+      "more": "Besoin de plus ? CHF 5 de plus ajoutent 40 appartements de plus.",
+      "quota": "Les 40 comptent les appartements que tu ajoutes : en supprimer un ne rend pas le crédit.",
+      "noReset": "Ta clé vient de ta phrase secrète, avec un code de récupération que tu imprimes. Il n’y a pas de réinitialisation — perds les deux et les données sont perdues, pour nous aussi.",
+      "createAccount": "Créer ton compte →"
+    },
+    "selfHost": {
+      "badge": "AUTO-HÉBERGÉ",
+      "licence": "CODE SOURCE DISPONIBLE · O'SAASY",
+      "titleLine1": "Héberge-le toi-même, pour toi.",
+      "titleLine2": "Privé par définition.",
+      "body": "Ton serveur, ta base de données, tes clés. Héberge-le sur un ordinateur portable, un serveur à la maison ou ton propre compte cloud — ta recherche ne quitte jamais ton installation, et il n’y a aucune limite.",
+      "free": "Gratuit",
+      "keys": "apporte tes propres clés Gemini et Maps",
+      "viewOnGithub": "Voir sur GitHub →"
+    }
+  },
+  "features": {
+    "title": "Ce qu’il y a dedans",
+    "pdf": {
+      "title": "Un PDF entre, les faits sortent",
+      "body": "Télécharge une annonce et le loyer, les pièces, la surface et l’adresse sont remplis pour toi."
+    },
+    "rate": {
+      "title": "Chacun évalue de son côté",
+      "body": "Chaque personne note séparément ; les évaluations s’affichent côte à côte pour voir où vous êtes d’accord."
+    },
+    "grid": {
+      "title": "Une seule grille de comparaison",
+      "body": "Trie, masque et compare chaque annonce jusqu’à ce que la gagnante soit évidente."
+    },
+    "commutes": {
+      "title": "Les trajets, calculés",
+      "body": "Temps à vélo et en transports vers jusqu’à cinq lieux qui comptent pour toi."
+    },
+    "household": {
+      "title": "Pensé pour un foyer",
+      "body": "Conçu pour les couples et les colocataires qui cherchent ensemble, pas pour les équipes ni les agences."
+    },
+    "private": {
+      "title": "Privé dans les deux cas",
+      "body": "Auto-hébergé sur ta propre installation, ou chiffré de bout en bout quand nous l’hébergeons."
+    }
+  },
+  "footer": {
+    "createdBy": "flatpare.com est créé par <author></author>",
+    "changelog": "Journal des modifications"
+  },
+  "beta": {
+    "label": "Demander une invitation à la bêta",
+    "placeholder": "toi@exemple.ch",
+    "submit": "Demander une invitation →",
+    "sending": "Envoi…",
+    "thanks": "<b>Merci — tu es sur la liste.</b> Nous enverrons ton lien d’invitation à cette adresse quand une place se libérera.",
+    "failed": "Un problème est survenu. Réessaie.",
+    "unreachable": "Impossible de joindre le serveur. Réessaie.",
+    "honeypot": "Site web",
+    "privacy": "Utilisée uniquement pour t’envoyer ton invitation, et jamais pour autre chose.",
+    "invalidEmail": "Saisis une adresse e-mail valide",
+    "tooMany": "Trop de demandes aujourd’hui. Réessaie demain."
+  },
+  "release": {
+    "newRelease": "Nouvelle version",
+    "whatsChanged": "Les nouveautés →",
+    "dismiss": "Masquer l’annonce de version"
+  },
+  "signIn": {
+    "title": "Se connecter",
+    "close": "Fermer"
+  },
+  "sketch": {
+    "balcony": "balcon !",
+    "tram": "près du tram",
+    "favourite": "notre préféré",
+    "tooDark": "trop sombre ?",
+    "byBike": "12 min à vélo",
+    "flatA": "Appart A · grande cuisine",
+    "work": "boulot · 20 min",
+    "flatC": "Appart C · trop loin ?",
+    "flatD": "Appart D · sans ascenseur",
+    "flatE": "Appart E · rue calme",
+    "flatB": "Appart B · on l’adore !",
+    "viewing": "visite samedi",
+    "tape": "prendre un mètre",
+    "decided": "décidé : Appart B"
+  }
+}

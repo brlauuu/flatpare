@@ -61,8 +61,17 @@ describe("BetaRequestForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not reach the server/i);
   });
 
-  it("copes with an error response that is not JSON", async () => {
+  // The route's two refusals are fixed sentences, so the form names them by
+  // status in the reader's language (#288) and never needs the body: a 400
+  // is the address being refused even when the body is not JSON.
+  it("names a refused address by its status, whatever the body", async () => {
     fetchMock.mockResolvedValue(new Response("<html>", { status: 400 }));
+    await submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Enter a valid email address");
+  });
+
+  it("copes with an error response that is not JSON", async () => {
+    fetchMock.mockResolvedValue(new Response("<html>", { status: 502 }));
     await submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong. Please try again.");
   });

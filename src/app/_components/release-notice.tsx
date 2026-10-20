@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { useIsClient } from "./use-is-client";
@@ -31,6 +32,7 @@ function rememberDismissed(version: string): void {
 // next release shows again. Rendered after mount, because whether it was
 // dismissed is only known in the browser.
 export function ReleaseNotice({ version, href }: { version: string; href: string }) {
+  const t = useTranslations("landing.release");
   const mounted = useIsClient();
   const stored = useSyncExternalStore(
     () => () => {},
@@ -48,16 +50,16 @@ export function ReleaseNotice({ version, href }: { version: string; href: string
     >
       {/* Visually dropped on phones to keep the notice on one line; screen
           readers still hear it. */}
-      <span className="font-semibold max-sm:sr-only">New release</span>
+      <span className="font-semibold max-sm:sr-only">{t("newRelease")}</span>
       <span className="lp-mono bg-(--lp-accent) px-2 py-0.5 text-[13px] font-semibold text-(--lp-on-accent)">
         v{version}
       </span>
       <a href={href} className="font-semibold text-(--lp-accent-text) no-underline hover:underline">
-        What&apos;s changed →
+        {t("whatsChanged")}
       </a>
       <button
         type="button"
-        aria-label="Dismiss release notice"
+        aria-label={t("dismiss")}
         onClick={() => {
           setDismissed(true);
           rememberDismissed(version);

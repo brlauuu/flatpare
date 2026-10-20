@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createContext, useContext, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
@@ -25,6 +26,7 @@ export function SignInProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const t = useTranslations("landing.signIn");
 
   return (
     <OpenSignIn.Provider value={() => setOpen(true)}>
@@ -34,9 +36,9 @@ export function SignInProvider({
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/60" />
           <Dialog.Popup className="landing fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto border-[3px] border-(--lp-card-line) shadow-(--lp-card-shadow)">
             <div className="flex items-center justify-between border-b-[3px] border-(--lp-card-line) py-1 pr-1 pl-4">
-              <Dialog.Title className="lp-head text-lg">Sign in</Dialog.Title>
+              <Dialog.Title className="lp-head text-lg">{t("title")}</Dialog.Title>
               <Dialog.Close
-                aria-label="Close"
+                aria-label={t("close")}
                 className="grid size-11 cursor-pointer place-items-center text-(--lp-muted) hover:text-(--lp-ink)"
               >
                 <X className="size-4" aria-hidden />
