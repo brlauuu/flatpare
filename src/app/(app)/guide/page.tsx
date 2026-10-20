@@ -4,7 +4,7 @@ import { getLocale } from "next-intl/server";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import html from "remark-html";
-import { languageOf } from "@/i18n/locales";
+import { languageOf } from "@/locales/locales";
 
 // The guide in the reader's language (#288): src/content/guide.<locale>.md.
 // languageOf only ever answers one of the five, so the path is one of five

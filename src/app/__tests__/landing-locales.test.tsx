@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { Landing } from "../_components/landing";
 import { PRIVACY_CLAIM } from "@/lib/site";
-import { LOCALES, type Locale } from "@/i18n/locales";
+import { LOCALES, type Locale } from "@/locales/locales";
 import { setTestLocale } from "@/i18n/__tests__/test-locale";
 import type { PublicAccess } from "@/lib/public-access";
 

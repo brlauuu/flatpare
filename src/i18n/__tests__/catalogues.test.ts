@@ -2,8 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { parse, TYPE, type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
-import { LOCALES } from "../locales";
-import { NAMESPACES } from "../messages";
+import { LOCALES } from "@/locales/locales";
+import { NAMESPACES, SERVER_ONLY_CATALOGUES } from "../messages";
+
+const CATALOGUES = [...NAMESPACES, ...SERVER_ONLY_CATALOGUES];
 
 // The four translations stay in step with English (#288). A key that
 // exists in one language and not another, or a translation that drops a
@@ -51,7 +53,7 @@ function signature(message: string): string[] {
 describe("message catalogues", () => {
   it("has a file for every namespace in every locale", () => {
     for (const locale of LOCALES) {
-      for (const ns of NAMESPACES) {
+      for (const ns of CATALOGUES) {
         expect(fs.existsSync(path.join(dir, locale, `${ns}.json`)), `${locale}/${ns}.json`).toBe(true);
       }
     }
@@ -60,11 +62,11 @@ describe("message catalogues", () => {
   it("has no namespace file the loader does not know about", () => {
     for (const locale of LOCALES) {
       const files = fs.readdirSync(path.join(dir, locale)).filter((f) => f.endsWith(".json"));
-      expect(files.map((f) => f.replace(/\.json$/, "")).sort()).toEqual([...NAMESPACES].sort());
+      expect(files.map((f) => f.replace(/\.json$/, "")).sort()).toEqual([...CATALOGUES].sort());
     }
   });
 
-  describe.each(NAMESPACES)("%s", (ns) => {
+  describe.each(CATALOGUES)("%s", (ns) => {
     const english = leaves(read("en", ns));
 
     it("parses as ICU in every locale", () => {

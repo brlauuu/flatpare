@@ -1,4 +1,4 @@
-import type { Locale } from "../locales";
+import type { Locale } from "@/locales/locales";
 
 // The locale the test-wide next-intl stand-in (src/test-setup.ts) renders
 // in. English unless a test about language sets another; reset before

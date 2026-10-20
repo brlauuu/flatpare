@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveLocale } from "@/i18n/request";
 import { apiErrorResponse } from "@/lib/api-route";
 import { removeMember } from "@/lib/household";
 import { sendMemberRemovedEmail } from "@/lib/household-email";
@@ -14,7 +15,7 @@ export async function DELETE(
     // removeMember re-checks the caller's role against the database.
     await removeMember(householdId, userId, target);
     // After the commit; the outcome is reported, never enforced (#298).
-    const emailed = await sendMemberRemovedEmail(target, userId);
+    const emailed = await sendMemberRemovedEmail(target, userId, await resolveLocale());
     return NextResponse.json({ emailed });
   } catch (e) {
     return apiErrorResponse(e, "household:members:DELETE");

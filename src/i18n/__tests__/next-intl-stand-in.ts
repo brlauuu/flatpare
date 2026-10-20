@@ -1,5 +1,5 @@
 import { beforeEach, vi } from "vitest";
-import { REGIONAL_TAG } from "../locales";
+import { REGIONAL_TAG } from "@/locales/locales";
 import { setTestLocale, testLocale } from "./test-locale";
 
 // Every test renders with real translations, without a provider (#288).

@@ -6,12 +6,17 @@ import {
   memberRemovedEmail,
   safeName,
 } from "@/lib/email-templates";
+import { emailText } from "@/locales/email-text";
+
+// English words, as the catalogue has them (#288).
+const t = emailText("en");
 
 const base = {
   inviterName: "Ana",
   invitedEmail: "ben@example.com",
   siteUrl: "https://flatpare.com",
   expiresAt: new Date("2026-10-06T12:00:00Z"),
+  t,
 };
 
 describe("safeName", () => {
@@ -70,14 +75,15 @@ describe("householdInvitationEmail", () => {
   it("takes no household name: the email carries nothing about the household", () => {
     // The input type has no such field. This pins that against a well-meant
     // "add the household name" change; see the file's header comment.
-    expect(Object.keys(base).sort()).toEqual(["expiresAt", "invitedEmail", "inviterName", "siteUrl"]);
+    // `t` is the email's words in the chosen language (#288), not data.
+    expect(Object.keys(base).sort()).toEqual(["expiresAt", "invitedEmail", "inviterName", "siteUrl", "t"]);
     expect(householdInvitationEmail.length).toBe(1);
   });
 });
 
 describe("memberRemovedEmail (#298)", () => {
   it("names who did it, says access ended and the account is unchanged, and links the site", () => {
-    const mail = memberRemovedEmail({ removerName: "Ana", siteUrl: "https://flatpare.com" });
+    const mail = memberRemovedEmail({ removerName: "Ana", siteUrl: "https://flatpare.com", t });
     expect(mail.subject).toBe("You were removed from a household on Flatpare");
     for (const part of [mail.text, mail.html]) {
       expect(part).toContain("Ana removed you");
@@ -88,7 +94,7 @@ describe("memberRemovedEmail (#298)", () => {
   });
 
   it("escapes a hostile display name", () => {
-    const mail = memberRemovedEmail({ removerName: "<b>x</b>", siteUrl: "https://flatpare.com" });
+    const mail = memberRemovedEmail({ removerName: "<b>x</b>", siteUrl: "https://flatpare.com", t });
     expect(mail.html).not.toContain("<b>");
   });
 });
@@ -96,7 +102,7 @@ describe("memberRemovedEmail (#298)", () => {
 describe("magicLinkEmail (#310)", () => {
   const url = "https://flatpare.com/api/auth/callback/resend?token=abc&email=a%40b.c";
   it("carries the link, the host, the lifetime and the same-browser note", () => {
-    const mail = magicLinkEmail({ url, siteHost: "flatpare.com", minutes: 15 });
+    const mail = magicLinkEmail({ url, siteHost: "flatpare.com", minutes: 15, t });
     expect(mail.subject).toBe("Your Flatpare sign-in link");
     expect(mail.text).toContain(url);
     expect(mail.html).toContain(escapeHtml(url));
