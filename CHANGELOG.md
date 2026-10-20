@@ -9,6 +9,12 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- The landing page's pencil map has more of the hunt on it: mock flats circled around the city with notes ("Flat A · big kitchen", "Flat C · too far?"), a workplace with its commute, a tram line, and a sketch in "What's inside" that ends with the household's decision. (#326)
+
+### Fixed
+- The pencil map no longer loses its marks off the edges of the hero: it scaled with the window, so two notes were cut off at 1280px and every mark at 1920px. It now keeps its size and shows on screens 1280px wide and up (it used to start at 1024px, where it ran into the headline). (#326)
+
 ## 0.9.1 — 2026-10-17
 
 ### Changed
