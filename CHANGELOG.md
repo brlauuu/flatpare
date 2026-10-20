@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.10.0 — 2026-10-20
+
 ### Added
 - Flatpare speaks German, French, Italian and Spanish as well as English. Pick a language from the globe in the navigation bar; it is remembered on this device and on your account. The first visit follows your browser's language. The landing page, the guide and the emails follow in the next releases. (#288)
 
