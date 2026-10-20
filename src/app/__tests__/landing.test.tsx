@@ -12,6 +12,8 @@ import type { ReleaseInfo } from "@/lib/release";
 vi.mock("../_components/landing-fonts", () => ({ landingFontVariables: "" }));
 
 const theme = vi.hoisted(() => ({ resolvedTheme: "light", setTheme: () => {} }));
+// The language menu re-renders the page on a choice (#288).
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("next-themes", () => ({ useTheme: () => theme }));
 
 beforeEach(() => {

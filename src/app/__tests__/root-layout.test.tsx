@@ -23,15 +23,28 @@ afterEach(() => {
   else process.env.NEXT_PUBLIC_SITE_URL = ORIGINAL_SITE;
 });
 
+// The metadata is built per request, in the reader's language (#288).
 async function load() {
-  return (await import("../layout")) as {
+  const mod = (await import("../layout")) as {
     default: (p: { children: React.ReactNode }) => Promise<React.ReactElement>;
-    metadata: Metadata;
+    generateMetadata: () => Promise<Metadata>;
     viewport: Viewport;
   };
+  return { ...mod, metadata: await mod.generateMetadata() };
 }
 
 describe("RootLayout metadata", () => {
+  it("titles and describes the page in the reader's language (#288)", async () => {
+    const { setTestLocale } = await import("@/i18n/__tests__/test-locale");
+    setTestLocale("de");
+    const { metadata } = await load();
+    const german = await import("../../../messages/de/landing.json");
+    expect((metadata.title as { default: string }).default).toBe(german.default.meta.title);
+    expect(metadata.description).toBe(german.default.meta.description);
+    expect(metadata.openGraph?.title).toBe(german.default.meta.title);
+    expect(metadata.alternates?.canonical).toBe("/");
+  });
+
   it("derives metadataBase from NEXT_PUBLIC_SITE_URL", async () => {
     // #189: pointing a new domain at the deployment must be an env-var
     // change, not a code change. If metadataBase is ever hardcoded, every

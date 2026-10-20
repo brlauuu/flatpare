@@ -11,6 +11,7 @@ import type auth from "../../messages/en/auth.json";
 import type invitations from "../../messages/en/invitations.json";
 import type billing from "../../messages/en/billing.json";
 import type errors from "../../messages/en/errors.json";
+import type landing from "../../messages/en/landing.json";
 import type { RegionalTag } from "./locales";
 
 // English is the source catalogue (#288): a key used anywhere must exist in
@@ -37,6 +38,7 @@ declare module "next-intl" {
       invitations: typeof invitations;
       billing: typeof billing;
       errors: typeof errors;
+      landing: typeof landing;
     };
   }
 }

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 // The landing page's pencil sketches (#301, more places in #326): a faint
 // city map drawn by hand — wobbly streets, a river, a tram line, mock flats
 // circled in the accent colour and a few handwritten notes. Purely
@@ -18,7 +20,11 @@
 // No prices in here: the SVG text is page text, and the landing test that
 // every "CHF <n>" on the page is "CHF 5" would rightly fail on a mock rent.
 
-type Note = { x: number; y: number; r: number; text: string; size?: number };
+// `text` names the note in messages/<locale>/landing.json (`sketch.*`).
+type Note = { x: number; y: number; r: number; text: SketchNote; size?: number };
+type SketchNote =
+  | "balcony" | "tram" | "favourite" | "tooDark" | "byBike" | "flatA" | "work"
+  | "flatC" | "flatD" | "flatE" | "flatB" | "viewing" | "tape" | "decided";
 
 const STREET = {
   fill: "none",
@@ -57,11 +63,12 @@ function loop(cx: number, cy: number, rx = 34, ry = 26) {
 }
 
 function Notes({ notes }: { notes: readonly Note[] }) {
+  const t = useTranslations("landing.sketch");
   return (
     <g fill="var(--lp-map-ink)" fillOpacity="0.45" style={{ fontFamily: "var(--font-caveat), cursive" }} fontWeight="700">
       {notes.map((n) => (
         <text key={n.text} x={n.x} y={n.y} fontSize={n.size ?? 26} transform={`rotate(${n.r} ${n.x} ${n.y})`}>
-          {n.text}
+          {t(n.text)}
         </text>
       ))}
     </g>
@@ -92,17 +99,17 @@ function Flat({ x, y, letter }: { x: number; y: number; letter: string }) {
 const SKETCH_CLASS = "pointer-events-none absolute left-1/2 hidden w-[1920px] max-w-none -translate-x-1/2 xl:block";
 
 const HERO_NOTES: readonly Note[] = [
-  { x: 200, y: 82, r: -6, text: "balcony!" },
-  { x: 672, y: 72, r: 4, text: "near the tram" },
-  { x: 1002, y: 704, r: -4, text: "our favourite" },
-  { x: 566, y: 658, r: 3, text: "too dark?", size: 22 },
-  { x: 760, y: 676, r: -8, text: "12 min by bike", size: 20 },
-  { x: 936, y: 100, r: -3, text: "Flat A · big kitchen", size: 22 },
-  { x: 1104, y: 150, r: 4, text: "work · 20 min", size: 20 },
-  { x: 160, y: 694, r: 3, text: "Flat C · too far?", size: 22 },
+  { x: 200, y: 82, r: -6, text: "balcony" },
+  { x: 672, y: 72, r: 4, text: "tram" },
+  { x: 1002, y: 704, r: -4, text: "favourite" },
+  { x: 566, y: 658, r: 3, text: "tooDark", size: 22 },
+  { x: 760, y: 676, r: -8, text: "byBike", size: 20 },
+  { x: 936, y: 100, r: -3, text: "flatA", size: 22 },
+  { x: 1104, y: 150, r: 4, text: "work", size: 20 },
+  { x: 160, y: 694, r: 3, text: "flatC", size: 22 },
   // The sides, wide screens only.
-  { x: -250, y: 330, r: -4, text: "Flat D · no lift", size: 22 },
-  { x: 1376, y: 420, r: 4, text: "Flat E · quiet street", size: 22 },
+  { x: -250, y: 330, r: -4, text: "flatD", size: 22 },
+  { x: 1376, y: 420, r: 4, text: "flatE", size: 22 },
 ];
 
 export function HeroSketch() {
@@ -178,9 +185,9 @@ export function HeroSketch() {
 }
 
 const INSIDE_NOTES: readonly Note[] = [
-  { x: 676, y: 92, r: -4, text: "Flat B · both love it!", size: 24 },
-  { x: 1026, y: 80, r: 4, text: "viewing Sat", size: 22 },
-  { x: 1016, y: 104, r: 4, text: "bring a tape measure", size: 18 },
+  { x: 676, y: 92, r: -4, text: "flatB", size: 24 },
+  { x: 1026, y: 80, r: 4, text: "viewing", size: 22 },
+  { x: 1016, y: 104, r: 4, text: "tape", size: 18 },
 ];
 
 // The "What's inside" section's top band (#326): the hunt from the hero,
@@ -210,7 +217,7 @@ export function InsideSketch() {
   );
 }
 
-const DECIDED_NOTES: readonly Note[] = [{ x: 1000, y: 74, r: -5, text: "decided: Flat B", size: 26 }];
+const DECIDED_NOTES: readonly Note[] = [{ x: 1000, y: 74, r: -5, text: "decided", size: 26 }];
 
 // And the end of the story, in the space under the big comparison grid.
 export function DecidedSketch() {

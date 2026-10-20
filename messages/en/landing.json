@@ -1,0 +1,159 @@
+{
+  "meta": {
+    "title": "Flatpare — compare apartments together",
+    "description": "A shared workspace for two people hunting for a flat. Listings, ratings and notes are encrypted in your browser, with a key the server never holds."
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Flatpare home",
+    "howItWorks": "How it works",
+    "pricing": "Pricing",
+    "signIn": "Sign in"
+  },
+  "hero": {
+    "eyebrow": "FLAT HUNTING, TOGETHER",
+    "titleLine1": "Compare flats.",
+    "titleLine2": "Decide together.",
+    "tagsLabel": "Why Flatpare",
+    "tags": {
+      "collaborative": "Collaborative",
+      "privacy": "Privacy first*",
+      "data": "Data driven"
+    },
+    "lead": "A shared workspace for the people hunting for a flat. Drop in listing PDFs, rate every place on your own, compare commutes.",
+    "requestInvite": "Request a beta invite",
+    "getStarted": "Get started",
+    "runItYourself": "Run it yourself"
+  },
+  "shot": {
+    "alt": "Flatpare's comparison grid: five flats side by side with rent, size, rooms, commute times and each person's star ratings"
+  },
+  "video": {
+    "title": "See how it works",
+    "eyebrow": "WALKTHROUGH",
+    "eyebrowWithDuration": "WALKTHROUGH · {duration}",
+    "play": "Play the Flatpare walkthrough on YouTube",
+    "watch": "Watch on YouTube",
+    "comingSoon": "Walkthrough video coming soon"
+  },
+  "privacy": {
+    "eyebrow": "PRIVACY*",
+    "title": "What we can and can't see",
+    "encryptedTitle": "Encrypted in your browser",
+    "claim": "We can't read your data. We do process PDFs and addresses in memory when you ask us to, and we never store them.",
+    "encryptedBody": "Every listing, rating, note and PDF is encrypted in your browser before it's stored, with a key the server never holds. What we keep is ciphertext: without your passphrase or recovery code nobody can read it, us included.",
+    "seesIntro": "What the server does see is what it needs to keep your household apart from everyone else's:",
+    "seesAccount": "your account: email address, and the name you set;",
+    "seesMembers": "who is in your household;",
+    "seesCounts": "how many apartments, ratings and places you have, who rated what, and when each was added or changed;",
+    "seesPdfSize": "the size of each stored PDF.",
+    "seesNever": "Never what an apartment is. Self-hosted, the same holds with your own server in our place.",
+    "exceptionTitle": "The exception, stated plainly",
+    "exceptionIntro": "A few things cannot be done in a browser. For those, that single item is sent in readable form, used for that one call, never written to our database and never logged:",
+    "exceptionPdf": "<b>A PDF</b> goes to an AI model that reads the facts out and writes a short summary. On flatpare.com that is through Vercel AI Gateway with <zdr>zero data retention</zdr>: it only uses model providers that have agreed not to keep the request. Self-hosted, it is Google Gemini unless you configure another.",
+    "exceptionAddress": "<b>An address</b> goes to Google Maps, for its location and the bike and transit times (OpenRouteService on a self-hosted setup without Maps).",
+    "exceptionListing": "<b>A listing's link</b> is opened by our server, which fetches the page from the listing site to check it is still online.",
+    "tiles": "Maps load their streets from OpenFreeMap or OpenStreetMap, which see the part of the city on screen, never your apartments.",
+    "disavowal": "That is why we do not describe this as zero-knowledge."
+  },
+  "paths": {
+    "eyebrow": "TWO WAYS IN",
+    "title": "Same app. Private either way.",
+    "hosted": {
+      "badge": "HOSTED",
+      "beta": "PRIVATE BETA",
+      "titleLine1": "We run it for you.",
+      "titleLine2": "Private by encryption.",
+      "body": "Everything is encrypted in your browser before it's stored, with a key the server never holds (<link>what that means</link>). Nothing to install, no API keys to manage.",
+      "afterBeta": "After the beta: ",
+      "freeBeta": "Free beta",
+      "thenOnce": "then a one-time payment · per household · not a subscription",
+      "once": "one-time payment · per household · not a subscription",
+      "betaKeep": "Request access below. What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.",
+      "limits": "Up to 10 people and 40 apartments.",
+      "more": "Need more? Another CHF 5 adds another 40 apartments.",
+      "quota": "The 40 counts apartments you add: deleting one does not give the credit back.",
+      "noReset": "Your key comes from your passphrase, plus a recovery code you print. There is no reset — lose both and the data is gone, to us too.",
+      "createAccount": "Create your account →"
+    },
+    "selfHost": {
+      "badge": "SELF-HOSTED",
+      "licence": "SOURCE AVAILABLE · O'SAASY",
+      "titleLine1": "Run it yourself, for yourself.",
+      "titleLine2": "Private by definition.",
+      "body": "Your server, your database, your keys. Host it on a laptop, a home server or your own cloud account — your search never leaves your setup, and there are no limits.",
+      "free": "Free",
+      "keys": "bring your own Gemini & Maps keys",
+      "viewOnGithub": "View on GitHub →"
+    }
+  },
+  "features": {
+    "title": "What's inside",
+    "pdf": {
+      "title": "PDF in, facts out",
+      "body": "Upload an exposé and rent, rooms, size and address are filled in for you."
+    },
+    "rate": {
+      "title": "Rate on your own",
+      "body": "Each person scores separately; the ratings sit side by side so you can see where you agree."
+    },
+    "grid": {
+      "title": "One comparison grid",
+      "body": "Sort, hide and compare every listing until the winner is obvious."
+    },
+    "commutes": {
+      "title": "Commutes, calculated",
+      "body": "Bike and transit times to up to five places that matter to you."
+    },
+    "household": {
+      "title": "Built for a household",
+      "body": "Made for partners and flatmates searching together, not for teams or agents."
+    },
+    "private": {
+      "title": "Private either way",
+      "body": "Self-hosted on your own setup, or end-to-end encrypted when we host it."
+    }
+  },
+  "footer": {
+    "createdBy": "flatpare.com is created by <author></author>",
+    "changelog": "Changelog"
+  },
+  "beta": {
+    "label": "Request a beta invite",
+    "placeholder": "you@example.com",
+    "submit": "Request invite →",
+    "sending": "Sending…",
+    "thanks": "<b>Thanks — you're on the list.</b> We'll email your invite link to that address when a place opens.",
+    "failed": "Something went wrong. Please try again.",
+    "unreachable": "Could not reach the server. Please try again.",
+    "honeypot": "Website",
+    "privacy": "Used only to send your invite, and never for anything else.",
+    "invalidEmail": "Enter a valid email address",
+    "tooMany": "Too many requests today. Please try again tomorrow."
+  },
+  "release": {
+    "newRelease": "New release",
+    "whatsChanged": "What's changed →",
+    "dismiss": "Dismiss release notice"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "close": "Close"
+  },
+  "sketch": {
+    "balcony": "balcony!",
+    "tram": "near the tram",
+    "favourite": "our favourite",
+    "tooDark": "too dark?",
+    "byBike": "12 min by bike",
+    "flatA": "Flat A · big kitchen",
+    "work": "work · 20 min",
+    "flatC": "Flat C · too far?",
+    "flatD": "Flat D · no lift",
+    "flatE": "Flat E · quiet street",
+    "flatB": "Flat B · both love it!",
+    "viewing": "viewing Sat",
+    "tape": "bring a tape measure",
+    "decided": "decided: Flat B"
+  }
+}

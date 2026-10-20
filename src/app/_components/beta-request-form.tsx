@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type State =
   | { kind: "idle" }
   | { kind: "sending" }
   | { kind: "done" }
-  | { kind: "error"; message: string };
+  // Which fixed message to show; the server's two refusals are fixed
+  // sentences too, so they are mapped by status rather than shown in English.
+  | { kind: "error"; reason: "invalidEmail" | "tooMany" | "failed" | "unreachable" };
 
 // "Request a beta invite" in the hosted card (#301). Posts the address to
 // /api/beta-requests, which stores it for the owner to answer with a beta
 // pass. The answer is the same whether or not the address asked before, so
 // the confirmation is too.
 export function BetaRequestForm() {
+  const t = useTranslations("landing.beta");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -30,24 +34,19 @@ export function BetaRequestForm() {
         setState({ kind: "done" });
         return;
       }
-      const body = (await res.json().catch(() => null)) as { error?: string } | null;
       setState({
         kind: "error",
-        message:
-          res.status === 400 || res.status === 429
-            ? (body?.error ?? "Something went wrong. Please try again.")
-            : "Something went wrong. Please try again.",
+        reason: res.status === 400 ? "invalidEmail" : res.status === 429 ? "tooMany" : "failed",
       });
     } catch {
-      setState({ kind: "error", message: "Could not reach the server. Please try again." });
+      setState({ kind: "error", reason: "unreachable" });
     }
   }
 
   if (state.kind === "done") {
     return (
       <p role="status" className="border-[3px] border-(--lp-line-strong) bg-(--lp-bg) p-4 text-[15px]">
-        <strong>Thanks — you&apos;re on the list.</strong> We&apos;ll email your
-        invite link to that address when a place opens.
+        {t.rich("thanks", { b: (chunks) => <strong>{chunks}</strong> })}
       </p>
     );
   }
@@ -55,7 +54,7 @@ export function BetaRequestForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-2">
       <label htmlFor="beta-email" className="text-sm font-semibold">
-        Request a beta invite
+        {t("label")}
       </label>
       <div className="flex flex-wrap gap-2.5">
         <input
@@ -66,19 +65,19 @@ export function BetaRequestForm() {
           inputMode="email"
           required
           maxLength={254}
-          placeholder="you@example.com"
+          placeholder={t("placeholder")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="lp-input min-w-0 flex-[1_1_220px]"
         />
         <button type="submit" className="lp-btn lp-btn-primary" disabled={state.kind === "sending"}>
-          {state.kind === "sending" ? "Sending…" : "Request invite →"}
+          {state.kind === "sending" ? t("sending") : t("submit")}
         </button>
       </div>
       {/* The honeypot: off-screen, out of the tab order and hidden from
           assistive technology, so only a form-filling bot fills it. */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-        <label htmlFor="beta-website">Website</label>
+        <label htmlFor="beta-website">{t("honeypot")}</label>
         <input
           id="beta-website"
           type="text"
@@ -91,11 +90,11 @@ export function BetaRequestForm() {
       </div>
       {state.kind === "error" && (
         <p role="alert" className="text-sm font-semibold text-(--lp-accent-text)">
-          {state.message}
+          {t(state.reason)}
         </p>
       )}
       <p className="text-[13px] text-(--lp-muted)">
-        Used only to send your invite, and never for anything else.
+        {t("privacy")}
       </p>
     </form>
   );
