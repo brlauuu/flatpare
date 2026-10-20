@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.13.0 — 2026-10-20
+
 ### Added
 - Emails in German, French, Italian and Spanish: the sign-in link, household invitations and the removal notice go out in the recipient's language when they chose one, otherwise in the sender's. Beta invitations take a language too. (#288)
 
