@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ export function ApartmentPagerNav({
   total,
   onNavigate,
 }: PagerNavProps) {
+  const t = useTranslations("apartments.pager");
   return (
     <div className="flex items-center gap-3">
       <Button
@@ -29,11 +31,11 @@ export function ApartmentPagerNav({
         }}
       >
         <ArrowLeft className="h-4 w-4" />
-        Previous
+        {t("previous")}
       </Button>
       {position !== null && total > 0 && (
         <span className="text-sm text-muted-foreground">
-          {position} of {total}
+          {t("position", { position, total })}
         </span>
       )}
       <Button
@@ -46,7 +48,7 @@ export function ApartmentPagerNav({
           if (nextId !== null) onNavigate(nextId);
         }}
       >
-        Next
+        {t("next")}
         <ArrowRight className="h-4 w-4" />
       </Button>
     </div>

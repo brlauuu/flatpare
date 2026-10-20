@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
@@ -7,6 +8,7 @@ import { ApartmentCorruptRow } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
 export function ApartmentRow({ apt }: { apt: ApartmentView }) {
+  const t = useTranslations("apartments.badges");
   if (apt.corrupt) return <ApartmentCorruptRow apt={apt} />;
   return (
     <Link
@@ -26,9 +28,9 @@ export function ApartmentRow({ apt }: { apt: ApartmentView }) {
       </div>
       <div className="hidden flex-wrap items-center gap-2 sm:flex">
         {apt.rentChf && (
-          <Badge variant="secondary">CHF {apt.rentChf.toLocaleString()}</Badge>
+          <Badge variant="secondary">{t("rent", { amount: apt.rentChf })}</Badge>
         )}
-        {apt.numRooms && <Badge variant="secondary">{apt.numRooms} rm</Badge>}
+        {apt.numRooms && <Badge variant="secondary">{t("roomsShort", { count: apt.numRooms })}</Badge>}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {apt.listingGone && <GoneBadge />}

@@ -1,10 +1,11 @@
 import { Fragment } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/star-rating";
 import { iconComponentFor } from "@/lib/location-icons";
 import type { ApartmentView, LocationView } from "@/lib/household-data/types";
 import { CompareColumnHeader } from "./compare-column-header";
-import { metricRows, ratingKeys, ratingLabels } from "./compare-types";
+import { metricRows, ratingKeys } from "./compare-types";
 
 interface CompareTableProps {
   visible: ApartmentView[];
@@ -15,6 +16,13 @@ interface CompareTableProps {
 }
 
 export function CompareTable({ visible, sortedVisible, locations, onHide, onViewPdf }: CompareTableProps) {
+  const t = useTranslations("compare.table");
+  const tCommon = useTranslations("common.ratingCategory");
+  const format = useFormatter();
+  // The table's rating rows: the shared category names, except the overall
+  // one, which is shortened to fit the label column.
+  const ratingLabel = (key: (typeof ratingKeys)[number]) =>
+    key === "overallFeeling" ? t("overall") : tCommon(key);
   // Group by userId — the stable, unique identity — and resolve a display
   // label separately. userName is the rater's chosen name, or their email
   // until they set one (displayName, #327) — not unique across accounts, so
@@ -58,7 +66,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
             return (
               <tr key={metric.key} className="border-b">
                 <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
-                  {metric.label}
+                  {t(`metric.${metric.key}`)}
                 </td>
                 {sortedVisible.map((apt) => {
                   const val = (apt as unknown as Record<string, unknown>)[
@@ -74,7 +82,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                         isBest && "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                       )}
                     >
-                      {val != null ? metric.format(val) : "—"}
+                      {val != null ? format.number(val) : "—"}
                     </td>
                   );
                 })}
@@ -88,7 +96,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
               <tr key={`loc-${loc.id}`} className="border-b">
                 <td
                   className="sticky left-0 z-10 bg-card px-4 py-2 font-medium"
-                  title={`Bike + transit to ${loc.label}`}
+                  title={t("travelTo", { label: loc.label })}
                 >
                   <Icon className="h-4 w-4" aria-label={loc.label} />
                 </td>
@@ -104,7 +112,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                         <>
                           {bike != null ? `${bike}` : "—"}
                           {" / "}
-                          {transit != null ? `${transit} min` : "— min"}
+                          {transit != null ? t("minutes", { value: transit }) : t("noMinutes")}
                         </>
                       )}
                     </td>
@@ -116,7 +124,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
 
           <tr className="border-b">
             <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
-              Washing machine
+              {t("washingMachine")}
             </td>
             {sortedVisible.map((apt) => (
               <td
@@ -129,10 +137,10 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                 )}
                 title={
                   apt.hasWashingMachine === true
-                    ? "Yes"
+                    ? t("washingYes")
                     : apt.hasWashingMachine === false
-                      ? "No (or shared)"
-                      : "Unknown"
+                      ? t("washingNo")
+                      : t("washingUnknown")
                 }
               >
                 {apt.hasWashingMachine === true
@@ -153,13 +161,13 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                     colSpan={visible.length + 1}
                     className="sticky left-0 z-10 bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                   >
-                    {label}&apos;s ratings
+                    {t("userRatings", { name: label ?? "" })}
                   </td>
                 </tr>
                 {ratingKeys.map((rKey) => (
                   <tr key={`${userId}-${rKey}`} className="border-b">
                     <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 text-muted-foreground">
-                      {ratingLabels[rKey]}
+                      {ratingLabel(rKey)}
                     </td>
                     {sortedVisible.map((apt) => {
                       const rating = apt.ratings.find(
@@ -179,7 +187,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                 ))}
                 <tr key={`${userId}-comment`} className="border-b">
                   <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 text-muted-foreground">
-                    Comment
+                    {t("comment")}
                   </td>
                   {sortedVisible.map((apt) => {
                     const rating = apt.ratings.find(
@@ -204,13 +212,13 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
               colSpan={visible.length + 1}
               className="sticky left-0 z-10 bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              Average Ratings
+              {t("averageRatings")}
             </td>
           </tr>
           {ratingKeys.map((rKey) => (
             <tr key={`avg-${rKey}`} className="border-b">
               <td className="sticky left-0 z-10 bg-card px-4 py-2 pl-8 font-medium">
-                {ratingLabels[rKey]}
+                {ratingLabel(rKey)}
               </td>
               {sortedVisible.map((apt) => {
                 const vals = apt.ratings

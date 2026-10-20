@@ -1,1 +1,16 @@
-{}
+{
+  "page": {
+    "titleReturning": "Add 40 more apartments",
+    "titleFirst": "One payment, then it's yours",
+    "usage": "You have used {used} of {granted} apartments. Another CHF 5 adds 40 more.",
+    "pitch": "Flatpare is CHF 5, once — not a subscription. That covers up to 10 people and 40 apartments in your household.",
+    "quota": "The 40 counts apartments you <strong>add</strong>, not apartments you keep: deleting one frees room in your comparison but does not give the credit back. Reading a PDF and measuring travel times costs us money per apartment, and that is what you are paying for.",
+    "stripe": "Payment is handled by Stripe. Flatpare never sees your card details, and Stripe never sees your apartments — they are encrypted in your browser."
+  },
+  "checkout": {
+    "startFailed": "Couldn't start checkout. Please try again.",
+    "retry": "Try again",
+    "buy": "Buy 40 apartments — CHF 5",
+    "waiting": "We haven't heard back from Stripe yet. If your payment went through, it usually lands within a few seconds — reload this page in a minute and your apartments will be there. If it didn't, you have not been charged and nothing was lost."
+  }
+}

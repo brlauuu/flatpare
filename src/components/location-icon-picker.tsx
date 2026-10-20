@@ -1,6 +1,7 @@
 "use client";
 
 import { createElement } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   iconComponentFor,
@@ -20,11 +21,12 @@ export function LocationIconPicker({
   onPick: (name: LocationIconName) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("household.iconPicker");
   if (!open) return null;
   return (
     <div
       role="dialog"
-      aria-label="Pick an icon"
+      aria-label={t("title")}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
@@ -33,12 +35,12 @@ export function LocationIconPicker({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Pick an icon</h3>
+          <h3 className="text-sm font-semibold">{t("title")}</h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("close")}
             className="h-7 w-7 p-0"
           >
             ✕
@@ -49,7 +51,7 @@ export function LocationIconPicker({
             <button
               key={name}
               type="button"
-              aria-label={name}
+              aria-label={t(`icons.${name}`)}
               onClick={() => onPick(name)}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-md border bg-background transition-colors hover:bg-accent",
@@ -72,7 +74,12 @@ export function LocationIconDisplay({
   name: string;
   className?: string;
 }) {
+  const t = useTranslations("household.iconPicker");
+  // A stored name this release has no icon for falls back to a pin, and is
+  // read out as stored.
+  const key = `icons.${name}` as `icons.${LocationIconName}`;
+  const label = t.has(key) ? t(key) : name;
   // The lucide component lookup happens by name; we use createElement so the
   // linter doesn't see a "component created during render" pattern.
-  return createElement(iconComponentFor(name), { className, "aria-label": name });
+  return createElement(iconComponentFor(name), { className, "aria-label": label });
 }

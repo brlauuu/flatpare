@@ -120,6 +120,17 @@ const LISTING_CONCURRENCY = 4;
 const STALE_KEY_MESSAGE =
   "The household key was changed by the owner. Your data has been reloaded; please try again.";
 
+// Thrown when a write is refused because the owner rotated the household
+// key (#219). Its own class so a page can show the message in the reader's
+// language (useStoreErrorDetails, #288); the English message stays for logs
+// and for callers that show err.message as is.
+export class StaleKeyError extends Error {
+  constructor() {
+    super(STALE_KEY_MESSAGE);
+    this.name = "StaleKeyError";
+  }
+}
+
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -193,7 +204,7 @@ export function HouseholdDataProvider({
       } catch (err) {
         if (!isStaleKey(err)) throw err;
         if (refreshCrypto) void refreshCrypto();
-        throw new Error(STALE_KEY_MESSAGE);
+        throw new StaleKeyError();
       }
     },
     [refreshCrypto]

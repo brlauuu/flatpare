@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -24,9 +25,10 @@ import {
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { downloadPdf } from "@/components/household-data/pdf-files";
 import { parsePdf } from "@/components/household-data/process-client";
-import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import type { ErrorDetails } from "@/lib/fetch-error";
 import { applyExtraction, mergeUserEdit } from "@/lib/edited-fields";
 import { useApartmentPager } from "@/components/household-data/use-apartment-pager";
+import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 import { formatSwissDate } from "@/lib/iso-date";
 import type { RatingView } from "@/lib/household-data/types";
@@ -77,6 +79,9 @@ export default function ApartmentDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const t = useTranslations("apartments.detail");
+  const tc = useTranslations("apartments.corrupt");
+  const errorDetails = useStoreErrorDetails();
   const {
     status,
     error: loadError,
@@ -125,15 +130,15 @@ export default function ApartmentDetailPage() {
   }, [isRatingDirty]);
 
   async function handleDelete() {
-    if (!confirm("Delete this apartment? This cannot be undone.")) return;
+    if (!confirm(tc("deleteConfirm"))) return;
     setDeleting(true);
     try {
       await deleteApartment(id);
       router.push("/apartments");
     } catch (err) {
       setError({
-        headline: "Couldn't delete apartment",
-        details: errorDetailsFromException(err),
+        headline: t("deleteFailed"),
+        details: errorDetails(err),
       });
       setDeleting(false);
     }
@@ -149,15 +154,13 @@ export default function ApartmentDetailPage() {
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setError(null);
     } catch (err) {
-      setError({ headline: "Couldn't open PDF", details: errorDetailsFromException(err) });
+      setError({ headline: t("pdfOpenFailed"), details: errorDetails(err) });
     }
   }
 
   async function handleReprocess() {
     if (!apartment?.pdf) return;
-    const ok = window.confirm(
-      "Reprocess this apartment? Fields you haven't edited will be refreshed from the PDF. Fields you've edited will stay."
-    );
+    const ok = window.confirm(t("reprocessConfirm"));
     if (!ok) return;
     setReprocessing(true);
     setError(null);
@@ -170,8 +173,8 @@ export default function ApartmentDetailPage() {
       await updateApartment(apartment.id, (current) => applyExtraction(current, fields, extracted));
     } catch (err) {
       setError({
-        headline: "Couldn't reprocess apartment",
-        details: errorDetailsFromException(err),
+        headline: t("reprocessFailed"),
+        details: errorDetails(err),
       });
     } finally {
       setReprocessing(false);
@@ -193,7 +196,7 @@ export default function ApartmentDetailPage() {
   async function handleSaveEdit() {
     if (!editForm || !apartment) return;
     if (!editForm.name.trim()) {
-      setError({ headline: "Name is required" });
+      setError({ headline: t("nameRequired") });
       return;
     }
     setSavingEdit(true);
@@ -205,8 +208,8 @@ export default function ApartmentDetailPage() {
       setSavingEdit(false);
     } catch (err) {
       setError({
-        headline: "Couldn't save changes",
-        details: errorDetailsFromException(err),
+        headline: t("saveFailed"),
+        details: errorDetails(err),
       });
       setSavingEdit(false);
     }
@@ -223,8 +226,8 @@ export default function ApartmentDetailPage() {
       router.push("/apartments");
     } catch (err) {
       setError({
-        headline: "Couldn't save rating",
-        details: errorDetailsFromException(err),
+        headline: t("ratingSaveFailed"),
+        details: errorDetails(err),
       });
       setSaving(false);
     }
@@ -233,7 +236,7 @@ export default function ApartmentDetailPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -241,7 +244,7 @@ export default function ApartmentDetailPage() {
   if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={loadError ?? "Couldn't load apartment"} />
+        <ErrorDisplay headline={loadError ?? t("loadError")} />
       </div>
     );
   }
@@ -249,7 +252,7 @@ export default function ApartmentDetailPage() {
   if (!apartment) {
     return (
       <div className="py-8">
-        <ErrorDisplay headline="Apartment not found" />
+        <ErrorDisplay headline={t("notFound")} />
       </div>
     );
   }
@@ -258,16 +261,15 @@ export default function ApartmentDetailPage() {
     return (
       <div className="space-y-4 py-8">
         <ErrorDisplay
-          headline="This apartment could not be decrypted"
+          headline={tc("title")}
           details={{
-            message:
-              "The stored record could not be opened with the household key. It can only be deleted.",
+            message: tc("body"),
             timestamp: new Date().toISOString(),
           }}
         />
         {error && <ErrorDisplay headline={error.headline} details={error.details} />}
         <Button variant="destructive" size="sm" disabled={deleting} onClick={handleDelete}>
-          {deleting ? "Deleting..." : "Delete"}
+          {deleting ? tc("deleting") : tc("delete")}
         </Button>
       </div>
     );
@@ -334,7 +336,7 @@ export default function ApartmentDetailPage() {
 
       {apartment.availableFrom && (
         <div className="text-sm text-muted-foreground">
-          Available from: {formatSwissDate(apartment.availableFrom)}
+          {t("availableFrom", { date: formatSwissDate(apartment.availableFrom) })}
         </div>
       )}
 

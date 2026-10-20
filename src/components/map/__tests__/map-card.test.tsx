@@ -19,6 +19,14 @@ describe("ApartmentCard", () => {
     expect(link).toHaveTextContent("Bachletten quiet street");
   });
 
+  // Moved here from src/lib/map/__tests__/points.test.ts when the words left
+  // that module for the catalogue (#288).
+  it("says one room in the singular", () => {
+    render(<ApartmentCard apartment={{ ...apt, numRooms: 1 }} />);
+    expect(screen.getByRole("link")).toHaveTextContent("1 room");
+    expect(screen.getByRole("link")).not.toHaveTextContent("1 rooms");
+  });
+
   it("omits unknown values and says when nobody has rated", () => {
     render(<ApartmentCard apartment={{ ...apt, rentChf: null, sizeM2: null, numRooms: null, avgOverall: null }} />);
     const link = screen.getByRole("link");

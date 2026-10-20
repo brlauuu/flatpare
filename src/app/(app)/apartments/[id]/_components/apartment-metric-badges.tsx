@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { WashingMachine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Apartment } from "@/lib/household-data/types";
@@ -7,45 +8,42 @@ export function ApartmentMetricBadges({
 }: {
   apartment: Apartment;
 }) {
+  const t = useTranslations("apartments.metrics");
+  const tb = useTranslations("apartments.badges");
   return (
     <div className="flex flex-wrap gap-2">
       {apartment.rentChf && (
-        <Badge variant="secondary">
-          CHF {apartment.rentChf.toLocaleString()}/mo
-        </Badge>
+        <Badge variant="secondary">{t("rentPerMonth", { amount: apartment.rentChf })}</Badge>
       )}
       {apartment.sizeM2 && (
-        <Badge variant="secondary">{apartment.sizeM2} m²</Badge>
+        <Badge variant="secondary">{tb("size", { size: apartment.sizeM2 })}</Badge>
       )}
       {apartment.numRooms && (
-        <Badge variant="secondary">{apartment.numRooms} rooms</Badge>
+        <Badge variant="secondary">{tb("rooms", { count: apartment.numRooms })}</Badge>
       )}
       {apartment.numBathrooms != null && (
-        <Badge variant="secondary">{apartment.numBathrooms} bath</Badge>
+        <Badge variant="secondary">{t("bathrooms", { count: apartment.numBathrooms })}</Badge>
       )}
       {apartment.numBalconies != null && (
-        <Badge variant="secondary">
-          {apartment.numBalconies} balcon
-          {apartment.numBalconies !== 1 ? "ies" : "y"}
-        </Badge>
+        <Badge variant="secondary">{t("balconies", { count: apartment.numBalconies })}</Badge>
       )}
       <Badge
         variant="secondary"
         title={
           apartment.hasWashingMachine === true
-            ? "Washing machine: yes"
+            ? t("washingYes")
             : apartment.hasWashingMachine === false
-              ? "Washing machine: no (or shared)"
-              : "Washing machine: unknown"
+              ? t("washingNo")
+              : t("washingUnknown")
         }
         className="gap-1"
       >
         <WashingMachine className="h-3 w-3" />
         {apartment.hasWashingMachine === true
-          ? "Yes"
+          ? t("yes")
           : apartment.hasWashingMachine === false
-            ? "No"
-            : "?"}
+            ? t("no")
+            : t("unknown")}
       </Badge>
     </div>
   );

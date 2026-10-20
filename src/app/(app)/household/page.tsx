@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { HouseholdSettings } from "@/components/household-settings";
 import { LocationsSettings } from "@/components/locations-settings";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
@@ -9,9 +10,10 @@ import { useHouseholdData } from "@/components/household-data/use-household-data
 // remove, rotate, recompute — is decided inside each section.
 export default function HouseholdPage() {
   const { identity } = useHouseholdData();
+  const t = useTranslations("household.page");
   return (
     <div className="space-y-8">
-      <h1 className="title-page">Household</h1>
+      <h1 className="title-page">{t("title")}</h1>
       <HouseholdSettings />
       <LocationsSettings canRecompute={identity.role === "owner"} />
     </div>

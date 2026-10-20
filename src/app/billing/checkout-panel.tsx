@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ErrorDisplay } from "@/components/error-display";
 
@@ -29,12 +30,15 @@ const POLL_TIMEOUT_MS = 90_000;
 // have paid anything, and sent them back to the app two seconds into the
 // payment form.
 export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number }) {
+  const t = useTranslations("billing.checkout");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The one failure this panel reports is fixed text, so a flag is enough;
+  // the words come from the catalogue at render (#288).
+  const [failed, setFailed] = useState(false);
   const [waiting, setWaiting] = useState(false);
 
   const start = useCallback(async () => {
-    setError(null);
+    setFailed(false);
     try {
       const res = await fetch("/api/billing/checkout", { method: "POST" });
       if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
@@ -42,7 +46,7 @@ export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number 
       if (!body.clientSecret) throw new Error("Stripe returned no session");
       setClientSecret(body.clientSecret);
     } catch {
-      setError("Couldn't start checkout. Please try again.");
+      setFailed(true);
     }
   }, []);
 
@@ -85,11 +89,11 @@ export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number 
     };
   }, [clientSecret, grantedAtStart]);
 
-  if (error) {
+  if (failed) {
     return (
       <div className="space-y-3">
-        <ErrorDisplay headline={error} />
-        <Button onClick={start}>Try again</Button>
+        <ErrorDisplay headline={t("startFailed")} />
+        <Button onClick={start}>{t("retry")}</Button>
       </div>
     );
   }
@@ -97,7 +101,7 @@ export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number 
   if (!clientSecret) {
     return (
       <Button className="h-11 w-full sm:w-auto" onClick={start}>
-        Buy 40 apartments — CHF 5
+        {t("buy")}
       </Button>
     );
   }
@@ -110,12 +114,7 @@ export function CheckoutPanel({ grantedAtStart = 0 }: { grantedAtStart?: number 
         </EmbeddedCheckoutProvider>
       </div>
       {waiting && (
-        <p className="text-sm text-muted-foreground">
-          We haven&apos;t heard back from Stripe yet. If your payment went
-          through, it usually lands within a few seconds — reload this page in
-          a minute and your apartments will be there. If it didn&apos;t, you
-          have not been charged and nothing was lost.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("waiting")}</p>
       )}
     </div>
   );

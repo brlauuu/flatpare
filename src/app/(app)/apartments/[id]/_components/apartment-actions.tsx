@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function ApartmentActions({
   onReprocess,
   onDelete,
 }: ApartmentActionsProps) {
+  const t = useTranslations("apartments.actions");
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
       {hasPdf && (
@@ -36,7 +38,7 @@ export function ApartmentActions({
           onClick={onViewPdf}
           className="h-11 w-full sm:h-7 sm:w-auto"
         >
-          View PDF
+          {t("viewPdf")}
         </Button>
       )}
       {listingUrl ? (
@@ -49,14 +51,14 @@ export function ApartmentActions({
             "h-11 w-full sm:h-7 sm:w-auto"
           )}
         >
-          Original Listing
+          {t("originalListing")}
         </a>
       ) : (
         <Badge
           variant="secondary"
           className="w-full justify-center text-muted-foreground sm:w-auto sm:justify-start"
         >
-          URL missing
+          {t("urlMissing")}
         </Badge>
       )}
       {!editing && (
@@ -66,7 +68,7 @@ export function ApartmentActions({
           onClick={onEdit}
           className="h-11 w-full sm:h-7 sm:w-auto"
         >
-          Edit
+          {t("edit")}
         </Button>
       )}
       <Button
@@ -76,7 +78,7 @@ export function ApartmentActions({
         onClick={onReprocess}
         className="h-11 w-full sm:h-7 sm:w-auto"
       >
-        {reprocessing ? "Reprocessing..." : "Reprocess"}
+        {reprocessing ? t("reprocessing") : t("reprocess")}
       </Button>
       <Button
         variant="destructive"
@@ -85,7 +87,7 @@ export function ApartmentActions({
         onClick={onDelete}
         className="h-11 w-full sm:h-7 sm:w-auto"
       >
-        {deleting ? "Deleting..." : "Delete"}
+        {deleting ? t("deleting") : t("delete")}
       </Button>
     </div>
   );

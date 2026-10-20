@@ -14,6 +14,7 @@ import { isFatalMapError } from "@/lib/map/errors";
 import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
+import { useMapText } from "./use-map-text";
 
 // The only file that touches MapLibre (#330). Deliberately thin: what to
 // draw comes from src/lib/map, the marks and cards are ordinary React
@@ -57,7 +58,8 @@ export default function HouseholdMapInner({ points, onError }: Props) {
 
   // One DOM node per mark. MapLibre positions the node; React renders the
   // mark into it through a portal.
-  const marks = useMemo(() => toMarks(points), [points]);
+  const text = useMapText();
+  const marks = useMemo(() => toMarks(points, text), [points, text]);
   const nodes = useMemo(() => new Map(marks.map((m) => [m.key, document.createElement("div")])), [marks]);
 
   // Create the map once.

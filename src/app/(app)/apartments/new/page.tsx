@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   type ApartmentForm,
   apartmentFromForm,
   emptyApartmentForm,
   formFromExtracted,
 } from "@/components/apartment-form-fields";
-import { type ErrorDetails, errorDetailsFromException } from "@/lib/fetch-error";
+import type { ErrorDetails } from "@/lib/fetch-error";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
+import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
 import { UploadStep } from "./_components/upload-step";
 import { ReviewStep } from "./_components/review-step";
@@ -24,11 +26,10 @@ interface ErrorState {
   details?: ErrorDetails;
 }
 
-const PDF_STORE_WARNING =
-  "PDF could not be stored — the apartment will be saved without it";
-
 export default function UploadPage() {
   const router = useRouter();
+  const t = useTranslations("apartments.new");
+  const errorDetails = useStoreErrorDetails();
   const { createApartment, dataKey, identity } = useHouseholdData();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
@@ -92,7 +93,7 @@ export default function UploadPage() {
     } catch (err) {
       updateItem(itemId, {
         status: "error",
-        error: err instanceof Error ? err.message : "Could not read file",
+        error: err instanceof Error ? err.message : t("readFailed"),
         errorReason: "unknown",
       });
       return;
@@ -108,7 +109,7 @@ export default function UploadPage() {
       const known = err instanceof ParsePdfError ? err : null;
       updateItem(itemId, {
         status: "error",
-        error: err instanceof Error ? err.message : "Parsing failed",
+        error: err instanceof Error ? err.message : t("parseFailed"),
         errorReason: known?.reason ?? "unknown",
         errorRetryAfterSeconds: known?.retryAfterSeconds,
       });
@@ -119,7 +120,7 @@ export default function UploadPage() {
       status: "done",
       form: formFromExtracted(parsed.value.extracted),
       pdf: uploaded.status === "fulfilled" ? uploaded.value : null,
-      pdfWarning: uploaded.status === "rejected" ? PDF_STORE_WARNING : undefined,
+      pdfWarning: uploaded.status === "rejected" ? t("pdfStoreWarning") : undefined,
     });
   }
 
@@ -128,7 +129,7 @@ export default function UploadPage() {
     if (!file) {
       updateItem(itemId, {
         status: "error",
-        error: "File reference lost — please re-upload",
+        error: t("fileLost"),
         errorReason: "unknown",
         errorRetryAfterSeconds: undefined,
       });
@@ -140,7 +141,7 @@ export default function UploadPage() {
   const processFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.type === "application/pdf");
     if (pdfFiles.length === 0) {
-      setError({ headline: "No PDF files selected" });
+      setError({ headline: t("noPdfs") });
       return;
     }
 
@@ -185,7 +186,7 @@ export default function UploadPage() {
       (item) => item.status === "done" && !item.saved && !item.discarded && item.form.name.trim()
     );
     if (toSave.length === 0) {
-      setError({ headline: "No apartments to save" });
+      setError({ headline: t("nothingToSave") });
       return;
     }
 
@@ -198,7 +199,7 @@ export default function UploadPage() {
         fileMapRef.current.delete(item.id);
         updateItem(item.id, { saved: true });
       } catch {
-        updateItem(item.id, { status: "error", error: "Failed to save" });
+        updateItem(item.id, { status: "error", error: t("itemSaveFailed") });
       }
     }
 
@@ -224,7 +225,7 @@ export default function UploadPage() {
   async function handleSaveSingle(e: React.FormEvent) {
     e.preventDefault();
     if (!singleForm.name.trim()) {
-      setError({ headline: "Name is required" });
+      setError({ headline: t("nameRequired") });
       return;
     }
     setSaving(true);
@@ -234,8 +235,8 @@ export default function UploadPage() {
       router.push(`/apartments/${created.id}`);
     } catch (err) {
       setError({
-        headline: "Failed to save apartment",
-        details: errorDetailsFromException(err),
+        headline: t("saveFailed"),
+        details: errorDetails(err),
       });
       setSaving(false);
     }
@@ -259,7 +260,7 @@ export default function UploadPage() {
     return (
       <div className="mx-auto max-w-lg space-y-6">
         <h1 className="title-page">
-          Processing ({doneCount}/{items.length})
+          {t("processing", { done: doneCount, total: items.length })}
         </h1>
         <div className="space-y-2">
           {items.map((item) => (

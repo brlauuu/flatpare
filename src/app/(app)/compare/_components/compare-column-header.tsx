@@ -1,4 +1,5 @@
 import { ExternalLink, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
@@ -13,6 +14,7 @@ export function CompareColumnHeader({
   onHide: (id: string) => void;
   onViewPdf: (apt: ApartmentView) => void;
 }) {
+  const t = useTranslations("compare.header");
   return (
     <th className="min-w-[160px] px-4 py-3 text-left font-medium">
       <div className="flex items-start justify-between gap-2">
@@ -31,7 +33,7 @@ export function CompareColumnHeader({
               // it, so this is a button rather than a link.
               <button
                 type="button"
-                aria-label={`View PDF for ${apt.name}`}
+                aria-label={t("viewPdf", { name: apt.name })}
                 className="tap-target text-muted-foreground hover:text-foreground"
                 onClick={() => onViewPdf(apt)}
               >
@@ -43,7 +45,7 @@ export function CompareColumnHeader({
                 href={apt.listingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Original listing for ${apt.name}`}
+                aria-label={t("originalListing", { name: apt.name })}
                 className="tap-target text-muted-foreground hover:text-foreground"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -61,7 +63,7 @@ export function CompareColumnHeader({
         <Button
           variant="ghost"
           size="sm"
-          aria-label={`Hide ${apt.name}`}
+          aria-label={t("hide", { name: apt.name })}
           className="tap-target h-6 w-6 shrink-0 p-0 text-muted-foreground hover:text-destructive"
           onClick={() => onHide(apt.id)}
         >

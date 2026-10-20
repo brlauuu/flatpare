@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AccountNameSettings } from "@/components/account-name-settings";
 import { EncryptionSettings } from "@/components/crypto/encryption-settings";
 
@@ -8,17 +9,20 @@ import { EncryptionSettings } from "@/components/crypto/encryption-settings";
 // keys, their recovery kit. Everything about the group — members,
 // invitations, locations — is the Household page. The pointer stays because members had learned to look here.
 export default function SettingsPage() {
+  const t = useTranslations("settings.page");
   return (
     <div className="space-y-8">
-      <h1 className="title-page">Settings</h1>
+      <h1 className="title-page">{t("title")}</h1>
       <AccountNameSettings />
       <EncryptionSettings />
       <p className="text-sm text-muted-foreground">
-        Members, invitations and locations of interest have moved to the{" "}
-        <Link href="/household" className="underline underline-offset-2">
-          Household
-        </Link>{" "}
-        page.
+        {t.rich("moved", {
+          household: (chunks) => (
+            <Link href="/household" className="underline underline-offset-2">
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ErrorDisplay } from "@/components/error-display";
@@ -26,14 +27,14 @@ export function SingleEntryStep({
   onWashingMachineChange,
   onCancel,
 }: SingleEntryStepProps) {
+  const t = useTranslations("apartments.single");
+  const tc = useTranslations("common");
   return (
     <div className="mx-auto max-w-lg">
       <Card>
         <CardHeader>
-          <CardTitle>Add Apartment Manually</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Fill in the apartment details
-          </p>
+          <CardTitle>{t("title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -49,10 +50,10 @@ export function SingleEntryStep({
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={saving}>
-                {saving ? "Saving..." : "Save Apartment"}
+                {saving ? t("saving") : t("save")}
               </Button>
               <Button type="button" variant="outline" onClick={onCancel}>
-                Cancel
+                {tc("cancel")}
               </Button>
             </div>
           </form>

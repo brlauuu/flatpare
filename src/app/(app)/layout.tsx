@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
 import { CryptoGate } from "@/components/crypto/crypto-gate";
@@ -29,7 +30,8 @@ export default async function AppLayout({
   const identity = await resolveHouseholdIdentity();
   // The identity's name is read from the database (#327); the session's is
   // up to 24h old and only a fallback for a user with no household.
-  const userName = identity?.userName ?? session?.user?.name ?? "Unknown";
+  const t = await getTranslations("nav");
+  const userName = identity?.userName ?? session?.user?.name ?? t("unknownUser");
   // Read here, in a server component: MAX_MEMBERS / MAX_APARTMENTS must
   // never be read from a "use client" file.
   const limits = readLimits();

@@ -27,6 +27,9 @@ import type { CryptoStatus, PendingWrap } from "@/lib/member-keys";
 
 export type StatusResponse = CryptoStatus & { mode: EncryptionMode };
 
+// Messages stay English here (this file is not React); the screens word them
+// through use-flow-error-text.ts, which matches a "state" error by its exact
+// message. A new one belongs in its STATE_KEYS and in messages/*/crypto.json.
 export type FlowErrorCode = "wrong-passphrase" | "bad-recovery-code" | "http" | "state";
 
 export class FlowError extends Error {

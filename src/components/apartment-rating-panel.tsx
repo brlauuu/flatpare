@@ -1,20 +1,17 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/star-rating";
 
-const RATING_CATEGORIES = [
-  { key: "kitchen", label: "Kitchen" },
-  { key: "balconies", label: "Balconies" },
-  { key: "location", label: "Location" },
-  { key: "floorplan", label: "Floorplan" },
-  { key: "overallFeeling", label: "Overall feeling" },
-] as const;
+// Labels are common.ratingCategory.<key> (#288), shared with the compare
+// table.
+const RATING_CATEGORIES = ["kitchen", "balconies", "location", "floorplan", "overallFeeling"] as const;
 
-export type RatingCategoryKey = (typeof RATING_CATEGORIES)[number]["key"];
+export type RatingCategoryKey = (typeof RATING_CATEGORIES)[number];
 
 export type RatingState = Record<RatingCategoryKey, number> & {
   comment: string;
@@ -37,15 +34,17 @@ export function MyRatingPanel({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("apartments.rating");
+  const tc = useTranslations("common");
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Your Rating ({userName})</CardTitle>
+        <CardTitle className="text-lg">{t("yours", { name: userName })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {RATING_CATEGORIES.map(({ key, label }) => (
+        {RATING_CATEGORIES.map((key) => (
           <div key={key} className="flex items-center justify-between">
-            <Label className="text-sm">{label}</Label>
+            <Label className="text-sm">{tc(`ratingCategory.${key}`)}</Label>
             <StarRating
               value={rating[key]}
               onChange={(v) => onChange({ ...rating, [key]: v })}
@@ -53,12 +52,12 @@ export function MyRatingPanel({
           </div>
         ))}
         <div className="space-y-2">
-          <Label htmlFor="rating-comment">Comment</Label>
+          <Label htmlFor="rating-comment">{t("comment")}</Label>
           <Textarea
             id="rating-comment"
             value={rating.comment}
             onChange={(e) => onChange({ ...rating, comment: e.target.value })}
-            placeholder="Notes about this apartment..."
+            placeholder={t("commentPlaceholder")}
             rows={3}
           />
         </div>
@@ -68,7 +67,7 @@ export function MyRatingPanel({
             disabled={saving || !dirty}
             className="h-11 sm:h-8"
           >
-            {saving ? "Saving..." : "Save Rating"}
+            {saving ? t("saving") : t("save")}
           </Button>
           <Button
             variant="outline"
@@ -76,7 +75,7 @@ export function MyRatingPanel({
             disabled={saving || !dirty}
             className="h-11 sm:h-8"
           >
-            Cancel
+            {tc("cancel")}
           </Button>
         </div>
       </CardContent>
@@ -96,17 +95,17 @@ export function OtherRatingPanel({
     comment: string;
   } & Record<RatingCategoryKey, number>;
 }) {
+  const t = useTranslations("apartments.rating");
+  const tc = useTranslations("common");
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">
-          {rating.userName}&apos;s Rating
-        </CardTitle>
+        <CardTitle className="text-lg">{t("other", { name: rating.userName })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {RATING_CATEGORIES.map(({ key, label }) => (
+        {RATING_CATEGORIES.map((key) => (
           <div key={key} className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="text-sm text-muted-foreground">{tc(`ratingCategory.${key}`)}</span>
             <StarRating value={rating[key]} readonly size="sm" />
           </div>
         ))}

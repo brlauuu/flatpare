@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { describeApartment, findActive, formatRent, formatRooms, toMapPoints, toMarks } from "../points";
+import { describeApartment, findActive, toMapPoints, toMarks, type MapText } from "../points";
+
+// The words and formats come from the catalogue in the app (useMapText);
+// here a fixed English set, so the composition is tested on its own.
+const TEXT: MapText = {
+  rent: (chf) => `CHF ${chf.toLocaleString("de-CH")}`,
+  size: (m2) => `${m2} m²`,
+  rooms: (n) => (n === 1 ? "1 room" : `${n} rooms`),
+  opensApartment: "opens apartment",
+};
 import { seedFromId } from "../marks";
 import { emptyApartment, type ApartmentView, type LocationView } from "@/lib/household-data/types";
 
@@ -64,20 +73,11 @@ describe("toMapPoints", () => {
   });
 });
 
-describe("formatting", () => {
-  it("formats rent as Swiss francs", () => {
-    expect(formatRent(3100)).toMatch(/^CHF 3.100$/);
-  });
-
-  it("formats rooms", () => {
-    expect(formatRooms(4.5)).toBe("4.5 rooms");
-    expect(formatRooms(1)).toBe("1 room");
-  });
-
+describe("describeApartment", () => {
   it("describes an apartment for a screen reader, skipping what is unknown", () => {
     const base = { id: "a1", label: "BS-04", name: "x", latitude: 0, longitude: 0, numRooms: null, avgOverall: null };
-    expect(describeApartment({ ...base, rentChf: 3100, sizeM2: 104 })).toMatch(/^BS-04, CHF 3.100, 104 m², opens apartment$/);
-    expect(describeApartment({ ...base, rentChf: null, sizeM2: null })).toBe("BS-04, opens apartment");
+    expect(describeApartment({ ...base, rentChf: 3100, sizeM2: 104 }, TEXT)).toMatch(/^BS-04, CHF 3.100, 104 m², opens apartment$/);
+    expect(describeApartment({ ...base, rentChf: null, sizeM2: null }, TEXT)).toBe("BS-04, opens apartment");
   });
 });
 
@@ -88,14 +88,14 @@ describe("toMarks", () => {
   );
 
   it("lists every mark with its position, label, screen-reader text and link", () => {
-    const [apt, loc] = toMarks(pts);
+    const [apt, loc] = toMarks(pts, TEXT);
     expect(apt).toMatchObject({ key: "apartment:a1", kind: "apartment", id: "a1", label: "BS-01", lngLat: [7.59, 47.56], href: "/apartments/a1" });
     expect(apt.ariaLabel).toMatch(/^BS-01, CHF 2.350, opens apartment$/);
     expect(loc).toMatchObject({ key: "location:l1", kind: "location", id: "l1", label: "Office", ariaLabel: "Office", lngLat: [7.57, 47.57], href: null });
   });
 
   it("seeds each mark's wobble from its id", () => {
-    const [apt] = toMarks(pts);
+    const [apt] = toMarks(pts, TEXT);
     expect(apt.seed).toBe(seedFromId("a1"));
   });
 });

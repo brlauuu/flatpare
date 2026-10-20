@@ -1,1 +1,17 @@
-{}
+{
+  "boundary": {
+    "title": "Something went wrong",
+    "body": "The page couldn't load. You can retry, or expand the details below to see what happened.",
+    "unexpected": "Unexpected error",
+    "retry": "Try again"
+  },
+  "details": {
+    "show": "Show details",
+    "status": "Status:",
+    "url": "URL:",
+    "message": "Message:",
+    "time": "Time:",
+    "copied": "Copied",
+    "copy": "Copy details"
+  }
+}

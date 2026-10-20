@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,10 +23,12 @@ export function ApartmentEditForm({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("apartments.edit");
+  const tc = useTranslations("common");
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Edit apartment</CardTitle>
+        <CardTitle className="text-lg">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ApartmentFormFields
@@ -35,10 +38,10 @@ export function ApartmentEditForm({
         />
         <div className="flex gap-2">
           <Button onClick={onSave} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
+            {saving ? t("saving") : tc("save")}
           </Button>
           <Button variant="outline" onClick={onCancel} disabled={saving}>
-            Cancel
+            {tc("cancel")}
           </Button>
         </div>
       </CardContent>

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -40,6 +41,7 @@ export function ReviewStep({
   onUpdateWashingMachine,
   onDiscard,
 }: ReviewStepProps) {
+  const t = useTranslations("apartments.review");
   const saveable = items.filter(
     (i) =>
       i.status === "done" && !i.saved && !i.discarded && i.form.name.trim()
@@ -52,25 +54,21 @@ export function ReviewStep({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="title-page">Review Apartments</h1>
+        <h1 className="title-page">{t("title")}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onUploadMore}>
-            Upload more
+            {t("uploadMore")}
           </Button>
           {saveable.length > 0 && (
             <Button onClick={onSaveAll} disabled={saving}>
-              {saving
-                ? "Saving..."
-                : `Save ${saveable.length === 1 ? "apartment" : `all ${saveable.length}`}`}
+              {saving ? t("saving") : t("save", { count: saveable.length })}
             </Button>
           )}
         </div>
       </div>
 
       {allDone && savedCount > 0 && (
-        <p className="text-sm text-muted-foreground">
-          All apartments saved. Redirecting...
-        </p>
+        <p className="text-sm text-muted-foreground">{t("allSaved")}</p>
       )}
 
       {error && <ErrorDisplay headline={error.headline} details={error.details} />}
@@ -100,9 +98,9 @@ export function ReviewStep({
                       <p className="text-xs text-muted-foreground truncate">
                         {[
                           item.form.address,
-                          item.form.rentChf && `CHF ${item.form.rentChf}`,
-                          item.form.sizeM2 && `${item.form.sizeM2} m²`,
-                          item.form.numRooms && `${item.form.numRooms} rooms`,
+                          item.form.rentChf && t("rent", { amount: item.form.rentChf }),
+                          item.form.sizeM2 && t("size", { size: item.form.sizeM2 }),
+                          item.form.numRooms && t("rooms", { count: item.form.numRooms }),
                         ]
                           .filter(Boolean)
                           .join(" · ") || item.fileName}
@@ -146,7 +144,7 @@ export function ReviewStep({
                       size="sm"
                       onClick={() => onRetry(item.id)}
                     >
-                      Retry
+                      {t("retry")}
                     </Button>
                   </div>
                 </CardContent>

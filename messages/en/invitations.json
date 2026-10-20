@@ -1,1 +1,15 @@
-{}
+{
+  "title": "Join a household",
+  "loading": "Loading…",
+  "loadFailed": "Could not load invitations",
+  "requestFailed": "Request failed",
+  "requestFailedStatus": "Request failed ({status})",
+  "invitedAndExpires": "Invited by {name}. Expires {date}.",
+  "expires": "Expires {date}.",
+  "accept": "Accept",
+  "none": "You have no pending invitations. Ask the household owner to invite the email address you signed in with, or start your own household.",
+  "declineAndStartOwn": "No thanks, start my own household",
+  "startOwn": "Start my own household",
+  "signOut": "Sign out",
+  "polling": "This page checks for new invitations every {seconds} seconds."
+}

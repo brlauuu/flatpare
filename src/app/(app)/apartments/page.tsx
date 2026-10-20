@@ -2,6 +2,7 @@
 
 import { CreditBalance } from "@/components/credit-balance";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ function isViewMode(v: string): v is ViewMode {
 }
 
 export default function ApartmentsPage() {
+  const t = useTranslations("apartments.list");
   const {
     status,
     error,
@@ -152,7 +154,7 @@ export default function ApartmentsPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading apartments...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -160,7 +162,7 @@ export default function ApartmentsPage() {
   if (status === "error") {
     return (
       <div className="py-8">
-        <ErrorDisplay headline={error ?? "Couldn't load apartments"} />
+        <ErrorDisplay headline={error ?? t("loadError")} />
       </div>
     );
   }
@@ -172,13 +174,11 @@ export default function ApartmentsPage() {
           <Building2 className="h-8 w-8 text-muted-foreground" />
         </div>
         <div className="text-center">
-          <p className="font-medium">No apartments yet</p>
-          <p className="text-sm text-muted-foreground">
-            Upload a PDF listing to get started
-          </p>
+          <p className="font-medium">{t("emptyTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("emptyBody")}</p>
         </div>
         <Link href="/apartments/new" className={buttonVariants()}>
-          Upload your first listing
+          {t("uploadFirst")}
         </Link>
         {/* Here too: a household that just bought, or deleted everything,
             holds no apartments and still has a balance (#305). */}
@@ -191,7 +191,7 @@ export default function ApartmentsPage() {
     <div className="space-y-6">
       <Link href="/map" className={cn(buttonVariants({ variant: "outline" }), "h-11 sm:h-9")}>
         <MapIcon className="h-4 w-4" />
-        View on map
+        {t("viewOnMap")}
       </Link>
       {failedEnrichments.length > 0 && (
         <div
@@ -200,16 +200,14 @@ export default function ApartmentsPage() {
         >
           {failedEnrichments.map((apt) => (
             <div key={apt.id} className="flex items-center justify-between gap-2">
-              <span>
-                Enrichment failed for {apt.name}: {enrichmentError[apt.id]}
-              </span>
+              <span>{t("enrichmentFailed", { name: apt.name, error: enrichmentError[apt.id] })}</span>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 onClick={() => void retryEnrichment(apt.id)}
               >
-                Retry
+                {t("retry")}
               </Button>
             </div>
           ))}
@@ -220,8 +218,8 @@ export default function ApartmentsPage() {
         <Input
           weight="frame"
           type="text"
-          aria-label="Search apartments"
-          placeholder="Search by name, code, or address..."
+          aria-label={t("searchLabel")}
+          placeholder={t("searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-11 pl-9 pr-9 sm:h-9"
@@ -231,7 +229,7 @@ export default function ApartmentsPage() {
             type="button"
             variant="ghost"
             size="sm"
-            aria-label="Clear search"
+            aria-label={t("clearSearch")}
             onClick={() => setQuery("")}
             className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 p-0 sm:h-7 sm:w-7"
           >
@@ -241,12 +239,12 @@ export default function ApartmentsPage() {
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <h1 className="title-page">Apartments</h1>
+          <h1 className="title-page">{t("title")}</h1>
           {/* Only shown when a cap is configured: a self-hoster with no
               MAX_APARTMENTS must not see a counter implying one exists. */}
           {limits.maxApartments !== null && (
             <span className="text-sm text-muted-foreground">
-              {apartments.length} of {limits.maxApartments}
+              {t("heldCount", { count: apartments.length, max: limits.maxApartments })}
             </span>
           )}
           {/* Renders nothing when billing is off. */}
@@ -262,7 +260,7 @@ export default function ApartmentsPage() {
           >
             <SelectTrigger
               weight="frame"
-              aria-label="Sort by"
+              aria-label={t("sortBy")}
               className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
             >
               <SelectValue />
@@ -279,7 +277,7 @@ export default function ApartmentsPage() {
             type="button"
             variant="outline"
             size="sm"
-            aria-label={sortDirection === "asc" ? "Ascending" : "Descending"}
+            aria-label={sortDirection === "asc" ? t("ascending") : t("descending")}
             onClick={() =>
               setSortDirection(sortDirection === "asc" ? "desc" : "asc")
             }
@@ -293,14 +291,14 @@ export default function ApartmentsPage() {
           </Button>
           <div
             role="group"
-            aria-label="View"
+            aria-label={t("view")}
             className="inline-flex rounded-md border bg-muted p-0.5"
           >
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              aria-label="Grid view"
+              aria-label={t("gridView")}
               aria-pressed={view === "grid"}
               onClick={() => setView("grid")}
               className={cn(
@@ -314,7 +312,7 @@ export default function ApartmentsPage() {
               type="button"
               variant="ghost"
               size="sm"
-              aria-label="List view"
+              aria-label={t("listView")}
               aria-pressed={view === "list"}
               onClick={() => setView("list")}
               className={cn(
@@ -332,16 +330,16 @@ export default function ApartmentsPage() {
                 "h-11 w-full cursor-not-allowed opacity-60 sm:h-9 sm:w-auto"
               )}
               aria-disabled="true"
-              title={`This household is limited to ${limits.maxApartments} apartments`}
+              title={t("limitTitle", { max: limits.maxApartments ?? 0 })}
             >
-              Limit reached
+              {t("limitReached")}
             </span>
           ) : (
             <Link
               href="/apartments/new"
               className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
             >
-              Upload New
+              {t("uploadNew")}
             </Link>
           )}
         </div>
@@ -353,12 +351,10 @@ export default function ApartmentsPage() {
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="font-medium">
-              No apartments match &quot;{query.trim()}&quot;
-            </p>
+            <p className="font-medium">{t("noMatch", { query: query.trim() })}</p>
           </div>
           <Button variant="outline" onClick={() => setQuery("")}>
-            Show all apartments
+            {t("showAll")}
           </Button>
         </div>
       ) : view === "grid" ? (

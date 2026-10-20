@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { isKeyStorePersistent, loadKeys, type StoredKeys } from "@/lib/crypto";
 import type { EncryptionMode } from "@/lib/encryption-mode";
 import {
@@ -25,6 +26,7 @@ import { UnlockScreen } from "./unlock-screen";
 import { PendingScreen } from "./pending-screen";
 import { HouseholdKeyScreen } from "./household-key-screen";
 import { GateFrame } from "./gate-frame";
+import { useFlowErrorText } from "./use-flow-error-text";
 
 const PENDING_POLL_MS = 15_000;
 const WRAP_SWEEP_MS = 60_000;
@@ -34,10 +36,7 @@ const NOTICE_MS = 8_000;
 // public key we have since replaced (see fulfilWraps' binding check), or it is
 // garbage. This is not a terminal error: the way out is a reset (so somebody
 // can send a fresh wrap) or the recovery kit, both offered on the pending
-// screen, so we land there rather than in `error`.
-const ADOPT_FAILED_MESSAGE =
-  "The key we received could not be opened. Reset your keys so a member can " +
-  "send a new one, or use your recovery kit.";
+// screen, so we land there rather than in `error` (crypto.provider.adoptFailed).
 
 function deriveState(status: StatusResponse, keys: StoredKeys | null): CryptoState {
   if (status.mode === "off") return "off";
@@ -53,10 +52,6 @@ function deriveState(status: StatusResponse, keys: StoredKeys | null): CryptoSta
   return "pending-wrap";
 }
 
-function describe(err: unknown): string {
-  return err instanceof Error ? err.message : "Something went wrong";
-}
-
 export function CryptoProvider({
   mode,
   children,
@@ -64,13 +59,19 @@ export function CryptoProvider({
   mode: EncryptionMode;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("crypto");
+  const tc = useTranslations("common");
+  const format = useFormatter();
+  const errorText = useFlowErrorText();
   const [state, setState] = useState<CryptoState>(mode === "off" ? "off" : "loading");
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [keys, setKeys] = useState<StoredKeys | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The thrown value itself, worded at render time (useFlowErrorText) so the
+  // load callbacks need no translator in their dependencies.
+  const [failure, setFailure] = useState<{ err: unknown } | null>(null);
   const [persistent, setPersistent] = useState(true);
   const [kitCode, setKitCode] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string[] | null>(null);
   const [adoptFailed, setAdoptFailed] = useState(false);
   const sweeping = useRef(false);
 
@@ -113,7 +114,7 @@ export function CryptoProvider({
           // pending screen with its escape hatches instead of the dead-end
           // error screen. deriveState would say "locked" here, because a wrap
           // exists — so the state is set by hand.
-          setError(null);
+          setFailure(null);
           setAdoptFailed(true);
           setStatus(s);
           setKeys(k);
@@ -122,11 +123,11 @@ export function CryptoProvider({
           return;
         }
       }
-      setError(null);
+      setFailure(null);
       setAdoptFailed(false);
       apply(s, k);
     } catch (err) {
-      setError(describe(err));
+      setFailure({ err });
       setState("error");
     }
   }, [apply]);
@@ -157,7 +158,7 @@ export function CryptoProvider({
       sweeping.current = true;
       try {
         const { count, names } = await runFulfilPendingWraps(status, keys);
-        if (count > 0) setNotice(`${names.join(", ")} can now open Flatpare.`);
+        if (count > 0) setNotice(names);
       } catch (err) {
         console.error("[crypto:wraps]", err);
       } finally {
@@ -209,6 +210,7 @@ export function CryptoProvider({
     await refresh();
   }, [status, keys, refresh]);
 
+  const error = failure === null ? null : errorText(failure.err, "provider.somethingWrong");
   const value: CryptoContextValue = {
     state,
     status,
@@ -239,14 +241,14 @@ export function CryptoProvider({
       case "loading":
         // Capped like the sections are (62rem, see src/app/(app)/section-width.tsx)
         // so it sits where the page will, now that <main> is full width.
-        body = <p className="mx-auto w-full max-w-[62rem] text-sm text-muted-foreground">Loading…</p>;
+        body = <p className="mx-auto w-full max-w-[62rem] text-sm text-muted-foreground">{tc("loading")}</p>;
         break;
       case "error":
         body = (
           <div className="mx-auto max-w-md space-y-2">
             <p className="text-sm text-destructive">{error}</p>
             <button type="button" className="text-sm underline" onClick={() => void refresh()}>
-              Try again
+              {tc("retry")}
             </button>
           </div>
         );
@@ -263,7 +265,7 @@ export function CryptoProvider({
           <GateFrame>
             <PendingScreen
               pollMs={PENDING_POLL_MS}
-              problem={adoptFailed ? ADOPT_FAILED_MESSAGE : null}
+              problem={adoptFailed ? t("provider.adoptFailed") : null}
               extra={<ForgotPassphrase />}
             />
           </GateFrame>
@@ -294,7 +296,7 @@ export function CryptoProvider({
           role="status"
           className="fixed bottom-20 left-1/2 -translate-x-1/2 border-3 border-frame bg-card px-4 py-2 text-sm font-semibold shadow-frame sm:bottom-6"
         >
-          {notice}
+          {t("provider.nowIn", { names: format.list(notice, { type: "unit" }) })}
         </div>
       )}
     </CryptoContext.Provider>
