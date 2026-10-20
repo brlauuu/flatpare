@@ -11,7 +11,7 @@ For what Flatpare actually does now:
 | How the code is organised, and which conventions are load-bearing | [`AGENTS.md`](../../AGENTS.md) |
 | How to run, configure or deploy it | [`README.md`](../../README.md) |
 | Threat model, accepted advisories, security decisions | [`docs/security-notes.md`](../security-notes.md) |
-| What a user sees | [`src/content/guide.md`](../../src/content/guide.md) |
+| What a user sees | [`src/content/guide.en.md`](../../src/content/guide.en.md) (and one per language, #288) |
 
 **Where a plan and `AGENTS.md` disagree, `AGENTS.md` is right.** Several decisions were
 reversed during implementation — E5's tier dimension was designed and then not adopted,

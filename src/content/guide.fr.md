@@ -1,0 +1,126 @@
+# Guide d’utilisation de Flatpare
+
+Flatpare aide un foyer à comparer des appartements ensemble. Ajoute des annonces en PDF, évalue-les et vois tout côte à côte — avec tes données chiffrées dans ton navigateur avant d’être enregistrées.
+
+---
+
+## Premiers pas
+
+### 1. Se connecter
+
+Connecte-toi avec Google ou avec un lien envoyé à ton adresse e-mail, ou avec le mot de passe partagé de ton foyer si ton Flatpare est configuré ainsi. Indique ton nom sur la page Réglages pour que chacun sache qui a dit quoi ; tant que tu ne l’as pas fait, ton foyer voit ton adresse e-mail sur tes évaluations.
+
+### 2. Choisir une phrase secrète
+
+À ta première connexion, Flatpare te demande de **choisir une phrase secrète** (au moins 12 caractères). Ce n’est pas une deuxième connexion : c’est la clé qui chiffre les appartements, les évaluations et les notes de ton foyer dans ton navigateur.
+
+**Flatpare ne voit jamais cette phrase secrète et ne peut pas la réinitialiser pour toi.** C’est tout l’intérêt : c’est ce qui empêche quiconque fait tourner le serveur, nous compris, de lire ta recherche.
+
+Elle te sera redemandée sur chaque nouvel appareil ou navigateur que tu utilises, et après avoir verrouillé Flatpare.
+
+### 3. Conserver ton kit de récupération
+
+Juste après avoir choisi ta phrase secrète, un **code de récupération de 25 caractères t’est affiché, une seule fois**. Note-le ou imprime-le, et garde-le en lieu sûr.
+
+> **C’est l’écran le plus important de Flatpare.** Le code de récupération est le seul moyen de revenir si tu oublies ta phrase secrète. Si tu perds les deux, les données de ton foyer sont perdues définitivement — personne ne peut les récupérer, parce que personne d’autre n’a jamais eu la clé.
+
+Traite-le comme une clé de maison, pas comme un indice de mot de passe. Une copie imprimée dans un tiroir convient très bien. Une note dans le même gestionnaire de mots de passe que tout le reste sert moins si tu perds l’accès à celui-ci.
+
+### 4. Rejoindre un foyer créé par quelqu’un d’autre
+
+Si tu as été invité·e dans un foyer existant, tu choisis ta propre phrase secrète de la même façon, puis tu vois **« Presque prêt »**.
+
+Flatpare attend que quelqu’un qui fait déjà partie du foyer ouvre l’application — à ce moment-là, son navigateur transmet automatiquement au tien une copie de la clé du foyer. **Cette personne n’a rien à faire**, mais elle doit ouvrir Flatpare au moins une fois. L’écran vérifie à nouveau toutes les quelques secondes et passe à la suite tout seul.
+
+### 5. Ajouter un appartement
+
+Va sur **Ajouter** dans la barre de navigation et glisse (ou sélectionne) une annonce en PDF. Si l’extraction par IA est configurée, Flatpare en tire :
+
+- Nom/titre de l’appartement
+- Adresse
+- Surface (m²), pièces, salles de bain, balcons
+- Loyer mensuel (CHF)
+
+Si aucune IA n’est configurée, remplis les champs à la main. Dans les deux cas, tu arrives sur la page de l’appartement pour vérifier et corriger ce qui serait faux — l’extraction est un point de départ, pas un oracle.
+
+### 6. Évaluer les appartements
+
+Sur la page de chaque appartement, évalue-le selon cinq catégories :
+
+| Catégorie | À prendre en compte |
+|----------|-----------------|
+| **Cuisine** | Taille, équipement, agencement, lumière naturelle |
+| **Balcons** | Taille, vue, intimité, ensoleillement |
+| **Situation** | Quartier, bruit, commerces, parcs |
+| **Plan** | Répartition des pièces, circulation, rangements, côté pratique |
+| **Impression générale** | Ton ressenti après la visite |
+
+Clique sur une étoile pour donner une note (1-5) ; clique à nouveau sur la même étoile pour l’effacer. Tu évalues de ton côté — chaque membre du foyer évalue séparément, et la comparaison montre les notes côte à côte au lieu de lisser un désaccord dans une moyenne.
+
+### 7. Comparer
+
+Va sur **Comparer** pour voir tous les appartements dans un seul tableau. La meilleure valeur de chaque ligne est mise en évidence (loyer le plus bas, meilleure note, trajet le plus court). Fais défiler horizontalement s’il y a plus d’appartements que la largeur ne le permet.
+
+---
+
+## Fonctionnalités
+
+### Lieux importants
+
+Sur la page **Foyer**, enregistre jusqu’à **cinq** endroits où tu vas vraiment — le travail, la salle de sport, ta sœur. Chaque appartement indique alors combien de temps il faut pour s’y rendre à vélo et en transports publics.
+
+C’est à toi de les choisir ; Flatpare ne suppose pas où tu te déplaces.
+
+### Distances
+
+Les temps de trajet sont mesurés depuis chaque appartement jusqu’à chacun de tes lieux enregistrés :
+
+- **Vélo** — via Google Maps ou OpenRouteService
+- **Transports publics** — via Google Maps (non disponible avec OpenRouteService)
+
+Si aucune API de distances n’est configurée, tu peux saisir les temps à la main.
+
+### Gestion des PDF
+
+- Ajout d’un seul fichier ou de plusieurs à la fois
+- **Les PDF sont chiffrés dans ton navigateur avant d’être envoyés.** Ce qui est enregistré, c’est du texte chiffré ; en ouvrir un le déchiffre à nouveau sur ton appareil
+- L’extraction utilise Gemini 2.5 Flash. Sur flatpare.com, elle passe par Vercel AI Gateway avec zéro conservation des données : rien n’est gardé ni par Vercel ni par le fournisseur du modèle
+
+### Ce que le serveur peut voir
+
+Presque rien. Tes appartements, tes évaluations, tes notes et tes PDF sont chiffrés avant de quitter ton navigateur.
+
+Il y a une exception voulue, et elle mérite d’être connue : **géolocaliser une adresse, mesurer un temps de trajet, vérifier qu’une annonce est toujours en ligne et lire un PDF** ne peuvent pas se faire dans ton navigateur. Pour cela, l’élément concerné, et lui seul, est envoyé en clair : une adresse à Google Maps (ou à OpenRouteService sur certaines installations auto-hébergées) pour sa position et les temps de trajet, l’URL d’une annonce que notre serveur va chercher directement sur le site de l’annonce, et un PDF au modèle d’IA qui le lit. Notre serveur s’en sert pour cette seule requête, ne l’écrit jamais dans la base de données et ne l’enregistre jamais dans les journaux.
+
+### Gérer ta clé
+
+Dans **Réglages**, tu peux :
+
+- **Verrouiller cet appareil** — efface la clé de ce navigateur sans te déconnecter. Pratique sur un ordinateur partagé ou emprunté ; il te faudra ta phrase secrète pour déverrouiller à nouveau.
+- **Changer la phrase secrète** — conserve tes données et protège à nouveau la clé avec une nouvelle phrase secrète.
+- **Régénérer le kit de récupération** (propriétaire du foyer uniquement) — émet un nouveau code de récupération et rend l’ancien invalide. Fais-le si tu penses que quelqu’un d’autre a vu la copie imprimée.
+
+---
+
+## Si tu utilises la version hébergée
+
+**Pendant la bêta privée, c’est gratuit.** Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.
+
+Flatpare coûte **CHF 5, une seule fois** — pas d’abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans un foyer.
+
+Les 40 comptent les appartements que tu **ajoutes**, pas ceux que tu gardes : en supprimer un libère de la place dans ta comparaison mais ne rend pas le crédit. Quand tu as utilisé tes 40, CHF 5 de plus ajoutent 40 appartements de plus.
+
+Épuiser tes crédits t’empêche seulement d’ajouter de nouveaux appartements. Cela ne te bloque jamais l’accès à ceux que tu as déjà.
+
+Faire tourner Flatpare toi-même est gratuit et sans aucune limite.
+
+---
+
+## Astuces
+
+- **Phrase secrète oubliée ?** L’écran de déverrouillage propose **« Utiliser mon kit de récupération »** — saisis le code de 25 caractères et choisis une nouvelle phrase secrète. Si tu n’as ni la phrase secrète ni le code, personne ne peut récupérer les données.
+- **« Réinitialiser mes clés »** y est aussi proposé, et ce n’est *pas* une réinitialisation de mot de passe : cela abandonne l’ancienne clé et attend que quelqu’un d’autre du foyer te transmette une nouvelle copie. Utile seulement si quelqu’un d’autre a encore accès.
+- **Nouvel appareil :** connecte-toi simplement et saisis ta phrase secrète ; rien n’est à transférer à la main.
+- **Ajout groupé :** tu peux sélectionner plusieurs PDF à la fois sur la page Ajouter.
+- **Réévalue quand tu veux :** les évaluations sont propres à chaque personne et modifiables à tout moment.
+- **Adapté au mobile :** utilise la barre de navigation en bas de l’écran sur ton téléphone.

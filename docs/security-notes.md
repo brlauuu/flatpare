@@ -153,9 +153,10 @@ for them by hand when configuring a deployment.
 
 ### Considered and declined: sanitizing the guide page
 
-`src/app/guide/page.tsx` renders `src/content/guide.md` through `remark-html` into
-`dangerouslySetInnerHTML`. The markdown is checked into this repo, so there is no
-untrusted input path, and adding `isomorphic-dompurify` would pull jsdom into the
+`src/app/guide/page.tsx` renders `src/content/guide.<locale>.md` through `remark-html`
+into `dangerouslySetInnerHTML`. The markdown is checked into this repo, and the locale in
+the path comes from `languageOf`, which only ever answers one of the five (#288) — so a
+cookie cannot steer the path anywhere else. There is no untrusted input path, and adding `isomorphic-dompurify` would pull jsdom into the
 server bundle for a hypothetical risk. If the guide ever becomes editable from outside
 the repo, sanitize at that point.
 

@@ -9,6 +9,12 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- The guide in German, French, Italian and Spanish, following the language you chose. (#288)
+
+### Fixed
+- The guide sends you to the Household page for places of interest (they moved there from Settings), and says the hosted version is free during the private beta. (#288)
+
 ## 0.11.0 — 2026-10-20
 
 ### Added

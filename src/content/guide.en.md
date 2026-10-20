@@ -67,7 +67,7 @@ Go to **Compare** for all apartments in one table. It highlights the best value 
 
 ### Locations of interest
 
-Under **Settings**, save up to **five** places you actually go — work, the gym, your sister. Every apartment then shows how long it takes to reach each of them by bike and by public transport.
+On the **Household** page, save up to **five** places you actually go — work, the gym, your sister. Every apartment then shows how long it takes to reach each of them by bike and by public transport.
 
 These are yours to choose; Flatpare does not assume where you commute to.
 
@@ -103,6 +103,8 @@ Under **Settings**, you can:
 ---
 
 ## If you are on the hosted version
+
+**During the private beta it is free.** What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.
 
 Flatpare is **CHF 5, once** — not a subscription. That covers up to 10 people and 40 apartments in one household.
 

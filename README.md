@@ -277,13 +277,13 @@ src/
     settings/                     # Household, members, encryption, locations of interest
     invitations/                  # Accept / decline (for users without a household)
     billing/                      # Embedded Stripe Checkout (outside the crypto gate)
-    guide/                        # In-app user guide (renders src/content/guide.md)
+    guide/                        # In-app user guide (renders src/content/guide.<locale>.md)
     api/                          # Route handlers — see API surface below
   components/
     crypto/                       # Setup / unlock / recovery screens + CryptoProvider
     household-data/               # The client store: codec + fetch + provider
     ui/                           # shadcn/ui primitives
-  content/guide.md                # User guide source
+  content/guide.<locale>.md       # User guide source, one per language
   lib/
     crypto/                       # KDF, envelopes, key wrapping, device key store
     household-data/               # Plaintext types, schemas, wire rows, codec, derivation
