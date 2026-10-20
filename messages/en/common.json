@@ -10,5 +10,12 @@
   "loading": "Loading…",
   "yes": "Yes",
   "no": "No",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "ratingCategory": {
+    "kitchen": "Kitchen",
+    "balconies": "Balconies",
+    "location": "Location",
+    "floorplan": "Floorplan",
+    "overallFeeling": "Overall feeling"
+  }
 }
