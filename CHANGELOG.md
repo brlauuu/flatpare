@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.9.3 — 2026-10-20
+
 ### Fixed
 - Rating cards and the comparison table write the possessive the same way ("Bob's Rating"), and no longer have a "Household member" label left over from before names fell back to the email address. (#205)
 
