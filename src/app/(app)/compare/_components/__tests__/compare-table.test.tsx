@@ -263,27 +263,23 @@ describe("CompareTable — user rating sections", () => {
     expect(screen.getByText("Second Alex")).toBeInTheDocument();
   });
 
-  it("labels a rating from an account with no display name rather than dropping it", () => {
+  // Two members who never set a name used to get two identical "Household
+  // member" sections (#205). The server labels them by email until they set
+  // one (displayName, #327), so they can be told apart.
+  it("tells two members without a name apart by their email", () => {
+    const rating = { kitchen: 3, balconies: 3, location: 3, floorplan: 3, overallFeeling: 3, updatedAt: "2026-01-01T00:00:00Z" };
     const a = makeApt({
       id: "a1",
       name: "Apt",
       ratings: [
-        {
-          userId: "u1",
-          userName: "",
-          kitchen: 3,
-          balconies: 3,
-          location: 3,
-          floorplan: 3,
-          overallFeeling: 3,
-          comment: "Nameless account",
-          updatedAt: "2026-01-01T00:00:00Z",
-        },
+        { ...rating, userId: "u1", userName: "anna@gmail.com", comment: "First" },
+        { ...rating, userId: "u2", userName: "anna@proton.me", comment: "Second" },
       ],
     });
     renderTable([a]);
-    expect(screen.getByText(/Household member's ratings/i)).toBeInTheDocument();
-    expect(screen.getByText("Nameless account")).toBeInTheDocument();
+    expect(screen.getByText("anna@gmail.com's ratings")).toBeInTheDocument();
+    expect(screen.getByText("anna@proton.me's ratings")).toBeInTheDocument();
+    expect(screen.queryByText(/Household member/i)).not.toBeInTheDocument();
   });
 });
 

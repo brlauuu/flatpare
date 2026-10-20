@@ -52,7 +52,8 @@ describe("Rating panel", () => {
     setup();
     expect(screen.getByText(/Your Rating \(Me\)/)).toBeInTheDocument();
     expect((screen.getByPlaceholderText(/Notes about this apartment/i) as HTMLTextAreaElement).value).toBe("saved text");
-    expect(screen.getByText(/Bob’s Rating/)).toBeInTheDocument();
+    // A straight apostrophe, as everywhere else in the app (#205).
+    expect(screen.getByText("Bob's Rating")).toBeInTheDocument();
     expect(screen.getByText("Bob's view")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Save Rating/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /^Cancel$/ })).toBeDisabled();
