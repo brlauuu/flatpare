@@ -132,7 +132,7 @@
   },
   "form": {
     "summary": "Resumen",
-    "summaryPlaceholder": "Descripción breve en inglés (generada por IA)",
+    "summaryPlaceholder": "Descripción breve (generada por IA en tu idioma)",
     "name": "Nombre *",
     "namePlaceholder": "Nombre del piso",
     "address": "Dirección",

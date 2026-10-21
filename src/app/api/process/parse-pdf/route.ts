@@ -6,6 +6,7 @@ import { extractApartmentData } from "@/lib/parse-pdf";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
 import { aiAvailable, readAiConfig } from "@/lib/ai-provider";
+import { DEFAULT_LOCALE, isLocale } from "@/locales/locales";
 
 // Privacy exception: the client decrypts the PDF and posts the plaintext
 // bytes here for one extraction call. The bytes are held in memory for the
@@ -34,7 +35,11 @@ export async function POST(req: Request) {
 
     phase = "extract";
     const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-    const extracted = await extractApartmentData(base64);
+    // The uploader's interface language, for the summary (#288). Anything
+    // else — absent, or not one of the five — is English, not an error.
+    const requested = formData.get("locale");
+    const locale = isLocale(requested) ? requested : DEFAULT_LOCALE;
+    const extracted = await extractApartmentData(base64, locale);
     return NextResponse.json({ extracted, aiAvailable: true });
   } catch (error) {
     if (phase === "input") return apiErrorResponse(error, "process:parse-pdf");

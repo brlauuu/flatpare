@@ -1,5 +1,6 @@
 import type { ApartmentDistance } from "@/lib/household-data/types";
 import { ApiClientError, sendJson } from "./api-client";
+import type { Locale } from "@/locales/locales";
 
 // Client side of the blind /api/process proxies. These are the only
 // requests that carry household plaintext (an address, a listing URL, PDF
@@ -47,10 +48,12 @@ export interface ParsePdfResult {
 
 export async function parsePdf(
   bytes: Uint8Array<ArrayBuffer>,
-  filename: string
+  filename: string,
+  locale: Locale
 ): Promise<ParsePdfResult> {
   const form = new FormData();
   form.append("file", new File([bytes], filename, { type: "application/pdf" }));
+  form.append("locale", locale);
   const res = await fetch("/api/process/parse-pdf", { method: "POST", body: form });
   let body: Record<string, unknown> = {};
   try {
