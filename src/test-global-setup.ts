@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { TestProject } from "vitest/node";
+import { generateKeypairPool } from "./lib/crypto/__tests__/keypair-pool";
 
 // Builds the template database the workers copy, and clears the previous
 // run's files (#202).
@@ -25,7 +27,10 @@ function clearWorkerFiles() {
   }
 }
 
-export async function setup() {
+export async function setup(project: TestProject) {
+  // Generated alongside the migration rather than per test (#361): see
+  // keypair-pool.ts for why.
+  const keypairs = generateKeypairPool();
   fs.mkdirSync(dataDir, { recursive: true });
   clearWorkerFiles();
   for (const suffix of ["", "-wal", "-shm"]) {
@@ -43,6 +48,7 @@ export async function setup() {
   } finally {
     client.close();
   }
+  project.provide("memberKeypairs", await keypairs);
 }
 
 export async function teardown() {

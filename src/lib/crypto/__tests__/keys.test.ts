@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { deriveKek, randomSalt } from "../kdf";
 import { TEST_KDF_PARAMS } from "./params";
+import { takeMemberKeypair } from "./keypair-pool";
 import {
   exportPublicKey,
   generateDataKey,
@@ -39,7 +40,7 @@ describe("member keypair", () => {
   });
 
   it("private key round-trips through a passphrase KEK and comes back non-extractable", async () => {
-    const pair = await generateMemberKeypair();
+    const pair = await takeMemberKeypair();
     const kek = await deriveKek("passphrase-12chars", randomSalt(), TEST_KDF_PARAMS);
     const blob = await wrapPrivateKey(pair.privateKey, kek);
 
@@ -55,7 +56,7 @@ describe("member keypair", () => {
   });
 
   it("refuses to unwrap the private key under the wrong passphrase", async () => {
-    const pair = await generateMemberKeypair();
+    const pair = await takeMemberKeypair();
     const salt = randomSalt();
     const kek = await deriveKek("right-passphrase", salt, TEST_KDF_PARAMS);
     const wrong = await deriveKek("wrong-passphrase", salt, TEST_KDF_PARAMS);
@@ -66,7 +67,7 @@ describe("member keypair", () => {
 
 describe("data key", () => {
   it("wraps to a public key and unwraps with the private key to the same key", async () => {
-    const pair = await generateMemberKeypair();
+    const pair = await takeMemberKeypair();
     const dataKey = await generateDataKey();
     const wrapped = await wrapDataKey(dataKey, pair.publicKey);
 
@@ -77,8 +78,8 @@ describe("data key", () => {
   });
 
   it("cannot be unwrapped by a different member's private key", async () => {
-    const a = await generateMemberKeypair();
-    const b = await generateMemberKeypair();
+    const a = await takeMemberKeypair();
+    const b = await takeMemberKeypair();
     const wrapped = await wrapDataKey(await generateDataKey(), a.publicKey);
     await expect(unwrapDataKey(wrapped, b.privateKey)).rejects.toThrow();
   });

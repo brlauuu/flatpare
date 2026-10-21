@@ -1,13 +1,14 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { generateDataKey, generateMemberKeypair, toStoredDataKey } from "../keys";
+import { generateDataKey, toStoredDataKey } from "../keys";
+import { takeMemberKeypair } from "./keypair-pool";
 import { clearKeys, isKeyStorePersistent, loadKeys, saveKeys } from "../store";
 
-// generateMemberKeypair() is extractable by design (the private half has to
+// A member key pair is extractable by design (the private half has to
 // be wrapped once); the store only accepts non-extractable keys, so re-import
 // the private key the way unwrapPrivateKey would.
 async function storedPrivateKey() {
-  const pair = await generateMemberKeypair();
+  const pair = await takeMemberKeypair();
   const pkcs8 = await crypto.subtle.exportKey("pkcs8", pair.privateKey);
   return crypto.subtle.importKey(
     "pkcs8",
@@ -55,7 +56,7 @@ describe("key store", () => {
   });
 
   it("refuses an extractable key", async () => {
-    const pair = await generateMemberKeypair();
+    const pair = await takeMemberKeypair();
     await expect(
       saveKeys({ ...(await fixture()), privateKey: pair.privateKey })
     ).rejects.toThrow(/extractable/);

@@ -12,6 +12,15 @@ import {
   unwrapPrivateKey,
 } from "@/lib/crypto";
 import { TEST_KDF_PARAMS, exportRawBase64 } from "@/lib/crypto/__tests__/params";
+import { takeMemberKeypair } from "@/lib/crypto/__tests__/keypair-pool";
+
+// Every setup, reset and recovery generates a member key pair; the pool
+// stands in for the generator so this file does not spend its time on RSA
+// key generation (#361). A plain function, not vi.fn: mockReset would wipe it.
+vi.mock("@/lib/crypto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/crypto")>()),
+  generateMemberKeypair: () => takeMemberKeypair(),
+}));
 import {
   FlowError,
   fetchStatus,
