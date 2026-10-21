@@ -24,6 +24,12 @@ export interface StoredKeys {
   // the wrap's version from /api/crypto/status and re-keys from the wrap
   // when they differ — no passphrase needed, the private key is here.
   keyVersion?: number;
+  // This member's public key (SPKI, base64), as THIS device knows it (#218):
+  // from the pair it generated, or worked out from the private key it
+  // unwrapped — never the server's copy. The Household page fingerprints it
+  // for the member's own row. Absent on records written before #218; the
+  // next unlock on the device fills it in.
+  publicKey?: string;
 }
 
 // Some private-browsing modes have no IndexedDB, or refuse to open it. Then

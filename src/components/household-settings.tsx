@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useCrypto } from "@/components/crypto/crypto-context";
 import { useFlowErrorText } from "@/components/crypto/use-flow-error-text";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { KeyFingerprint } from "@/components/key-fingerprint";
 import { displayName } from "@/lib/display-name";
 
 interface Member {
@@ -18,6 +19,7 @@ interface Member {
   email: string;
   role: "owner" | "member";
   hasWrap: boolean;
+  publicKey: string | null;
 }
 
 interface Invitation {
@@ -42,7 +44,7 @@ export function HouseholdSettings() {
   const t = useTranslations("household");
   const format = useFormatter();
   const failed = useCallback((status: number) => t("errors.requestFailedStatus", { status }), [t]);
-  const { state, status: cryptoStatus, showRecoveryKit } = useCrypto();
+  const { state, status: cryptoStatus, keys, showRecoveryKit } = useCrypto();
   const { limits, rotateDataKey } = useHouseholdData();
   // Rotation errors are thrown in English by the flow; this puts the known
   // ones in the reader's language (#288).
@@ -225,12 +227,17 @@ export function HouseholdSettings() {
         </p>
       )}
 
+      {encryptionOn && (
+        <p className="text-sm text-muted-foreground">{t("fingerprint.compare")}</p>
+      )}
+
       <ul className="divide-y rounded-md border">
         {members.map((m) => (
           <li key={m.userId} className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
               <p className="truncate text-sm">{displayName(m.name, m.email)}</p>
               {m.name?.trim() && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
+              {encryptionOn && <MemberFingerprint member={m} own={m.userId === me?.userId} devicePublicKey={keys?.publicKey ?? null} />}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{t(`members.role.${m.role}`)}</Badge>
@@ -336,4 +343,39 @@ export function HouseholdSettings() {
       )}
     </section>
   );
+}
+
+// The signed-in member's own code comes from the key on THIS device, never
+// from the server's copy (#218): a substituted key would otherwise fingerprint
+// as itself and the comparison would prove nothing. Everyone else's
+// necessarily comes from the key the server returns.
+function MemberFingerprint({
+  member,
+  own,
+  devicePublicKey,
+}: {
+  member: Member;
+  own: boolean;
+  devicePublicKey: string | null;
+}) {
+  const t = useTranslations("household.fingerprint");
+  if (own) {
+    if (!devicePublicKey) {
+      return <p className="text-xs text-muted-foreground">{t("unlockToSee")}</p>;
+    }
+    return (
+      <>
+        <KeyFingerprint spki={devicePublicKey} />
+        {member.publicKey !== null && member.publicKey !== devicePublicKey && (
+          <p role="alert" className="text-xs text-destructive">
+            {t("ownMismatch")}
+          </p>
+        )}
+      </>
+    );
+  }
+  if (!member.publicKey) {
+    return <p className="text-xs text-muted-foreground">{t("noKeyYet")}</p>;
+  }
+  return <KeyFingerprint spki={member.publicKey} />;
 }

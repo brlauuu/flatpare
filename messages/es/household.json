@@ -23,6 +23,14 @@
     "removedRotationFailed": "Se ha quitado a {name}, pero no se ha podido renovar la clave del hogar: {reason}. Renuévala abajo cuando quieras.",
     "unknownError": "error desconocido"
   },
+  "fingerprint": {
+    "label": "Código de clave:",
+    "computing": "Calculando el código de clave…",
+    "compare": "Abajo se muestra el código de clave de cada miembro. Compara los códigos con cada persona, en persona o en una llamada: el código que ve para sí misma en su propio dispositivo debe coincidir con el que ves aquí. Si no coinciden, no confíes en esa clave.",
+    "unlockToSee": "Bloquea y desbloquea este dispositivo para ver tu código de clave.",
+    "ownMismatch": "La clave que el servidor guarda para ti no coincide con la de este dispositivo. Si restableciste tus claves en otro dispositivo, bloquea y desbloquea aquí. Si no, la copia del servidor puede haber sido sustituida: no confíes en las claves de este hogar hasta que se resuelva.",
+    "noKeyYet": "Aún no ha configurado el cifrado."
+  },
   "invite": {
     "emailLabel": "Correo electrónico",
     "emailPlaceholder": "nombre@ejemplo.com",

@@ -210,8 +210,28 @@ describe("listMembers / removeMember", () => {
   it("lists members with their wrap state, owner first", async () => {
     const id = await seeded();
     expect(await listMembers(id)).toEqual([
-      { userId: "o", name: "o", email: "o@example.com", role: "owner", hasWrap: true },
-      { userId: "m", name: "m", email: "m@example.com", role: "member", hasWrap: false },
+      { userId: "o", name: "o", email: "o@example.com", role: "owner", hasWrap: true, publicKey: null },
+      { userId: "m", name: "m", email: "m@example.com", role: "member", hasWrap: false, publicKey: null },
+    ]);
+  });
+
+  it("carries each member's public key once they have set up encryption (#218)", async () => {
+    const id = await seeded();
+    await db.insert(memberKeys).values({
+      userId: "m",
+      publicKey: "PUB-m",
+      wrappedPrivateKey: "WPK",
+      privateKeyIv: "IV",
+      kdfSalt: "S",
+      kdfMemoryKib: 1024,
+      kdfIterations: 1,
+      kdfParallelism: 1,
+      kdfVersion: 1,
+    });
+    const members = await listMembers(id);
+    expect(members.map((m) => [m.userId, m.publicKey])).toEqual([
+      ["o", null],
+      ["m", "PUB-m"],
     ]);
   });
 

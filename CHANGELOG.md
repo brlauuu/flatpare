@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- The Household page shows each member's key code, eight small pictures, so you can compare codes with each other in person or on a call. If someone's code differs from what they see on their own device, their key may have been swapped and should not be trusted. Your own code is worked out on your device, not taken from the server. (#218)
+
 ## 0.14.3 — 2026-10-21
 
 ### Fixed

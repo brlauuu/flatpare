@@ -6,6 +6,7 @@ import { HouseholdSettings } from "../household-settings";
 import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
 import { makeHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
 import type { Limits } from "@/lib/limits";
+import { fingerprint } from "@/lib/crypto";
 
 const fetchMock = vi.fn();
 
@@ -16,9 +17,14 @@ function jsonRes(body: unknown, status = 200) {
   });
 }
 
-const members = [
-  { userId: "o", name: "Ana", email: "ana@example.com", role: "owner", hasWrap: true },
-  { userId: "m", name: null, email: "bob@example.com", role: "member", hasWrap: false },
+// Any base64 will do: a fingerprint is a hash of the bytes, nothing more.
+const ANA_KEY = "QU5BLUtFWQ==";
+const SWAPPED_KEY = "U1dBUFBFRA==";
+const BOB_KEY = "Qk9CLUtFWQ==";
+
+const members: { userId: string; name: string | null; email: string; role: string; hasWrap: boolean; publicKey: string | null }[] = [
+  { userId: "o", name: "Ana", email: "ana@example.com", role: "owner", hasWrap: true, publicKey: ANA_KEY },
+  { userId: "m", name: null, email: "bob@example.com", role: "member", hasWrap: false, publicKey: null },
 ];
 // What POST /api/invitations reports about the email (#300).
 let emailed: "sent" | "failed" | "off" | undefined;
@@ -29,12 +35,17 @@ const invites = [
 
 const showRecoveryKit = vi.fn();
 let cryptoStatus: CryptoContextValue["status"] = null;
+// What this device's key store says this member's public key is (#218).
+let devicePublicKey: string | undefined;
 
 function cryptoValue(state: CryptoContextValue["state"]): CryptoContextValue {
   return {
     state,
     status: cryptoStatus,
-    keys: null,
+    keys:
+      devicePublicKey === undefined
+        ? null
+        : ({ userId: "o", householdId: 1, privateKey: {} as CryptoKey, dataKey: {} as CryptoKey, publicKey: devicePublicKey }),
     error: null,
     persistent: true,
     refresh: vi.fn(async () => {}),
@@ -84,6 +95,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   showRecoveryKit.mockReset();
   cryptoStatus = null;
+  devicePublicKey = undefined;
   vi.stubGlobal("fetch", fetchMock);
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
@@ -103,7 +115,7 @@ describe("HouseholdSettings", () => {
   });
 
   it("shows a member with a blank name by their email, once (#327)", async () => {
-    members.push({ userId: "w", name: "   ", email: "wes@example.com", role: "member", hasWrap: true });
+    members.push({ userId: "w", name: "   ", email: "wes@example.com", role: "member", hasWrap: true, publicKey: null });
     try {
       renderAs({ userId: "o", role: "owner" });
       const wes = (await screen.findByText("wes@example.com")).closest("li")!;
@@ -174,6 +186,71 @@ describe("HouseholdSettings", () => {
 
 // E5: the UI mirrors MAX_MEMBERS. The server enforces it regardless — these
 // tests are about not offering an action that is guaranteed to 409.
+describe("key fingerprints (#218)", () => {
+  async function codeOf(spki: string) {
+    return (await fingerprint(spki)).join(" ");
+  }
+  function rowOf(text: string) {
+    return screen.getByText(text).closest("li")!;
+  }
+
+  it("shows the own code from this device and everyone else's from the server", async () => {
+    members[1].publicKey = BOB_KEY;
+    devicePublicKey = ANA_KEY;
+    try {
+      renderAs({ userId: "o", role: "owner" });
+      expect(await screen.findByText(/Compare codes with each person/)).toBeInTheDocument();
+      await waitFor(async () =>
+        expect(within(rowOf("Ana")).getByTestId("key-fingerprint")).toHaveTextContent(await codeOf(ANA_KEY))
+      );
+      await waitFor(async () =>
+        expect(within(rowOf("bob@example.com")).getByTestId("key-fingerprint")).toHaveTextContent(await codeOf(BOB_KEY))
+      );
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    } finally {
+      members[1].publicKey = null;
+    }
+  });
+
+  it("never fingerprints the server's copy of the own key, and warns when it differs", async () => {
+    members[0].publicKey = SWAPPED_KEY;
+    devicePublicKey = ANA_KEY;
+    try {
+      renderAs({ userId: "o", role: "owner" });
+      const expected = await codeOf(ANA_KEY);
+      await waitFor(() =>
+        expect(within(rowOf("Ana")).getByTestId("key-fingerprint")).toHaveTextContent(expected)
+      );
+      expect(within(rowOf("Ana")).getByTestId("key-fingerprint")).not.toHaveTextContent(await codeOf(SWAPPED_KEY));
+      expect(within(rowOf("Ana")).getByRole("alert")).toHaveTextContent(/does not match the one on this device/);
+    } finally {
+      members[0].publicKey = ANA_KEY;
+    }
+  });
+
+  it("asks for an unlock when this device has no record of its public key", async () => {
+    renderAs({ userId: "o", role: "owner" });
+    const ana = (await screen.findByText("Ana")).closest("li")!;
+    expect(within(ana).getByText(/Lock and unlock this device/)).toBeInTheDocument();
+    expect(within(ana).queryByTestId("key-fingerprint")).not.toBeInTheDocument();
+  });
+
+  it("says when a member has no key yet", async () => {
+    devicePublicKey = ANA_KEY;
+    renderAs({ userId: "o", role: "owner" });
+    await screen.findByText("Ana");
+    expect(within(rowOf("bob@example.com")).getByText(/Has not set up encryption yet/)).toBeInTheDocument();
+  });
+
+  it("shows no codes when encryption is off", async () => {
+    devicePublicKey = ANA_KEY;
+    renderAs({ userId: "o", role: "owner" }, "off");
+    await screen.findByText("Ana");
+    expect(screen.queryByTestId("key-fingerprint")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Compare codes/)).not.toBeInTheDocument();
+  });
+});
+
 describe("removal notice (#298)", () => {
   afterEach(() => {
     emailed = undefined;

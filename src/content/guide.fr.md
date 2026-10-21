@@ -120,6 +120,7 @@ Faire tourner Flatpare toi-même est gratuit et sans aucune limite.
 
 - **Phrase secrète oubliée ?** L’écran de déverrouillage propose **« Utiliser mon kit de récupération »** — saisis le code de 25 caractères et choisis une nouvelle phrase secrète. Si tu n’as ni la phrase secrète ni le code, personne ne peut récupérer les données.
 - **« Réinitialiser mes clés »** y est aussi proposé, et ce n’est *pas* une réinitialisation de mot de passe : cela abandonne l’ancienne clé et attend que quelqu’un d’autre du foyer te transmette une nouvelle copie. Utile seulement si quelqu’un d’autre a encore accès.
+- **Compare les codes de clé.** La page Foyer affiche à côté de chaque membre un code de huit petites images. Compare-les en personne ou lors d’un appel : le code qu’une personne voit pour elle-même sur son propre appareil doit correspondre à celui que tu vois pour elle. Sinon, ne fais pas confiance à cette clé.
 - **Nouvel appareil :** connecte-toi simplement et saisis ta phrase secrète ; rien n’est à transférer à la main.
 - **Ajout groupé :** tu peux sélectionner plusieurs PDF à la fois sur la page Ajouter.
 - **Réévalue quand tu veux :** les évaluations sont propres à chaque personne et modifiables à tout moment.

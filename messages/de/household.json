@@ -23,6 +23,14 @@
     "removedRotationFailed": "{name} wurde entfernt, aber der Haushaltsschlüssel konnte nicht erneuert werden: {reason}. Erneuere ihn unten, sobald du bereit bist.",
     "unknownError": "unbekannter Fehler"
   },
+  "fingerprint": {
+    "label": "Schlüsselcode:",
+    "computing": "Schlüsselcode wird berechnet…",
+    "compare": "Unten steht der Schlüsselcode jedes Mitglieds. Vergleiche die Codes mit jeder Person persönlich oder in einem Anruf: Der Code, den sie auf ihrem eigenen Gerät für sich sieht, muss mit dem übereinstimmen, den du hier siehst. Wenn sie sich unterscheiden, vertraue diesem Schlüssel nicht.",
+    "unlockToSee": "Sperre dieses Gerät und entsperre es wieder, um deinen Schlüsselcode zu sehen.",
+    "ownMismatch": "Der Schlüssel, den der Server für dich speichert, stimmt nicht mit dem auf diesem Gerät überein. Wenn du deine Schlüssel auf einem anderen Gerät zurückgesetzt hast, sperre und entsperre hier. Andernfalls wurde die Kopie auf dem Server möglicherweise ersetzt: Vertraue den Schlüsseln dieses Haushalts nicht, bis das geklärt ist.",
+    "noKeyYet": "Hat die Verschlüsselung noch nicht eingerichtet."
+  },
   "invite": {
     "emailLabel": "E-Mail",
     "emailPlaceholder": "name@beispiel.ch",

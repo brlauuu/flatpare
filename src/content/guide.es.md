@@ -120,6 +120,7 @@ Instalar Flatpare por tu cuenta es gratis y no tiene ningún límite.
 
 - **¿Has olvidado tu frase de contraseña?** La pantalla de desbloqueo ofrece **«Usar mi kit de recuperación»**: introduce el código de 25 caracteres y elige una frase de contraseña nueva. Si no tienes ni la frase de contraseña ni el código, nadie puede recuperar los datos.
 - **«Restablecer mis claves»** también aparece ahí, y *no* es un restablecimiento de contraseña: abandona la clave antigua y espera a que alguien más del hogar te pase una copia nueva. Solo sirve si otra persona todavía tiene acceso.
+- **Compara los códigos de clave.** La página Hogar muestra junto a cada miembro un código de ocho pequeñas imágenes. Compáralos en persona o en una llamada: el código que alguien ve para sí en su propio dispositivo debe coincidir con el que ves tú para esa persona. Si no coincide, no confíes en esa clave.
 - **Dispositivo nuevo:** basta con iniciar sesión e introducir tu frase de contraseña; no hay que transferir nada a mano.
 - **Subida de varios a la vez:** puedes seleccionar varios PDF de una vez en la página Subir.
 - **Vuelve a valorar cuando quieras:** las valoraciones son de cada persona y se pueden cambiar en cualquier momento.

@@ -23,6 +23,14 @@
     "removedRotationFailed": "{name} a été retiré·e, mais la clé du foyer n’a pas pu être renouvelée : {reason}. Renouvelle-la ci-dessous quand tu es prêt·e.",
     "unknownError": "erreur inconnue"
   },
+  "fingerprint": {
+    "label": "Code de clé :",
+    "computing": "Calcul du code de clé…",
+    "compare": "Le code de clé de chaque membre est affiché ci-dessous. Compare les codes avec chaque personne, en personne ou lors d’un appel : le code qu’elle voit pour elle-même sur son propre appareil doit correspondre à celui que tu vois ici. S’ils diffèrent, ne fais pas confiance à cette clé.",
+    "unlockToSee": "Verrouille puis déverrouille cet appareil pour voir ton code de clé.",
+    "ownMismatch": "La clé que le serveur conserve pour toi ne correspond pas à celle de cet appareil. Si tu as réinitialisé tes clés sur un autre appareil, verrouille puis déverrouille ici. Sinon, la copie du serveur a peut-être été remplacée : ne fais pas confiance aux clés de ce foyer tant que ce n’est pas résolu.",
+    "noKeyYet": "N’a pas encore configuré le chiffrement."
+  },
   "invite": {
     "emailLabel": "E-mail",
     "emailPlaceholder": "nom@exemple.ch",

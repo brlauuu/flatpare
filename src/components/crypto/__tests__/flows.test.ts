@@ -3,6 +3,7 @@ import "fake-indexeddb/auto";
 import {
   clearKeys,
   deriveKek,
+  exportPublicKey,
   fromBase64,
   loadKeys,
   normalizeRecoveryCode,
@@ -375,6 +376,52 @@ describe("key version on stored keys", () => {
     const adopted = await runAdoptWrap({ ...server.status(), wrapKeyVersion: 4, keyVersion: 4 }, { ...unlocked, dataKey: null });
     expect(adopted.keyVersion).toBe(4);
     expect((await loadKeys("o", 1))?.keyVersion).toBe(4);
+  });
+});
+
+// #218: the Household page fingerprints the member's own key from the device
+// store, so what lands there must be the device's own public key — from the
+// pair it generated, or worked out from the private key the passphrase
+// opened — and never the server's copy, which is what a malicious host
+// would substitute.
+describe("device public key on stored keys", () => {
+  it("setup, reset and recovery store the public half of the pair they generated", async () => {
+    const { recoveryCode } = await runSetup(await fetchStatus(), "correct horse battery", opts);
+    const afterSetup = server.keys.get("o")!.publicKey;
+    expect((await loadKeys("o", 1))?.publicKey).toBe(afterSetup);
+
+    await runResetKeys(await fetchStatus(), "another passphrase!", opts);
+    const afterReset = server.keys.get("o")!.publicKey;
+    expect(afterReset).not.toBe(afterSetup);
+    expect((await loadKeys("o", 1))?.publicKey).toBe(afterReset);
+
+    await runRecover(await fetchStatus(), recoveryCode!, "recovered passphrase", opts);
+    const afterRecover = server.keys.get("o")!.publicKey;
+    expect(afterRecover).not.toBe(afterReset);
+    expect((await loadKeys("o", 1))?.publicKey).toBe(afterRecover);
+  });
+
+  it("unlock derives the public key from the private key, not from the server's copy", async () => {
+    await runSetup(await fetchStatus(), "correct horse battery", opts);
+    const genuine = server.keys.get("o")!.publicKey;
+    await runLock();
+
+    // The server swaps in somebody else's public key for this member.
+    const substitute = (await takeMemberKeypair()).publicKey;
+    server.keys.set("o", { ...server.keys.get("o")!, publicKey: await exportPublicKey(substitute) });
+    expect(server.keys.get("o")!.publicKey).not.toBe(genuine);
+
+    const keys = await runUnlock(await fetchStatus(), "correct horse battery");
+    expect(keys.publicKey).toBe(genuine);
+    expect((await loadKeys("o", 1))?.publicKey).toBe(genuine);
+    expect((await loadKeys("o", 1))?.privateKey.extractable).toBe(false);
+  });
+
+  it("adopting a wrap keeps the device's public key", async () => {
+    await runSetup(await fetchStatus(), "correct horse battery", opts);
+    const keys = (await loadKeys("o", 1))!;
+    const adopted = await runAdoptWrap(await fetchStatus(), { ...keys, dataKey: null });
+    expect(adopted.publicKey).toBe(keys.publicKey);
   });
 });
 
