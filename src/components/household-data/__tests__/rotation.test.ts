@@ -7,7 +7,6 @@ import {
   exportPublicKey,
   fromBase64,
   generateDataKey,
-  generateMemberKeypair,
   loadKeys,
   normalizeRecoveryCode,
   open,
@@ -23,6 +22,7 @@ import {
   type StoredKeys,
 } from "@/lib/crypto";
 import { TEST_KDF_PARAMS } from "@/lib/crypto/__tests__/params";
+import { takeMemberKeypair } from "@/lib/crypto/__tests__/keypair-pool";
 import type { StatusResponse } from "@/components/crypto/flows";
 import { emptyApartment, EMPTY_RATING, type Apartment } from "@/lib/household-data/types";
 import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
@@ -153,8 +153,8 @@ beforeEach(async () => {
   _resetBlobModeProbeForTests();
   await clearKeys();
   oldDataKey = await generateDataKey();
-  memberPair = await generateMemberKeypair();
-  const ownerPair = await generateMemberKeypair();
+  memberPair = await takeMemberKeypair();
+  const ownerPair = await takeMemberKeypair();
   // The device store holds a NON-extractable private key (it refuses
   // anything else), which the real flows get by unwrapping; do the same.
   const kek = await deriveKek("owner passphrase", randomSalt(), TEST_KDF_PARAMS);
