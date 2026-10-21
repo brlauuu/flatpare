@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+- Adding or reordering places of interest from two devices at the same moment no longer fails with a server error: the second request waits its turn, and a sixth place gets the clear "too many locations" answer. (#225)
+
 ## 0.14.2 — 2026-10-21
 
 ### Fixed

@@ -18,8 +18,7 @@ import {
 // insert — and unlike a read-then-write inside `db.transaction`, it does not
 // need concurrent transactions on the libSQL connection, which fail with
 // SQLITE_BUSY ("cannot commit transaction — SQL statements in progress").
-// `createLocation` uses the transaction form for MAX_LOCATIONS; it has no
-// concurrency test, and the same rewrite would suit it.
+// `createLocation` enforces MAX_LOCATIONS the same way (#225).
 //
 // Counting needs no decryption — `envelope` is never opened here.
 export async function createApartmentRow(
