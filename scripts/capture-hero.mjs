@@ -16,7 +16,7 @@
 // values below override it (every check in the app is on truthiness). It
 // refuses to continue unless the server reports the local file.
 import { spawn } from "node:child_process";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createClient } from "@libsql/client";
 import { chromium } from "playwright";
 import sharp from "sharp";
@@ -113,6 +113,11 @@ const LOCALE = LOCALE_FLAG === -1 ? null : process.argv[LOCALE_FLAG + 1];
 if (LOCALE_FLAG !== -1 && !["en", "de", "fr", "it", "es"].includes(LOCALE)) {
   throw new Error("usage: capture-hero.mjs --screens <outDir> --locale <en|de|fr|it|es>");
 }
+// The signed-out landing page renders in LOCALE, so its sign-in button is
+// found by that language's label, not by the English one.
+const SIGN_IN_LABEL = JSON.parse(
+  readFileSync(new URL(`../messages/${LOCALE ?? "en"}/landing.json`, import.meta.url), "utf8")
+).nav.signIn;
 const PHONE = { width: 360, height: 780 };
 const SCREENS = [
   { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
@@ -257,7 +262,7 @@ try {
         await lp.goto(`${BASE}/`);
         await lp.waitForTimeout(800);
         await lp.screenshot({ path: `${SCREENS_DIR}/landing-${theme}.png`, fullPage: true });
-        await lp.getByRole("button", { name: "Sign in" }).click();
+        await lp.getByRole("button", { name: SIGN_IN_LABEL }).click();
         await lp.waitForTimeout(400);
         await lp.screenshot({ path: `${SCREENS_DIR}/sign-in-${theme}.png` });
         await signedOut.close();
