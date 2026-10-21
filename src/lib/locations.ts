@@ -12,32 +12,35 @@ export async function listLocations(householdId: number): Promise<LocationRecord
     .orderBy(asc(locations.sortOrder), asc(locations.id));
 }
 
+// The cap is one conditional INSERT ... SELECT ... WHERE (count) < max, as in
+// createApartmentRow: atomic without a transaction, so concurrent creates
+// cannot overshoot MAX_LOCATIONS and never meet SQLITE_BUSY (#225). The next
+// sort order is computed in the same statement for the same reason.
 export async function createLocation(
   householdId: number,
   input: { id: string; envelope: string }
 ): Promise<LocationRecord> {
-  return db.transaction(async (tx) => {
-    const [{ count, maxOrder }] = await tx
-      .select({
-        count: sql<number>`count(*)`,
-        maxOrder: sql<number | null>`max(${locations.sortOrder})`,
-      })
-      .from(locations)
-      .where(eq(locations.householdId, householdId));
-    if (count >= MAX_LOCATIONS) {
-      throw new HouseholdError("Too many locations", 409);
-    }
-    const [created] = await tx
-      .insert(locations)
-      .values({
-        id: input.id,
-        householdId,
-        sortOrder: maxOrder === null ? 0 : maxOrder + 1,
-        envelope: input.envelope,
-      })
-      .returning();
-    return created;
-  });
+  const result = await db.run(sql`
+    INSERT INTO locations (id, household_id, sort_order, envelope)
+    SELECT ${input.id}, ${householdId},
+      COALESCE((SELECT MAX(sort_order) + 1 FROM locations WHERE household_id = ${householdId}), 0),
+      ${input.envelope}
+    WHERE (
+      SELECT COUNT(*) FROM locations WHERE household_id = ${householdId}
+    ) < ${MAX_LOCATIONS}
+  `);
+  // No row means the WHERE was false. A duplicate id throws instead, and the
+  // route turns that into 409 Duplicate id.
+  if (Number(result.rowsAffected ?? 0) === 0) {
+    throw new HouseholdError("Too many locations", 409);
+  }
+  // Read back through Drizzle for a typed record (timestamps as Dates).
+  const [created] = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.id, input.id))
+    .limit(1);
+  return created;
 }
 
 export async function updateLocation(

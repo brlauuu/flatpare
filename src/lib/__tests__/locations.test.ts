@@ -10,6 +10,7 @@ import {
   updateLocation,
 } from "@/lib/locations";
 import { MAX_LOCATIONS } from "@/lib/location-icons";
+import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
 const uuid = (n: number) => `${String(n).padStart(8, "0")}-0000-4000-8000-000000000000`;
 const ENV = JSON.stringify({ v: 0, data: {} });
@@ -41,6 +42,45 @@ describe("locations", () => {
       message: "Too many locations",
       status: 409,
     });
+  });
+
+  // #225: these were a count-then-insert and a read-then-swap inside
+  // db.transaction, and concurrent callers got SQLITE_BUSY (1 of 10 succeeded).
+  it("lets concurrent creates fill exactly the cap, with distinct sort orders", async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, (_, i) => createLocation(hid, { id: uuid(i + 1), envelope: ENV }))
+    );
+    const refused = results.filter((r) => r.status === "rejected");
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(MAX_LOCATIONS);
+    for (const r of refused) {
+      expect((r as PromiseRejectedResult).reason).toMatchObject({
+        message: "Too many locations",
+        status: 409,
+      });
+    }
+    const rows = await listLocations(hid);
+    expect(rows.map((r) => r.sortOrder)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("keeps a duplicate id an error of its own, not the cap", async () => {
+    await createLocation(hid, { id: uuid(1), envelope: ENV });
+    // The route turns exactly this into 409 Duplicate id.
+    const err = await createLocation(hid, { id: uuid(1), envelope: ENV }).catch((e: unknown) => e);
+    expect(isUniqueConstraintError(err)).toBe(true);
+    expect(await listLocations(hid)).toHaveLength(1);
+  });
+
+  it("queues concurrent moves instead of failing them", async () => {
+    for (let i = 1; i <= MAX_LOCATIONS; i++) await createLocation(hid, { id: uuid(i), envelope: ENV });
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, (_, i) =>
+        moveLocation(hid, uuid((i % MAX_LOCATIONS) + 1), i % 2 ? "up" : "down")
+      )
+    );
+    expect(results.filter((r) => r.status === "rejected")).toEqual([]);
+    const rows = await listLocations(hid);
+    expect(rows.map((r) => r.sortOrder)).toEqual([0, 1, 2, 3, 4]);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(MAX_LOCATIONS);
   });
 
   it("updates and deletes only within the household", async () => {

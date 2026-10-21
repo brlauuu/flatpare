@@ -21,7 +21,10 @@ const createClient = vi.fn<(opts: ClientOptions) => { __client: boolean }>(() =>
 vi.mock("@libsql/client", () => ({
   createClient: (opts: ClientOptions) => createClient(opts),
 }));
-vi.mock("drizzle-orm/libsql", () => ({ drizzle: (c: unknown) => ({ __db: c }) }));
+// `transaction` because src/lib/db/index.ts wraps it with the busy retry (#225).
+vi.mock("drizzle-orm/libsql", () => ({
+  drizzle: (c: unknown) => ({ __db: c, transaction: async () => undefined }),
+}));
 
 const resolveDbTarget = vi.fn();
 vi.mock("@/lib/db/target", () => ({ resolveDbTarget: () => resolveDbTarget() }));
