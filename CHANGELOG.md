@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.14.1 — 2026-10-21
+
 ### Fixed
 - The screenshot tool for translation review (`npm run capture:screens -- <dir> --locale <l>`) now works in every language; it stopped after the landing page in all but English. (#288)
 
