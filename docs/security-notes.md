@@ -226,8 +226,29 @@ key. Passphrases and recovery codes never leave the browser.
 A host that substitutes its own public key for a member's during a wrap
 (`POST /api/crypto/wraps` reads the target's public key from `member_keys`) would
 receive the household data key. Any end-to-end scheme without out-of-band key
-verification has this property. The mitigation that would close it — key fingerprints
-shown in the UI for members to compare — is a backlog issue, not part of E2.
+verification has this property. #218 adds that verification; see below.
+
+### Mitigated by #218: key fingerprints on the Household page
+
+Each member's public key is shown on the Household page as a fingerprint: SHA-256 of
+the SPKI, the first 8 bytes rendered as emoji from a fixed set of 256 (64 bits;
+`src/lib/crypto/fingerprint.ts`, pinned by a test vector). Members compare them in
+person or on a call.
+
+- **What it detects:** a public key substituted by a compromised database or API. The
+  member's *own* code is computed from the key on their device — the pair it
+  generated, or the public half worked out from the private key the passphrase
+  unwrapped (`publicKeyFromPrivate`) — never from the server's copy, so a substituted
+  key cannot fingerprint as itself. Other members' codes necessarily come from the
+  keys the server returns, and that is exactly what the comparison checks. When the
+  server's copy of your own key differs from your device's, your row says so.
+- **What it does not cover:** a host serving altered JavaScript. That code could show
+  any fingerprint it likes, or skip the comparison entirely; it is the existing
+  accepted limit of a web app that delivers its own crypto. It also detects nothing
+  unless people actually compare, and only for the keys they compare.
+- Devices that stored their keys before #218 have no record of their own public key
+  and show "lock and unlock" instead of a code; there is no fallback to the server's
+  copy, on purpose.
 
 ### Accepted: XSS can use unlocked keys
 

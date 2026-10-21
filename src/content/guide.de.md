@@ -120,6 +120,7 @@ Flatpare selbst zu betreiben ist kostenlos und hat überhaupt keine Grenzen.
 
 - **Passphrase vergessen?** Der Entsperren-Bildschirm bietet **«Mein Wiederherstellungs-Kit verwenden»** an — gib den 25-stelligen Code ein und setz eine neue Passphrase. Wenn du weder die Passphrase noch den Code hast, kann niemand die Daten wiederherstellen.
 - **«Meine Schlüssel zurücksetzen»** wird dort auch angeboten, und das ist *kein* Zurücksetzen des Passworts: Der alte Schlüssel wird aufgegeben, und du wartest, bis dir jemand anderes im Haushalt eine neue Kopie übergibt. Nur sinnvoll, wenn noch jemand anderes Zugriff hat.
+- **Vergleiche die Schlüsselcodes.** Die Seite Haushalt zeigt neben jedem Mitglied einen Code aus acht kleinen Bildern. Vergleiche sie persönlich oder in einem Anruf: Der Code, den jemand auf dem eigenen Gerät für sich sieht, muss mit dem übereinstimmen, den du für diese Person siehst. Wenn nicht, vertraue diesem Schlüssel nicht.
 - **Neues Gerät:** Melde dich einfach an und gib deine Passphrase ein; von Hand muss nichts übertragen werden.
 - **Mehrere hochladen:** Auf der Seite Hochladen kannst du mehrere PDFs auf einmal auswählen.
 - **Jederzeit neu bewerten:** Bewertungen gehören jeder Person einzeln und lassen sich jederzeit ändern.

@@ -4,6 +4,7 @@ import {
   householdMembers,
   householdKeyWraps,
   invitations,
+  memberKeys,
 } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { and, eq, gt, sql } from "drizzle-orm";
@@ -37,6 +38,10 @@ export interface MemberSummary {
   email: string;
   role: Role;
   hasWrap: boolean;
+  // SPKI base64, or null before the member has set up encryption. Shown as a
+  // fingerprint on the Household page so members can compare it out of band
+  // (#218); the server's copy is exactly what such a comparison checks.
+  publicKey: string | null;
 }
 
 export async function createHouseholdForUser(userId: string): Promise<number> {
@@ -123,9 +128,11 @@ export async function listMembers(householdId: number): Promise<MemberSummary[]>
       email: users.email,
       role: householdMembers.role,
       wrapUserId: householdKeyWraps.userId,
+      publicKey: memberKeys.publicKey,
     })
     .from(householdMembers)
     .innerJoin(users, eq(users.id, householdMembers.userId))
+    .leftJoin(memberKeys, eq(memberKeys.userId, householdMembers.userId))
     .leftJoin(
       householdKeyWraps,
       and(
@@ -148,6 +155,7 @@ export async function listMembers(householdId: number): Promise<MemberSummary[]>
     email: r.email,
     role: r.role as Role,
     hasWrap: r.wrapUserId !== null,
+    publicKey: r.publicKey,
   }));
 }
 

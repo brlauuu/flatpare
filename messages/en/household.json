@@ -23,6 +23,14 @@
     "removedRotationFailed": "{name} was removed, but the household key could not be rotated: {reason}. Rotate it below when you are ready.",
     "unknownError": "unknown error"
   },
+  "fingerprint": {
+    "label": "Key code:",
+    "computing": "Working out the key code…",
+    "compare": "Each member's key code is shown below. Compare codes with each person in person or on a call: the code they see for themselves on their own device must match the one you see here. If they differ, do not trust that key.",
+    "unlockToSee": "Lock and unlock this device to see your key code.",
+    "ownMismatch": "The key the server holds for you does not match the one on this device. If you reset your keys on another device, lock and unlock here. Otherwise the server's copy may have been replaced: do not trust this household's keys until it is resolved.",
+    "noKeyYet": "Has not set up encryption yet."
+  },
   "invite": {
     "emailLabel": "Email",
     "emailPlaceholder": "name@example.com",

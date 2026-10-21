@@ -9,6 +9,7 @@ import {
   generateRecoveryCode,
   importPublicKey,
   normalizeRecoveryCode,
+  publicKeyFromPrivate,
   randomSalt,
   saveKeys,
   toBase64,
@@ -164,6 +165,7 @@ export async function runSetup(
     privateKey: await unwrapPrivateKey(blob, kek),
     dataKey: dataKey ? await toStoredDataKey(dataKey) : null,
     keyVersion: status.keyVersion,
+    publicKey: member.publicKey,
   });
   return { recoveryCode };
 }
@@ -203,9 +205,15 @@ export async function runUnlock(
 ): Promise<StoredKeys> {
   const m = requireMemberKeys(status);
   const kek = await deriveKek(passphrase, fromBase64(m.kdf.salt), m.kdf);
-  const privateKey = await unwrapOrWrongPassphrase(
-    unwrapPrivateKey({ wrapped: m.wrappedPrivateKey, iv: m.privateKeyIv }, kek)
+  const blob = { wrapped: m.wrappedPrivateKey, iv: m.privateKeyIv };
+  // The public key comes from the private key the passphrase just opened,
+  // not from m.publicKey: that is the server's copy, and the fingerprint on
+  // the Household page must not take the server's word for it (#218).
+  const transient = await unwrapOrWrongPassphrase(
+    unwrapPrivateKey(blob, kek, { extractable: true })
   );
+  const publicKey = await publicKeyFromPrivate(transient);
+  const privateKey = await unwrapPrivateKey(blob, kek);
   const dataKey = status.wrap ? await unwrapDataKey(status.wrap, privateKey) : null;
   const keys: StoredKeys = {
     userId: status.userId,
@@ -213,6 +221,7 @@ export async function runUnlock(
     privateKey,
     dataKey,
     keyVersion: status.wrapKeyVersion ?? status.keyVersion,
+    publicKey,
   };
   await saveKeys(keys);
   return keys;
@@ -298,6 +307,7 @@ export async function runResetKeys(
     householdId: status.householdId,
     privateKey: await unwrapPrivateKey(blob, kek),
     dataKey: null,
+    publicKey: member.publicKey,
   });
 }
 
@@ -336,6 +346,7 @@ export async function runRecover(
     privateKey: await unwrapPrivateKey(blob, kek),
     dataKey: await toStoredDataKey(dataKey),
     keyVersion: status.keyVersion,
+    publicKey: member.publicKey,
   });
   return { recoveryCode: kit.code };
 }

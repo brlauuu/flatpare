@@ -38,6 +38,24 @@ export async function exportPublicKey(key: CryptoKey): Promise<string> {
   return toBase64(await crypto.subtle.exportKey("spki", key));
 }
 
+// The public half of a member key pair, worked out from the private half
+// (#218). A device that unlocks with the passphrase holds only the private
+// key, and the public key the server hands it is exactly what a malicious
+// host would substitute — so the device's own fingerprint is computed from
+// this, never from the server's copy. Needs a transient EXTRACTABLE private
+// key; the RSA private JWK carries the modulus and exponent.
+export async function publicKeyFromPrivate(privateKey: CryptoKey): Promise<string> {
+  const { n, e } = await crypto.subtle.exportKey("jwk", privateKey);
+  const publicKey = await crypto.subtle.importKey(
+    "jwk",
+    { kty: "RSA", n, e, alg: "RSA-OAEP-256", ext: true },
+    RSA_IMPORT,
+    true,
+    ["wrapKey"]
+  );
+  return exportPublicKey(publicKey);
+}
+
 export function importPublicKey(spkiB64: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("spki", fromBase64(spkiB64), RSA_IMPORT, true, [
     "wrapKey",

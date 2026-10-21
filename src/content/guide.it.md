@@ -120,6 +120,7 @@ Gestire Flatpare in proprio è gratuito e non ha alcun limite.
 
 - **Hai dimenticato la passphrase?** La schermata di sblocco offre **«Usa il mio kit di recupero»** — inserisci il codice di 25 caratteri e imposta una nuova passphrase. Se non hai né la passphrase né il codice, nessuno può recuperare i dati.
 - **«Reimposta le mie chiavi»** è offerto anche lì, e *non* è una reimpostazione della password: abbandona la vecchia chiave e aspetta che qualcun altro del gruppo ti consegni una copia nuova. Serve solo se qualcun altro ha ancora accesso.
+- **Confronta i codici delle chiavi.** La pagina Gruppo mostra accanto a ogni membro un codice di otto piccole immagini. Confrontali di persona o durante una chiamata: il codice che una persona vede per sé sul proprio dispositivo deve corrispondere a quello che vedi tu per lei. Se non è così, non fidarti di quella chiave.
 - **Nuovo dispositivo:** accedi e inserisci la passphrase; non c'è nulla da trasferire a mano.
 - **Caricamento multiplo:** nella pagina Carica puoi selezionare più PDF in una volta.
 - **Rivaluta quando vuoi:** le valutazioni sono personali e puoi cambiarle quando vuoi.

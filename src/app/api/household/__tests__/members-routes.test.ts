@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
-import { households, householdMembers, householdKeyWraps } from "@/lib/db/schema";
+import { households, householdMembers, householdKeyWraps, memberKeys } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 
 const currentSession = { householdId: 0, userId: "", role: "owner" as "owner" | "member" };
@@ -45,9 +45,25 @@ describe("GET /api/household/members", () => {
     const body = await res.json();
     expect(body.me).toEqual({ userId: "o", role: "owner" });
     expect(body.members).toEqual([
-      { userId: "o", name: "o", email: "o@example.com", role: "owner", hasWrap: true },
-      { userId: "m", name: "m", email: "m@example.com", role: "member", hasWrap: false },
+      { userId: "o", name: "o", email: "o@example.com", role: "owner", hasWrap: true, publicKey: null },
+      { userId: "m", name: "m", email: "m@example.com", role: "member", hasWrap: false, publicKey: null },
     ]);
+  });
+
+  it("returns each member's public key for the fingerprints (#218)", async () => {
+    await db.insert(memberKeys).values({
+      userId: "m",
+      publicKey: "PUB-m",
+      wrappedPrivateKey: "WPK",
+      privateKeyIv: "IV",
+      kdfSalt: "S",
+      kdfMemoryKib: 1024,
+      kdfIterations: 1,
+      kdfParallelism: 1,
+      kdfVersion: 1,
+    });
+    const body = await (await membersGET()).json();
+    expect(body.members.map((m: { publicKey: string | null }) => m.publicKey)).toEqual([null, "PUB-m"]);
   });
 
   it("a member can read the list too (role comes from the database)", async () => {

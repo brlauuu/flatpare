@@ -14,6 +14,7 @@ export {
   generateDataKey,
   generateMemberKeypair,
   importPublicKey,
+  publicKeyFromPrivate,
   randomIv,
   toStoredDataKey,
   unwrapDataKey,
@@ -40,3 +41,4 @@ export {
 } from "./envelope";
 export { clearKeys, isKeyStorePersistent, loadKeys, saveKeys, type StoredKeys } from "./store";
 export { openBytes, sealBytes, type SealedBytes } from "./bytes";
+export { FINGERPRINT_EMOJI, FINGERPRINT_LENGTH, fingerprint } from "./fingerprint";

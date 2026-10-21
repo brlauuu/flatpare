@@ -120,6 +120,7 @@ Running Flatpare yourself is free and has no limits at all.
 
 - **Forgot your passphrase?** The unlock screen offers **"Use my recovery kit"** — enter the 25-character code and set a new passphrase. If you have neither the passphrase nor the code, the data cannot be recovered by anyone.
 - **"Reset my keys"** is also offered there, and it is *not* a password reset: it abandons the old key and waits for someone else in the household to hand you a fresh copy. Only useful if somebody else still has access.
+- **Check each other's key codes.** The Household page shows a code of eight small pictures next to each member. Compare them in person or on a call: the code someone sees for themselves on their own device must match the one you see for them. If it does not, do not trust that key.
 - **New device:** just sign in and enter your passphrase; nothing needs to be transferred by hand.
 - **Bulk upload:** you can select several PDFs at once on the Upload page.
 - **Re-rate anytime:** ratings are per person and can be changed whenever you like.

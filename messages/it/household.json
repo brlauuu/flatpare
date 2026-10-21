@@ -23,6 +23,14 @@
     "removedRotationFailed": "{name} è stato rimosso, ma non è stato possibile rinnovare la chiave del gruppo: {reason}. Rinnovala qui sotto quando vuoi.",
     "unknownError": "errore sconosciuto"
   },
+  "fingerprint": {
+    "label": "Codice della chiave:",
+    "computing": "Calcolo del codice della chiave…",
+    "compare": "Qui sotto trovi il codice della chiave di ogni membro. Confronta i codici con ciascuna persona, di persona o durante una chiamata: il codice che vede per sé sul proprio dispositivo deve corrispondere a quello che vedi qui. Se sono diversi, non fidarti di quella chiave.",
+    "unlockToSee": "Blocca e sblocca questo dispositivo per vedere il codice della tua chiave.",
+    "ownMismatch": "La chiave che il server conserva per te non corrisponde a quella su questo dispositivo. Se hai reimpostato le tue chiavi su un altro dispositivo, blocca e sblocca qui. Altrimenti la copia sul server potrebbe essere stata sostituita: non fidarti delle chiavi di questo gruppo finché non è risolto.",
+    "noKeyYet": "Non ha ancora configurato la crittografia."
+  },
   "invite": {
     "emailLabel": "E-mail",
     "emailPlaceholder": "nome@esempio.ch",
