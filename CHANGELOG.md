@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.14.2 — 2026-10-21
+
 ### Fixed
 - The test suite no longer times out intermittently in the encryption tests: they reuse key pairs generated once per run instead of generating a fresh one per test. (#361)
 
