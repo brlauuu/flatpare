@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.14.0 — 2026-10-21
+
 ### Added
 - Reading a listing PDF now understands French, Italian and Spanish listings as well as German and English, and writes the apartment's summary in your language instead of always in English. (#288)
 
