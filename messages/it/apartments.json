@@ -132,7 +132,7 @@
   },
   "form": {
     "summary": "Riassunto",
-    "summaryPlaceholder": "Breve descrizione in inglese (generata dall'IA)",
+    "summaryPlaceholder": "Breve descrizione (generata dall'IA nella tua lingua)",
     "name": "Nome *",
     "namePlaceholder": "Nome dell'appartamento",
     "address": "Indirizzo",

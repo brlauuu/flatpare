@@ -12,7 +12,8 @@ vi.mock("@ai-sdk/google", () => ({
   google: vi.fn(() => "gemini-model"),
 }));
 
-import { extractApartmentData, apartmentExtractionSchema } from "../parse-pdf";
+import { extractApartmentData, apartmentExtractionSchema, extractionPrompt } from "../parse-pdf";
+import { LOCALES } from "@/locales/locales";
 import { generateText } from "ai";
 
 const mockedGenerateText = vi.mocked(generateText);
@@ -551,4 +552,88 @@ describe("extractApartmentData — AI provider", () => {
     process.env.AI_PROVIDER = "openai";
     await expect(extractApartmentData("base64pdf")).rejects.toThrow(/AI_PROVIDER/);
   });
+});
+
+// #288, part 5: listings in four languages, the summary in the uploader's.
+describe("extractionPrompt — languages", () => {
+  it("asks for the summary in the uploader's language", () => {
+    expect(extractionPrompt("en")).toContain("summary (~25-40 words) in English");
+    expect(extractionPrompt("fr")).toContain("summary (~25-40 words) in French");
+    expect(extractionPrompt("it")).toContain("summary (~25-40 words) in Italian");
+    expect(extractionPrompt("es")).toContain("summary (~25-40 words) in Spanish");
+    // Swiss German, like the interface: no ß.
+    expect(extractionPrompt("de")).toMatch(/in German, as written in Switzerland \(always "ss", never "ß"\)/);
+  });
+
+  it("no longer asks for an English summary regardless of language", () => {
+    for (const locale of LOCALES.filter((l) => l !== "en")) {
+      expect(extractionPrompt(locale)).not.toMatch(/English summary/);
+    }
+  });
+
+  it("keeps the German recognition patterns", () => {
+    const prompt = extractionPrompt("en");
+    for (const phrase of ["Bruttomiete", "3.5 Zimmer", "Waschmaschine in der Wohnung", "Waschturm", "zur Mitbenutzung", "Gemeinschaftswaschküche", "Bezugstermin: 01.05.2026", "ab sofort", "per sofort"]) {
+      expect(prompt).toContain(phrase);
+    }
+  });
+
+  it("recognises French, Italian and Spanish listings", () => {
+    const prompt = extractionPrompt("en");
+    for (const phrase of [
+      // French (Romandie)
+      "loyer brut", "3.5 pièces", "lave-linge privatif", "colonne de lavage", "buanderie commune", "disponible dès le 1er mai 2026", "de suite",
+      // Italian (Ticino)
+      "pigione lorda", "3.5 locali", "lavatrice propria", "lavanderia in comune", "disponibile dal 1° maggio 2026", "subito",
+      // Spanish
+      "alquiler bruto", "3.5 habitaciones", "lavadora propia", "lavandería comunitaria", "disponible a partir del 1 de mayo de 2026", "inmediata",
+    ]) {
+      expect(prompt).toContain(phrase);
+    }
+  });
+
+  it("sends the prompt for the requested language, and English by default", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue({ output: { name: "x", laundryEvidence: null }, usage: { inputTokens: 1, outputTokens: 1 } } as never);
+    const textOf = (n: number) => {
+      const call = mockedGenerateText.mock.calls[n][0] as { messages: Array<{ content: Array<Record<string, unknown>> }> };
+      return call.messages[0].content.find((p) => p.type === "text")?.text;
+    };
+
+    await extractApartmentData("base64pdf", "it");
+    expect(textOf(0)).toBe(extractionPrompt("it"));
+    await extractApartmentData("base64pdf");
+    expect(textOf(1)).toBe(extractionPrompt("en"));
+  });
+});
+
+describe("extractApartmentData — shared laundry in French, Italian and Spanish", () => {
+  const output = (laundryEvidence: string) => ({
+    output: { name: "x", hasWashingMachine: true, laundryEvidence },
+    usage: { inputTokens: 1, outputTokens: 1 },
+  });
+
+  it.each([
+    "Buanderie commune au sous-sol",
+    "Lave-linge et séchoir à usage commun",
+    "Buanderie en commun avec les voisins",
+    "Lavanderia in comune nello stabile",
+    "Lavanderia condominiale",
+    "Lavatrice condivisa",
+    "Lavandería comunitaria en el sótano",
+    "Lavadora compartida",
+  ])("overrides to false on %j", async (evidence) => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue(output(evidence) as never);
+    expect((await extractApartmentData("base64pdf", "en")).hasWashingMachine).toBe(false);
+  });
+
+  it.each(["Lave-linge privatif dans l'appartement", "Colonne de lavage", "Lavatrice propria", "Lavadora propia en el piso"])(
+    "keeps an in-unit machine on %j",
+    async (evidence) => {
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+      mockedGenerateText.mockResolvedValue(output(evidence) as never);
+      expect((await extractApartmentData("base64pdf", "en")).hasWashingMachine).toBe(true);
+    }
+  );
 });

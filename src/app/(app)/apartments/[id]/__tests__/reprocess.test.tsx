@@ -25,6 +25,7 @@ vi.mock("@/components/household-data/process-client", async (importOriginal) => 
 }));
 
 import ApartmentDetailPage from "../page";
+import { setTestLocale } from "@/i18n/__tests__/test-locale";
 
 afterEach(() => {
   cleanup();
@@ -67,6 +68,17 @@ beforeEach(() => {
 });
 
 describe("Apartment detail — reprocess", () => {
+  // #288: a reprocessed summary is written in the language of whoever
+  // pressed Reprocess.
+  it("asks for the summary in the interface language", async () => {
+    setTestLocale("it");
+    const user = userEvent.setup();
+    const { value } = setup();
+    await user.click(screen.getByRole("button", { name: /^Rielabora$|^Reprocess$/ }));
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "it");
+  });
+
   it("decrypts the PDF, parses it and applies the extraction to un-edited fields only", async () => {
     const user = userEvent.setup();
     const { value } = setup();
@@ -74,7 +86,7 @@ describe("Apartment detail — reprocess", () => {
 
     await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
     expect(downloadPdf).toHaveBeenCalledWith(null, 7, "a1", PDF);
-    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf");
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en");
     const next = vi.mocked(value.updateApartment).mock.calls[0][1](A1);
     expect(next.summary).toBe("Refreshed summary after reprocess.");
     expect(next.rentChf).toBe(2200); // user-edited: kept

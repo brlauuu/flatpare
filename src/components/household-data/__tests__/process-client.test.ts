@@ -36,7 +36,7 @@ describe("process-client", () => {
       async () => json({ extracted: { name: "Flat" }, aiAvailable: true })
     );
     vi.stubGlobal("fetch", fetchMock);
-    const out = await parsePdf(new Uint8Array([1, 2]), "flat.pdf");
+    const out = await parsePdf(new Uint8Array([1, 2]), "flat.pdf", "de");
     expect(out).toEqual({ extracted: { name: "Flat" }, aiAvailable: true });
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/process/parse-pdf");
@@ -44,6 +44,8 @@ describe("process-client", () => {
     const file = form.get("file") as File;
     expect(file.name).toBe("flat.pdf");
     expect(file.type).toBe("application/pdf");
+    // #288: the summary is written in the uploader's interface language.
+    expect(form.get("locale")).toBe("de");
   });
 
   it("parsePdf throws ParsePdfError carrying reason and retryAfterSeconds", async () => {
@@ -51,7 +53,7 @@ describe("process-client", () => {
       "fetch",
       vi.fn(async () => json({ error: "AI quota exceeded — try again in 30s.", reason: "quota", retryAfterSeconds: 30 }, 429))
     );
-    const err = await parsePdf(new Uint8Array([1]), "x.pdf").catch((e) => e);
+    const err = await parsePdf(new Uint8Array([1]), "x.pdf", "en").catch((e) => e);
     expect(err).toBeInstanceOf(ParsePdfError);
     expect(err.reason).toBe("quota");
     expect(err.retryAfterSeconds).toBe(30);
@@ -61,7 +63,7 @@ describe("process-client", () => {
 
   it("parsePdf maps a 413 to reason invalid_pdf", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json({ error: "PDF too large to extract" }, 413)));
-    const err = await parsePdf(new Uint8Array([1]), "x.pdf").catch((e) => e);
+    const err = await parsePdf(new Uint8Array([1]), "x.pdf", "en").catch((e) => e);
     expect(err.reason).toBe("invalid_pdf");
   });
 });

@@ -132,7 +132,7 @@
   },
   "form": {
     "summary": "Zusammenfassung",
-    "summaryPlaceholder": "Kurze Beschreibung auf Englisch (von KI erstellt)",
+    "summaryPlaceholder": "Kurze Beschreibung (von KI in deiner Sprache erstellt)",
     "name": "Name *",
     "namePlaceholder": "Name der Wohnung",
     "address": "Adresse",

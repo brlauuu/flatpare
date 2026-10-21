@@ -19,6 +19,7 @@ vi.mock("@/components/household-data/pdf-files", () => ({
 }));
 
 import UploadPage from "../page";
+import { setTestLocale } from "@/i18n/__tests__/test-locale";
 import { parsePdf } from "@/components/household-data/process-client";
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 
@@ -128,6 +129,16 @@ describe("drop zone validation", () => {
 });
 
 describe("batch review flow", () => {
+  // #288: the summary is asked for in the uploader's interface language.
+  it("passes the interface language to the extraction", async () => {
+    setTestLocale("es");
+    const user = userEvent.setup();
+    renderWithHouseholdData(<UploadPage />, { dataKey: null });
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await waitFor(() => expect(parsePdf).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(parsePdf).mock.calls[0][2]).toBe("es");
+  });
+
   it("parses and encrypt-uploads each PDF concurrently, then saves all through the store", async () => {
     const user = userEvent.setup();
     const { value } = renderWithHouseholdData(<UploadPage />, {
@@ -144,6 +155,7 @@ describe("batch review flow", () => {
     expect(screen.getByText("Parsed b.pdf")).toBeInTheDocument();
     expect(parsePdf).toHaveBeenCalledTimes(2);
     expect(encryptAndUploadPdf).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(parsePdf).mock.calls.map((c) => c[2])).toEqual(["en", "en"]);
     // Upload is keyed by the item id, which is also the apartment id.
     const [, householdId, uploadedId] = vi.mocked(encryptAndUploadPdf).mock.calls[0];
     expect(householdId).toBe(7);

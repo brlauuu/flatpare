@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +24,7 @@ import {
 } from "@/components/apartment-rating-panel";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { downloadPdf } from "@/components/household-data/pdf-files";
+import { languageOf } from "@/locales/locales";
 import { parsePdf } from "@/components/household-data/process-client";
 import type { ErrorDetails } from "@/lib/fetch-error";
 import { applyExtraction, mergeUserEdit } from "@/lib/edited-fields";
@@ -79,6 +80,7 @@ export default function ApartmentDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const locale = languageOf(useLocale());
   const t = useTranslations("apartments.detail");
   const tc = useTranslations("apartments.corrupt");
   const errorDetails = useStoreErrorDetails();
@@ -166,7 +168,7 @@ export default function ApartmentDetailPage() {
     setError(null);
     try {
       const bytes = await downloadPdf(dataKey, identity.householdId, apartment.id, apartment.pdf);
-      const { extracted } = await parsePdf(bytes, `${apartment.id}.pdf`);
+      const { extracted } = await parsePdf(bytes, `${apartment.id}.pdf`, locale);
       // Coerce through the form helpers so the extraction lands as typed
       // Apartment fields, then keep whatever the user edited by hand.
       const fields = formToFields(formFromExtracted(extracted));

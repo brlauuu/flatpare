@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   type ApartmentForm,
   apartmentFromForm,
@@ -11,6 +11,7 @@ import {
 } from "@/components/apartment-form-fields";
 import type { ErrorDetails } from "@/lib/fetch-error";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { languageOf } from "@/locales/locales";
 import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
@@ -28,6 +29,7 @@ interface ErrorState {
 
 export default function UploadPage() {
   const router = useRouter();
+  const locale = languageOf(useLocale());
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
   const { createApartment, dataKey, identity } = useHouseholdData();
@@ -100,7 +102,7 @@ export default function UploadPage() {
     }
 
     const [parsed, uploaded] = await Promise.allSettled([
-      parsePdf(bytes, file.name),
+      parsePdf(bytes, file.name, locale),
       encryptAndUploadPdf(dataKey, identity.householdId, itemId, bytes),
     ]);
 
@@ -170,9 +172,10 @@ export default function UploadPage() {
 
     setStep("review");
     // parseOne reads dataKey/identity from the closure; both are stable for
-    // the life of the provider.
+    // the life of the provider. The locale is not: the language menu can
+    // change it without a remount, and the summary follows it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [locale]);
 
   const handleFiles = useCallback(
     (fileList: FileList) => {

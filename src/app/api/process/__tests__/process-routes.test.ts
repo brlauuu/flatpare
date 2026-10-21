@@ -80,9 +80,10 @@ function json(body: unknown) {
     body: JSON.stringify(body),
   });
 }
-function multipart(file: File | null) {
+function multipart(file: File | null, locale?: string) {
   const fd = new FormData();
   if (file) fd.set("file", file);
+  if (locale !== undefined) fd.set("locale", locale);
   return new Request("http://localhost/api/process/parse-pdf", { method: "POST", body: fd });
 }
 const pdf = (bytes = 16, name = "listing.pdf", type = "application/pdf") =>
@@ -236,8 +237,25 @@ describe("POST /api/process/parse-pdf", () => {
     const res = await parsePdfPOST(multipart(pdf(16)));
     expect(res.status).toBe(200);
     expect((await res.json()).extracted.name).toBe("X");
-    expect(extractApartmentData).toHaveBeenCalledWith(Buffer.alloc(16).toString("base64"));
+    expect(extractApartmentData).toHaveBeenCalledWith(Buffer.alloc(16).toString("base64"), "en");
     await rowsUnchanged();
+  });
+
+  // #288: the summary follows the uploader's interface language.
+  it("passes the uploader's language to the extraction", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    extractApartmentData.mockResolvedValue({ name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    expect((await parsePdfPOST(multipart(pdf(16), "fr"))).status).toBe(200);
+    expect(extractApartmentData).toHaveBeenLastCalledWith(expect.any(String), "fr");
+  });
+
+  it("treats a language that is not one of the five as English, not as an error", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    extractApartmentData.mockResolvedValue({ name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    expect((await parsePdfPOST(multipart(pdf(16), "de-CH"))).status).toBe(200);
+    expect(extractApartmentData).toHaveBeenLastCalledWith(expect.any(String), "en");
+    expect((await parsePdfPOST(multipart(pdf(16), "xx"))).status).toBe(200);
+    expect(extractApartmentData).toHaveBeenLastCalledWith(expect.any(String), "en");
   });
 
   // #333: the hosted deployment uses AI Gateway and has no Google key.
