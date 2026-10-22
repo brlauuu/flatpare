@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.15.1 — 2026-10-22
+
 ### Changed
 - Checked on the hosted service that two devices saving at the same moment are handled there too, not only on a self-hosted database. Nothing needed to change. (#368)
 
