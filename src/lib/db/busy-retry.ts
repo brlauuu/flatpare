@@ -13,6 +13,10 @@
 // drizzle rolls back on every failure, including a failed COMMIT; the
 // transaction bodies touch the database only, never email or the network.
 //
+// On Turso this never fires (#368): the server queues concurrent write
+// transactions itself, so none is refused. Measured with the retry bypassed,
+// 25 at once from one client and from 25 clients: all committed, serially.
+//
 // A leaf: no app imports.
 
 export const BUSY_RETRY_DEADLINE_MS = 3000;
