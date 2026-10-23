@@ -12,7 +12,7 @@ export async function DELETE(
   try {
     const { householdId, userId } = await requireHousehold();
     const role = await assertMembership(householdId, userId);
-    if (role !== "owner") throw new ApiError("Only the owner can manage invitations", 403);
+    if (role !== "owner") throw new ApiError("Only an owner can manage invitations", 403);
     const id = parseIdParam((await params).id, "invitation id");
     await revokeInvitation(householdId, id);
     return new NextResponse(null, { status: 204 });

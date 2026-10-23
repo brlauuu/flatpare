@@ -98,7 +98,7 @@ Under **Settings**, you can:
 
 - **Lock this device** — clears the key from this browser without signing out. Useful on a shared or borrowed computer; you will need your passphrase again to unlock.
 - **Change passphrase** — keeps your data, re-protects the key with a new passphrase.
-- **Regenerate recovery kit** (household owner only) — issues a fresh recovery code and invalidates the old one. Do this if you think the printed copy has been seen by someone else.
+- **Regenerate recovery kit** (household owners only) — issues a fresh recovery code and invalidates the old one. Do this if you think the printed copy has been seen by someone else. Any other owners are told on the Household page, since their copy stops working too.
 
 ---
 
@@ -121,6 +121,7 @@ Running Flatpare yourself is free and has no limits at all.
 - **Forgot your passphrase?** The unlock screen offers **"Use my recovery kit"** — enter the 25-character code and set a new passphrase. If you have neither the passphrase nor the code, the data cannot be recovered by anyone.
 - **"Reset my keys"** is also offered there, and it is *not* a password reset: it abandons the old key and waits for someone else in the household to hand you a fresh copy. Only useful if somebody else still has access.
 - **Check each other's key codes.** The Household page shows a code of eight small pictures next to each member. Compare them in person or on a call: the code someone sees for themselves on their own device must match the one you see for them. If it does not, do not trust that key.
+- **More than one owner.** On the Household page an owner can **Make owner** any member. Every owner can invite and remove people and rotate the household key, so the household keeps running if one of you drops out. An owner can **Step down as owner** or leave the household as long as another owner remains.
 - **New device:** just sign in and enter your passphrase; nothing needs to be transferred by hand.
 - **Bulk upload:** you can select several PDFs at once on the Upload page.
 - **Re-rate anytime:** ratings are per person and can be changed whenever you like.

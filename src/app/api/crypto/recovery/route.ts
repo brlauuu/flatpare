@@ -12,10 +12,10 @@ export async function PUT(req: Request) {
     requireEncryptionOn();
     const role = await assertMembership(householdId, userId);
     if (role !== "owner") {
-      throw new ApiError("Only the owner can regenerate the recovery kit", 403);
+      throw new ApiError("Only an owner can regenerate the recovery kit", 403);
     }
     const body = await parseBody(req, recoverySchema);
-    await replaceRecovery(householdId, body);
+    await replaceRecovery(householdId, userId, body);
     return NextResponse.json({});
   } catch (e) {
     return apiErrorResponse(e, "crypto:recovery");

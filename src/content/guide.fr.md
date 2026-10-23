@@ -98,7 +98,7 @@ Dans **Réglages**, tu peux :
 
 - **Verrouiller cet appareil** — efface la clé de ce navigateur sans te déconnecter. Pratique sur un ordinateur partagé ou emprunté ; il te faudra ta phrase secrète pour déverrouiller à nouveau.
 - **Changer la phrase secrète** — conserve tes données et protège à nouveau la clé avec une nouvelle phrase secrète.
-- **Régénérer le kit de récupération** (propriétaire du foyer uniquement) — émet un nouveau code de récupération et rend l’ancien invalide. Fais-le si tu penses que quelqu’un d’autre a vu la copie imprimée.
+- **Régénérer le kit de récupération** (propriétaires du foyer uniquement) — émet un nouveau code de récupération et rend l’ancien invalide. Fais-le si tu penses que quelqu’un d’autre a vu la copie imprimée. Les autres propriétaires en sont informés sur la page Foyer, car leur copie cesse aussi de fonctionner.
 
 ---
 
@@ -121,6 +121,7 @@ Faire tourner Flatpare toi-même est gratuit et sans aucune limite.
 - **Phrase secrète oubliée ?** L’écran de déverrouillage propose **« Utiliser mon kit de récupération »** — saisis le code de 25 caractères et choisis une nouvelle phrase secrète. Si tu n’as ni la phrase secrète ni le code, personne ne peut récupérer les données.
 - **« Réinitialiser mes clés »** y est aussi proposé, et ce n’est *pas* une réinitialisation de mot de passe : cela abandonne l’ancienne clé et attend que quelqu’un d’autre du foyer te transmette une nouvelle copie. Utile seulement si quelqu’un d’autre a encore accès.
 - **Compare les codes de clé.** La page Foyer affiche à côté de chaque membre un code de huit petites images. Compare-les en personne ou lors d’un appel : le code qu’une personne voit pour elle-même sur son propre appareil doit correspondre à celui que tu vois pour elle. Sinon, ne fais pas confiance à cette clé.
+- **Plusieurs propriétaires.** Sur la page Foyer, un propriétaire peut **Rendre propriétaire** n’importe quel membre. Chaque propriétaire peut inviter et retirer des personnes et renouveler la clé du foyer : le foyer continue de fonctionner si l’un de vous n’est plus là. Un propriétaire peut choisir **Ne plus être propriétaire** ou quitter le foyer tant qu’un autre propriétaire reste.
 - **Nouvel appareil :** connecte-toi simplement et saisis ta phrase secrète ; rien n’est à transférer à la main.
 - **Ajout groupé :** tu peux sélectionner plusieurs PDF à la fois sur la page Ajouter.
 - **Réévalue quand tu veux :** les évaluations sont propres à chaque personne et modifiables à tout moment.

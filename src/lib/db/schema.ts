@@ -49,6 +49,10 @@ export const households = sqliteTable("households", {
   recoveryKdfParallelism: integer("recovery_kdf_parallelism"),
   recoveryKdfVersion: integer("recovery_kdf_version"),
   recoveryCreatedAt: integer("recovery_created_at", { mode: "timestamp" }),
+  // Who made the current kit (#192). With several owners, a kit made by one
+  // silently invalidates every other copy, so the others are told (see
+  // household_members.recovery_kit_seen_at). Null for kits made before 0024.
+  recoveryCreatedBy: text("recovery_created_by"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(unixepoch())`
   ),
@@ -64,6 +68,9 @@ export const householdMembers = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: text("role", { enum: ["owner", "member"] }).notNull(),
+    // When this owner last dismissed the "recovery kit was replaced" notice
+    // (#192). Cleared on promotion, so a new owner is told who holds the kit.
+    recoveryKitSeenAt: integer("recovery_kit_seen_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).default(
       sql`(unixepoch())`
     ),

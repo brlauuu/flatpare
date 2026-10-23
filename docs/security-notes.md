@@ -335,7 +335,7 @@ rotation can reach bytes that already left the server. #219 closes everything wr
 after the removal; this residue is permanent and is the reason removal is described to
 users as "loses access", not "forgets what they saw".
 
-### Accepted: a member who leaves keeps the data key until the owner rotates
+### Accepted: a member who leaves keeps the data key until an owner rotates
 
 `POST /api/household/leave` (#220) removes the leaver's membership and wrap and marks the
 household rotation-due, exactly like an owner-initiated removal — but the owner is not in
@@ -352,6 +352,33 @@ does not have the code at hand during a removal, and storing the recovery KEK an
 old data key could reach would hand the new key to exactly the person being removed. So a
 rotation mints a new kit and shows the new code once; the old code stops working. The
 removal confirmation says this before the owner clicks.
+
+### Accepted: co-owners are equal, and one can remove another (#192)
+
+Since #192 a household may have several owners, and every owner holds every owner right:
+invite, remove (other owners included), rotate the data key, regenerate the recovery kit,
+promote and demote. There is no senior owner. An owner can therefore remove the owner who
+promoted them; promoting someone is handing them the household, and the confirmation says
+so. Chosen over ownership transfer because it covers an owner who disappears, not only
+one who leaves deliberately.
+
+The one invariant is that a household keeps at least one owner. It is a condition inside
+the single statement that demotes, removes or deletes the leaving owner (and that the
+actor is still an owner when it runs), not a count read beforehand, so two owners acting
+against each other at the same moment leave exactly one — pinned by a concurrency test in
+`src/lib/__tests__/household.test.ts`. Every check reads the role from
+`household_members`, never the up-to-24h-old session; the session's role is not used for
+any decision, and the signed-in layout reads the role from the database too.
+
+### Accepted: one recovery kit per household, so a new kit voids every other copy
+
+There is one recovery kit per household, not one per owner. Whoever makes a new one — an
+owner regenerating or rotating, or any member recovering with the code — invalidates
+every printed copy. Since #192 `households.recovery_created_by` records who made the
+current kit, and every other owner sees a notice on the Household page (who, when) until
+they dismiss it (`household_members.recovery_kit_seen_at`); a newly promoted owner sees it
+too. The notice names a person and a date and nothing else; it does not carry the code,
+which still only ever exists on the screen of the person who made it.
 
 ### Accepted: corrupt rows are shown, not hidden
 

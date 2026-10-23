@@ -233,7 +233,9 @@ function memberKeyRow(userId: string, m: MemberKeyMaterial) {
   };
 }
 
-function recoveryColumns(r: RecoveryMaterial) {
+// Every path that makes a kit records who made it (#192): with several
+// owners, the others are told their copy no longer works.
+function recoveryColumns(r: RecoveryMaterial, byUserId: string) {
   return {
     recoveryWrappedKey: r.wrappedKey,
     recoveryIv: r.iv,
@@ -243,6 +245,7 @@ function recoveryColumns(r: RecoveryMaterial) {
     recoveryKdfParallelism: r.kdf.parallelism,
     recoveryKdfVersion: r.kdf.version,
     recoveryCreatedAt: new Date(),
+    recoveryCreatedBy: byUserId,
   };
 }
 
@@ -310,7 +313,7 @@ export async function setupMemberKeys(args: {
       });
       await tx
         .update(households)
-        .set(recoveryColumns(household.recovery))
+        .set(recoveryColumns(household.recovery, userId))
         .where(eq(households.id, householdId));
     }
   });
@@ -347,7 +350,7 @@ export async function createHouseholdKey(args: {
     });
     await tx
       .update(households)
-      .set({ ...recoveryColumns(recovery), rotationDue: false })
+      .set({ ...recoveryColumns(recovery, userId), rotationDue: false })
       .where(eq(households.id, householdId));
   });
 }
@@ -553,18 +556,19 @@ export async function recoverHousehold(
       });
     await tx
       .update(households)
-      .set(recoveryColumns(args.recovery))
+      .set(recoveryColumns(args.recovery, userId))
       .where(eq(households.id, householdId));
   });
 }
 
 export async function replaceRecovery(
   householdId: number,
+  userId: string,
   recovery: RecoveryMaterial
 ): Promise<void> {
   await db
     .update(households)
-    .set(recoveryColumns(recovery))
+    .set(recoveryColumns(recovery, userId))
     .where(eq(households.id, householdId));
 }
 
@@ -695,7 +699,7 @@ export async function rotateHouseholdKey(
     }
     await tx
       .update(households)
-      .set({ ...recoveryColumns(req.recovery), keyVersion: next, rotationDue: false })
+      .set({ ...recoveryColumns(req.recovery, byUserId), keyVersion: next, rotationDue: false })
       .where(eq(households.id, householdId));
 
     const now = new Date();

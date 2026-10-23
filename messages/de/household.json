@@ -21,7 +21,13 @@
     "removedEmailFailed": "{name} wurde entfernt, aber die E-Mail mit der Benachrichtigung konnte nicht gesendet werden.",
     "removed": "{name} wurde entfernt.",
     "removedRotationFailed": "{name} wurde entfernt, aber der Haushaltsschlüssel konnte nicht erneuert werden: {reason}. Erneuere ihn unten, sobald du bereit bist.",
-    "unknownError": "unbekannter Fehler"
+    "unknownError": "unbekannter Fehler",
+    "promote": "Zur Inhaber:in machen",
+    "demote": "Zum Mitglied machen",
+    "stepDown": "Als Inhaber:in zurücktreten",
+    "promoteConfirm": "{name} zur Inhaber:in machen? Inhaber:innen können Leute einladen und entfernen, auch andere Inhaber:innen, und den Haushaltsschlüssel erneuern.",
+    "demoteConfirm": "{name} wieder zum Mitglied machen? Diese Person kann dann niemanden mehr einladen oder entfernen.",
+    "stepDownConfirm": "Als Inhaber:in zurücktreten? Du kannst dann niemanden mehr einladen oder entfernen. Die anderen Inhaber:innen führen den Haushalt weiter."
   },
   "fingerprint": {
     "label": "Schlüsselcode:",
@@ -108,5 +114,10 @@
       "Stethoscope": "Stethoskop",
       "Music": "Musik"
     }
+  },
+  "recoveryNotice": {
+    "text": "{name} hat am {date} ein neues Wiederherstellungs-Kit erstellt. Jede ältere Kopie funktioniert nicht mehr. Frag {name} nach dem neuen.",
+    "textUnknown": "Am {date} wurde ein neues Wiederherstellungs-Kit erstellt. Jede ältere Kopie funktioniert nicht mehr.",
+    "dismiss": "Verstanden"
   }
 }

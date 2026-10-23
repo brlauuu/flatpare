@@ -21,7 +21,13 @@
     "removedEmailFailed": "{name} was removed, but the email telling them could not be sent.",
     "removed": "{name} was removed.",
     "removedRotationFailed": "{name} was removed, but the household key could not be rotated: {reason}. Rotate it below when you are ready.",
-    "unknownError": "unknown error"
+    "unknownError": "unknown error",
+    "promote": "Make owner",
+    "demote": "Make member",
+    "stepDown": "Step down as owner",
+    "promoteConfirm": "Make {name} an owner? Owners can invite and remove people, including other owners, and rotate the household key.",
+    "demoteConfirm": "Make {name} a member again? They will no longer be able to invite or remove people.",
+    "stepDownConfirm": "Step down as owner? You will no longer be able to invite or remove people. The other owners keep running the household."
   },
   "fingerprint": {
     "label": "Key code:",
@@ -108,5 +114,10 @@
       "Stethoscope": "Stethoscope",
       "Music": "Music"
     }
+  },
+  "recoveryNotice": {
+    "text": "{name} made a new recovery kit on {date}. Any copy made before then no longer works. Ask {name} for the new one.",
+    "textUnknown": "A new recovery kit was made on {date}. Any copy made before then no longer works.",
+    "dismiss": "Got it"
   }
 }

@@ -98,7 +98,7 @@ En **Ajustes**, puedes:
 
 - **Bloquear este dispositivo**: borra la clave de este navegador sin cerrar sesión. Útil en un ordenador compartido o prestado; necesitarás tu frase de contraseña para desbloquearlo de nuevo.
 - **Cambiar la frase de contraseña**: conserva tus datos y vuelve a proteger la clave con una frase de contraseña nueva.
-- **Generar un nuevo kit de recuperación** (solo quien administra el hogar): emite un código de recuperación nuevo e invalida el anterior. Hazlo si crees que alguien más ha visto la copia impresa.
+- **Generar un nuevo kit de recuperación** (solo los titulares del hogar): emite un código de recuperación nuevo e invalida el anterior. Hazlo si crees que alguien más ha visto la copia impresa. Los demás titulares se enteran en la página Hogar, porque su copia también deja de funcionar.
 
 ---
 
@@ -121,6 +121,7 @@ Instalar Flatpare por tu cuenta es gratis y no tiene ningún límite.
 - **¿Has olvidado tu frase de contraseña?** La pantalla de desbloqueo ofrece **«Usar mi kit de recuperación»**: introduce el código de 25 caracteres y elige una frase de contraseña nueva. Si no tienes ni la frase de contraseña ni el código, nadie puede recuperar los datos.
 - **«Restablecer mis claves»** también aparece ahí, y *no* es un restablecimiento de contraseña: abandona la clave antigua y espera a que alguien más del hogar te pase una copia nueva. Solo sirve si otra persona todavía tiene acceso.
 - **Compara los códigos de clave.** La página Hogar muestra junto a cada miembro un código de ocho pequeñas imágenes. Compáralos en persona o en una llamada: el código que alguien ve para sí en su propio dispositivo debe coincidir con el que ves tú para esa persona. Si no coincide, no confíes en esa clave.
+- **Más de un titular.** En la página Hogar, un titular puede usar **Hacer titular** con cualquier miembro. Cada titular puede invitar y quitar a personas y renovar la clave del hogar, así el hogar sigue funcionando si uno de vosotros ya no está. Un titular puede **Dejar de ser titular** o salir del hogar mientras quede otro titular.
 - **Dispositivo nuevo:** basta con iniciar sesión e introducir tu frase de contraseña; no hay que transferir nada a mano.
 - **Subida de varios a la vez:** puedes seleccionar varios PDF de una vez en la página Subir.
 - **Vuelve a valorar cuando quieras:** las valoraciones son de cada persona y se pueden cambiar en cualquier momento.

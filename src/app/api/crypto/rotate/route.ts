@@ -7,16 +7,16 @@ import { listRotationTargets, rotateHouseholdKey } from "@/lib/member-keys";
 import { requireHousehold } from "@/lib/session";
 import { deleteStoredFile, storedPathHousehold } from "@/lib/storage";
 
-// Data-key rotation (#219). GET tells the owner's browser what to rotate
+// Data-key rotation (#219). GET tells an owner's browser what to rotate
 // from and whom to wrap for; POST commits what it prepared, all or nothing
-// (see rotateHouseholdKey). Owner only: rotation follows a removal, and only
-// the owner can remove.
+// (see rotateHouseholdKey). Owners only: rotation follows a removal, and only
+// owners can remove (#192: any of them).
 
 async function requireOwner(): Promise<{ householdId: number; userId: string }> {
   const { householdId, userId } = await requireHousehold();
   requireEncryptionOn();
   const role = await assertMembership(householdId, userId);
-  if (role !== "owner") throw new ApiError("Only the owner can rotate the household key", 403);
+  if (role !== "owner") throw new ApiError("Only an owner can rotate the household key", 403);
   return { householdId, userId };
 }
 
