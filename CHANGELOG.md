@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- brlauuu.github.io/flatpare now takes you to flatpare.com. (#325)
+
 ## 0.15.1 — 2026-10-22
 
 ### Changed

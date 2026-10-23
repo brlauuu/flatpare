@@ -368,6 +368,7 @@ Beyond auth + Turso, the following keys gate cloud features. If any is unset, th
   - **Why a tag can be trusted:** `main` is protected (2026-10-03) — the `test` check must pass on an up-to-date branch, changes go through PRs only, no force pushes or deletion, and the rule binds admins too. Every commit on `main` is one CI passed, and the workflow deploys nothing else.
   - **Vercel's Git integration is off** (`vercel.json`, `git.deploymentEnabled: false`), so neither merges nor PRs deploy. Do not turn it back on to "simplify": preview builds receive `TURSO_DATABASE_URL` and would migrate production (#212); #320 briefly ran it for `main` only, superseded by this.
   - It needs the **`VERCEL_TOKEN`** repository secret; without it the run fails loudly and names the fix. The org and project ids in the workflow are identifiers, not credentials. To redeploy a release (after rotating the token, say), run the workflow by hand with the tag: `gh workflow run deploy.yml -f tag=vX.Y.Z`.
+- **`brlauuu.github.io/flatpare` is a redirect to flatpare.com** (#325): `github-pages/index.html` and an identical `404.html`, so every path under `/flatpare/` lands on the landing page. `.github/workflows/pages.yml` publishes exactly that directory (Pages source: GitHub Actions) when it changes on `main`; nothing else in the repository becomes a website. It has nothing to do with the app's deploy. If the domain moves, change both files.
 
 ## Dependency maintenance
 
