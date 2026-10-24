@@ -720,3 +720,56 @@ describe("apartment credits (#305)", () => {
     expect(captured!.credits?.remaining).toBe(30);
   });
 });
+
+describe("export and import (#191)", () => {
+  const line = ({ userName }: { userName: string }) => `Rated by ${userName}`;
+
+  it("exports what the store holds and imports it into an empty household without outside calls", async () => {
+    await seed(A1, { ...emptyApartment("First"), address: "Main street 1", latitude: 47, longitude: 8, shortCode: "1R1B" });
+    await seedLocation(L1, { label: "Work", icon: "Train", address: "Office 1", latitude: 47.1, longitude: 8.1 });
+    renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.apartments.length === 1);
+
+    let exported!: Awaited<ReturnType<HouseholdDataContextValue["exportHousehold"]>>;
+    await act(async () => {
+      exported = await captured!.exportHousehold();
+    });
+    expect(exported.fileName).toMatch(/^flatpare-export-\d{4}-\d{2}-\d{2}\.zip$/);
+    expect(exported.missingPdfs).toBe(0);
+    const parsed = await captured!.readImport(exported.blob);
+    expect(parsed.apartments.map((a) => a.data.name)).toEqual(["First"]);
+
+    // Empty the household, as a fresh one would be.
+    server.apartments.clear();
+    server.locations.clear();
+    await act(async () => {
+      await captured!.reload();
+    });
+    await waitForContext((c) => c.apartments.length === 0 && c.locations.length === 0);
+
+    server.calls = [];
+    let report!: Awaited<ReturnType<HouseholdDataContextValue["importHousehold"]>>;
+    await act(async () => {
+      report = await captured!.importHousehold(parsed, line);
+    });
+    expect(report).toEqual({ locations: 1, apartments: 1, pdfs: 0, ratings: 0, failed: [] });
+    const ctx = await waitForContext((c) => c.apartments.length === 1 && c.locations.length === 1);
+    expect(ctx.apartments[0]).toMatchObject({ name: "First", shortCode: "1R1B", latitude: 47 });
+    expect(ctx.apartments[0].id).not.toBe(A1);
+    expect(server.calls.some((c) => c.url.startsWith("/api/process/"))).toBe(false);
+  });
+
+  it("refuses to import into a household that already has data", async () => {
+    await seedLocation(L1, { label: "Work", icon: "Train", address: "Office 1", latitude: null, longitude: null });
+    renderProvider();
+    await waitForContext((c) => c.status === "ready" && c.locations.length === 1);
+    const parsed = {
+      manifest: {} as never,
+      apartments: [],
+      ratings: [],
+      locations: [],
+    };
+    await expect(captured!.importHousehold(parsed, line)).rejects.toThrow("Import needs an empty household");
+    expect(server.calls.some((c) => c.method === "POST")).toBe(false);
+  });
+});

@@ -119,5 +119,44 @@
     "text": "{name} ha creato un nuovo kit di recupero il {date}. Le copie precedenti non funzionano più. Chiedi a {name} quello nuovo.",
     "textUnknown": "Il {date} è stato creato un nuovo kit di recupero. Le copie precedenti non funzionano più.",
     "dismiss": "Ho capito"
+  },
+  "data": {
+    "title": "I tuoi dati",
+    "exportBody": "Scarica tutto ciò che c'è in questo gruppo come file ZIP: appartamenti, valutazioni, luoghi e i PDF originali. È il tuo backup personale: poiché i tuoi dati sono cifrati, non possiamo ripristinarli per te.",
+    "plaintextWarning": "Il file non è cifrato. Chiunque lo abbia può leggere tutta la tua ricerca di appartamenti. Conservalo in un posto privato.",
+    "export": "Esporta",
+    "exporting": "Esportazione…",
+    "exported": "Esportato.",
+    "exportedMissingPdfs": "Esportato, ma {count, plural, one {# PDF non è stato letto e non è} other {# PDF non sono stati letti e non sono}} nel file.",
+    "exportFailed": "Non è stato possibile esportare. Riprova.",
+    "importTitle": "Importa",
+    "importBody": "Ripristina un export di Flatpare in questo gruppo. È possibile solo finché non ci sono appartamenti né luoghi. Le valutazioni delle altre persone vengono aggiunte ai tuoi commenti, con il loro nome.",
+    "chooseFile": "Scegli un file di export",
+    "fileSummary": "Questo file contiene {apartments, plural, one {# appartamento} other {# appartamenti}}, {locations, plural, one {# luogo} other {# luoghi}} e {ratings, plural, one {# valutazione} other {# valutazioni}}, esportato il {date}.",
+    "usesCredits": "L'importazione usa {count, plural, one {# credito appartamento} other {# crediti appartamento}}.",
+    "overCredits": "Verrebbero aggiunti {count, plural, one {# appartamento} other {# appartamenti}}, ma al gruppo restano {remaining, plural, one {# credito} other {# crediti}}.",
+    "overCap": "Verrebbero aggiunti {count, plural, one {# appartamento} other {# appartamenti}}, ma un gruppo può contenerne al massimo {max}.",
+    "import": "Importa",
+    "importing": "Importazione…",
+    "importingProgress": "Importazione… {done} di {total}",
+    "cancel": "Annulla",
+    "importFailed": "Non è stato possibile importare. Riprova.",
+    "imported": "Importati: {apartments, plural, one {# appartamento} other {# appartamenti}}, {locations, plural, one {# luogo} other {# luoghi}}, {pdfs, plural, one {# PDF} other {# PDF}} e {ratings, plural, one {# valutazione} other {# valutazioni}}.",
+    "notImported": "Non importato:",
+    "failure": {
+      "location": "Luogo {name}: {reason}",
+      "apartment": "Appartamento {name}: {reason}",
+      "pdf": "PDF di {name}: {reason}",
+      "rating": "Valutazione di {name}: {reason}"
+    },
+    "fileProblem": {
+      "not-export": "Questo non è un export di Flatpare.",
+      "newer-version": "Questo export è stato creato con una versione più recente di Flatpare. Aggiorna prima questa.",
+      "invalid": "Questo export è danneggiato e non può essere letto."
+    },
+    "score": "{n}/5",
+    "notRated": "non valutato",
+    "ratingLine": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}",
+    "ratingLineComment": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}. «{comment}»"
   }
 }

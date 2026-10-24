@@ -100,6 +100,12 @@ Dans **Réglages**, tu peux :
 - **Changer la phrase secrète** — conserve tes données et protège à nouveau la clé avec une nouvelle phrase secrète.
 - **Régénérer le kit de récupération** (propriétaires du foyer uniquement) — émet un nouveau code de récupération et rend l’ancien invalide. Fais-le si tu penses que quelqu’un d’autre a vu la copie imprimée. Les autres propriétaires en sont informés sur la page Foyer, car leur copie cesse aussi de fonctionner.
 
+### Sauvegarder tes données
+
+Comme tes données sont chiffrées, personne ne peut les restaurer pour toi, pas même nous. Sur la page **Foyer**, sous **Tes données**, chaque membre peut **exporter** tout le foyer dans un fichier ZIP : appartements, évaluations, lieux et PDF originaux, plus un fichier tableur. **Le fichier n'est pas chiffré**, garde-le donc dans un endroit privé.
+
+Pour récupérer un export, ouvre la page Foyer d'un foyer qui n'a encore ni appartements ni lieux, et choisis **Importer**. Les évaluations des autres personnes sont ajoutées à tes propres commentaires, avec leur nom. Sur la version hébergée, chaque appartement importé utilise un crédit d'appartement.
+
 ---
 
 ## Si tu utilises la version hébergée

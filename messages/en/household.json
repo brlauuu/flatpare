@@ -119,5 +119,44 @@
     "text": "{name} made a new recovery kit on {date}. Any copy made before then no longer works. Ask {name} for the new one.",
     "textUnknown": "A new recovery kit was made on {date}. Any copy made before then no longer works.",
     "dismiss": "Got it"
+  },
+  "data": {
+    "title": "Your data",
+    "exportBody": "Download everything in this household as a ZIP file: apartments, ratings, locations and the original PDFs. It is your own backup: because your data is encrypted, we cannot restore it for you.",
+    "plaintextWarning": "The file is not encrypted. Anyone who has it can read your whole apartment search. Keep it somewhere private.",
+    "export": "Export",
+    "exporting": "Exporting…",
+    "exported": "Exported.",
+    "exportedMissingPdfs": "Exported, but {count, plural, one {# PDF} other {# PDFs}} could not be read and {count, plural, one {is} other {are}} not in the file.",
+    "exportFailed": "The export could not be made. Please try again.",
+    "importTitle": "Import",
+    "importBody": "Restore a Flatpare export into this household. This is only possible while the household has no apartments and no locations. Other people's ratings are added to your own comments, with their names.",
+    "chooseFile": "Choose an export file",
+    "fileSummary": "This file holds {apartments, plural, one {# apartment} other {# apartments}}, {locations, plural, one {# location} other {# locations}} and {ratings, plural, one {# rating} other {# ratings}}, exported on {date}.",
+    "usesCredits": "Importing uses {count, plural, one {# apartment credit} other {# apartment credits}}.",
+    "overCredits": "This would add {count, plural, one {# apartment} other {# apartments}}, but the household has {remaining, plural, one {# credit} other {# credits}} left.",
+    "overCap": "This would add {count, plural, one {# apartment} other {# apartments}}, but a household can hold {max}.",
+    "import": "Import",
+    "importing": "Importing…",
+    "importingProgress": "Importing… {done} of {total}",
+    "cancel": "Cancel",
+    "importFailed": "The import could not be run. Please try again.",
+    "imported": "Imported {apartments, plural, one {# apartment} other {# apartments}}, {locations, plural, one {# location} other {# locations}}, {pdfs, plural, one {# PDF} other {# PDFs}} and {ratings, plural, one {# rating} other {# ratings}}.",
+    "notImported": "Not imported:",
+    "failure": {
+      "location": "Location {name}: {reason}",
+      "apartment": "Apartment {name}: {reason}",
+      "pdf": "PDF of {name}: {reason}",
+      "rating": "Rating of {name}: {reason}"
+    },
+    "fileProblem": {
+      "not-export": "This is not a Flatpare export.",
+      "newer-version": "This export was made by a newer version of Flatpare. Update this one first.",
+      "invalid": "This export is damaged and cannot be read."
+    },
+    "score": "{n}/5",
+    "notRated": "not rated",
+    "ratingLine": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}",
+    "ratingLineComment": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}. \"{comment}\""
   }
 }

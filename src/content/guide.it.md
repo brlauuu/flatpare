@@ -100,6 +100,12 @@ In **Impostazioni** puoi:
 - **Cambia passphrase** — mantiene i tuoi dati e protegge di nuovo la chiave con una nuova passphrase.
 - **Rigenera il kit di recupero** (solo per i proprietari del gruppo) — emette un nuovo codice di recupero e rende non valido quello vecchio. Fallo se pensi che qualcun altro abbia visto la copia stampata. Gli altri proprietari vengono avvisati nella pagina Gruppo, perché anche la loro copia smette di funzionare.
 
+### Fare un backup dei tuoi dati
+
+Poiché i tuoi dati sono cifrati, nessuno può ripristinarli per te, nemmeno noi. Nella pagina **Gruppo**, sotto **I tuoi dati**, ogni membro può **esportare** l'intero gruppo come file ZIP: appartamenti, valutazioni, luoghi e i PDF originali, più un file per fogli di calcolo. **Il file non è cifrato**, quindi conservalo in un posto privato.
+
+Per ripristinare un export, apri la pagina Gruppo di un gruppo che non ha ancora appartamenti né luoghi e scegli **Importa**. Le valutazioni delle altre persone vengono aggiunte ai tuoi commenti, con il loro nome. Nella versione ospitata, ogni appartamento importato usa un credito appartamento.
+
 ---
 
 ## Se usi la versione ospitata da noi
