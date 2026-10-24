@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.17.0 — 2026-10-24
+
 ### Added
 - Any member can now download the whole household as a ZIP file from the Household page: apartments, ratings, locations, the original PDFs and a spreadsheet. Because your data is encrypted, this is the only backup anyone can make of it, and the file itself is not encrypted, so keep it private. A household with no apartments yet can import such a file; other people's ratings come along as text in your own comments. (#191)
 
