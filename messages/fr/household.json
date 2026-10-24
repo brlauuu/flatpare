@@ -119,5 +119,44 @@
     "text": "{name} a créé un nouveau kit de récupération le {date}. Toute copie plus ancienne ne fonctionne plus. Demande le nouveau à {name}.",
     "textUnknown": "Un nouveau kit de récupération a été créé le {date}. Toute copie plus ancienne ne fonctionne plus.",
     "dismiss": "Compris"
+  },
+  "data": {
+    "title": "Tes données",
+    "exportBody": "Télécharge tout ce que contient ce foyer dans un fichier ZIP : appartements, évaluations, lieux et PDF originaux. C'est ta propre sauvegarde : comme tes données sont chiffrées, nous ne pouvons pas les restaurer pour toi.",
+    "plaintextWarning": "Le fichier n'est pas chiffré. Quiconque l'a peut lire toute ta recherche d'appartement. Garde-le dans un endroit privé.",
+    "export": "Exporter",
+    "exporting": "Exportation…",
+    "exported": "Exporté.",
+    "exportedMissingPdfs": "Exporté, mais {count, plural, one {# PDF n'a pas pu être lu et n'est} other {# PDF n'ont pas pu être lus et ne sont}} pas dans le fichier.",
+    "exportFailed": "L'exportation a échoué. Réessaie.",
+    "importTitle": "Importer",
+    "importBody": "Restaure un export Flatpare dans ce foyer. Ce n'est possible que tant que le foyer n'a ni appartements ni lieux. Les évaluations des autres personnes sont ajoutées à tes propres commentaires, avec leur nom.",
+    "chooseFile": "Choisir un fichier d'export",
+    "fileSummary": "Ce fichier contient {apartments, plural, one {# appartement} other {# appartements}}, {locations, plural, one {# lieu} other {# lieux}} et {ratings, plural, one {# évaluation} other {# évaluations}}, exporté le {date}.",
+    "usesCredits": "L'importation utilise {count, plural, one {# crédit d'appartement} other {# crédits d'appartement}}.",
+    "overCredits": "Cela ajouterait {count, plural, one {# appartement} other {# appartements}}, mais il reste {remaining, plural, one {# crédit} other {# crédits}} au foyer.",
+    "overCap": "Cela ajouterait {count, plural, one {# appartement} other {# appartements}}, mais un foyer peut en contenir {max} au maximum.",
+    "import": "Importer",
+    "importing": "Importation…",
+    "importingProgress": "Importation… {done} sur {total}",
+    "cancel": "Annuler",
+    "importFailed": "L'importation a échoué. Réessaie.",
+    "imported": "Importé : {apartments, plural, one {# appartement} other {# appartements}}, {locations, plural, one {# lieu} other {# lieux}}, {pdfs, plural, one {# PDF} other {# PDF}} et {ratings, plural, one {# évaluation} other {# évaluations}}.",
+    "notImported": "Non importé :",
+    "failure": {
+      "location": "Lieu {name} : {reason}",
+      "apartment": "Appartement {name} : {reason}",
+      "pdf": "PDF de {name} : {reason}",
+      "rating": "Évaluation de {name} : {reason}"
+    },
+    "fileProblem": {
+      "not-export": "Ce n'est pas un export Flatpare.",
+      "newer-version": "Cet export a été fait avec une version plus récente de Flatpare. Mets d'abord celle-ci à jour.",
+      "invalid": "Cet export est endommagé et ne peut pas être lu."
+    },
+    "score": "{n}/5",
+    "notRated": "non évalué",
+    "ratingLine": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}",
+    "ratingLineComment": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}. « {comment} »"
   }
 }

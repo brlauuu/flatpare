@@ -100,6 +100,12 @@ Under **Settings**, you can:
 - **Change passphrase** — keeps your data, re-protects the key with a new passphrase.
 - **Regenerate recovery kit** (household owners only) — issues a fresh recovery code and invalidates the old one. Do this if you think the printed copy has been seen by someone else. Any other owners are told on the Household page, since their copy stops working too.
 
+### Backing up your data
+
+Because your data is encrypted, nobody can restore it for you, not even us. On the **Household** page, under **Your data**, any member can **Export** the whole household as a ZIP file: apartments, ratings, locations and the original PDFs, plus a spreadsheet file. **The file is not encrypted**, so keep it somewhere private.
+
+To bring an export back, open the Household page of a household that has no apartments and no locations yet, and use **Import**. Other people's ratings are added to your own comments, with their names. On the hosted version, each imported apartment uses one apartment credit.
+
 ---
 
 ## If you are on the hosted version

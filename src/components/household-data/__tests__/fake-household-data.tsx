@@ -64,6 +64,15 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
       recoveryCode: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEE",
       report: { keyVersion: 2, rows: 0, pdfs: 0, pdfFailures: [] },
     })),
+    exportHousehold: vi.fn(async () => ({
+      blob: new Blob(["zip"], { type: "application/zip" }),
+      fileName: "flatpare-export-2026-10-24.zip",
+      missingPdfs: 0,
+    })),
+    readImport: vi.fn(async () => {
+      throw new Error("readImport not stubbed");
+    }),
+    importHousehold: vi.fn(async () => ({ locations: 0, apartments: 0, pdfs: 0, ratings: 0, failed: [] })),
     ...over,
   };
 }

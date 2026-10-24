@@ -100,6 +100,12 @@ En **Ajustes**, puedes:
 - **Cambiar la frase de contraseña**: conserva tus datos y vuelve a proteger la clave con una frase de contraseña nueva.
 - **Generar un nuevo kit de recuperación** (solo los titulares del hogar): emite un código de recuperación nuevo e invalida el anterior. Hazlo si crees que alguien más ha visto la copia impresa. Los demás titulares se enteran en la página Hogar, porque su copia también deja de funcionar.
 
+### Hacer una copia de tus datos
+
+Como tus datos están cifrados, nadie puede restaurarlos por ti, ni siquiera nosotros. En la página **Hogar**, en **Tus datos**, cualquier miembro puede **exportar** todo el hogar como archivo ZIP: pisos, valoraciones, lugares y los PDF originales, además de un archivo de hoja de cálculo. **El archivo no está cifrado**, así que guárdalo en un lugar privado.
+
+Para recuperar una exportación, abre la página Hogar de un hogar que aún no tenga pisos ni lugares y elige **Importar**. Las valoraciones de otras personas se añaden a tus propios comentarios, con su nombre. En la versión alojada, cada piso importado usa un crédito de piso.
+
 ---
 
 ## Si usas la versión alojada

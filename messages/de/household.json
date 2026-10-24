@@ -119,5 +119,44 @@
     "text": "{name} hat am {date} ein neues Wiederherstellungs-Kit erstellt. Jede ältere Kopie funktioniert nicht mehr. Frag {name} nach dem neuen.",
     "textUnknown": "Am {date} wurde ein neues Wiederherstellungs-Kit erstellt. Jede ältere Kopie funktioniert nicht mehr.",
     "dismiss": "Verstanden"
+  },
+  "data": {
+    "title": "Deine Daten",
+    "exportBody": "Lade alles aus diesem Haushalt als ZIP-Datei herunter: Wohnungen, Bewertungen, Orte und die originalen PDFs. Das ist dein eigenes Backup: Weil deine Daten verschlüsselt sind, können wir sie nicht für dich wiederherstellen.",
+    "plaintextWarning": "Die Datei ist nicht verschlüsselt. Wer sie hat, kann deine ganze Wohnungssuche lesen. Bewahre sie an einem privaten Ort auf.",
+    "export": "Exportieren",
+    "exporting": "Wird exportiert…",
+    "exported": "Exportiert.",
+    "exportedMissingPdfs": "Exportiert, aber {count, plural, one {# PDF konnte} other {# PDFs konnten}} nicht gelesen werden und {count, plural, one {fehlt} other {fehlen}} in der Datei.",
+    "exportFailed": "Der Export hat nicht geklappt. Bitte versuche es nochmals.",
+    "importTitle": "Importieren",
+    "importBody": "Stelle einen Flatpare-Export in diesem Haushalt wieder her. Das geht nur, solange der Haushalt keine Wohnungen und keine Orte hat. Bewertungen anderer Personen werden mit ihrem Namen zu deinen eigenen Kommentaren hinzugefügt.",
+    "chooseFile": "Exportdatei wählen",
+    "fileSummary": "Diese Datei enthält {apartments, plural, one {# Wohnung} other {# Wohnungen}}, {locations, plural, one {# Ort} other {# Orte}} und {ratings, plural, one {# Bewertung} other {# Bewertungen}}, exportiert am {date}.",
+    "usesCredits": "Der Import verbraucht {count, plural, one {# Wohnungsguthaben} other {# Wohnungsguthaben}}.",
+    "overCredits": "Damit kämen {count, plural, one {# Wohnung} other {# Wohnungen}} dazu, aber der Haushalt hat nur noch {remaining, plural, one {# Guthaben} other {# Guthaben}}.",
+    "overCap": "Damit kämen {count, plural, one {# Wohnung} other {# Wohnungen}} dazu, aber ein Haushalt kann höchstens {max} haben.",
+    "import": "Importieren",
+    "importing": "Wird importiert…",
+    "importingProgress": "Wird importiert… {done} von {total}",
+    "cancel": "Abbrechen",
+    "importFailed": "Der Import hat nicht geklappt. Bitte versuche es nochmals.",
+    "imported": "Importiert: {apartments, plural, one {# Wohnung} other {# Wohnungen}}, {locations, plural, one {# Ort} other {# Orte}}, {pdfs, plural, one {# PDF} other {# PDFs}} und {ratings, plural, one {# Bewertung} other {# Bewertungen}}.",
+    "notImported": "Nicht importiert:",
+    "failure": {
+      "location": "Ort {name}: {reason}",
+      "apartment": "Wohnung {name}: {reason}",
+      "pdf": "PDF von {name}: {reason}",
+      "rating": "Bewertung von {name}: {reason}"
+    },
+    "fileProblem": {
+      "not-export": "Das ist kein Flatpare-Export.",
+      "newer-version": "Dieser Export stammt aus einer neueren Flatpare-Version. Aktualisiere zuerst diese hier.",
+      "invalid": "Dieser Export ist beschädigt und kann nicht gelesen werden."
+    },
+    "score": "{n}/5",
+    "notRated": "nicht bewertet",
+    "ratingLine": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}",
+    "ratingLineComment": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}. «{comment}»"
   }
 }

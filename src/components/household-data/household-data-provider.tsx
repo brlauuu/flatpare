@@ -44,6 +44,19 @@ import { ApiClientError, getJson, sendJson } from "./api-client";
 import { enrichApartment } from "./enrichment";
 import { checkListing, distanceBetween, geocodeAddress } from "./process-client";
 import { isStaleKey, runRotateDataKey, type RotationReport } from "./rotation";
+import {
+  buildExportZip,
+  exportFileName,
+  readExportFile,
+  runImport,
+  type ImportReport,
+} from "./export-import";
+import {
+  planImport,
+  type ParsedExport,
+  type RatingLine,
+} from "@/lib/household-data/export-format";
+import { newRowId } from "@/lib/household-data/ids";
 import type { Limits } from "@/lib/limits";
 
 export interface HouseholdIdentity {
@@ -96,6 +109,18 @@ export interface HouseholdDataContextValue {
   // and PDF under a fresh key, re-wraps it to every member, and mints a new
   // recovery kit — the returned code must be shown to the owner once.
   rotateDataKey(): Promise<{ recoveryCode: string; report: RotationReport }>;
+  // Export and import (#191). The export is a plaintext ZIP of everything
+  // this member can read; any member may take one. The import only runs
+  // into an empty household (no apartments, no locations) and calls no
+  // outside service; `ratingLine` puts other people's ratings into words in
+  // the importer's language.
+  exportHousehold(): Promise<{ blob: Blob; fileName: string; missingPdfs: number }>;
+  readImport(file: Blob): Promise<ParsedExport>;
+  importHousehold(
+    parsed: ParsedExport,
+    ratingLine: RatingLine,
+    onProgress?: (done: number, total: number) => void
+  ): Promise<ImportReport>;
 }
 
 export interface Credits {
@@ -689,6 +714,37 @@ export function HouseholdDataProvider({
     return result;
   }, [crypto]);
 
+  // ---- export and import (#191) --------------------------------------------
+
+  const exportHousehold = useCallback(async () => {
+    const now = new Date();
+    const { blob, missingPdfs } = await buildExportZip(storeRef.current, { dataKey, householdId, keyVersion }, now);
+    return { blob, fileName: exportFileName(now), missingPdfs };
+  }, [dataKey, householdId, keyVersion]);
+
+  const readImport = useCallback((file: Blob) => readExportFile(file), []);
+
+  const importHousehold = useCallback(
+    async (
+      parsed: ParsedExport,
+      ratingLine: RatingLine,
+      onProgress?: (done: number, total: number) => void
+    ): Promise<ImportReport> => {
+      const s = storeRef.current;
+      if (s.apartments.length > 0 || s.locations.length > 0) {
+        throw new Error("Import needs an empty household");
+      }
+      const plan = planImport(parsed, userId, newRowId, ratingLine);
+      try {
+        return await runImport(plan, { dataKey, householdId, keyVersion, userId }, onProgress);
+      } finally {
+        // Whatever landed, the screen should show it, and the balance moved.
+        await load(false);
+      }
+    },
+    [dataKey, householdId, keyVersion, load, userId]
+  );
+
   // ---- context -------------------------------------------------------------
 
   const value = useMemo<HouseholdDataContextValue>(
@@ -714,11 +770,15 @@ export function HouseholdDataProvider({
       moveLocation,
       runMaintenance,
       rotateDataKey,
+      exportHousehold,
+      readImport,
+      importHousehold,
     }),
     [
       identity, limits, credits, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
       createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
+      exportHousehold, readImport, importHousehold,
     ]
   );
 

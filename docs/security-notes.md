@@ -273,8 +273,8 @@ database is closed to them. What rotation cannot undo is ciphertext they fetched
 `FLATPARE_ENCRYPTION` is stamped into `settings` on first boot and compared on every
 later boot. `on → off` would leave rows the server cannot read; `off → on` would leave
 plaintext the server is supposed to reject. Both are discovered after the deploy, by
-users, so the app refuses to boot instead. Changing mode means a fresh database or, once
-#191 lands, an export and re-import.
+users, so the app refuses to boot instead. Changing mode means a fresh database, or
+exporting each household and importing it into the new one (#191).
 
 ### Accepted: recovery is a single point of loss
 
@@ -588,3 +588,32 @@ caps it at 60 characters, the same cap `safeName` applies in emails; React
 escapes it on screen and `escapeHtml` in email bodies. Validation failures answer
 a fixed message that never repeats the input, and an unexpected error logs its
 class only, so the name never reaches a log.
+
+## Export and import — reviewed 2026-10-24 (#191)
+
+### Accepted: the export is a plaintext file
+
+Under end-to-end encryption the host cannot restore a household, so the export is
+the only backup a household can have. It is a ZIP of the decrypted rows and PDFs,
+built in the browser; the server never receives it. It is not encrypted, by decision
+on the issue: it has to open in a spreadsheet, move to a self-hosted instance and
+outlive the passphrase that would have sealed it. The screen and the guide say
+plainly that anyone holding the file can read everything in it. A password-sealed
+variant may come later.
+
+Any member can export. Every member already holds the data key and can read every
+row, so a role check would protect nothing.
+
+### Accepted: an import is an ordinary add, and spends credits
+
+The import seals each row in the browser and posts it through the same routes as a
+hand-made add, so the server applies every check it always does: membership, the
+envelope mode, the current key version, `MAX_APARTMENTS` and the credit counter. A
+separate "import, do not charge" path could not tell an import from an add and would
+be a free-add door, so there is none. The import makes no outside call: coordinates,
+short codes and distances travel in the file, so no address is sent to a geocoder.
+
+It runs only into a household with no apartments and no locations. That is checked
+in the browser against the loaded store, not by the server; two members importing
+into the same empty household at once would both write. Accepted: it is a recovery
+action, not a race worth a server-side lock.

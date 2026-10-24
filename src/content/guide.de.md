@@ -100,6 +100,12 @@ Unter **Einstellungen** kannst du:
 - **Passphrase ändern** — deine Daten bleiben, der Schlüssel wird mit einer neuen Passphrase geschützt.
 - **Wiederherstellungs-Kit neu erstellen** (nur Inhaber:innen des Haushalts) — erstellt einen neuen Wiederherstellungscode und macht den alten ungültig. Mach das, wenn du denkst, dass jemand anderes den Ausdruck gesehen hat. Weitere Inhaber:innen erfahren es auf der Seite Haushalt, denn ihre Kopie funktioniert dann ebenfalls nicht mehr.
 
+### Deine Daten sichern
+
+Weil deine Daten verschlüsselt sind, kann sie niemand für dich wiederherstellen, auch wir nicht. Auf der Seite **Haushalt** kann unter **Deine Daten** jedes Mitglied den ganzen Haushalt als ZIP-Datei **exportieren**: Wohnungen, Bewertungen, Orte und die originalen PDFs, dazu eine Tabellendatei. **Die Datei ist nicht verschlüsselt**, bewahre sie also an einem privaten Ort auf.
+
+Um einen Export zurückzuholen, öffne die Haushaltsseite eines Haushalts, der noch keine Wohnungen und keine Orte hat, und wähle **Importieren**. Bewertungen anderer Personen werden mit ihrem Namen zu deinen eigenen Kommentaren hinzugefügt. In der gehosteten Version verbraucht jede importierte Wohnung ein Wohnungsguthaben.
+
 ---
 
 ## Wenn du die gehostete Version nutzt
