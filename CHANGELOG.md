@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.16.0 — 2026-10-24
+
 ### Added
 - A household can have more than one owner. On the Household page an owner can make any member an owner, and every owner can invite and remove people and renew the household key, so the household keeps working if one owner drops out. An owner can step back to member, or leave, as long as another owner remains. When someone makes a new recovery kit, the other owners are told who made it and when, because their own copy stops working. (#192)
 
