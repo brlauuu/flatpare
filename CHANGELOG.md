@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- The two original design documents in `prds/` now say at the top that they are superseded, and point to the documents that replaced them. (#206)
+
 ## 0.16.0 — 2026-10-24
 
 ### Added

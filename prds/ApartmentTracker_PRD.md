@@ -1,5 +1,11 @@
 # Flatpare - Product Requirements Document
 
+> **Superseded (noted 2026-10-24).** This is design history from May 2026, before accounts and encryption. It describes one shared password as everybody's login, identities that are only a display name in a cookie, `DISABLE_SECURE_COOKIES` and plaintext tables. That model is gone: `APP_PASSWORD` survives only as the self-hosted fallback that signs in one account, and `DISABLE_SECURE_COOKIES` is read by nothing. Read instead:
+> - accounts and sign-in: `docs/superpowers/specs/2026-09-02-e1-accounts-oauth-design.md`
+> - encryption: `docs/superpowers/specs/2026-09-06-e2-crypto-core-design.md`
+> - the encrypted data model: `docs/superpowers/specs/2026-09-07-e3-encrypted-data-model-design.md`
+> - how the app works today: `AGENTS.md`
+
 **Version:** v3.0
 **Date:** May 2026
 
