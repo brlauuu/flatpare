@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { households, householdMembers, householdKeyWraps, memberKeys } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 
@@ -13,8 +14,9 @@ vi.mock("@/auth", () => ({
 }));
 
 import { GET as membersGET } from "../members/route";
-import { DELETE as memberDELETE } from "../members/[userId]/route";
+import { DELETE as memberDELETE, PATCH as memberPATCH } from "../members/[userId]/route";
 import { POST as leavePOST } from "../leave/route";
+import { POST as recoveryNoticePOST } from "../recovery-notice/route";
 
 const params = (userId: string) => ({ params: Promise.resolve({ userId }) });
 let hid: number;
@@ -146,11 +148,64 @@ describe("POST /api/household/leave", () => {
     expect(h.due).toBe(true);
   });
 
-  it("refuses the owner with 400 and does not touch the session", async () => {
+  it("refuses the last owner with 400 and does not touch the session", async () => {
     const res = await leavePOST();
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/owner cannot leave/);
+    expect((await res.json()).error).toMatch(/last owner cannot leave/);
     expect(unstableUpdate).not.toHaveBeenCalled();
     expect(await db.select().from(householdMembers)).toHaveLength(2);
+  });
+});
+
+// #192
+describe("PATCH /api/household/members/[userId]", () => {
+  const patch = (userId: string, body: unknown) =>
+    memberPATCH(
+      new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }),
+      params(userId)
+    );
+  const roles = async () =>
+    Object.fromEntries(
+      (await db.select().from(householdMembers)).map((r) => [r.userId, r.role])
+    );
+
+  it("lets an owner promote a member without refreshing the owner's own session", async () => {
+    expect((await patch("m", { role: "owner" })).status).toBe(200);
+    expect(await roles()).toEqual({ o: "owner", m: "owner" });
+    expect(unstableUpdate).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the session when an owner changes their own role", async () => {
+    await patch("m", { role: "owner" });
+    expect((await patch("o", { role: "member" })).status).toBe(200);
+    expect(await roles()).toEqual({ o: "member", m: "owner" });
+    expect(unstableUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to demote the last owner (409), a member (403), and a bad body (400)", async () => {
+    expect((await patch("o", { role: "member" })).status).toBe(409);
+    expect((await patch("m", { role: "admin" })).status).toBe(400);
+    currentSession.userId = "m";
+    // The session says owner; the database says member, and the database wins.
+    currentSession.role = "owner";
+    expect((await patch("m", { role: "owner" })).status).toBe(403);
+    expect(await roles()).toEqual({ o: "owner", m: "member" });
+  });
+});
+
+describe("recovery kit notice (#192)", () => {
+  it("travels with the member list and is dismissed by POST", async () => {
+    await db.update(householdMembers).set({ role: "owner" }).where(eq(householdMembers.userId, "m"));
+    const at = new Date(Math.floor(Date.now() / 1000) * 1000);
+    await db.update(households).set({ recoveryCreatedBy: "o", recoveryCreatedAt: at });
+    currentSession.userId = "m";
+    expect((await (await membersGET()).json()).recoveryNotice).toEqual({ by: "o", at: at.toISOString() });
+    expect((await recoveryNoticePOST()).status).toBe(200);
+    expect((await (await membersGET()).json()).recoveryNotice).toBeNull();
+  });
+
+  it("is null for the kit's author", async () => {
+    await db.update(households).set({ recoveryCreatedBy: "o", recoveryCreatedAt: new Date() });
+    expect((await (await membersGET()).json()).recoveryNotice).toBeNull();
   });
 });

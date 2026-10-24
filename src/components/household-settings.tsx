@@ -2,6 +2,7 @@
 
 import { CreditBalance } from "@/components/credit-balance";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,25 @@ interface Member {
   role: "owner" | "member";
   hasWrap: boolean;
   publicKey: string | null;
+}
+
+// The confirmation for each kind of role change (#192). stepDownConfirm has
+// no {name}; next-intl ignores the extra value.
+const ROLE_CONFIRM = {
+  promote: "members.promoteConfirm",
+  demote: "members.demoteConfirm",
+  stepDown: "members.stepDownConfirm",
+} as const;
+
+function roleChange(role: "owner" | "member", self: boolean): keyof typeof ROLE_CONFIRM {
+  if (role === "owner") return "promote";
+  return self ? "stepDown" : "demote";
+}
+
+// "The recovery kit was replaced" (#192), for an owner who did not make it.
+interface RecoveryNotice {
+  by: string | null;
+  at: string;
 }
 
 interface Invitation {
@@ -43,6 +63,7 @@ async function readError(res: Response, fallback: (status: number) => string): P
 export function HouseholdSettings() {
   const t = useTranslations("household");
   const format = useFormatter();
+  const router = useRouter();
   const failed = useCallback((status: number) => t("errors.requestFailedStatus", { status }), [t]);
   const { state, status: cryptoStatus, keys, showRecoveryKit } = useCrypto();
   const { limits, rotateDataKey } = useHouseholdData();
@@ -54,6 +75,7 @@ export function HouseholdSettings() {
   const [rotationNote, setRotationNote] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [me, setMe] = useState<{ userId: string; role: "owner" | "member" } | null>(null);
+  const [recoveryNotice, setRecoveryNotice] = useState<RecoveryNotice | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [email, setEmail] = useState("");
   const [inviteNote, setInviteNote] = useState<string | null>(null);
@@ -61,6 +83,9 @@ export function HouseholdSettings() {
   const [busy, setBusy] = useState(false);
 
   const isOwner = me?.role === "owner";
+  // Co-owners (#192): an owner may leave or step down while another remains.
+  const ownerCount = members.filter((m) => m.role === "owner").length;
+  const canLeave = me !== null && (!isOwner || ownerCount > 1);
   // Pending invitations occupy a slot: the server counts them the same way
   // at send time, so the UI must not offer an invite that would 409.
   const atMemberLimit =
@@ -70,9 +95,14 @@ export function HouseholdSettings() {
   const loadMembers = useCallback(async () => {
     const res = await fetch("/api/household/members", { cache: "no-store" });
     if (!res.ok) throw new Error(await readError(res, failed));
-    const body = (await res.json()) as { members: Member[]; me: { userId: string; role: "owner" | "member" } };
+    const body = (await res.json()) as {
+      members: Member[];
+      me: { userId: string; role: "owner" | "member" };
+      recoveryNotice?: RecoveryNotice | null;
+    };
     setMembers(body.members);
     setMe(body.me);
+    setRecoveryNotice(body.recoveryNotice ?? null);
     return body.me;
   }, [failed]);
 
@@ -160,8 +190,8 @@ export function HouseholdSettings() {
     }
   }
 
-  // Self-service leave (#220). Members only — the owner cannot leave. The
-  // session is refreshed server-side and lands on a fresh household of the
+  // Self-service leave (#220). A member, or an owner while another owner
+  // remains (#192). The session is refreshed server-side and lands on a fresh household of the
   // leaver's own; a full navigation makes the proxy read the new cookie.
   function leave() {
     const message = encryptionOn ? t("members.leaveConfirmEncrypted") : t("members.leaveConfirm");
@@ -171,6 +201,33 @@ export function HouseholdSettings() {
       if (!res.ok) throw new Error(await readError(res, failed));
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/apartments");
+    });
+  }
+
+  // Promote, demote, or step down (#192). The server keeps at least one
+  // owner. Changing your own role re-renders the layout, whose role (read from
+  // the database) decides what else the page offers, such as Recompute.
+  function changeRole(member: Member, role: "owner" | "member") {
+    const self = member.userId === me?.userId;
+    const name = displayName(member.name, member.email);
+    if (!window.confirm(t(ROLE_CONFIRM[roleChange(role, self)], { name }))) return;
+    void run(async () => {
+      const res = await fetch(`/api/household/members/${member.userId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) throw new Error(await readError(res, failed));
+      await loadMembers();
+      if (self) router.refresh();
+    });
+  }
+
+  function dismissRecoveryNotice() {
+    void run(async () => {
+      const res = await fetch("/api/household/recovery-notice", { method: "POST" });
+      if (!res.ok) throw new Error(await readError(res, failed));
+      setRecoveryNotice(null);
     });
   }
 
@@ -227,6 +284,10 @@ export function HouseholdSettings() {
         </p>
       )}
 
+      {encryptionOn && recoveryNotice && (
+        <RecoveryKitNotice notice={recoveryNotice} busy={busy} onDismiss={dismissRecoveryNotice} />
+      )}
+
       {encryptionOn && (
         <p className="text-sm text-muted-foreground">{t("fingerprint.compare")}</p>
       )}
@@ -239,20 +300,25 @@ export function HouseholdSettings() {
               {m.name?.trim() && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
               {encryptionOn && <MemberFingerprint member={m} own={m.userId === me?.userId} devicePublicKey={keys?.publicKey ?? null} />}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Badge variant="outline">{t(`members.role.${m.role}`)}</Badge>
               {encryptionOn && !m.hasWrap && <Badge variant="secondary">{t("members.awaitingKey")}</Badge>}
-              {isOwner && m.userId !== me?.userId && (
-                <Button size="sm" variant="ghost" disabled={busy} onClick={() => remove(m)}>
-                  {t("members.remove")}
-                </Button>
+              {isOwner && (
+                <MemberActions
+                  member={m}
+                  self={m.userId === me?.userId}
+                  ownerCount={ownerCount}
+                  busy={busy}
+                  onRole={changeRole}
+                  onRemove={remove}
+                />
               )}
             </div>
           </li>
         ))}
       </ul>
 
-      {me && !isOwner && (
+      {canLeave && (
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={leave}>
             {t("members.leave")}
@@ -342,6 +408,71 @@ export function HouseholdSettings() {
         </div>
       )}
     </section>
+  );
+}
+
+// What an owner can do to one row (#192): promote or demote and remove
+// anyone else; step down themselves while another owner remains.
+function MemberActions({
+  member,
+  self,
+  ownerCount,
+  busy,
+  onRole,
+  onRemove,
+}: {
+  member: Member;
+  self: boolean;
+  ownerCount: number;
+  busy: boolean;
+  onRole: (member: Member, role: "owner" | "member") => void;
+  onRemove: (member: Member) => void;
+}) {
+  const t = useTranslations("household.members");
+  if (self) {
+    if (ownerCount < 2) return null;
+    return (
+      <Button size="sm" variant="ghost" disabled={busy} onClick={() => onRole(member, "member")}>
+        {t("stepDown")}
+      </Button>
+    );
+  }
+  const owner = member.role === "owner";
+  return (
+    <>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={() => onRole(member, owner ? "member" : "owner")}>
+        {owner ? t("demote") : t("promote")}
+      </Button>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={() => onRemove(member)}>
+        {t("remove")}
+      </Button>
+    </>
+  );
+}
+
+// There is one recovery kit per household, and making a new one invalidates
+// every other copy (#192). Shown to each owner who did not make it.
+function RecoveryKitNotice({
+  notice,
+  busy,
+  onDismiss,
+}: {
+  notice: RecoveryNotice;
+  busy: boolean;
+  onDismiss: () => void;
+}) {
+  const t = useTranslations("household.recoveryNotice");
+  const format = useFormatter();
+  const date = format.dateTime(new Date(notice.at), { dateStyle: "medium" });
+  return (
+    <div role="status" className="space-y-2 rounded-md border border-warning p-3">
+      <p className="text-sm">
+        {notice.by ? t("text", { name: notice.by, date }) : t("textUnknown", { date })}
+      </p>
+      <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onDismiss}>
+        {t("dismiss")}
+      </Button>
+    </div>
   );
 }
 

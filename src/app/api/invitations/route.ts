@@ -13,7 +13,7 @@ const createSchema = z.object({ email: z.string().min(1).max(320) });
 async function requireOwner() {
   const { householdId, userId } = await requireHousehold();
   const role = await assertMembership(householdId, userId);
-  if (role !== "owner") throw new ApiError("Only the owner can manage invitations", 403);
+  if (role !== "owner") throw new ApiError("Only an owner can manage invitations", 403);
   return { householdId, userId };
 }
 

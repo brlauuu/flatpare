@@ -21,7 +21,13 @@
     "removedEmailFailed": "{name} a été retiré·e, mais l’e-mail pour le ou la prévenir n’a pas pu être envoyé.",
     "removed": "{name} a été retiré·e.",
     "removedRotationFailed": "{name} a été retiré·e, mais la clé du foyer n’a pas pu être renouvelée : {reason}. Renouvelle-la ci-dessous quand tu es prêt·e.",
-    "unknownError": "erreur inconnue"
+    "unknownError": "erreur inconnue",
+    "promote": "Rendre propriétaire",
+    "demote": "Rendre membre",
+    "stepDown": "Ne plus être propriétaire",
+    "promoteConfirm": "Rendre {name} propriétaire ? Les propriétaires peuvent inviter et retirer des personnes, y compris d’autres propriétaires, et renouveler la clé du foyer.",
+    "demoteConfirm": "Rendre {name} de nouveau membre ? Cette personne ne pourra plus inviter ni retirer personne.",
+    "stepDownConfirm": "Ne plus être propriétaire ? Tu ne pourras plus inviter ni retirer personne. Les autres propriétaires continuent de gérer le foyer."
   },
   "fingerprint": {
     "label": "Code de clé :",
@@ -108,5 +114,10 @@
       "Stethoscope": "Stéthoscope",
       "Music": "Musique"
     }
+  },
+  "recoveryNotice": {
+    "text": "{name} a créé un nouveau kit de récupération le {date}. Toute copie plus ancienne ne fonctionne plus. Demande le nouveau à {name}.",
+    "textUnknown": "Un nouveau kit de récupération a été créé le {date}. Toute copie plus ancienne ne fonctionne plus.",
+    "dismiss": "Compris"
   }
 }

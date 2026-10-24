@@ -14,6 +14,7 @@ vi.mock("@/auth", () => ({ auth: () => authMock() }));
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema-auth";
+import { households, householdMembers } from "@/lib/db/schema";
 import { requireHousehold, resolveHouseholdIdentity } from "@/lib/session";
 import { UnauthorizedError } from "@/lib/household";
 
@@ -126,6 +127,29 @@ describe("resolveHouseholdIdentity", () => {
       await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "Ana" });
       authMock.mockResolvedValue(session({ user: { id: "u1" } }));
       await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ userName: "Member" });
+    });
+  });
+
+  describe("the role comes from the database, not the session (#192)", () => {
+    // An owner can promote or demote someone, and the token is up to 24h old;
+    // Recompute must follow the change on the next page load.
+    let hid: number;
+    beforeEach(async () => {
+      await db.delete(householdMembers);
+      await db.delete(households);
+      await db.delete(users).where(eq(users.id, "u1"));
+      await db.insert(users).values({ id: "u1", email: "ana@example.com", name: "Ana" });
+      const [h] = await db.insert(households).values({ name: "H", ownerId: "u1" }).returning();
+      hid = h.id;
+    });
+
+    it("reads a promotion and a demotion the session has not seen yet", async () => {
+      await db.insert(householdMembers).values({ householdId: hid, userId: "u1", role: "owner" });
+      authMock.mockResolvedValue(session({ householdId: hid, role: "member" }));
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ role: "owner" });
+      await db.update(householdMembers).set({ role: "member" });
+      authMock.mockResolvedValue(session({ householdId: hid, role: "owner" }));
+      await expect(resolveHouseholdIdentity()).resolves.toMatchObject({ role: "member" });
     });
   });
 

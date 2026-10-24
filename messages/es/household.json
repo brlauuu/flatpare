@@ -21,7 +21,13 @@
     "removedEmailFailed": "Se ha quitado a {name}, pero no se ha podido enviar el correo para avisarle.",
     "removed": "Se ha quitado a {name}.",
     "removedRotationFailed": "Se ha quitado a {name}, pero no se ha podido renovar la clave del hogar: {reason}. Renuévala abajo cuando quieras.",
-    "unknownError": "error desconocido"
+    "unknownError": "error desconocido",
+    "promote": "Hacer titular",
+    "demote": "Hacer miembro",
+    "stepDown": "Dejar de ser titular",
+    "promoteConfirm": "¿Hacer titular a {name}? Los titulares pueden invitar y quitar a personas, también a otros titulares, y renovar la clave del hogar.",
+    "demoteConfirm": "¿Volver a hacer miembro a {name}? Ya no podrá invitar ni quitar a nadie.",
+    "stepDownConfirm": "¿Dejar de ser titular? Ya no podrás invitar ni quitar a nadie. Los demás titulares siguen gestionando el hogar."
   },
   "fingerprint": {
     "label": "Código de clave:",
@@ -108,5 +114,10 @@
       "Stethoscope": "Estetoscopio",
       "Music": "Música"
     }
+  },
+  "recoveryNotice": {
+    "text": "{name} creó un nuevo kit de recuperación el {date}. Las copias anteriores ya no funcionan. Pídele el nuevo a {name}.",
+    "textUnknown": "El {date} se creó un nuevo kit de recuperación. Las copias anteriores ya no funcionan.",
+    "dismiss": "Entendido"
   }
 }

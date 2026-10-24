@@ -253,6 +253,22 @@ describe("listPendingWraps / fulfilWraps", () => {
     expect(await listPendingWraps(hid)).toEqual([]);
   });
 
+  // Not owner-gated (#192): any member holding the key can let a new member
+  // in, so an absent owner does not strand a pending one.
+  it("lets a member who holds the key wrap it for a pending member", async () => {
+    const hid = await seeded();
+    await fulfilWraps(hid, "o", [{ userId: "m1", wrappedKey: "WRAP_M1", publicKey: "PUBm1" }]);
+    await setupMemberKeys({ householdId: hid, userId: "m2", role: "member", member: member("m2") });
+    expect(
+      await fulfilWraps(hid, "m1", [{ userId: "m2", wrappedKey: "WRAP_M2", publicKey: "PUBm2" }])
+    ).toBe(1);
+    const [row] = await db
+      .select()
+      .from(householdKeyWraps)
+      .where(eq(householdKeyWraps.userId, "m2"));
+    expect(row.wrappedBy).toBe("m1");
+  });
+
   it("rejects a wrapper who holds no wrap (403)", async () => {
     const hid = await seeded();
     await expect(
@@ -363,7 +379,7 @@ describe("recoverHousehold / replaceRecovery", () => {
       member: member("o"),
       household: { wrappedKey: "WRAP_O", recovery },
     });
-    await replaceRecovery(hid, { wrappedKey: "R3", iv: "I3", kdf });
+    await replaceRecovery(hid, "o", { wrappedKey: "R3", iv: "I3", kdf });
     const s = await getCryptoStatus(hid, "o", "owner");
     expect(s.recovery?.wrappedKey).toBe("R3");
   });
@@ -627,5 +643,66 @@ describe("createHouseholdKey", () => {
     await expect(
       createHouseholdKey({ householdId: hid, userId: "o", role: "owner", wrappedKey: "W", recovery })
     ).rejects.toMatchObject({ status: 409, message: /already exists/ });
+  });
+});
+
+describe("who made the recovery kit (#192)", () => {
+  async function kitAuthor(hid: number) {
+    const [h] = await db
+      .select({ by: households.recoveryCreatedBy, at: households.recoveryCreatedAt })
+      .from(households)
+      .where(eq(households.id, hid));
+    return h;
+  }
+
+  async function withKit() {
+    const hid = await makeHousehold("o", "m");
+    await setupMemberKeys({
+      householdId: hid,
+      userId: "o",
+      role: "owner",
+      member: member("o"),
+      household: { wrappedKey: "WRAPO", recovery },
+    });
+    return hid;
+  }
+
+  it("is the creator at setup", async () => {
+    const hid = await withKit();
+    const h = await kitAuthor(hid);
+    expect(h.by).toBe("o");
+    expect(h.at).toBeInstanceOf(Date);
+  });
+
+  it("is whoever regenerated it", async () => {
+    const hid = await withKit();
+    await replaceRecovery(hid, "m", { wrappedKey: "R2", iv: "I2", kdf });
+    expect((await kitAuthor(hid)).by).toBe("m");
+  });
+
+  it("is a member who recovered with the code", async () => {
+    const hid = await withKit();
+    await recoverHousehold(hid, "m", { member: member("m"), wrappedKey: "WM", recovery });
+    expect((await kitAuthor(hid)).by).toBe("m");
+  });
+
+  it("is the owner who created a household key", async () => {
+    const hid = await makeHousehold("o");
+    await db.insert(memberKeys).values({
+      userId: "o", publicKey: "PUBo", wrappedPrivateKey: "PRIVo", privateKeyIv: "IVIV",
+      kdfSalt: "AAAA", kdfMemoryKib: 65536, kdfIterations: 3, kdfParallelism: 1, kdfVersion: 1,
+    });
+    await createHouseholdKey({ householdId: hid, userId: "o", role: "owner", wrappedKey: "WRAP", recovery });
+    expect((await kitAuthor(hid)).by).toBe("o");
+  });
+
+  it("is the owner who rotated", async () => {
+    const hid = await rotatableHousehold();
+    await db
+      .update(householdMembers)
+      .set({ role: "owner" })
+      .where(eq(householdMembers.userId, "m"));
+    await rotateHouseholdKey(hid, "m", request());
+    expect((await kitAuthor(hid)).by).toBe("m");
   });
 });

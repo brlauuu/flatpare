@@ -9,6 +9,10 @@ import type { Limits } from "@/lib/limits";
 import { fingerprint } from "@/lib/crypto";
 
 const fetchMock = vi.fn();
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
+// What GET /api/household/members says about the recovery kit (#192).
+let recoveryNotice: { by: string | null; at: string } | null = null;
 
 function jsonRes(body: unknown, status = 200) {
   return new Response(status === 204 ? null : JSON.stringify(body), {
@@ -68,7 +72,9 @@ function renderAs(
   householdData = makeHouseholdData({ limits, credits });
   fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
-    if (url === "/api/household/members") return jsonRes({ members, me });
+    if (url === "/api/household/members") return jsonRes({ members, me, recoveryNotice });
+    if (url.startsWith("/api/household/members/") && method === "PATCH") return jsonRes({});
+    if (url === "/api/household/recovery-notice" && method === "POST") return jsonRes({});
     if (url === "/api/invitations" && method === "GET") return jsonRes({ invitations: invites });
     if (url === "/api/invitations" && method === "POST") {
       const body = JSON.parse(String(init?.body));
@@ -93,6 +99,8 @@ function renderAs(
 
 beforeEach(() => {
   fetchMock.mockReset();
+  refresh.mockReset();
+  recoveryNotice = null;
   showRecoveryKit.mockReset();
   cryptoStatus = null;
   devicePublicKey = undefined;
@@ -469,9 +477,96 @@ describe("HouseholdSettings — leave", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it("does not offer it to the owner", async () => {
+  it("does not offer it to the only owner", async () => {
     renderAs({ userId: "o", role: "owner" });
     await screen.findByText("Ana");
     expect(screen.queryByRole("button", { name: /leave household/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("HouseholdSettings — co-owners (#192)", () => {
+  // Bob is promoted for the length of a test, then put back.
+  async function withBobAsOwner(test: () => Promise<void>) {
+    members[1].role = "owner";
+    try {
+      await test();
+    } finally {
+      members[1].role = "member";
+    }
+  }
+
+  it("lets the only owner promote a member, and offers no step-down", async () => {
+    const user = userEvent.setup();
+    renderAs({ userId: "o", role: "owner" });
+    const ana = (await screen.findByText("Ana")).closest("li")!;
+    expect(within(ana).queryByRole("button", { name: /step down/i })).not.toBeInTheDocument();
+    const bob = screen.getByText("bob@example.com").closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: "Make owner" }));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including other owners/));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/household/members/m",
+        expect.objectContaining({ method: "PATCH", body: JSON.stringify({ role: "owner" }) })
+      )
+    );
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("with a second owner: offers demotion, stepping down and leaving", async () => {
+    await withBobAsOwner(async () => {
+      const user = userEvent.setup();
+      renderAs({ userId: "o", role: "owner" });
+      const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+      expect(within(bob).getByRole("button", { name: "Make member" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /leave household/i })).toBeInTheDocument();
+      const ana = screen.getByText("Ana").closest("li")!;
+      await user.click(within(ana).getByRole("button", { name: /step down as owner/i }));
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/household/members/o",
+          expect.objectContaining({ method: "PATCH", body: JSON.stringify({ role: "member" }) })
+        )
+      );
+      // Your own role changed: the layout re-reads it (Recompute follows).
+      await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  it("does nothing when the owner cancels", async () => {
+    const user = userEvent.setup();
+    (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    renderAs({ userId: "o", role: "owner" });
+    const bob = (await screen.findByText("bob@example.com")).closest("li")!;
+    await user.click(within(bob).getByRole("button", { name: "Make owner" }));
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/household/members/m", expect.objectContaining({ method: "PATCH" }));
+  });
+
+  it("gives a member no role buttons", async () => {
+    renderAs({ userId: "m", role: "member" });
+    await screen.findByText("Ana");
+    expect(screen.queryByRole("button", { name: /make (owner|member)|step down/i })).not.toBeInTheDocument();
+  });
+
+  it("tells an owner who made the current recovery kit, until dismissed", async () => {
+    recoveryNotice = { by: "Bob", at: "2026-10-23T10:00:00.000Z" };
+    const user = userEvent.setup();
+    renderAs({ userId: "o", role: "owner" });
+    expect(await screen.findByText(/Bob made a new recovery kit on .*Ask Bob for the new one/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Got it" }));
+    await waitFor(() => expect(screen.queryByText(/made a new recovery kit/)).not.toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledWith("/api/household/recovery-notice", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("says when a kit was made even when its author cannot be named", async () => {
+    recoveryNotice = { by: null, at: "2026-10-23T10:00:00.000Z" };
+    renderAs({ userId: "o", role: "owner" });
+    expect(await screen.findByText(/A new recovery kit was made on/)).toBeInTheDocument();
+  });
+
+  it("shows no recovery notice when encryption is off", async () => {
+    recoveryNotice = { by: "Bob", at: "2026-10-23T10:00:00.000Z" };
+    renderAs({ userId: "o", role: "owner" }, "off");
+    await screen.findByText("Ana");
+    expect(screen.queryByText(/recovery kit/)).not.toBeInTheDocument();
   });
 });

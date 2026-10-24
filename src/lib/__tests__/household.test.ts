@@ -10,7 +10,7 @@ import {
   memberKeys,
 } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   resolveHouseholdForUser,
   createHouseholdForUser,
@@ -18,6 +18,9 @@ import {
   leaveHousehold,
   listMembers,
   removeMember,
+  setMemberRole,
+  recoveryNoticeFor,
+  dismissRecoveryNotice,
   ForbiddenError,
   HouseholdError,
 } from "../household";
@@ -312,9 +315,9 @@ describe("leaveHousehold", () => {
     expect(await assertMembership(id, "owner")).toBe("owner");
   });
 
-  it("refuses the owner with 400 and changes nothing", async () => {
+  it("refuses the last owner with 400 and changes nothing", async () => {
     const id = await seeded();
-    await expect(leaveHousehold(id, "owner")).rejects.toMatchObject({ status: 400, message: /owner cannot leave/ });
+    await expect(leaveHousehold(id, "owner")).rejects.toMatchObject({ status: 400, message: /last owner cannot leave/ });
     expect(await assertMembership(id, "owner")).toBe("owner");
     const [h] = await db.select({ due: households.rotationDue }).from(households).where(eq(households.id, id));
     expect(h.due).toBe(false);
@@ -335,5 +338,165 @@ describe("leaveHousehold", () => {
     expect(fresh).not.toBeNull();
     expect(fresh).not.toBe(id);
     expect(await assertMembership(fresh!, "m")).toBe("owner");
+  });
+});
+
+describe("co-owners (#192)", () => {
+  // "a" owns; "b" and "c" are members. Every test starts from that.
+  async function seeded() {
+    for (const u of ["a", "b", "c", "x"]) await makeUser(u);
+    const id = await createHouseholdForUser("a");
+    for (const u of ["b", "c"]) {
+      await db.insert(householdMembers).values({ householdId: id, userId: u, role: "member" });
+    }
+    return id;
+  }
+
+  async function owners(id: number) {
+    const rows = await db
+      .select({ userId: householdMembers.userId })
+      .from(householdMembers)
+      .where(and(eq(householdMembers.householdId, id), eq(householdMembers.role, "owner")));
+    return rows.map((r) => r.userId).sort();
+  }
+
+  describe("setMemberRole", () => {
+    it("lets an owner promote a member, and the new owner has every owner right", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      expect(await owners(id)).toEqual(["a", "b"]);
+      await setMemberRole(id, "b", "c", "owner");
+      await removeMember(id, "b", "c");
+      expect(await owners(id)).toEqual(["a", "b"]);
+    });
+
+    it("lets an owner demote another owner, or themselves, while one remains", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      await setMemberRole(id, "b", "a", "member");
+      expect(await owners(id)).toEqual(["b"]);
+      await setMemberRole(id, "b", "c", "owner");
+      await setMemberRole(id, "c", "c", "member");
+      expect(await owners(id)).toEqual(["b"]);
+    });
+
+    it("refuses to demote the last owner (409)", async () => {
+      const id = await seeded();
+      await expect(setMemberRole(id, "a", "a", "member")).rejects.toMatchObject({
+        status: 409,
+        message: /at least one owner/,
+      });
+      expect(await owners(id)).toEqual(["a"]);
+    });
+
+    it("refuses a member (403), a non-member actor, and an unknown target (404)", async () => {
+      const id = await seeded();
+      await expect(setMemberRole(id, "b", "c", "owner")).rejects.toMatchObject({ status: 403 });
+      await expect(setMemberRole(id, "x", "b", "owner")).rejects.toBeInstanceOf(ForbiddenError);
+      await expect(setMemberRole(id, "a", "x", "owner")).rejects.toMatchObject({ status: 404 });
+      expect(await owners(id)).toEqual(["a"]);
+    });
+
+    it("treats the role someone already has as a no-op", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "a", "owner");
+      await setMemberRole(id, "a", "b", "member");
+      expect(await owners(id)).toEqual(["a"]);
+    });
+  });
+
+  describe("leaving and removal", () => {
+    it("lets an owner leave while another owner remains", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      await leaveHousehold(id, "a");
+      expect(await owners(id)).toEqual(["b"]);
+      await expect(leaveHousehold(id, "b")).rejects.toMatchObject({ status: 400 });
+    });
+
+    it("lets an owner remove another owner", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      await removeMember(id, "a", "b");
+      expect(await owners(id)).toEqual(["a"]);
+      await expect(assertMembership(id, "b")).rejects.toBeInstanceOf(ForbiddenError);
+    });
+  });
+
+  // The guard is inside each statement, so owners acting against each other
+  // at the same moment cannot leave the household with none.
+  it("keeps exactly one owner when two owners demote, remove and leave against each other at once", async () => {
+    for (let round = 0; round < 4; round++) {
+      await db.delete(householdMembers);
+      await db.delete(households);
+      await db.delete(users);
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      const results = await Promise.allSettled([
+        setMemberRole(id, "a", "b", "member"),
+        setMemberRole(id, "b", "a", "member"),
+        removeMember(id, "a", "b"),
+        removeMember(id, "b", "a"),
+        leaveHousehold(id, "a"),
+        leaveHousehold(id, "b"),
+        setMemberRole(id, "a", "a", "member"),
+        setMemberRole(id, "b", "b", "member"),
+      ]);
+      // Every refusal is an ownership rule, never the database giving up.
+      for (const r of results) {
+        if (r.status === "rejected") {
+          expect(r.reason instanceof HouseholdError || r.reason instanceof ForbiddenError).toBe(true);
+        }
+      }
+      expect(results.some((r) => r.status === "fulfilled")).toBe(true);
+      expect(await owners(id)).toHaveLength(1);
+    }
+  });
+
+  describe("recovery kit notice", () => {
+    async function kitBy(id: number, userId: string, at = new Date()) {
+      await db
+        .update(households)
+        .set({ recoveryCreatedBy: userId, recoveryCreatedAt: at })
+        .where(eq(households.id, id));
+    }
+
+    it("tells another owner who made the kit and when, until dismissed", async () => {
+      const id = await seeded();
+      await db.update(users).set({ name: "Alex" }).where(eq(users.id, "a"));
+      await setMemberRole(id, "a", "b", "owner");
+      const at = new Date(Math.floor(Date.now() / 1000) * 1000);
+      await kitBy(id, "a", at);
+      expect(await recoveryNoticeFor(id, "b")).toEqual({ by: "Alex", at });
+      await dismissRecoveryNotice(id, "b");
+      expect(await recoveryNoticeFor(id, "b")).toBeNull();
+    });
+
+    it("comes back when the kit is replaced again after dismissal", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      await kitBy(id, "a", new Date(Date.now() - 60_000));
+      await dismissRecoveryNotice(id, "b");
+      await kitBy(id, "c", new Date(Date.now() + 60_000));
+      expect(await recoveryNoticeFor(id, "b")).toMatchObject({ by: "c" });
+    });
+
+    it("is not shown to the kit's author, to members, or for a kit with no recorded author", async () => {
+      const id = await seeded();
+      expect(await recoveryNoticeFor(id, "a")).toBeNull();
+      await kitBy(id, "a");
+      expect(await recoveryNoticeFor(id, "a")).toBeNull();
+      expect(await recoveryNoticeFor(id, "b")).toBeNull();
+    });
+
+    it("is shown again to someone promoted after dismissing it as a former owner", async () => {
+      const id = await seeded();
+      await setMemberRole(id, "a", "b", "owner");
+      await kitBy(id, "a", new Date(Date.now() - 60_000));
+      await dismissRecoveryNotice(id, "b");
+      await setMemberRole(id, "a", "b", "member");
+      await setMemberRole(id, "a", "b", "owner");
+      expect(await recoveryNoticeFor(id, "b")).not.toBeNull();
+    });
   });
 });

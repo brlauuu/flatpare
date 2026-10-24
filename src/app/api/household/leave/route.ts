@@ -5,8 +5,8 @@ import { leaveHousehold } from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 // Self-service leave (#220): a member deletes their own membership and wrap.
-// The owner cannot leave — a household without an owner has nobody who can
-// invite, remove or rotate. leaveHousehold marks the household as rotation
+// An owner may leave while another owner remains (#192) — a household without
+// one has nobody who can invite, remove or rotate. leaveHousehold marks the household as rotation
 // due, since the leaver's device still holds the data key (#219).
 //
 // The JWT still names the old household, so the session is refreshed here

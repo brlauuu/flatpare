@@ -36,7 +36,7 @@ type Editing =
 
 // Locations of interest and the distance recompute (#298). Lives on the
 // Household page: locations belong to the household, and every member may
-// edit them. Only the owner may recompute — `canRecompute` — because that
+// edit them. Only owners may recompute — `canRecompute` — because that
 // re-runs a paid distance call for every apartment × location pair (see
 // Apartment credits (E6) in AGENTS.md for the cost). The server does not
 // enforce that: the distance route serves every member's own enrichment,

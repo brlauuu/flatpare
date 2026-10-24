@@ -21,7 +21,13 @@
     "removedEmailFailed": "{name} è stato rimosso, ma non è stato possibile inviare l'e-mail per avvisarlo.",
     "removed": "{name} è stato rimosso.",
     "removedRotationFailed": "{name} è stato rimosso, ma non è stato possibile rinnovare la chiave del gruppo: {reason}. Rinnovala qui sotto quando vuoi.",
-    "unknownError": "errore sconosciuto"
+    "unknownError": "errore sconosciuto",
+    "promote": "Rendi proprietario",
+    "demote": "Rendi membro",
+    "stepDown": "Smetti di essere proprietario",
+    "promoteConfirm": "Rendere {name} proprietario? I proprietari possono invitare e rimuovere persone, anche altri proprietari, e rinnovare la chiave del gruppo.",
+    "demoteConfirm": "Rendere {name} di nuovo membro? Non potrà più invitare né rimuovere nessuno.",
+    "stepDownConfirm": "Smettere di essere proprietario? Non potrai più invitare né rimuovere nessuno. Gli altri proprietari continuano a gestire il gruppo."
   },
   "fingerprint": {
     "label": "Codice della chiave:",
@@ -108,5 +114,10 @@
       "Stethoscope": "Stetoscopio",
       "Music": "Musica"
     }
+  },
+  "recoveryNotice": {
+    "text": "{name} ha creato un nuovo kit di recupero il {date}. Le copie precedenti non funzionano più. Chiedi a {name} quello nuovo.",
+    "textUnknown": "Il {date} è stato creato un nuovo kit di recupero. Le copie precedenti non funzionano più.",
+    "dismiss": "Ho capito"
   }
 }

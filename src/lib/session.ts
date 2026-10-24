@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { householdMembers } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { displayName } from "@/lib/display-name";
 import { UnauthorizedError, type Role } from "@/lib/household";
@@ -41,9 +42,7 @@ export async function resolveHouseholdIdentity(): Promise<{
     userId,
     householdId,
     userName: await currentDisplayName(userId, session?.user?.name ?? null),
-    // A session with a household but no role should not exist (the jwt
-    // callback stamps both); "member" is the safe reading if it ever does.
-    role: session?.role ?? "member",
+    role: await currentRole(householdId, userId, session?.role ?? null),
   };
 }
 
@@ -58,4 +57,20 @@ export async function currentDisplayName(userId: string, sessionName: string | n
     .where(eq(users.id, userId));
   if (row) return displayName(row.name, row.email);
   return sessionName ?? "Member";
+}
+
+// The role, read from the database (#192): an owner can promote or demote
+// someone, and the session token is up to 24h old. Falls back to the
+// session's role when the row cannot be read, and to "member" — the safe
+// reading — when neither has one.
+export async function currentRole(
+  householdId: number,
+  userId: string,
+  sessionRole: "owner" | "member" | null
+): Promise<"owner" | "member"> {
+  const [row] = await db
+    .select({ role: householdMembers.role })
+    .from(householdMembers)
+    .where(and(eq(householdMembers.householdId, householdId), eq(householdMembers.userId, userId)));
+  return (row?.role as "owner" | "member" | undefined) ?? sessionRole ?? "member";
 }

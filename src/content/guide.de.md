@@ -98,7 +98,7 @@ Unter **Einstellungen** kannst du:
 
 - **Dieses Gerät sperren** — entfernt den Schlüssel aus diesem Browser, ohne dich abzumelden. Praktisch an einem geteilten oder geliehenen Computer; zum Entsperren brauchst du deine Passphrase wieder.
 - **Passphrase ändern** — deine Daten bleiben, der Schlüssel wird mit einer neuen Passphrase geschützt.
-- **Wiederherstellungs-Kit neu erstellen** (nur Inhaber:in des Haushalts) — erstellt einen neuen Wiederherstellungscode und macht den alten ungültig. Mach das, wenn du denkst, dass jemand anderes den Ausdruck gesehen hat.
+- **Wiederherstellungs-Kit neu erstellen** (nur Inhaber:innen des Haushalts) — erstellt einen neuen Wiederherstellungscode und macht den alten ungültig. Mach das, wenn du denkst, dass jemand anderes den Ausdruck gesehen hat. Weitere Inhaber:innen erfahren es auf der Seite Haushalt, denn ihre Kopie funktioniert dann ebenfalls nicht mehr.
 
 ---
 
@@ -121,6 +121,7 @@ Flatpare selbst zu betreiben ist kostenlos und hat überhaupt keine Grenzen.
 - **Passphrase vergessen?** Der Entsperren-Bildschirm bietet **«Mein Wiederherstellungs-Kit verwenden»** an — gib den 25-stelligen Code ein und setz eine neue Passphrase. Wenn du weder die Passphrase noch den Code hast, kann niemand die Daten wiederherstellen.
 - **«Meine Schlüssel zurücksetzen»** wird dort auch angeboten, und das ist *kein* Zurücksetzen des Passworts: Der alte Schlüssel wird aufgegeben, und du wartest, bis dir jemand anderes im Haushalt eine neue Kopie übergibt. Nur sinnvoll, wenn noch jemand anderes Zugriff hat.
 - **Vergleiche die Schlüsselcodes.** Die Seite Haushalt zeigt neben jedem Mitglied einen Code aus acht kleinen Bildern. Vergleiche sie persönlich oder in einem Anruf: Der Code, den jemand auf dem eigenen Gerät für sich sieht, muss mit dem übereinstimmen, den du für diese Person siehst. Wenn nicht, vertraue diesem Schlüssel nicht.
+- **Mehr als eine Inhaber:in.** Auf der Seite Haushalt kann eine Inhaber:in jedes Mitglied **Zur Inhaber:in machen**. Alle Inhaber:innen können Leute einladen und entfernen und den Haushaltsschlüssel erneuern, so läuft der Haushalt weiter, wenn eine von euch ausfällt. Eine Inhaber:in kann **Als Inhaber:in zurücktreten** oder den Haushalt verlassen, solange eine andere Inhaber:in bleibt.
 - **Neues Gerät:** Melde dich einfach an und gib deine Passphrase ein; von Hand muss nichts übertragen werden.
 - **Mehrere hochladen:** Auf der Seite Hochladen kannst du mehrere PDFs auf einmal auswählen.
 - **Jederzeit neu bewerten:** Bewertungen gehören jeder Person einzeln und lassen sich jederzeit ändern.

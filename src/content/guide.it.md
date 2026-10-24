@@ -98,7 +98,7 @@ In **Impostazioni** puoi:
 
 - **Blocca questo dispositivo** — cancella la chiave da questo browser senza farti uscire. Utile su un computer condiviso o prestato; per sbloccare ti servirà di nuovo la passphrase.
 - **Cambia passphrase** — mantiene i tuoi dati e protegge di nuovo la chiave con una nuova passphrase.
-- **Rigenera il kit di recupero** (solo per chi ha creato il gruppo) — emette un nuovo codice di recupero e rende non valido quello vecchio. Fallo se pensi che qualcun altro abbia visto la copia stampata.
+- **Rigenera il kit di recupero** (solo per i proprietari del gruppo) — emette un nuovo codice di recupero e rende non valido quello vecchio. Fallo se pensi che qualcun altro abbia visto la copia stampata. Gli altri proprietari vengono avvisati nella pagina Gruppo, perché anche la loro copia smette di funzionare.
 
 ---
 
@@ -121,6 +121,7 @@ Gestire Flatpare in proprio è gratuito e non ha alcun limite.
 - **Hai dimenticato la passphrase?** La schermata di sblocco offre **«Usa il mio kit di recupero»** — inserisci il codice di 25 caratteri e imposta una nuova passphrase. Se non hai né la passphrase né il codice, nessuno può recuperare i dati.
 - **«Reimposta le mie chiavi»** è offerto anche lì, e *non* è una reimpostazione della password: abbandona la vecchia chiave e aspetta che qualcun altro del gruppo ti consegni una copia nuova. Serve solo se qualcun altro ha ancora accesso.
 - **Confronta i codici delle chiavi.** La pagina Gruppo mostra accanto a ogni membro un codice di otto piccole immagini. Confrontali di persona o durante una chiamata: il codice che una persona vede per sé sul proprio dispositivo deve corrispondere a quello che vedi tu per lei. Se non è così, non fidarti di quella chiave.
+- **Più di un proprietario.** Nella pagina Gruppo un proprietario può usare **Rendi proprietario** su qualsiasi membro. Ogni proprietario può invitare e rimuovere persone e rinnovare la chiave del gruppo, così il gruppo continua a funzionare se uno di voi non c'è più. Un proprietario può scegliere **Smetti di essere proprietario** o lasciare il gruppo, purché resti un altro proprietario.
 - **Nuovo dispositivo:** accedi e inserisci la passphrase; non c'è nulla da trasferire a mano.
 - **Caricamento multiplo:** nella pagina Carica puoi selezionare più PDF in una volta.
 - **Rivaluta quando vuoi:** le valutazioni sono personali e puoi cambiarle quando vuoi.
