@@ -23,9 +23,8 @@ if (process.env.TURSO_DATABASE_URL) {
   );
 }
 
-// The self-hosted map data (#339). Before `next build`: next.config.ts
-// inlines which country files are present. A failed download fails the
-// deploy — the landing page says Swiss maps come from flatpare.com.
-run("npx", ["tsx", "scripts/fetch-map-data.ts"]);
+// No self-hosted map data here: flatpare.com draws its maps from
+// OpenFreeMap (decided on #339 after 0.18.0). The country files are for
+// self-hosters; see "Self-hosted map data" in AGENTS.md.
 
 run("npx", ["next", "build"]);
