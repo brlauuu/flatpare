@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.18.0 — 2026-10-25
+
 ### Changed
 - In Switzerland, maps now load their streets from flatpare.com itself instead of an outside map service, so no one else learns which part of town you are looking at. Households with an apartment or place outside Switzerland still get their map from OpenFreeMap. The small map on each apartment's page now looks like the map page and follows the light and dark theme. (#339)
 
