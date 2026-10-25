@@ -33,7 +33,7 @@
 | ⭐ **Per-user star ratings** | Each member rates kitchen, balconies, location, floorplan and overall. Averages roll up automatically — computed in the browser, since the server cannot read the scores. |
 | 📊 **Comparison grid** | Sortable side-by-side table — best price, biggest, shortest commute — with hide/show per apartment. |
 | 🚲 **Auto distance** | Bike + transit minutes from each apartment to your "locations of interest" (work, schools, family). |
-| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org)), and a per-apartment pin on the same map. Switzerland's map data is served by the app itself; elsewhere it comes from OpenFreeMap. |
+| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org) + OpenFreeMap), and a per-apartment pin on the same map. Self-hosters can serve the map data themselves. |
 | 👥 **Households + invitations** | Invite people by email; each member gets their own account and their own copy of the household key. |
 | ☁️ **Cloud or self-hosted** | One repo runs on Vercel + Turso + Vercel Blob, or fully self-hosted with SQLite + local disk and no third-party accounts at all. |
 
@@ -61,7 +61,7 @@ Accepted limits and the full threat model are in [`docs/security-notes.md`](./do
 | Auth | [Auth.js v5](https://authjs.dev) — Google / GitHub OAuth, or a shared password when self-hosting |
 | File storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (cloud) or `./uploads/` (local) — ciphertext either way |
 | AI | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini 2.5 Flash |
-| Maps | Google Maps (Geocoding + Distance Matrix) with [OpenRouteService](https://openrouteservice.org) bike-distance fallback; [MapLibre](https://maplibre.org) for rendering, with a self-hosted [Planetiler](https://github.com/onthegomap/planetiler) extract of OpenStreetMap for Switzerland |
+| Maps | Google Maps (Geocoding + Distance Matrix) with [OpenRouteService](https://openrouteservice.org) bike-distance fallback; [MapLibre](https://maplibre.org) over OpenFreeMap for rendering; self-hosters can use a [Planetiler](https://github.com/onthegomap/planetiler) extract of OpenStreetMap instead |
 | Payments | [Stripe](https://stripe.com) embedded Checkout — one-time, optional, off unless configured |
 | Tests | **Vitest 5** + React Testing Library, coverage floors enforced in CI |
 | Deploy target | Vercel (preferred) or any Node 24+ host |

@@ -555,32 +555,25 @@ not E6. It is noted here because a future reader may reasonably assume an unused
 
 ## Map tiles — reviewed 2026-10-07 (#330), revised 2026-10-25 (#339)
 
-### Inside Switzerland: no tile host
+### Accepted: flatpare.com's maps read OpenFreeMap, which sees which area is being viewed
 
-Since #339 both maps (`/map` and the apartment page's small map) read
-Switzerland from a PMTiles file served by this app itself
-(`public/map-data/`, downloaded and hash-checked at build time, see
-`src/lib/map/extracts.ts`), with label fonts from `public/map-fonts/`. A
-household whose apartments and places all lie inside Switzerland, or that has
-placed nothing yet, contacts no third party to draw a map; the view is kept
-near the country (`maxBounds`). The file is OpenStreetMap data, so it and the
-fonts are served without a session check (excluded in the `src/proxy.ts`
-matcher) — they contain nothing of anyone's, and the many range requests a map
-makes should not each run `auth()`. Only the build server contacts GitHub, to
-download the file.
+flatpare.com draws both maps (`/map` and the apartment page's small map) from
+OpenFreeMap's tiles and fonts. A tile request names an area of the map, so
+OpenFreeMap learns which part of which city a household is looking at. It
+learns nothing else — no apartment, rating or address leaves the browser; the
+marks are drawn locally from the decrypted store. 0.18.0 briefly served
+Switzerland from flatpare.com itself; the owner reverted that on #339, whose
+point is self-hosters. The OpenStreetMap raster tiles the apartment page's
+Leaflet map used are gone with Leaflet (0.18.0).
 
-### Accepted: outside Switzerland, OpenFreeMap sees which area is being viewed
+### Self-hosted instances: the map data can be served locally
 
-When any of the household's points lies outside every self-hosted file, the
-map falls back to OpenFreeMap's tiles and fonts. A tile request names an area
-of the map, so OpenFreeMap learns which part of which city a household is
-looking at. It learns nothing else — no apartment, rating or address leaves
-the browser; the marks are drawn locally from the decrypted store. The
-landing page's privacy section says this in both halves. More countries are
-one workflow run each (`.github/workflows/map-data.yml`).
-
-The OpenStreetMap raster tiles the apartment page's Leaflet map used are gone
-with Leaflet.
+A self-hosted Docker image downloads Switzerland's PMTiles file at build time
+(hash-checked, `src/lib/map/extracts.ts`) and serves it with the label fonts
+from its own origin, so a household whose points all lie inside Switzerland
+contacts no tile host. The file and fonts are excluded in the `src/proxy.ts`
+matcher — OpenStreetMap data and fonts, nothing of anyone's. Outside it, the
+map falls back to OpenFreeMap as above.
 
 ## Display names — reviewed 2026-10-08 (#327)
 

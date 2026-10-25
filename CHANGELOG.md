@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- flatpare.com draws its maps from OpenFreeMap again, as before 0.18.0. Serving the map data ourselves is meant for people who run Flatpare on their own computer, not for the hosted site. This also fixes a blank map for households searching only in towns just across the Swiss border, such as Mulhouse or Konstanz. (#339)
+
 ## 0.18.0 — 2026-10-25
 
 ### Changed

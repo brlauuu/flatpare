@@ -53,7 +53,7 @@
     "exceptionPdf": "<b>Ein PDF</b> geht an ein KI-Modell, das die Fakten herausliest und eine kurze Zusammenfassung schreibt. Auf flatpare.com läuft das über Vercel AI Gateway mit <zdr>Zero Data Retention</zdr>: Es nutzt nur Modellanbieter, die zugesagt haben, die Anfrage nicht aufzubewahren. Selbst betrieben ist es Google Gemini, ausser du richtest etwas anderes ein.",
     "exceptionAddress": "<b>Eine Adresse</b> geht an Google Maps, für ihre Lage und die Velo- und ÖV-Zeiten (OpenRouteService bei einer selbst betriebenen Installation ohne Maps).",
     "exceptionListing": "<b>Der Link eines Inserats</b> wird von unserem Server geöffnet, der die Seite von der Inserateplattform abruft, um zu prüfen, ob sie noch online ist.",
-    "tiles": "In der Schweiz laden Karten ihre Strassen direkt von flatpare.com, niemand sonst sieht also, welche Gegend du anschaust. Anderswo kommen sie von OpenFreeMap; dieser Dienst sieht den Teil der Stadt auf dem Bildschirm, nie deine Wohnungen.",
+    "tiles": "Karten laden ihre Strassen von OpenFreeMap; dieser Dienst sieht den Teil der Stadt auf dem Bildschirm, nie deine Wohnungen.",
     "disavowal": "Darum bezeichnen wir das nicht als Zero-Knowledge."
   },
   "paths": {
