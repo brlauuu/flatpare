@@ -27,6 +27,19 @@ describe("MapMark", () => {
     expect(screen.getByText("BS-01")).toBeInTheDocument();
   });
 
+  it("draws the highlighted apartment heavier and marks it current (#384)", () => {
+    const { mark } = setup({ highlighted: true });
+    expect(mark).toHaveClass("map-mark-highlighted");
+    expect(mark).toHaveAttribute("aria-current", "true");
+    expect(mark.querySelector("path")).toHaveAttribute("stroke-width", "4.5");
+  });
+
+  it("is not current unless highlighted", () => {
+    const { mark } = setup();
+    expect(mark).not.toHaveClass("map-mark-highlighted");
+    expect(mark).not.toHaveAttribute("aria-current");
+  });
+
   it("with a mouse: hover shows the card, leaving hides it, click opens the apartment", () => {
     const { props, mark } = setup();
     fireEvent.mouseEnter(mark);

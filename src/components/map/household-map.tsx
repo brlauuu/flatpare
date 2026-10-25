@@ -25,6 +25,8 @@ const InnerMap = dynamic(() => import("./household-map-inner"), {
 interface Props {
   apartments: ApartmentView[];
   locations: LocationView[];
+  // From `/map?highlight=<id>` (#384): the apartment page's "View on map".
+  highlightId?: string | null;
 }
 
 function ApartmentLinks({ items }: { items: { id: string; label: string }[] }) {
@@ -43,7 +45,7 @@ function ApartmentLinks({ items }: { items: { id: string; label: string }[] }) {
   );
 }
 
-export function HouseholdMap({ apartments, locations }: Props) {
+export function HouseholdMap({ apartments, locations, highlightId = null }: Props) {
   const t = useTranslations("map.map");
   const points = useMemo(() => toMapPoints(apartments, locations), [apartments, locations]);
   const [failed, setFailed] = useState(false);
@@ -79,7 +81,7 @@ export function HouseholdMap({ apartments, locations }: Props) {
             )}
           </div>
         ) : (
-          <InnerMap points={points} onError={() => setFailed(true)} />
+          <InnerMap points={points} highlightId={highlightId} onError={() => setFailed(true)} />
         )}
       </div>
 

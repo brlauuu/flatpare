@@ -52,7 +52,8 @@
     "nameRequired": "Name is required",
     "saveFailed": "Couldn't save changes",
     "ratingSaveFailed": "Couldn't save rating",
-    "availableFrom": "Available from: {date}"
+    "availableFrom": "Available from: {date}",
+    "showOnMap": "View on map"
   },
   "actions": {
     "viewPdf": "View PDF",
@@ -152,10 +153,6 @@
   "edit": {
     "title": "Edit apartment",
     "saving": "Saving..."
-  },
-  "map": {
-    "loading": "Loading map…",
-    "failed": "The map couldn't load."
   },
   "rating": {
     "yours": "Your Rating ({name})",

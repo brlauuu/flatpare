@@ -98,6 +98,20 @@ describe("toMarks", () => {
     const [apt] = toMarks(pts, TEXT);
     expect(apt.seed).toBe(seedFromId("a1"));
   });
+
+  it("highlights nothing by default", () => {
+    expect(toMarks(pts, TEXT).every((m) => !m.highlighted)).toBe(true);
+  });
+
+  it("highlights the named apartment and draws it last, above the rest (#384)", () => {
+    const two = toMapPoints(
+      [makeApartmentView({ id: "a1", latitude: 47, longitude: 7 }), makeApartmentView({ id: "a2", latitude: 47.1, longitude: 7.1 })],
+      [makeLocationView({ id: "l1", latitude: 47, longitude: 7 })]
+    );
+    const marks = toMarks(two, TEXT, "a1");
+    expect(marks.map((m) => m.key)).toEqual(["apartment:a2", "location:l1", "apartment:a1"]);
+    expect(marks.filter((m) => m.highlighted).map((m) => m.id)).toEqual(["a1"]);
+  });
 });
 
 describe("findActive", () => {

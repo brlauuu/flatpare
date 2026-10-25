@@ -52,7 +52,8 @@
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Änderungen konnten nicht gespeichert werden",
     "ratingSaveFailed": "Die Bewertung konnte nicht gespeichert werden",
-    "availableFrom": "Frei ab: {date}"
+    "availableFrom": "Frei ab: {date}",
+    "showOnMap": "Auf der Karte ansehen"
   },
   "actions": {
     "viewPdf": "PDF ansehen",
@@ -152,10 +153,6 @@
   "edit": {
     "title": "Wohnung bearbeiten",
     "saving": "Wird gespeichert..."
-  },
-  "map": {
-    "loading": "Karte wird geladen…",
-    "failed": "Die Karte konnte nicht geladen werden."
   },
   "rating": {
     "yours": "Deine Bewertung ({name})",

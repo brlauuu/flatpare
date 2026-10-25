@@ -101,10 +101,12 @@ export interface MarkSpec {
   lngLat: [number, number];
   // Where the mark opens; places open nothing.
   href: string | null;
+  // The apartment the map was opened for (#384, `/map?highlight=<id>`).
+  highlighted: boolean;
 }
 
-export function toMarks(points: MapPoints, text: MapText): MarkSpec[] {
-  return [
+export function toMarks(points: MapPoints, text: MapText, highlightId: string | null = null): MarkSpec[] {
+  const marks: MarkSpec[] = [
     ...points.apartments.map((a) => ({
       key: `apartment:${a.id}`,
       kind: "apartment" as const,
@@ -114,6 +116,7 @@ export function toMarks(points: MapPoints, text: MapText): MarkSpec[] {
       ariaLabel: describeApartment(a, text),
       lngLat: [a.longitude, a.latitude] as [number, number],
       href: `/apartments/${a.id}`,
+      highlighted: a.id === highlightId,
     })),
     ...points.locations.map((l) => ({
       key: `location:${l.id}`,
@@ -124,8 +127,11 @@ export function toMarks(points: MapPoints, text: MapText): MarkSpec[] {
       ariaLabel: l.label,
       lngLat: [l.longitude, l.latitude] as [number, number],
       href: null,
+      highlighted: false,
     })),
   ];
+  // Drawn last, so it sits above any mark it overlaps.
+  return [...marks.filter((m) => !m.highlighted), ...marks.filter((m) => m.highlighted)];
 }
 
 export type ActivePoint = { kind: "apartment"; point: ApartmentPoint } | { kind: "location"; point: LocationPoint };

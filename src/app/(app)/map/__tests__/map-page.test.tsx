@@ -4,11 +4,18 @@ import { HouseholdDataContext } from "@/components/household-data/household-data
 import { makeApartmentView, renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
 
 vi.mock("@/components/map/map-fonts", () => ({ mapFontVariables: "" }));
-vi.mock("@/components/map/household-map-inner", () => ({ default: () => <div data-testid="inner-map" /> }));
+vi.mock("@/components/map/household-map-inner", () => ({
+  default: ({ highlightId }: { highlightId: string | null }) => <div data-testid="inner-map" data-highlight={highlightId ?? ""} />,
+}));
+let search = "";
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(search) }));
 
 import MapPage from "../page";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  search = "";
+});
 
 const APTS = [makeApartmentView({ id: "a1", shortCode: "BS-01", latitude: 47.5, longitude: 7.6 })];
 
@@ -17,6 +24,17 @@ describe("Map page", () => {
     renderWithHouseholdData(<MapPage />, { apartments: APTS });
     expect(screen.getByRole("heading", { name: "Map" })).toBeInTheDocument();
     expect(await screen.findByTestId("inner-map")).toBeInTheDocument();
+  });
+
+  it("passes ?highlight= to the map (#384)", async () => {
+    search = "highlight=a1";
+    renderWithHouseholdData(<MapPage />, { apartments: APTS });
+    expect(await screen.findByTestId("inner-map")).toHaveAttribute("data-highlight", "a1");
+  });
+
+  it("highlights nothing without the parameter", async () => {
+    renderWithHouseholdData(<MapPage />, { apartments: APTS });
+    expect(await screen.findByTestId("inner-map")).toHaveAttribute("data-highlight", "");
   });
 
   it("looks up missing coordinates once, when the store is ready", async () => {

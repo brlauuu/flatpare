@@ -491,3 +491,13 @@
   /* A halo so the handwriting reads over printed streets and names. */
   text-shadow: 0 0 3px var(--background), 0 0 3px var(--background), 0 0 3px var(--background);
 }
+/* The apartment the map was opened for (#384): a heavier circle on a soft
+   fill of its own colour, and a larger label. */
+.map-mark-highlighted svg {
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+.map-mark-highlighted .map-mark-label {
+  font-size: 30px;
+  top: -12px;
+}
