@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ErrorDisplay } from "@/components/error-display";
 import { HouseholdMap } from "@/components/map/household-map";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
-import { mapFontVariables } from "./map-fonts";
+import { mapFontVariables } from "@/components/map/map-fonts";
 
 // Every apartment and place of the household on one map (#330). Full width,
 // like /compare, so there is no section layout here.

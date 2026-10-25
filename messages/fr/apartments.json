@@ -154,7 +154,8 @@
     "saving": "Enregistrement…"
   },
   "map": {
-    "loading": "Chargement de la carte…"
+    "loading": "Chargement de la carte…",
+    "failed": "La carte n’a pas pu se charger."
   },
   "rating": {
     "yours": "Ton évaluation ({name})",

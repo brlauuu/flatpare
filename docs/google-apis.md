@@ -12,10 +12,10 @@ silently no-op.
 | Postcode + lat/lng geocoding | Geocoding API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 | Bike + transit travel times | Distance Matrix API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 
-**No Google API renders a map.** The map page (`/map`) is drawn client-side
-with [MapLibre](https://maplibre.org) over OpenFreeMap vector tiles (#330),
-and the single-apartment pin with [Leaflet](https://leafletjs.com) over
-OpenStreetMap tiles. The **Maps Embed API is not used and should not be
+**No Google API renders a map.** The map page (`/map`) and the
+single-apartment pin are drawn client-side with [MapLibre](https://maplibre.org)
+from our own Switzerland file, or OpenFreeMap vector tiles elsewhere (#330,
+#339). The **Maps Embed API is not used and should not be
 enabled** — it was, until E3 deleted `src/lib/map-embed.ts`, and enabling an
 API a key does not need only widens what a leaked key can do.
 

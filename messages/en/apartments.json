@@ -154,7 +154,8 @@
     "saving": "Saving..."
   },
   "map": {
-    "loading": "Loading map…"
+    "loading": "Loading map…",
+    "failed": "The map couldn't load."
   },
   "rating": {
     "yours": "Your Rating ({name})",

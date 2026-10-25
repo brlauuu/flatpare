@@ -154,7 +154,8 @@
     "saving": "Wird gespeichert..."
   },
   "map": {
-    "loading": "Karte wird geladen…"
+    "loading": "Karte wird geladen…",
+    "failed": "Die Karte konnte nicht geladen werden."
   },
   "rating": {
     "yours": "Deine Bewertung ({name})",

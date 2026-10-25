@@ -71,8 +71,11 @@ export const config = {
     // The logos are shown to signed-out visitors on the landing page and the
     // sign-in card; gated, they were a 307 to `/` and a broken image (#301).
     // The hero screenshots under /hero/ are the same case.
+    // The self-hosted map data and its fonts (#339) are OpenStreetMap data
+    // and Noto Sans, nothing of anyone's; the map reads the country file in
+    // many small range requests, and none of them should wait on auth().
     // A prefix like the entries before it: Next compiles this pattern itself,
     // and an anchored `\.svg$` inside the lookahead did not survive that.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|flatpare_logo|hero/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|flatpare_logo|hero/|map-data/|map-fonts/).*)",
   ],
 };

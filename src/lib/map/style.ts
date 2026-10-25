@@ -1,4 +1,6 @@
 import type { StyleSpecification } from "maplibre-gl";
+import { chooseExtract, extractPath, type MapExtract } from "./extracts";
+import { SELF_GLYPHS_URL } from "./glyphs";
 
 // The map's look (#330): a printed street map — streets, water, parks,
 // street and neighbourhood names — and nothing else. Buildings, house
@@ -6,8 +8,10 @@ import type { StyleSpecification } from "maplibre-gl";
 // background layer: the canvas stays transparent and the page's grid
 // (`map-grid-bg` in globals.css) shows through.
 //
-// Tiles come from OpenFreeMap (OpenMapTiles schema, no key). Hosting our own
-// extract per country is #339; it should only need `sources` changed.
+// Tiles come from our own per-country PMTiles file when the household's
+// points all lie inside one (#339, extracts.ts), and from OpenFreeMap
+// otherwise. Both use the OpenMapTiles schema, so the layers are the same
+// and only the source and the glyphs differ.
 
 export type MapTheme = "light" | "dark";
 
@@ -21,17 +25,38 @@ const PALETTE = {
   dark: { ink: "#ffffff", water: "#16304d", waterLine: "#3a6aa0", park: "#1b2a16", minor: "#8a8a8a", label: "#cfcfcf", halo: "#0d0d0d" },
 } as const;
 
+// Our own files: read through the pmtiles protocol (registered by the map
+// component) from this app's origin, labels from public/map-fonts/.
+// OpenFreeMap: their tiles and their fonts, which also cover scripts we do
+// not ship — that host sees the area on screen anyway.
+export type MapTiles = { kind: "self"; url: string } | { kind: "openfreemap" };
+
+export const OPENFREEMAP: MapTiles = { kind: "openfreemap" };
+
+// The credit the data's licence requires. OpenFreeMap's TileJSON carries its
+// own; our files get this one.
+export const SELF_ATTRIBUTION =
+  '<a href="https://openmaptiles.org/" target="_blank">&copy; OpenMapTiles</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>';
+
+export function selfTiles(origin: string, extract: MapExtract): MapTiles {
+  return { kind: "self", url: `pmtiles://${origin}${extractPath(extract)}` };
+}
+
 const REGULAR = ["Noto Sans Regular"];
 const BOLD = ["Noto Sans Bold"];
 const ITALIC = ["Noto Sans Italic"];
 
-export function mapStyle(theme: MapTheme): StyleSpecification {
+export function mapStyle(theme: MapTheme, tiles: MapTiles): StyleSpecification {
   const c = PALETTE[theme];
+  const self = tiles.kind === "self";
   const roundLine = { "line-cap": "round", "line-join": "round" } as const;
   return {
     version: 8,
-    glyphs: GLYPHS_URL,
-    sources: { omt: { type: "vector", url: TILES_URL } },
+    glyphs: self ? SELF_GLYPHS_URL : GLYPHS_URL,
+    sources: {
+      omt: self ? { type: "vector", url: tiles.url, attribution: SELF_ATTRIBUTION } : { type: "vector", url: TILES_URL },
+    },
     layers: [
       { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": c.park } },
       {
@@ -103,4 +128,15 @@ export function mapStyle(theme: MapTheme): StyleSpecification {
       },
     ],
   };
+}
+
+// Which tiles a map with these points reads, and the extract behind them
+// (null = OpenFreeMap). `available` is what the build put in place.
+export function pickTiles(
+  points: { latitude: number; longitude: number }[],
+  available: readonly MapExtract[],
+  origin: string
+): { tiles: MapTiles; extract: MapExtract | null } {
+  const extract = chooseExtract(points, available);
+  return { tiles: extract ? selfTiles(origin, extract) : OPENFREEMAP, extract };
 }

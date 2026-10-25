@@ -3,7 +3,7 @@ import { screen, cleanup, waitFor } from "@testing-library/react";
 import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
 import { makeApartmentView, renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
 
-vi.mock("../map-fonts", () => ({ mapFontVariables: "" }));
+vi.mock("@/components/map/map-fonts", () => ({ mapFontVariables: "" }));
 vi.mock("@/components/map/household-map-inner", () => ({ default: () => <div data-testid="inner-map" /> }));
 
 import MapPage from "../page";

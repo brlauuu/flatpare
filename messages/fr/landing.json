@@ -53,7 +53,7 @@
     "exceptionPdf": "<b>Un PDF</b> est envoyé à un modèle d’IA qui en extrait les informations et rédige un court résumé. Sur flatpare.com, cela passe par Vercel AI Gateway avec <zdr>zéro conservation des données</zdr> : seuls les fournisseurs de modèles qui se sont engagés à ne pas conserver la requête sont utilisés. En auto-hébergement, c’est Google Gemini, sauf si tu en configures un autre.",
     "exceptionAddress": "<b>Une adresse</b> est envoyée à Google Maps, pour sa position et les temps de trajet à vélo et en transports (OpenRouteService pour une installation auto-hébergée sans Maps).",
     "exceptionListing": "<b>Le lien d’une annonce</b> est ouvert par notre serveur, qui récupère la page sur le site d’annonces pour vérifier qu’elle est toujours en ligne.",
-    "tiles": "Les cartes chargent leurs rues depuis OpenFreeMap ou OpenStreetMap, qui voient la partie de la ville affichée à l’écran, jamais tes appartements.",
+    "tiles": "En Suisse, les cartes chargent leurs rues depuis flatpare.com lui-même : personne d’autre ne voit quel quartier tu regardes. Ailleurs, elles viennent d’OpenFreeMap, qui voit la partie de la ville affichée à l’écran, jamais tes appartements.",
     "disavowal": "C’est pourquoi nous ne présentons pas ce système comme « zero-knowledge »."
   },
   "paths": {

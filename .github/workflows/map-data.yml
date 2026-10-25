@@ -1,0 +1,69 @@
+name: Map data
+
+# Builds a self-hosted country map file (#339) and attaches it to a GitHub
+# release named map-data-<date>. Run by hand when the map should be
+# refreshed; OpenStreetMap changes slowly, so a few times a year is plenty.
+# It deploys nothing: deploy.yml runs only for v* tags. To ship a new file,
+# copy the printed entry into MAP_EXTRACTS (src/lib/map/extracts.ts) in a PR
+# and release as usual; the Vercel build downloads and verifies it.
+#
+# Layers kept are the ones src/lib/map/style.ts draws: no buildings, house
+# numbers or points of interest. The Planetiler image is pinned by digest so
+# a refresh changes the data, not the schema.
+
+on:
+  workflow_dispatch:
+    inputs:
+      area:
+        description: "Geofabrik area name"
+        default: switzerland
+        required: true
+      id:
+        description: "Extract id (file prefix)"
+        default: ch
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Build with Planetiler
+        env:
+          AREA: ${{ inputs.area }}
+        run: |
+          mkdir -p data
+          docker run --rm -e JAVA_TOOL_OPTIONS="-Xmx10g" -v "$PWD/data":/data \
+            ghcr.io/onthegomap/planetiler@sha256:782244a0932fa5696fdf80fa139655209f67e524da0a9388f8da34014a4dd0e2 \
+            --download --area="$AREA" \
+            --only_layers=park,landcover,water,waterway,transportation,water_name,transportation_name,place \
+            --output=/data/out.pmtiles 2>&1 | tee build.log
+          grep "Setting map bounds from input" build.log
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ID: ${{ inputs.id }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          FILE="$ID-$DATE.pmtiles"
+          mv data/out.pmtiles "$FILE"
+          SHA=$(sha256sum "$FILE" | cut -d' ' -f1)
+          BYTES=$(stat -c %s "$FILE")
+          BOUNDS=$(grep -o "Envelope([^)]*)" build.log | head -1)
+          TAG="map-data-$DATE"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Map data $DATE" \
+              --notes "Self-hosted map data (#339). Not an app release. © OpenMapTiles © OpenStreetMap contributors (ODbL)." \
+              --latest=false
+          gh release upload "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" --clobber
+          {
+            echo "### MAP_EXTRACTS entry"
+            echo '```ts'
+            echo "{ id: \"$ID\", bounds: $BOUNDS /* Envelope(west, south, east, north) */, file: \"$FILE\","
+            echo "  url: \`\${RELEASES}/$TAG/$FILE\`, sha256: \"$SHA\", bytes: $BYTES },"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

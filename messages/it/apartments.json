@@ -154,7 +154,8 @@
     "saving": "Salvataggio…"
   },
   "map": {
-    "loading": "Caricamento della mappa…"
+    "loading": "Caricamento della mappa…",
+    "failed": "Non è stato possibile caricare la mappa."
   },
   "rating": {
     "yours": "La tua valutazione ({name})",

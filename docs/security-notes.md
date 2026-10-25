@@ -553,18 +553,34 @@ The column is present so it need not be added later. No code path reads it — n
 not E6. It is noted here because a future reader may reasonably assume an unused
 `tier` column is load-bearing entitlement state and build on it; it is not.
 
-## Map tiles — reviewed 2026-10-07 (#330)
+## Map tiles — reviewed 2026-10-07 (#330), revised 2026-10-25 (#339)
 
-### Accepted: the tile host sees which area is being viewed
+### Inside Switzerland: no tile host
 
-The map page (`/map`) and the apartment detail page's small map load map
-tiles from a third party: OpenFreeMap (vector tiles) on `/map`, OpenStreetMap
-(raster tiles) on the detail page. A tile request names an area of the map,
-so the tile host learns which part of which city a household is looking at.
-It learns nothing else — no apartment, rating or address leaves the browser;
-the marks are drawn locally from the decrypted store. This was already true
-of the Leaflet maps before #330. Hosting our own per-country extract, which
-removes the third party, is #339.
+Since #339 both maps (`/map` and the apartment page's small map) read
+Switzerland from a PMTiles file served by this app itself
+(`public/map-data/`, downloaded and hash-checked at build time, see
+`src/lib/map/extracts.ts`), with label fonts from `public/map-fonts/`. A
+household whose apartments and places all lie inside Switzerland, or that has
+placed nothing yet, contacts no third party to draw a map; the view is kept
+near the country (`maxBounds`). The file is OpenStreetMap data, so it and the
+fonts are served without a session check (excluded in the `src/proxy.ts`
+matcher) — they contain nothing of anyone's, and the many range requests a map
+makes should not each run `auth()`. Only the build server contacts GitHub, to
+download the file.
+
+### Accepted: outside Switzerland, OpenFreeMap sees which area is being viewed
+
+When any of the household's points lies outside every self-hosted file, the
+map falls back to OpenFreeMap's tiles and fonts. A tile request names an area
+of the map, so OpenFreeMap learns which part of which city a household is
+looking at. It learns nothing else — no apartment, rating or address leaves
+the browser; the marks are drawn locally from the decrypted store. The
+landing page's privacy section says this in both halves. More countries are
+one workflow run each (`.github/workflows/map-data.yml`).
+
+The OpenStreetMap raster tiles the apartment page's Leaflet map used are gone
+with Leaflet.
 
 ## Display names — reviewed 2026-10-08 (#327)
 

@@ -66,10 +66,10 @@ export default defineConfig({
         "**/__tests__/**",
         // vitest's defaults (node_modules, dist, etc.) — kept implicit.
       ],
-      // DELIBERATELY NOT EXCLUDED, decided in #254: the Leaflet
-      // `*-map-inner.tsx` components. They report 0% because three suites
-      // vi.mock them, and they are awkward to test — Leaflet wants a real
-      // DOM with layout. But they are shipped code a user sees, and their
+      // DELIBERATELY NOT EXCLUDED, decided in #254: the map
+      // `*-map-inner.tsx` components (Leaflet then, MapLibre since #339).
+      // They report 0% because their suites vi.mock them, and they cannot
+      // run under jsdom. But they are shipped code a user sees, and their
       // dynamic-import wrappers (96.66% / 100%) cover the branch that
       // decides whether to mount them, not the components themselves.
       // Excluding them would make the 0% disappear without making anything
@@ -78,8 +78,8 @@ export default defineConfig({
       // Same for the map page's `src/components/map/household-map-inner.tsx`
       // (#330), the only file that imports MapLibre: jsdom has no WebGL, so
       // it cannot run under test. What it draws is decided by the pure,
-      // tested modules in src/lib/map. (#330 also removed the overview
-      // map's Leaflet inner; the detail page's is the one left.)
+      // tested modules in src/lib/map. The detail page's
+      // `src/components/map/pin-map-inner.tsx` (#339) is the same case.
       //
       // Floor — we're well above as of #129; set here so a regression
       // (or a sneaky `if` slipping through without a test) fails CI.

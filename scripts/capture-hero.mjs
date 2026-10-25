@@ -34,8 +34,8 @@ const VIEWPORT = { width: 1280, height: 800 };
 // that matter to them. Rents, sizes and commute times are in realistic
 // ranges for the city; the ratings differ a little, as two people's would.
 const LOCATIONS = [
-  { id: "7d1c0b8e-0000-4000-8000-000000000001", label: "Work", icon: "Briefcase", address: "Hardturmstrasse 161, 8005 Zürich" },
-  { id: "7d1c0b8e-0000-4000-8000-000000000002", label: "Climbing gym", icon: "Dumbbell", address: "Thurgauerstrasse 40, 8050 Zürich" },
+  { id: "7d1c0b8e-0000-4000-8000-000000000001", label: "Work", icon: "Briefcase", address: "Hardturmstrasse 161, 8005 Zürich", latitude: 47.3925, longitude: 8.5118 },
+  { id: "7d1c0b8e-0000-4000-8000-000000000002", label: "Climbing gym", icon: "Dumbbell", address: "Thurgauerstrasse 40, 8050 Zürich", latitude: 47.4155, longitude: 8.5525 },
 ];
 const [WORK, GYM] = LOCATIONS.map((l) => l.id);
 
@@ -43,6 +43,7 @@ const APARTMENTS = [
   {
     name: "Bright 3.5-room flat with balcony near Idaplatz",
     address: "Zurlindenstrasse 212, 8003 Zürich",
+    latitude: 47.3758, longitude: 8.5162,
     shortCode: "KTR-3B-1b-WY-8003",
     rentChf: 2650, sizeM2: 78, numRooms: 3.5, numBathrooms: 1, numBalconies: 1, hasWashingMachine: true,
     availableFrom: "2026-12-01",
@@ -52,6 +53,7 @@ const APARTMENTS = [
   {
     name: "Renovated 3-room flat in Wipkingen",
     address: "Nordstrasse 154, 8037 Zürich",
+    latitude: 47.3955, longitude: 8.5302,
     shortCode: "PWM-3B-1b-WY-8037",
     rentChf: 2380, sizeM2: 68, numRooms: 3, numBathrooms: 1, numBalconies: 1, hasWashingMachine: true,
     availableFrom: "2026-11-15",
@@ -61,6 +63,7 @@ const APARTMENTS = [
   {
     name: "Spacious 4.5-room family flat in Oerlikon",
     address: "Schaffhauserstrasse 418, 8050 Zürich",
+    latitude: 47.4128, longitude: 8.5448,
     shortCode: "GHD-4B-2b-WY-8050",
     rentChf: 3120, sizeM2: 104, numRooms: 4.5, numBathrooms: 2, numBalconies: 2, hasWashingMachine: true,
     availableFrom: "2027-01-01",
@@ -70,6 +73,7 @@ const APARTMENTS = [
   {
     name: "Charming attic flat in the old town",
     address: "Spiegelgasse 9, 8001 Zürich",
+    latitude: 47.3721, longitude: 8.5446,
     shortCode: "NVB-2B-1b-WN-8001",
     rentChf: 2240, sizeM2: 55, numRooms: 2.5, numBathrooms: 1, numBalconies: 0, hasWashingMachine: false,
     availableFrom: "2026-11-01",
@@ -79,6 +83,7 @@ const APARTMENTS = [
   {
     name: "Modern 3.5-room flat by the Limmat, Altstetten",
     address: "Bändlistrasse 54, 8064 Zürich",
+    latitude: 47.3972, longitude: 8.4845,
     shortCode: "RFX-3B-1b-WY-8064",
     rentChf: 2490, sizeM2: 82, numRooms: 3.5, numBathrooms: 1, numBalconies: 1, hasWashingMachine: true,
     availableFrom: "2026-12-15",
@@ -121,7 +126,9 @@ const SIGN_IN_LABEL = JSON.parse(
 const PHONE = { width: 360, height: 780 };
 const SCREENS = [
   { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
-  { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: async (p) => { await p.locator(".map-mark").waitFor(); await p.waitForLoadState("networkidle"); } },
+  // The maps draw their tiles after the marks appear; wait for the requests to settle.
+  { name: "map", path: "/map", ready: async (p) => { await p.locator(".map-mark").first().waitFor(); await p.waitForLoadState("networkidle"); } },
   { name: "upload", path: "/apartments/new", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "compare", path: "/compare", ready: (p) => p.getByRole("table").waitFor() },
   { name: "household", path: "/household", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
@@ -141,7 +148,7 @@ function apartmentRows() {
       version: 1,
       envelope: plain({
         summary: null, listingUrl: null, rawExtractedData: null, userEditedFields: [],
-        latitude: null, longitude: null, listingGone: false, listingCheckedAt: null, pdf: null,
+        listingGone: false, listingCheckedAt: null, pdf: null,
         ...fields,
       }),
       createdAt: STAMP,
@@ -169,7 +176,7 @@ function locationRows() {
   return LOCATIONS.map((l, i) => ({
     id: l.id,
     sortOrder: i,
-    envelope: plain({ label: l.label, icon: l.icon, address: l.address, latitude: null, longitude: null }),
+    envelope: plain({ label: l.label, icon: l.icon, address: l.address, latitude: l.latitude, longitude: l.longitude }),
     createdAt: STAMP,
     updatedAt: STAMP,
   }));
@@ -268,12 +275,22 @@ try {
         await signedOut.close();
 
         for (const s of SCREENS) {
+          // Every host other than this server a screen contacts, so a change
+          // that adds a third party shows up in the run (#339: the maps
+          // should contact none for Switzerland).
+          const outside = new Set();
+          const note = (req) => {
+            const url = new URL(req.url());
+            if (url.origin !== BASE && url.protocol.startsWith("http")) outside.add(url.host);
+          };
+          page.on("request", note);
           await page.goto(`${BASE}${s.path}`);
           await s.ready(page);
           await page.waitForTimeout(800);
           const out = `${SCREENS_DIR}/${s.name}-${theme}.png`;
           await page.screenshot({ path: out, fullPage: true });
-          console.log(`[capture-hero] wrote ${out}`);
+          page.off("request", note);
+          console.log(`[capture-hero] wrote ${out}; outside hosts: ${[...outside].join(", ") || "none"}`);
         }
         if (LOCALE) {
           await page.setViewportSize(PHONE);
