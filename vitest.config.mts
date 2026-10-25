@@ -78,8 +78,8 @@ export default defineConfig({
       // Same for the map page's `src/components/map/household-map-inner.tsx`
       // (#330), the only file that imports MapLibre: jsdom has no WebGL, so
       // it cannot run under test. What it draws is decided by the pure,
-      // tested modules in src/lib/map. The detail page's
-      // `src/components/map/pin-map-inner.tsx` (#339) is the same case.
+      // tested modules in src/lib/map. (The apartment page's own map
+      // is gone since #384; it links to this one.)
       //
       // Floor — we're well above as of #129; set here so a regression
       // (or a sneaky `if` slipping through without a test) fails CI.

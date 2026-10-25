@@ -13,9 +13,6 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ id: currentParamsId }),
   useRouter: () => ({ push, refresh: vi.fn() }),
 }));
-vi.mock("@/components/apartment-location-map", () => ({
-  ApartmentLocationMap: ({ label }: { label: string }) => <div data-testid="pin-map">{label}</div>,
-}));
 vi.mock("@/components/household-data/pdf-files", () => ({
   encryptAndUploadPdf: vi.fn(),
   downloadPdf: vi.fn(),
@@ -97,7 +94,7 @@ describe("Apartment detail — loading, not-found and error states", () => {
     expect(push).toHaveBeenCalledWith("/apartments");
   });
 
-  it("renders the pin map from stored coordinates and the distance section from the store's locations", () => {
+  it("links to the household map for a placed apartment, and renders the distance section from the store's locations (#384)", () => {
     currentParamsId = "a1";
     renderWithHouseholdData(<ApartmentDetailPage />, {
       apartments: [
@@ -111,7 +108,15 @@ describe("Apartment detail — loading, not-found and error states", () => {
       ],
       locations: [makeLocationView({ id: "loc-1", label: "Work", icon: "Briefcase", address: "Zurich HQ" })],
     });
-    expect(screen.getByTestId("pin-map")).toHaveTextContent("Sonnenweg 3");
+    expect(screen.getByRole("link", { name: "View on map" })).toHaveAttribute("href", "/map?highlight=a1");
     expect(screen.getByText(/12 min bike.*25 min transit/)).toBeInTheDocument();
+  });
+
+  it("offers no map link for an apartment without coordinates", () => {
+    currentParamsId = "a1";
+    renderWithHouseholdData(<ApartmentDetailPage />, {
+      apartments: [makeApartmentView({ id: "a1", name: "Sonnenweg 3", latitude: null, longitude: null })],
+    });
+    expect(screen.queryByRole("link", { name: "View on map" })).not.toBeInTheDocument();
   });
 });

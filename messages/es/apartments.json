@@ -52,7 +52,8 @@
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se han podido guardar los cambios",
     "ratingSaveFailed": "No se ha podido guardar la valoración",
-    "availableFrom": "Disponible desde: {date}"
+    "availableFrom": "Disponible desde: {date}",
+    "showOnMap": "Ver en el mapa"
   },
   "actions": {
     "viewPdf": "Ver PDF",
@@ -152,10 +153,6 @@
   "edit": {
     "title": "Editar piso",
     "saving": "Guardando..."
-  },
-  "map": {
-    "loading": "Cargando el mapa…",
-    "failed": "No se ha podido cargar el mapa."
   },
   "rating": {
     "yours": "Tu valoración ({name})",

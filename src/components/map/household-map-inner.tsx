@@ -31,6 +31,8 @@ registerMapProtocols();
 
 interface Props {
   points: MapPoints;
+  // The apartment to highlight among the others (#384), or null.
+  highlightId: string | null;
   onError: () => void;
 }
 
@@ -41,7 +43,7 @@ interface Anchor {
   height: number;
 }
 
-export default function HouseholdMapInner({ points, onError }: Props) {
+export default function HouseholdMapInner({ points, highlightId, onError }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const router = useRouter();
@@ -75,7 +77,7 @@ export default function HouseholdMapInner({ points, onError }: Props) {
     "AttributionControl.ToggleAttribution": tControls("toggleAttribution"),
     "Map.Title": tControls("mapTitle"),
   });
-  const marks = useMemo(() => toMarks(points, text), [points, text]);
+  const marks = useMemo(() => toMarks(points, text, highlightId), [points, text, highlightId]);
   const nodes = useMemo(() => new Map(marks.map((m) => [m.key, document.createElement("div")])), [marks]);
 
   // Create the map once.
@@ -174,6 +176,7 @@ export default function HouseholdMapInner({ points, onError }: Props) {
                 label={m.label}
                 seed={m.seed}
                 ariaLabel={m.ariaLabel}
+                highlighted={m.highlighted}
                 hoverCapable={hoverCapable}
                 onShow={() => showAt(m)}
                 onHide={card.hideSoon}

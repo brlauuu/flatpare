@@ -12,9 +12,6 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ id: currentParamsId }),
   useRouter: () => ({ push, refresh: vi.fn() }),
 }));
-vi.mock("@/components/apartment-location-map", () => ({
-  ApartmentLocationMap: ({ label }: { label: string }) => <div data-testid="pin-map">{label}</div>,
-}));
 vi.mock("@/components/household-data/pdf-files", () => ({
   encryptAndUploadPdf: vi.fn(),
   downloadPdf: vi.fn(),

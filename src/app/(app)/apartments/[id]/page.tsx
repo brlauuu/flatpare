@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { ApartmentLocationMap } from "@/components/apartment-location-map";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   formFromApartment,
@@ -37,6 +36,7 @@ import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
+import { ShowOnMapLink } from "./_components/show-on-map-link";
 
 interface ErrorState {
   headline: string;
@@ -350,11 +350,7 @@ export default function ApartmentDetailPage() {
         />
       )}
 
-      <ApartmentLocationMap
-        latitude={apartment.latitude}
-        longitude={apartment.longitude}
-        label={apartment.shortCode ?? apartment.name}
-      />
+      <ShowOnMapLink id={apartment.id} latitude={apartment.latitude} longitude={apartment.longitude} />
 
       <Separator />
 

@@ -5,9 +5,9 @@ import type { MapPoints } from "@/lib/map/points";
 
 // jsdom has no WebGL: the inner map is replaced by a stub that reports what
 // it was given and can simulate a failure.
-const innerProps: { points?: MapPoints; onError?: () => void } = {};
+const innerProps: { points?: MapPoints; highlightId?: string | null; onError?: () => void } = {};
 vi.mock("../household-map-inner", () => ({
-  default: (props: { points: MapPoints; onError: () => void }) => {
+  default: (props: { points: MapPoints; highlightId: string | null; onError: () => void }) => {
     Object.assign(innerProps, props);
     return (
       <div data-testid="inner-map">
@@ -30,6 +30,16 @@ describe("HouseholdMap", () => {
     await screen.findByTestId("inner-map");
     expect(innerProps.points?.apartments.map((a) => a.id)).toEqual(["a1"]);
     expect(innerProps.points?.locations.map((l) => l.id)).toEqual(["l1"]);
+  });
+
+  it("passes the highlighted apartment through, none by default (#384)", async () => {
+    render(<HouseholdMap apartments={[placed]} locations={[]} highlightId="a1" />);
+    await screen.findByTestId("inner-map");
+    expect(innerProps.highlightId).toBe("a1");
+    cleanup();
+    render(<HouseholdMap apartments={[placed]} locations={[]} />);
+    await screen.findByTestId("inner-map");
+    expect(innerProps.highlightId).toBeNull();
   });
 
   it("lists apartments that are not on the map yet, as links", async () => {

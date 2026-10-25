@@ -126,9 +126,10 @@ const SIGN_IN_LABEL = JSON.parse(
 const PHONE = { width: 360, height: 780 };
 const SCREENS = [
   { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
-  { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: async (p) => { await p.locator(".map-mark").waitFor(); await p.waitForLoadState("networkidle"); } },
+  { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   // The maps draw their tiles after the marks appear; wait for the requests to settle.
   { name: "map", path: "/map", ready: async (p) => { await p.locator(".map-mark").first().waitFor(); await p.waitForLoadState("networkidle"); } },
+  { name: "map-highlight", path: `/map?highlight=${aptId(0)}`, ready: async (p) => { await p.locator(".map-mark-highlighted").waitFor(); await p.waitForLoadState("networkidle"); } },
   { name: "upload", path: "/apartments/new", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "compare", path: "/compare", ready: (p) => p.getByRole("table").waitFor() },
   { name: "household", path: "/household", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },

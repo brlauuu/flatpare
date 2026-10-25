@@ -52,7 +52,8 @@
     "nameRequired": "Le nom est obligatoire",
     "saveFailed": "Impossible d’enregistrer les modifications",
     "ratingSaveFailed": "Impossible d’enregistrer l’évaluation",
-    "availableFrom": "Disponible dès le : {date}"
+    "availableFrom": "Disponible dès le : {date}",
+    "showOnMap": "Voir sur la carte"
   },
   "actions": {
     "viewPdf": "Voir le PDF",
@@ -152,10 +153,6 @@
   "edit": {
     "title": "Modifier l’appartement",
     "saving": "Enregistrement…"
-  },
-  "map": {
-    "loading": "Chargement de la carte…",
-    "failed": "La carte n’a pas pu se charger."
   },
   "rating": {
     "yours": "Ton évaluation ({name})",

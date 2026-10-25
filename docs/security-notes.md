@@ -557,7 +557,7 @@ not E6. It is noted here because a future reader may reasonably assume an unused
 
 ### Accepted: flatpare.com's maps read OpenFreeMap, which sees which area is being viewed
 
-flatpare.com draws both maps (`/map` and the apartment page's small map) from
+flatpare.com draws its map (`/map`; the apartment page links to it since #384) from
 OpenFreeMap's tiles and fonts. A tile request names an area of the map, so
 OpenFreeMap learns which part of which city a household is looking at. It
 learns nothing else — no apartment, rating or address leaves the browser; the

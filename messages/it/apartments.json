@@ -52,7 +52,8 @@
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare le modifiche",
     "ratingSaveFailed": "Non è stato possibile salvare la valutazione",
-    "availableFrom": "Disponibile dal: {date}"
+    "availableFrom": "Disponibile dal: {date}",
+    "showOnMap": "Vedi sulla mappa"
   },
   "actions": {
     "viewPdf": "Vedi PDF",
@@ -152,10 +153,6 @@
   "edit": {
     "title": "Modifica appartamento",
     "saving": "Salvataggio…"
-  },
-  "map": {
-    "loading": "Caricamento della mappa…",
-    "failed": "Non è stato possibile caricare la mappa."
   },
   "rating": {
     "yours": "La tua valutazione ({name})",

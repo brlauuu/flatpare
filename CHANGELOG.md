@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- An apartment's page no longer shows a small map of its own. "View on map" opens the household map with all your apartments, and that one highlighted. (#384)
+
 ## 0.18.1 — 2026-10-25
 
 ### Changed
