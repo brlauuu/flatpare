@@ -1,6 +1,7 @@
 import { Caveat } from "next/font/google";
 
-// Caveat, for the handwriting on the map's marks (#330). The landing page
+// Caveat, for the handwriting on the map's marks (#330), on /map and the
+// apartment page's small map (#339). The landing page
 // loads its own copy (landing-fonts.ts); next/font serves both from one
 // file. A module of its own so tests can stub it — next/font only works
 // under the Next compiler.

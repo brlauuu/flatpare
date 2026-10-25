@@ -33,7 +33,7 @@
 | ⭐ **Per-user star ratings** | Each member rates kitchen, balconies, location, floorplan and overall. Averages roll up automatically — computed in the browser, since the server cannot read the scores. |
 | 📊 **Comparison grid** | Sortable side-by-side table — best price, biggest, shortest commute — with hide/show per apartment. |
 | 🚲 **Auto distance** | Bike + transit minutes from each apartment to your "locations of interest" (work, schools, family). |
-| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org) + OpenFreeMap), and a per-apartment pin with [Leaflet](https://leafletjs.com). |
+| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org)), and a per-apartment pin on the same map. Switzerland's map data is served by the app itself; elsewhere it comes from OpenFreeMap. |
 | 👥 **Households + invitations** | Invite people by email; each member gets their own account and their own copy of the household key. |
 | ☁️ **Cloud or self-hosted** | One repo runs on Vercel + Turso + Vercel Blob, or fully self-hosted with SQLite + local disk and no third-party accounts at all. |
 
@@ -61,7 +61,7 @@ Accepted limits and the full threat model are in [`docs/security-notes.md`](./do
 | Auth | [Auth.js v5](https://authjs.dev) — Google / GitHub OAuth, or a shared password when self-hosting |
 | File storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (cloud) or `./uploads/` (local) — ciphertext either way |
 | AI | [Vercel AI SDK](https://sdk.vercel.ai) + Google Gemini 2.5 Flash |
-| Maps | Google Maps (Geocoding + Distance Matrix) with [OpenRouteService](https://openrouteservice.org) bike-distance fallback; [Leaflet](https://leafletjs.com) for rendering |
+| Maps | Google Maps (Geocoding + Distance Matrix) with [OpenRouteService](https://openrouteservice.org) bike-distance fallback; [MapLibre](https://maplibre.org) for rendering, with a self-hosted [Planetiler](https://github.com/onthegomap/planetiler) extract of OpenStreetMap for Switzerland |
 | Payments | [Stripe](https://stripe.com) embedded Checkout — one-time, optional, off unless configured |
 | Tests | **Vitest 5** + React Testing Library, coverage floors enforced in CI |
 | Deploy target | Vercel (preferred) or any Node 24+ host |
@@ -106,7 +106,7 @@ turso db show flatpare --url     # libsql://...
 turso db tokens create flatpare  # token
 ```
 
-Get a Gemini key at <https://aistudio.google.com/apikey>. For Maps Platform enable **Geocoding API** and **Distance Matrix API** in [Google Cloud Console](https://console.cloud.google.com/apis) — see [docs/google-apis.md](./docs/google-apis.md). The Maps Embed API is *not* needed; maps are rendered with Leaflet.
+Get a Gemini key at <https://aistudio.google.com/apikey>. For Maps Platform enable **Geocoding API** and **Distance Matrix API** in [Google Cloud Console](https://console.cloud.google.com/apis) — see [docs/google-apis.md](./docs/google-apis.md). The Maps Embed API is *not* needed; maps are rendered with MapLibre.
 
 Configure `.env.local`:
 
@@ -382,6 +382,8 @@ docker compose up -d
 ```
 
 Data persists in two named volumes: `flatpare-data` (SQLite database) and `flatpare-uploads` (encrypted PDFs).
+
+The image build downloads the Switzerland map file (about 225 MB, checked against a pinned hash), so the map contacts no tile host there. To leave it out, build with `docker compose build --build-arg MAP_DATA=skip`; the map then reads OpenFreeMap everywhere. Without Docker, `npm run map:fetch` downloads it once.
 
 ## Contributing
 

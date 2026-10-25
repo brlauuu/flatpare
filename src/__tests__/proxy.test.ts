@@ -244,6 +244,9 @@ describe("proxy — PWA assets stay public", () => {
     "/flatpare_logo_dark.svg",
     "/hero/compare-light.webp",
     "/hero/compare-dark.webp",
+    // The self-hosted map data and fonts (#339), read in many range requests.
+    "/map-data/ch-2026-10-25.pmtiles",
+    "/map-fonts/noto-sans-regular/0-255.pbf",
   ];
 
   for (const path of publicAssets) {
@@ -257,6 +260,7 @@ describe("proxy — PWA assets stay public", () => {
     "/api/apartments",
     "/settings",
     "/compare",
+    "/map",
   ];
   for (const path of guarded) {
     it(`still runs the proxy for ${path}`, () => {

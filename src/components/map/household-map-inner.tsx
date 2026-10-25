@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Map as MapLibreMap, Marker, NavigationControl, getVersion, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { mapStyle, type MapTheme } from "@/lib/map/style";
+import { mapStyle, OPENFREEMAP, type MapTheme, type MapTiles } from "@/lib/map/style";
 import { findActive, toMarks, type MapPoints, type MarkSpec } from "@/lib/map/points";
 import { cardPosition, initialView } from "@/lib/map/view";
 import { workerUrl } from "@/lib/map/worker";
@@ -15,6 +15,7 @@ import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
 import { useMapText } from "./use-map-text";
+import { mapTilesFor, registerMapProtocols } from "./map-protocols";
 import { useTranslations } from "next-intl";
 
 // The only file that touches MapLibre (#330). Deliberately thin: what to
@@ -26,6 +27,7 @@ import { useTranslations } from "next-intl";
 // MapLibre looks for its worker beside its own script, which is a Next chunk
 // here; point it at the copy next.config.ts puts in public/.
 setWorkerUrl(workerUrl(getVersion()));
+registerMapProtocols();
 
 interface Props {
   points: MapPoints;
@@ -46,6 +48,9 @@ export default function HouseholdMapInner({ points, onError }: Props) {
   const { resolvedTheme } = useTheme();
   const theme: MapTheme = resolvedTheme === "dark" ? "dark" : "light";
   const appliedTheme = useRef(theme);
+  // Chosen once, when the map is created, from the points it opens with: our
+  // own file when they all lie inside one, OpenFreeMap otherwise (#339).
+  const tiles = useRef<MapTiles>(OPENFREEMAP);
   const onErrorRef = useRef(onError);
   const pointsRef = useRef(points);
   const card = useCardState();
@@ -77,11 +82,16 @@ export default function HouseholdMapInner({ points, onError }: Props) {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const all = [...pointsRef.current.apartments, ...pointsRef.current.locations];
+    const picked = mapTilesFor(all);
+    tiles.current = picked.tiles;
     let map: MapLibreMap;
     try {
       map = new MapLibreMap({
         container,
-        style: mapStyle(appliedTheme.current),
+        style: mapStyle(appliedTheme.current, picked.tiles),
+        // Our file holds one country; keep the view near it.
+        maxBounds: picked.maxBounds,
         attributionControl: { compact: true },
         locale: controlText.current,
       });
@@ -107,7 +117,6 @@ export default function HouseholdMapInner({ points, onError }: Props) {
     });
     map.on("movestart", () => card.hide());
 
-    const all = [...pointsRef.current.apartments, ...pointsRef.current.locations];
     const view = initialView(all, container.clientWidth);
     if (view.kind === "center") map.jumpTo({ center: view.center, zoom: view.zoom });
     else map.fitBounds(view.bounds, { padding: view.padding, maxZoom: view.maxZoom, duration: 0 });
@@ -133,7 +142,7 @@ export default function HouseholdMapInner({ points, onError }: Props) {
   useEffect(() => {
     if (appliedTheme.current === theme) return;
     appliedTheme.current = theme;
-    mapRef.current?.setStyle(mapStyle(theme));
+    mapRef.current?.setStyle(mapStyle(theme, tiles.current));
   }, [theme]);
 
   function showAt(mark: MarkSpec) {

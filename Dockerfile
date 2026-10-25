@@ -15,6 +15,12 @@ COPY . .
 # Create data directory so the build can initialize SQLite if needed
 RUN mkdir -p data
 
+# The self-hosted map data (#339), about 225 MB, so the map contacts no tile
+# host for Switzerland. `--build-arg MAP_DATA=skip` leaves it out; the map
+# then reads OpenFreeMap everywhere.
+ARG MAP_DATA=fetch
+RUN if [ "$MAP_DATA" != "skip" ]; then npx tsx scripts/fetch-map-data.ts; fi
+
 RUN npm run build
 
 # --- Production ---

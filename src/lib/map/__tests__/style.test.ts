@@ -1,16 +1,37 @@
 import { describe, it, expect } from "vitest";
-import { mapStyle, TILES_URL, GLYPHS_URL } from "../style";
+import { mapStyle, pickTiles, OPENFREEMAP, SELF_ATTRIBUTION, TILES_URL, GLYPHS_URL } from "../style";
+import { MAP_EXTRACTS } from "../extracts";
+import { SELF_GLYPHS_URL } from "../glyphs";
 
 type AnyLayer = { id: string; type: string; "source-layer"?: string; filter?: unknown; minzoom?: number; paint?: Record<string, unknown> };
-const layers = (theme: "light" | "dark") => mapStyle(theme).layers as AnyLayer[];
+const layers = (theme: "light" | "dark") => mapStyle(theme, OPENFREEMAP).layers as AnyLayer[];
+const CH = MAP_EXTRACTS[0];
+const ORIGIN = "https://flatpare.example";
 
 describe("mapStyle", () => {
-  it("reads OpenFreeMap tiles and glyphs, no key", () => {
-    const style = mapStyle("light");
+  it("reads OpenFreeMap tiles and glyphs, no key, as the fallback", () => {
+    const style = mapStyle("light", OPENFREEMAP);
     expect(style.version).toBe(8);
     expect(style.glyphs).toBe(GLYPHS_URL);
     expect(style.sources).toEqual({ omt: { type: "vector", url: TILES_URL } });
     expect(TILES_URL).toBe("https://tiles.openfreemap.org/planet");
+  });
+
+  it("reads our own file and fonts from this origin, with the licence's credit (#339)", () => {
+    const { tiles } = pickTiles([], [CH], ORIGIN);
+    const style = mapStyle("dark", tiles);
+    expect(style.glyphs).toBe(SELF_GLYPHS_URL);
+    expect(style.sources).toEqual({
+      omt: { type: "vector", url: `pmtiles://${ORIGIN}/map-data/${CH.file}`, attribution: SELF_ATTRIBUTION },
+    });
+    expect(SELF_ATTRIBUTION).toContain("OpenMapTiles");
+    expect(SELF_ATTRIBUTION).toContain("OpenStreetMap contributors");
+    expect(JSON.stringify(style)).not.toContain("openfreemap");
+  });
+
+  it("draws the same layers from either source", () => {
+    const self = mapStyle("light", pickTiles([], [CH], ORIGIN).tiles).layers;
+    expect(self).toEqual(mapStyle("light", OPENFREEMAP).layers);
   });
 
   it.each(["light", "dark"] as const)("never draws buildings, numbers, POIs or a background (%s)", (theme) => {
