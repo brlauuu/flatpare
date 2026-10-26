@@ -18,8 +18,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "capture:hero": "node scripts/capture-hero.mjs",
-    "capture:screens": "node scripts/capture-hero.mjs --screens",
-    "map:fetch": "tsx scripts/fetch-map-data.ts"
+    "capture:screens": "node scripts/capture-hero.mjs --screens"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",

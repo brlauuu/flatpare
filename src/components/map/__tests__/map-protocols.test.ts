@@ -21,10 +21,7 @@ function glyphHandler(): Handler {
 }
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
-});
+afterEach(() => vi.unstubAllGlobals());
 
 describe("registerMapProtocols", () => {
   it("registers pmtiles and the glyph scheme once", async () => {
@@ -57,19 +54,18 @@ describe("registerMapProtocols", () => {
   });
 });
 
-describe("mapTilesFor", () => {
-  it("reads our file when the build put it in place", async () => {
-    vi.stubEnv("FLATPARE_MAP_EXTRACTS", "ch");
-    const { mapTilesFor } = await load();
-    const { MAP_EXTRACTS, panBounds } = await import("@/lib/map/extracts");
-    const { tiles, maxBounds } = mapTilesFor([{ latitude: 47.37, longitude: 8.54 }]);
-    expect(tiles).toEqual({ kind: "self", url: `pmtiles://${window.location.origin}/map-data/${MAP_EXTRACTS[0].file}` });
-    expect(maxBounds).toEqual(panBounds(MAP_EXTRACTS[0]));
+describe("tilesFor", () => {
+  it("reads a local file from this origin and keeps the view near it (#339)", async () => {
+    const { tilesFor } = await load();
+    const { tiles, maxBounds, empty } = tilesFor({ mode: "local", file: "zurich.pmtiles", bounds: [8, 47, 9, 48], center: [8.5, 47.5], zoom: 10 });
+    expect(empty).toEqual({ center: [8.5, 47.5], zoom: 10 });
+    expect(tiles).toEqual({ kind: "self", url: `pmtiles://${window.location.origin}/map-data/zurich.pmtiles` });
+    expect(maxBounds).toEqual([[7.5, 46.5], [9.5, 48.5]]);
   });
 
-  it("falls back to OpenFreeMap when it did not", async () => {
-    vi.stubEnv("FLATPARE_MAP_EXTRACTS", "");
-    const { mapTilesFor } = await load();
-    expect(mapTilesFor([{ latitude: 47.37, longitude: 8.54 }])).toEqual({ tiles: { kind: "openfreemap" }, maxBounds: undefined });
+  it("reads OpenFreeMap anywhere otherwise", async () => {
+    const { tilesFor } = await load();
+    expect(tilesFor({ mode: "openfreemap" })).toEqual({ tiles: { kind: "openfreemap" } });
+    expect(tilesFor({ mode: "local", file: null, problem: "missing" })).toEqual({ tiles: { kind: "openfreemap" } });
   });
 });

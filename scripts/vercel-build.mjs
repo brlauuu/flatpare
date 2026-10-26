@@ -23,8 +23,7 @@ if (process.env.TURSO_DATABASE_URL) {
   );
 }
 
-// No self-hosted map data here: flatpare.com draws its maps from
-// OpenFreeMap (decided on #339 after 0.18.0). The country files are for
-// self-hosters; see "Self-hosted map data" in AGENTS.md.
+// flatpare.com draws its map from OpenFreeMap (decided on #339 after
+// 0.18.0); local map files are for self-hosters, see FLATPARE_MAPS.
 
 run("npx", ["next", "build"]);

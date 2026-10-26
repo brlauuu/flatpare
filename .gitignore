@@ -18,8 +18,9 @@
 
 # MapLibre worker, copied from node_modules by next.config.ts (#330)
 /public/maplibre/
-# Self-hosted map data, downloaded by scripts/fetch-map-data.ts (#339)
-/public/map-data/
+# A self-hoster's own map file (#339); only the folder's README is tracked
+/maps/*
+!/maps/README.md
 /out/
 
 # production

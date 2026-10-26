@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toMapPoints } from "@/lib/map/points";
 import type { ApartmentView, LocationView } from "@/lib/household-data/types";
+import type { MapSource } from "@/lib/map/local-map";
 
 // The map page's body (#330). MapLibre is loaded only here, through
 // next/dynamic with ssr: false, so no other page's bundle carries it.
@@ -27,6 +28,23 @@ interface Props {
   locations: LocationView[];
   // From `/map?highlight=<id>` (#384): the apartment page's "View on map".
   highlightId?: string | null;
+  // Read on the server (#339): OpenFreeMap, or the self-hoster's own file.
+  source?: MapSource;
+}
+
+const OPENFREEMAP_SOURCE: MapSource = { mode: "openfreemap" };
+
+// FLATPARE_MAPS=local without a usable file in maps/: said plainly, in place
+// of a map, to whoever runs the server. The map never falls back to an
+// outside service, which is what "local" was chosen for.
+function NoLocalMap({ problem }: { problem: "missing" | "several" | "unreadable" }) {
+  const t = useTranslations("map.map");
+  return (
+    <div className="map-grid-bg flex h-full w-full flex-col justify-center gap-2 p-6 text-sm">
+      <p className="font-bold">{t("localMissingTitle")}</p>
+      <p>{t(`localProblem.${problem}`)}</p>
+    </div>
+  );
 }
 
 function ApartmentLinks({ items }: { items: { id: string; label: string }[] }) {
@@ -45,7 +63,7 @@ function ApartmentLinks({ items }: { items: { id: string; label: string }[] }) {
   );
 }
 
-export function HouseholdMap({ apartments, locations, highlightId = null }: Props) {
+export function HouseholdMap({ apartments, locations, highlightId = null, source = OPENFREEMAP_SOURCE }: Props) {
   const t = useTranslations("map.map");
   const points = useMemo(() => toMapPoints(apartments, locations), [apartments, locations]);
   const [failed, setFailed] = useState(false);
@@ -69,7 +87,9 @@ export function HouseholdMap({ apartments, locations, highlightId = null }: Prop
       )}
 
       <div className="h-[calc(100dvh-13rem)] min-h-[360px] w-full overflow-hidden border-3 border-frame">
-        {failed ? (
+        {source.mode === "local" && source.file === null ? (
+          <NoLocalMap problem={source.problem} />
+        ) : failed ? (
           <div className="map-grid-bg flex h-full w-full flex-col justify-center gap-2 p-6 text-sm">
             <p className="font-bold">{t("failed")}</p>
             {readable > 0 && (
@@ -81,7 +101,7 @@ export function HouseholdMap({ apartments, locations, highlightId = null }: Prop
             )}
           </div>
         ) : (
-          <InnerMap points={points} highlightId={highlightId} onError={() => setFailed(true)} />
+          <InnerMap points={points} highlightId={highlightId} source={source} onError={() => setFailed(true)} />
         )}
       </div>
 

@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import { CARD_WIDTH, MAX_FIT_ZOOM, SWITZERLAND, cardPosition, initialView } from "../view";
 
 describe("initialView", () => {
+  it("starts an empty map at the given place, for a self-hoster's own file (#339)", () => {
+    expect(initialView([], 1280, { center: [2.35, 48.86], zoom: 11 })).toEqual({ kind: "center", center: [2.35, 48.86], zoom: 11 });
+  });
+
   it("shows Switzerland when nothing has coordinates", () => {
     expect(initialView([], 1280)).toEqual({ kind: "center", center: SWITZERLAND.center, zoom: SWITZERLAND.zoom });
   });

@@ -11,7 +11,13 @@
     "failed": "La carte n’a pas pu se charger.",
     "yourApartments": "Tes appartements : <links></links>",
     "missing": "{count, plural, one {# appartement n’est pas encore} other {# appartements ne sont pas encore}} sur la carte : <links></links>",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "localMissingTitle": "Ce serveur est réglé pour utiliser ses propres données cartographiques, mais il n’y a aucune carte à afficher.",
+    "localProblem": {
+      "missing": "Aucun fichier de carte n’a été trouvé dans son dossier maps. Pour la personne qui gère ce serveur : ajoute un fichier .pmtiles dans ce dossier (voir le README).",
+      "several": "Son dossier maps contient plus d’un fichier .pmtiles. Pour la personne qui gère ce serveur : n’en garde qu’un seul.",
+      "unreadable": "Le fichier de son dossier maps n’est pas un fichier de carte que cette app sait lire. Pour la personne qui gère ce serveur : remplace-le par un fichier PMTiles v3 (voir le README)."
+    }
   },
   "card": {
     "rent": "CHF {amount}",

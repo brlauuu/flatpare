@@ -6,4 +6,4 @@ uploads
 .env
 .env.local
 .env.*.local
-public/map-data
+maps

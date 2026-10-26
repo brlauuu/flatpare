@@ -1,11 +1,11 @@
 name: Map data
 
-# Builds a self-hosted country map file (#339) and attaches it to a GitHub
-# release named map-data-<date>. Run by hand when the map should be
-# refreshed; OpenStreetMap changes slowly, so a few times a year is plenty.
-# It deploys nothing: deploy.yml runs only for v* tags. To ship a new file,
-# copy the printed entry into MAP_EXTRACTS (src/lib/map/extracts.ts) in a PR
-# and release as usual; the Vercel build downloads and verifies it.
+# Builds a ready-made map file for self-hosters who choose FLATPARE_MAPS=local
+# (#339) and attaches it to a GitHub release named map-data-<date>. Run by
+# hand; OpenStreetMap changes slowly, so a few times a year is plenty. It
+# deploys nothing: deploy.yml runs only for v* tags, and flatpare.com does not
+# serve map data. After a refresh, point maps/README.md at the new release.
+# Self-hosters can build any region themselves with scripts/build-map.sh.
 #
 # Layers kept are the ones src/lib/map/style.ts draws: no buildings, house
 # numbers or points of interest. The Planetiler image is pinned by digest so
@@ -61,9 +61,9 @@ jobs:
               --latest=false
           gh release upload "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" --clobber
           {
-            echo "### MAP_EXTRACTS entry"
-            echo '```ts'
-            echo "{ id: \"$ID\", bounds: $BOUNDS /* Envelope(west, south, east, north) */, file: \"$FILE\","
-            echo "  url: \`\${RELEASES}/$TAG/$FILE\`, sha256: \"$SHA\", bytes: $BYTES },"
-            echo '```'
+            echo "### $FILE"
+            echo "- release: $TAG"
+            echo "- bytes: $BYTES"
+            echo "- sha256: $SHA"
+            echo "- bounds: $BOUNDS (west, south, east, north)"
           } >> "$GITHUB_STEP_SUMMARY"

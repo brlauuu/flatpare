@@ -16,6 +16,8 @@ services:
       # Persist local SQLite database and uploaded PDFs
       - flatpare-data:/app/data
       - flatpare-uploads:/app/uploads
+      # Your own map file, when FLATPARE_MAPS=local (#339). Read-only.
+      - ./maps:/app/maps:ro
 
 volumes:
   flatpare-data:

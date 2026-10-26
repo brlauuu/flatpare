@@ -566,14 +566,19 @@ Switzerland from flatpare.com itself; the owner reverted that on #339, whose
 point is self-hosters. The OpenStreetMap raster tiles the apartment page's
 Leaflet map used are gone with Leaflet (0.18.0).
 
-### Self-hosted instances: the map data can be served locally
+### Self-hosted instances choose, and `local` contacts no one
 
-A self-hosted Docker image downloads Switzerland's PMTiles file at build time
-(hash-checked, `src/lib/map/extracts.ts`) and serves it with the label fonts
-from its own origin, so a household whose points all lie inside Switzerland
-contacts no tile host. The file and fonts are excluded in the `src/proxy.ts`
-matcher — OpenStreetMap data and fonts, nothing of anyone's. Outside it, the
-map falls back to OpenFreeMap as above.
+A self-hoster must set `FLATPARE_MAPS` before the Docker container starts:
+`openfreemap` (as flatpare.com, above) or `local`. With `local` the map reads
+one PMTiles file from the instance's own `maps/` folder through
+`/map-data/<file>`, with the label fonts from `public/map-fonts/`, and makes no
+outside request at all — verified by logging every outside host a screen
+contacted in a production build (none). Areas the file does not cover show
+only the household's marks; a missing or unreadable file is reported on the
+map page instead of falling back. The file and fonts are excluded in the
+`src/proxy.ts` matcher: OpenStreetMap data and fonts, nothing of anyone's. The
+route serves only the one file in the configured folder, and only in `local`
+mode.
 
 ## Display names — reviewed 2026-10-08 (#327)
 

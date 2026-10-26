@@ -5,7 +5,7 @@ import type { MapPoints } from "@/lib/map/points";
 
 // jsdom has no WebGL: the inner map is replaced by a stub that reports what
 // it was given and can simulate a failure.
-const innerProps: { points?: MapPoints; highlightId?: string | null; onError?: () => void } = {};
+const innerProps: { points?: MapPoints; highlightId?: string | null; source?: unknown; onError?: () => void } = {};
 vi.mock("../household-map-inner", () => ({
   default: (props: { points: MapPoints; highlightId: string | null; onError: () => void }) => {
     Object.assign(innerProps, props);
@@ -40,6 +40,20 @@ describe("HouseholdMap", () => {
     render(<HouseholdMap apartments={[placed]} locations={[]} />);
     await screen.findByTestId("inner-map");
     expect(innerProps.highlightId).toBeNull();
+  });
+
+  it("says plainly when the local map file is missing, and draws no map (#339)", () => {
+    render(<HouseholdMap apartments={[placed]} locations={[]} source={{ mode: "local", file: null, problem: "several" }} />);
+    expect(screen.getByText("This server is set to use its own map data, but there is no map to show.")).toBeInTheDocument();
+    expect(screen.getByText(/more than one \.pmtiles file/)).toBeInTheDocument();
+    expect(screen.queryByTestId("inner-map")).not.toBeInTheDocument();
+  });
+
+  it("hands a local source to the map", async () => {
+    const source = { mode: "local" as const, file: "z.pmtiles", bounds: [8, 47, 9, 48] as [number, number, number, number], center: [8.5, 47.5] as [number, number], zoom: 10 };
+    render(<HouseholdMap apartments={[placed]} locations={[]} source={source} />);
+    await screen.findByTestId("inner-map");
+    expect(innerProps.source).toEqual(source);
   });
 
   it("lists apartments that are not on the map yet, as links", async () => {

@@ -10,7 +10,9 @@ vi.mock("@/components/map/household-map-inner", () => ({
 let search = "";
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(search) }));
 
-import MapPage from "../page";
+import { MapPageClient } from "../map-page-client";
+
+const MapPage = () => <MapPageClient source={{ mode: "openfreemap" }} />;
 
 afterEach(() => {
   cleanup();
