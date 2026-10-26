@@ -1,53 +1,11 @@
-"use client";
+import { readMapSource } from "@/lib/map/map-config";
+import { MapPageClient } from "./map-page-client";
 
-import { useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
-import { ErrorDisplay } from "@/components/error-display";
-import { HouseholdMap } from "@/components/map/household-map";
-import { useHouseholdData } from "@/components/household-data/use-household-data";
-import { mapFontVariables } from "@/components/map/map-fonts";
+// The map choice is read here, on the server, on every request (#339): a
+// self-hoster who adds or replaces the file in maps/ sees it on the next
+// load, and the browser never reads an environment variable.
+export const dynamic = "force-dynamic";
 
-// Every apartment and place of the household on one map (#330). Full width,
-// like /compare, so there is no section layout here. `?highlight=<id>`
-// marks one apartment among the others (#384).
 export default function MapPage() {
-  const t = useTranslations("map.page");
-  const { status, error, apartments, locations, runMaintenance } = useHouseholdData();
-  // Opened from an apartment's "View on map" (#384).
-  const highlightId = useSearchParams().get("highlight");
-
-  // Apartments added before they had coordinates get them now, once per
-  // visit — what opening the old overview map on /apartments used to do.
-  const geocodedRef = useRef(false);
-  useEffect(() => {
-    if (status !== "ready" || geocodedRef.current) return;
-    geocodedRef.current = true;
-    void runMaintenance("geocode").catch(() => {
-      // best-effort; per-row failures surface through enrichment errors
-    });
-  }, [status, runMaintenance]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">{t("loading")}</p>
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <div className="py-8">
-        <ErrorDisplay headline={error ?? t("loadError")} />
-      </div>
-    );
-  }
-
-  return (
-    <div className={`space-y-4 ${mapFontVariables}`}>
-      <h1 className="title-page">{t("title")}</h1>
-      <HouseholdMap apartments={apartments} locations={locations} highlightId={highlightId} />
-    </div>
-  );
+  return <MapPageClient source={readMapSource()} />;
 }

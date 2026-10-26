@@ -14,8 +14,14 @@ export type InitialView =
       maxZoom: number;
     };
 
-export function initialView(points: { latitude: number; longitude: number }[], viewportWidth: number): InitialView {
-  if (points.length === 0) return { kind: "center", center: SWITZERLAND.center, zoom: SWITZERLAND.zoom };
+// `empty` is where a map with nothing placed starts: Switzerland, or the
+// middle of a self-hoster's own map file (#339).
+export function initialView(
+  points: { latitude: number; longitude: number }[],
+  viewportWidth: number,
+  empty: { center: [number, number]; zoom: number } = SWITZERLAND
+): InitialView {
+  if (points.length === 0) return { kind: "center", center: empty.center, zoom: empty.zoom };
   if (points.length === 1) {
     return { kind: "center", center: [points[0].longitude, points[0].latitude], zoom: MAX_FIT_ZOOM };
   }

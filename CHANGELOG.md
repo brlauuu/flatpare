@@ -9,6 +9,9 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- For people who run Flatpare themselves: when installing, you now choose where the map's streets come from with `FLATPARE_MAPS`, and the Docker container will not start until you do. `openfreemap` works as before. `local` reads a map file you put in the `maps` folder and contacts no outside service at all; `scripts/build-map.sh` makes one for any region, and a ready-made file for Switzerland is available. The hosted site at flatpare.com is unchanged. (#339)
+
 ## 0.19.0 — 2026-10-25
 
 ### Changed

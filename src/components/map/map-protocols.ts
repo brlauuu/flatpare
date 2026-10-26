@@ -1,14 +1,13 @@
 import { addProtocol } from "maplibre-gl";
 import { Protocol } from "pmtiles";
-import { availableExtracts, panBounds } from "@/lib/map/extracts";
 import { GLYPH_PROTOCOL, glyphPath } from "@/lib/map/glyphs";
-import { pickTiles } from "@/lib/map/style";
+import { panBounds, type MapSource } from "@/lib/map/local-map";
+import { OPENFREEMAP, selfTiles, type MapTiles } from "@/lib/map/style";
 
-// Registers the two URL schemes our own map data needs (#339), once per page
-// load: `pmtiles://` reads tiles out of the country file with range
-// requests, and GLYPH_PROTOCOL serves label fonts from public/map-fonts/,
+// Registers the two URL schemes a local map file needs (#339), once per page
+// load: `pmtiles://` reads tiles out of the file with range requests, and GLYPH_PROTOCOL serves label fonts from public/map-fonts/,
 // answering a range we do not ship with an empty set (see glyphs.ts).
-// Imported only by the *-map-inner components, which load MapLibre.
+// Imported only by household-map-inner.tsx, which loads MapLibre.
 
 let registered = false;
 
@@ -25,10 +24,21 @@ export function registerMapProtocols(): void {
   });
 }
 
-// The tiles a map with these points reads, and how far it may pan: near
-// our file when it reads one, anywhere on OpenFreeMap. FLATPARE_MAP_EXTRACTS
-// is inlined by next.config.ts: the files present in this build.
-export function mapTilesFor(points: { latitude: number; longitude: number }[]) {
-  const { tiles, extract } = pickTiles(points, availableExtracts(process.env.FLATPARE_MAP_EXTRACTS), window.location.origin);
-  return { tiles, maxBounds: extract ? panBounds(extract) : undefined };
+// The tiles the map reads, how far it may pan, and where it starts with
+// nothing placed: anywhere on OpenFreeMap from Switzerland, near and at the
+// middle of a local file. Only called with a usable source; a local choice
+// without a file never reaches the map (household-map.tsx).
+export function tilesFor(source: MapSource): {
+  tiles: MapTiles;
+  maxBounds?: [[number, number], [number, number]];
+  empty?: { center: [number, number]; zoom: number };
+} {
+  if (source.mode === "local" && source.file) {
+    return {
+      tiles: selfTiles(window.location.origin, source.file),
+      maxBounds: panBounds(source.bounds),
+      empty: { center: source.center, zoom: source.zoom },
+    };
+  }
+  return { tiles: OPENFREEMAP };
 }

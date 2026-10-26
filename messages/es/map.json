@@ -11,7 +11,13 @@
     "failed": "No se ha podido cargar el mapa.",
     "yourApartments": "Tus pisos: <links></links>",
     "missing": "{count, plural, one {# piso todavía no está} other {# pisos todavía no están}} en el mapa: <links></links>",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "localMissingTitle": "Este servidor está configurado para usar sus propios datos de mapa, pero no hay ningún mapa que mostrar.",
+    "localProblem": {
+      "missing": "No se ha encontrado ningún archivo de mapa en su carpeta maps. Para quien gestiona este servidor: añade ahí un archivo .pmtiles (consulta el README).",
+      "several": "Su carpeta maps contiene más de un archivo .pmtiles. Para quien gestiona este servidor: deja solo uno.",
+      "unreadable": "El archivo de su carpeta maps no es un archivo de mapa que esta app pueda leer. Para quien gestiona este servidor: sustitúyelo por un archivo PMTiles v3 (consulta el README)."
+    }
   },
   "card": {
     "rent": "CHF {amount}",

@@ -11,7 +11,13 @@
     "failed": "The map couldn't load.",
     "yourApartments": "Your apartments: <links></links>",
     "missing": "{count, plural, one {# apartment isn't} other {# apartments aren't}} on the map yet: <links></links>",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "localMissingTitle": "This server is set to use its own map data, but there is no map to show.",
+    "localProblem": {
+      "missing": "No map file was found in its maps folder. Whoever runs this server: add one .pmtiles file there (see the README).",
+      "several": "Its maps folder holds more than one .pmtiles file. Whoever runs this server: keep exactly one there.",
+      "unreadable": "The file in its maps folder is not a map file this app can read. Whoever runs this server: replace it with a PMTiles v3 file (see the README)."
+    }
   },
   "card": {
     "rent": "CHF {amount}",

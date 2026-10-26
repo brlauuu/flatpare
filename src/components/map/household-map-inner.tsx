@@ -15,7 +15,8 @@ import { MapMark } from "./map-mark";
 import { APARTMENT_CARD_HEIGHT, ApartmentCard, LOCATION_CARD_HEIGHT, LocationCard } from "./map-card";
 import { useCardState } from "./use-card-state";
 import { useMapText } from "./use-map-text";
-import { mapTilesFor, registerMapProtocols } from "./map-protocols";
+import { tilesFor, registerMapProtocols } from "./map-protocols";
+import type { MapSource } from "@/lib/map/local-map";
 import { useTranslations } from "next-intl";
 
 // The only file that touches MapLibre (#330). Deliberately thin: what to
@@ -33,6 +34,8 @@ interface Props {
   points: MapPoints;
   // The apartment to highlight among the others (#384), or null.
   highlightId: string | null;
+  // OpenFreeMap, or the self-hoster's own file (#339).
+  source: MapSource;
   onError: () => void;
 }
 
@@ -43,16 +46,16 @@ interface Anchor {
   height: number;
 }
 
-export default function HouseholdMapInner({ points, highlightId, onError }: Props) {
+export default function HouseholdMapInner({ points, highlightId, source, onError }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const theme: MapTheme = resolvedTheme === "dark" ? "dark" : "light";
   const appliedTheme = useRef(theme);
-  // Chosen once, when the map is created, from the points it opens with: our
-  // own file when they all lie inside one, OpenFreeMap otherwise (#339).
+  // Read once, when the map is created (#339).
   const tiles = useRef<MapTiles>(OPENFREEMAP);
+  const sourceRef = useRef(source);
   const onErrorRef = useRef(onError);
   const pointsRef = useRef(points);
   const card = useCardState();
@@ -85,14 +88,14 @@ export default function HouseholdMapInner({ points, highlightId, onError }: Prop
     const container = containerRef.current;
     if (!container) return;
     const all = [...pointsRef.current.apartments, ...pointsRef.current.locations];
-    const picked = mapTilesFor(all);
+    const picked = tilesFor(sourceRef.current);
     tiles.current = picked.tiles;
     let map: MapLibreMap;
     try {
       map = new MapLibreMap({
         container,
         style: mapStyle(appliedTheme.current, picked.tiles),
-        // Our file holds one country; keep the view near it.
+        // A local file covers one area; keep the view near it.
         maxBounds: picked.maxBounds,
         attributionControl: { compact: true },
         locale: controlText.current,
@@ -119,7 +122,7 @@ export default function HouseholdMapInner({ points, highlightId, onError }: Prop
     });
     map.on("movestart", () => card.hide());
 
-    const view = initialView(all, container.clientWidth);
+    const view = initialView(all, container.clientWidth, picked.empty);
     if (view.kind === "center") map.jumpTo({ center: view.center, zoom: view.zoom });
     else map.fitBounds(view.bounds, { padding: view.padding, maxZoom: view.maxZoom, duration: 0 });
 

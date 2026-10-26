@@ -11,7 +11,13 @@
     "failed": "Non è stato possibile caricare la mappa.",
     "yourApartments": "I tuoi appartamenti: <links></links>",
     "missing": "{count, plural, one {# appartamento non è ancora} other {# appartamenti non sono ancora}} sulla mappa: <links></links>",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "localMissingTitle": "Questo server è impostato per usare dati cartografici propri, ma non c’è nessuna mappa da mostrare.",
+    "localProblem": {
+      "missing": "Nella sua cartella maps non è stato trovato nessun file di mappa. Per chi gestisce questo server: aggiungi lì un file .pmtiles (vedi il README).",
+      "several": "La sua cartella maps contiene più di un file .pmtiles. Per chi gestisce questo server: lasciane uno solo.",
+      "unreadable": "Il file nella sua cartella maps non è un file di mappa che questa app sa leggere. Per chi gestisce questo server: sostituiscilo con un file PMTiles v3 (vedi il README)."
+    }
   },
   "card": {
     "rent": "CHF {amount}",

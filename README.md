@@ -33,7 +33,7 @@
 | ⭐ **Per-user star ratings** | Each member rates kitchen, balconies, location, floorplan and overall. Averages roll up automatically — computed in the browser, since the server cannot read the scores. |
 | 📊 **Comparison grid** | Sortable side-by-side table — best price, biggest, shortest commute — with hide/show per apartment. |
 | 🚲 **Auto distance** | Bike + transit minutes from each apartment to your "locations of interest" (work, schools, family). |
-| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org) + OpenFreeMap), and a "View on map" button on each apartment that opens it with that apartment highlighted. Self-hosters can serve the map data themselves. |
+| 🗺️ **Map view** | A map page with every apartment and place drawn by hand on a clean street map ([MapLibre](https://maplibre.org) + OpenFreeMap), and a "View on map" button on each apartment that opens it with that apartment highlighted. Self-hosters can use their own map file instead, so the map contacts no one. |
 | 👥 **Households + invitations** | Invite people by email; each member gets their own account and their own copy of the household key. |
 | ☁️ **Cloud or self-hosted** | One repo runs on Vercel + Turso + Vercel Blob, or fully self-hosted with SQLite + local disk and no third-party accounts at all. |
 
@@ -69,11 +69,11 @@ Accepted limits and the full threat model are in [`docs/security-notes.md`](./do
 ## Quickstart
 
 ```bash
-cp .env.example .env.local        # set AUTH_SECRET + APP_PASSWORD at minimum
+cp .env.example .env.local        # set AUTH_SECRET, APP_PASSWORD and FLATPARE_MAPS at minimum
 docker compose up -d
 ```
 
-Open <http://localhost:3002>, sign in with the password you set, and choose an encryption passphrase when prompted. That is the whole local path — SQLite, filesystem uploads, manual entry, no cloud accounts and no billing.
+`FLATPARE_MAPS` is where the map's streets come from: `openfreemap`, or `local` with your own map file in `./maps` ([how](./maps/README.md)). Open <http://localhost:3002>, sign in with the password you set, and choose an encryption passphrase when prompted. That is the whole local path — SQLite, filesystem uploads, manual entry, no cloud accounts and no billing.
 
 > **Port note:** the container listens on **3000**; `docker-compose.yml` publishes that to host port **3002**. Override the host side with `PORT=8080 docker compose up -d`. The container side is fixed.
 
@@ -383,7 +383,7 @@ docker compose up -d
 
 Data persists in two named volumes: `flatpare-data` (SQLite database) and `flatpare-uploads` (encrypted PDFs).
 
-The image build downloads the Switzerland map file (about 225 MB, checked against a pinned hash), so the map contacts no tile host there. To leave it out, build with `docker compose build --build-arg MAP_DATA=skip`; the map then reads OpenFreeMap everywhere. Without Docker, `npm run map:fetch` downloads it once.
+The map's streets come from where `FLATPARE_MAPS` says, and the container will not start until you set it. `openfreemap` loads them from OpenFreeMap, which sees the area on screen but never your data. `local` reads one map file from `./maps` and contacts no one; [`maps/README.md`](./maps/README.md) explains how to get a file (a ready-made one for Switzerland, or `scripts/build-map.sh <region>` for anywhere else).
 
 ## Contributing
 

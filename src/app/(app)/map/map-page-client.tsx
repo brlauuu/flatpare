@@ -1,0 +1,55 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { ErrorDisplay } from "@/components/error-display";
+import { HouseholdMap } from "@/components/map/household-map";
+import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { mapFontVariables } from "@/components/map/map-fonts";
+import type { MapSource } from "@/lib/map/local-map";
+
+// Every apartment and place of the household on one map (#330). Full width,
+// like /compare, so there is no section layout here. `?highlight=<id>`
+// marks one apartment among the others (#384). `source` comes from the
+// server page (page.tsx), which reads the self-hoster's map choice (#339).
+export function MapPageClient({ source }: { source: MapSource }) {
+  const t = useTranslations("map.page");
+  const { status, error, apartments, locations, runMaintenance } = useHouseholdData();
+  // Opened from an apartment's "View on map" (#384).
+  const highlightId = useSearchParams().get("highlight");
+
+  // Apartments added before they had coordinates get them now, once per
+  // visit — what opening the old overview map on /apartments used to do.
+  const geocodedRef = useRef(false);
+  useEffect(() => {
+    if (status !== "ready" || geocodedRef.current) return;
+    geocodedRef.current = true;
+    void runMaintenance("geocode").catch(() => {
+      // best-effort; per-row failures surface through enrichment errors
+    });
+  }, [status, runMaintenance]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">{t("loading")}</p>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="py-8">
+        <ErrorDisplay headline={error ?? t("loadError")} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`space-y-4 ${mapFontVariables}`}>
+      <h1 className="title-page">{t("title")}</h1>
+      <HouseholdMap apartments={apartments} locations={locations} highlightId={highlightId} source={source} />
+    </div>
+  );
+}

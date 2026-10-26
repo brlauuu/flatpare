@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { mapStyle, pickTiles, OPENFREEMAP, SELF_ATTRIBUTION, TILES_URL, GLYPHS_URL } from "../style";
-import { MAP_EXTRACTS } from "../extracts";
+import { mapStyle, selfTiles, OPENFREEMAP, SELF_ATTRIBUTION, TILES_URL, GLYPHS_URL } from "../style";
 import { SELF_GLYPHS_URL } from "../glyphs";
 
 type AnyLayer = { id: string; type: string; "source-layer"?: string; filter?: unknown; minzoom?: number; paint?: Record<string, unknown> };
 const layers = (theme: "light" | "dark") => mapStyle(theme, OPENFREEMAP).layers as AnyLayer[];
-const CH = MAP_EXTRACTS[0];
-const ORIGIN = "https://flatpare.example";
+const ORIGIN = "http://flatpare.local:3002";
 
 describe("mapStyle", () => {
   it("reads OpenFreeMap tiles and glyphs, no key, as the fallback", () => {
@@ -17,12 +15,11 @@ describe("mapStyle", () => {
     expect(TILES_URL).toBe("https://tiles.openfreemap.org/planet");
   });
 
-  it("reads our own file and fonts from this origin, with the licence's credit (#339)", () => {
-    const { tiles } = pickTiles([], [CH], ORIGIN);
-    const style = mapStyle("dark", tiles);
+  it("reads a self-hoster's own file and fonts from this origin, with the licence's credit (#339)", () => {
+    const style = mapStyle("dark", selfTiles(ORIGIN, "zurich.pmtiles"));
     expect(style.glyphs).toBe(SELF_GLYPHS_URL);
     expect(style.sources).toEqual({
-      omt: { type: "vector", url: `pmtiles://${ORIGIN}/map-data/${CH.file}`, attribution: SELF_ATTRIBUTION },
+      omt: { type: "vector", url: `pmtiles://${ORIGIN}/map-data/zurich.pmtiles`, attribution: SELF_ATTRIBUTION },
     });
     expect(SELF_ATTRIBUTION).toContain("OpenMapTiles");
     expect(SELF_ATTRIBUTION).toContain("OpenStreetMap contributors");
@@ -30,7 +27,7 @@ describe("mapStyle", () => {
   });
 
   it("draws the same layers from either source", () => {
-    const self = mapStyle("light", pickTiles([], [CH], ORIGIN).tiles).layers;
+    const self = mapStyle("light", selfTiles(ORIGIN, "zurich.pmtiles")).layers;
     expect(self).toEqual(mapStyle("light", OPENFREEMAP).layers);
   });
 
