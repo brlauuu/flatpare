@@ -9,6 +9,8 @@ open. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.20.1 — 2026-10-26
+
 ### Fixed
 - The apartment tiles are uniform: every tile in the grid is the same height, the rating badge and the short code each keep their own line (a tile without a code keeps the space, so titles line up), a code no longer breaks across two lines, and rent, size and rooms sit along the bottom edge. (#383)
 
