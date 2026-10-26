@@ -35,7 +35,7 @@ export function ApartmentCorruptCard({ apt }: { apt: ApartmentView }) {
   const t = useTranslations("apartments.corrupt");
   const { deleting, handleDelete } = useCorruptDelete(apt.id);
   return (
-    <Card className="border-destructive/30 bg-destructive/5">
+    <Card className="h-full border-destructive/30 bg-destructive/5">
       <CardContent className="space-y-2 p-4">
         <div className="flex items-center gap-2 text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />

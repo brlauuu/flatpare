@@ -362,7 +362,7 @@ export default function ApartmentsPage() {
       ) : view === "grid" ? (
         <div
           data-view="grid"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3"
         >
           {sortedApartments.map((apt) => (
             <ApartmentCard key={apt.id} apt={apt} />

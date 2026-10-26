@@ -47,7 +47,7 @@ export function ShortCode({
     <span
       data-short-code-size={size}
       className={cn(
-        "inline-flex items-center gap-1 rounded border border-border bg-muted/60 font-mono font-medium text-foreground tracking-tight",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded border border-border bg-muted/60 font-mono font-medium text-foreground tracking-tight",
         sizeClasses[size],
         className
       )}

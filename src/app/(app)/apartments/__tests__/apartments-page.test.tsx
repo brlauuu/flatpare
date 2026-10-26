@@ -119,6 +119,33 @@ describe("Apartments page — view toggle", () => {
     expect(document.querySelector("[data-view='grid']")).not.toBeNull();
   });
 
+  // jsdom does no layout, so these pin the classes that make the tiles
+  // uniform; the screenshots in the PR show the result (#383).
+  it("makes every tile the same height, facts on the bottom edge, the code on its own line (#383)", () => {
+    renderPage({
+      apartments: [
+        APARTMENTS[0],
+        makeApartmentView({ id: "a4", name: "Ohne Code", shortCode: null, sizeM2: 50 }),
+      ],
+    });
+    expect(document.querySelector("[data-view='grid']")).toHaveClass("sm:auto-rows-fr");
+    const links = document.querySelectorAll("[data-view='grid'] > a");
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveClass("block", "h-full");
+      expect(link.querySelector("[data-slot='card']")).toHaveClass("h-full");
+      expect(link.querySelector("[data-card-facts]")).toHaveClass("mt-auto");
+      expect(link.querySelector("[data-card-code]")).toHaveClass("min-h-7");
+    }
+    // Without a code its line is still there, empty, so the title lines up.
+    expect(links[1].querySelector("[data-card-code]")).toBeEmptyDOMElement();
+  });
+
+  it("keeps a short code on one line (#383)", () => {
+    renderPage();
+    expect(document.querySelector("[data-short-code-size]")).toHaveClass("whitespace-nowrap");
+  });
+
   it("switches to list view and persists it", async () => {
     const user = userEvent.setup();
     renderPage();

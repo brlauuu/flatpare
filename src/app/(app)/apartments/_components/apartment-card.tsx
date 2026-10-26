@@ -13,15 +13,19 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
   const t = useTranslations("apartments.badges");
   if (apt.corrupt) return <ApartmentCorruptCard apt={apt} />;
   return (
-    <Link href={`/apartments/${apt.id}`}>
-      <Card className="transition-shadow hover:shadow-md">
-        <CardContent className="space-y-2 p-4">
-          <div className="flex items-start justify-between gap-2">
+    // Tiles are uniform (#383): the grid gives every tile the same height,
+    // the badges and the short code each keep their own line (held open
+    // when there is no code, so titles line up), and the facts sit on the
+    // bottom edge.
+    <Link href={`/apartments/${apt.id}`} className="block h-full">
+      <Card className="h-full transition-shadow hover:shadow-md">
+        <CardContent className="flex flex-1 flex-col gap-2 p-4">
+          <div data-card-badges className="flex flex-wrap items-center gap-1.5">
+            {apt.listingGone && <GoneBadge />}
+            <RatedBadge myRating={apt.myRating} />
+          </div>
+          <div data-card-code className="flex min-h-7 items-center">
             <ShortCode code={apt.shortCode} size="md" />
-            <div className="flex items-center gap-1.5">
-              {apt.listingGone && <GoneBadge />}
-              <RatedBadge myRating={apt.myRating} />
-            </div>
           </div>
           <div className="flex items-start justify-between">
             <h3 className="font-medium leading-tight">{apt.name}</h3>
@@ -35,7 +39,7 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
               className="text-sm text-muted-foreground"
             />
           )}
-          <div className="flex flex-wrap gap-2">
+          <div data-card-facts className="mt-auto flex flex-wrap gap-2">
             {apt.rentChf && (
               <Badge variant="secondary">{t("rent", { amount: apt.rentChf })}</Badge>
             )}
