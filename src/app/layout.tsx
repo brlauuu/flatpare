@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SITE_URL } from "@/lib/site";
 import { appFontVariables } from "./fonts";
@@ -73,6 +74,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <ServiceWorkerRegistrar />
         <NextIntlClientProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </NextIntlClientProvider>

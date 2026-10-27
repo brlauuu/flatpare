@@ -247,6 +247,13 @@ describe("proxy — PWA assets stay public", () => {
     // The self-hosted map data and fonts (#339), read in many range requests.
     "/map-data/ch-2026-10-25.pmtiles",
     "/map-fonts/noto-sans-regular/0-255.pbf",
+    // The share-receiving service worker (#190): fetched by the browser to
+    // install it, signed out too, since installing can precede sign-in.
+    "/sw.js",
+    // The share target's no-worker fallback (#190): through the proxy a
+    // signed-out share POST would get a 307 and be replayed at the landing
+    // page, instead of the route's 303 to the add page.
+    "/share-target",
   ];
 
   for (const path of publicAssets) {
