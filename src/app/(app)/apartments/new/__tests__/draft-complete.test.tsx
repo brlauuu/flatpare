@@ -153,4 +153,52 @@ describe("completing a draft", () => {
     await act(async () => {});
     expect(value.deleteDraft).not.toHaveBeenCalled();
   });
+
+  it("does not navigate if the page is left while the draft is being deleted", async () => {
+    const user = userEvent.setup();
+    const { value, unmount } = renderWithHouseholdData(<UploadPage />, { drafts: [draft()] });
+    vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
+      makeApartmentView({ id, ...d })
+    );
+    let release!: () => void;
+    vi.mocked(value.deleteDraft).mockImplementation(
+      () => new Promise<void>((r) => (release = r))
+    );
+    await user.click(screen.getByRole("button", { name: MANUAL }));
+    await user.click(screen.getByRole("button", { name: /^Save apartment$/i }));
+    await waitFor(() => expect(value.deleteDraft).toHaveBeenCalledTimes(1));
+    unmount();
+    vi.useFakeTimers();
+    await act(async () => {
+      release();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("does not arm the batch redirect if the page is left during the delete", async () => {
+    const user = userEvent.setup();
+    const { value, unmount } = renderWithHouseholdData(<UploadPage />, { drafts: [draft()] });
+    vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
+      makeApartmentView({ id, ...d })
+    );
+    let release!: () => void;
+    vi.mocked(value.deleteDraft).mockImplementation(
+      () => new Promise<void>((r) => (release = r))
+    );
+    await upload(user, [pdf("a.pdf")]);
+    await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
+    await waitFor(() => expect(value.deleteDraft).toHaveBeenCalledTimes(1));
+    unmount();
+    vi.useFakeTimers();
+    await act(async () => {
+      release();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

@@ -62,8 +62,13 @@ export default function UploadPage() {
   // after the component is gone, and in tests it fires against the next test's
   // router mock, which is how #227's full-flow flake actually happened.
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Awaiting the draft's deletion happens before navigating, so the page can
+  // be gone by then; the cleanup above only clears a timer that already exists.
+  const mounted = useRef(true);
   useEffect(() => {
+    mounted.current = true;
     return () => {
+      mounted.current = false;
       if (redirectTimer.current !== null) clearTimeout(redirectTimer.current);
     };
   }, []);
@@ -252,6 +257,7 @@ export default function UploadPage() {
     const allSaved = items.every((i) => i.saved || i.discarded || savedNow.has(i.id));
     if (allSaved) {
       await finishDraft();
+      if (!mounted.current) return;
       redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
     }
   }
@@ -267,6 +273,7 @@ export default function UploadPage() {
     try {
       const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
       await finishDraft();
+      if (!mounted.current) return;
       router.push(`/apartments/${created.id}`);
     } catch (err) {
       setError({
