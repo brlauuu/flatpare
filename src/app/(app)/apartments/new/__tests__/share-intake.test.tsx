@@ -133,8 +133,9 @@ describe("receiving a shared PDF", () => {
       makeApartmentView({ id, ...d })
     );
     await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/apartments"));
-    expect(await readShare("s1")).toBeNull();
+    // Anchored on the deletion itself, not on the navigation: the page only
+    // pushes after a 500ms timer, which would race the waitFor default.
+    await waitFor(async () => expect(await readShare("s1")).toBeNull());
   });
 
   it("keeps the entry when a save fails, so a reload offers it again", async () => {

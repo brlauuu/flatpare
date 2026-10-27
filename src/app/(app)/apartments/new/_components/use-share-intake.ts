@@ -93,7 +93,11 @@ export function useShareIntake({ onFiles, onError }: ShareIntakeOptions): ShareI
   const [sharedUrl, setSharedUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Files are handed over after the render that sets sharedUrl, so the page's
-  // prefill already knows the link when the files are processed.
+  // prefill already knows the link when the files are processed. This relies
+  // on effect order: the page's effect that copies the link into its linkRef
+  // runs in the same commit as the one below, and the prefill is only read
+  // after processFiles' first await. Calling onFiles from the intake promise
+  // directly (before that commit) would prefill nothing.
   const [pending, setPending] = useState<File[] | null>(null);
 
   const handled = useRef<string | null>(null);

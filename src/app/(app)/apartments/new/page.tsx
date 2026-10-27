@@ -200,6 +200,10 @@ export default function UploadPage() {
     onError: (headline) => setError({ headline }),
   });
   const link = prefillUrl ?? sharedUrl;
+  // Runs every commit. useShareIntake hands its files to processFiles from an
+  // effect in the same commit that set sharedUrl, and withDraftUrl reads the
+  // ref only after parsing awaits, so the link is in place by then. Do not
+  // move the hand-over out of an effect (see use-share-intake.ts).
   useEffect(() => {
     linkRef.current = link;
   });
