@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { generateDataKey } from "@/lib/crypto";
+import { envelopeAad, generateDataKey, open } from "@/lib/crypto";
 import {
   openApartment,
+  openDraft,
   openLocation,
   openRating,
   sealApartment,
+  sealDraft,
   sealLocation,
   sealRating,
 } from "../codec";
@@ -55,6 +57,44 @@ describe("household-data codec", () => {
     const loc = { label: "Work", icon: "Briefcase", address: "X 1", latitude: 1, longitude: 2 };
     const env = await sealLocation(key, 1, "loc-1", loc);
     expect(await openLocation(key, 1, "loc-1", env)).toEqual(loc);
+  });
+
+  it("round-trips a draft, with and without a title", async () => {
+    const key = await generateDataKey();
+    const draft = { url: "https://example.com/listing/1", title: "Sunny flat" };
+    const env = await sealDraft(key, 1, "d-1", draft);
+    expect(env.v).toBe(1);
+    expect(await openDraft(key, 1, "d-1", env)).toEqual(draft);
+    const untitled = await sealDraft(key, 1, "d-2", { url: "https://example.com/2", title: null });
+    expect(await openDraft(key, 1, "d-2", untitled)).toEqual({ url: "https://example.com/2", title: null });
+  });
+
+  it("defaults a missing draft title to null", async () => {
+    const env = await sealDraft(null, 1, "d-1", { url: "https://example.com" } as never);
+    expect(await openDraft(null, 1, "d-1", env)).toEqual({ url: "https://example.com", title: null });
+  });
+
+  it("returns null for a draft opened under another id or as another table (AAD)", async () => {
+    const key = await generateDataKey();
+    const env = await sealDraft(key, 1, "d-1", { url: "https://example.com", title: null });
+    expect(await openDraft(key, 1, "d-2", env)).toBeNull();
+    expect(await openDraft(key, 2, "d-1", env)).toBeNull();
+    expect(await openLocation(key, 1, "d-1", env)).toBeNull();
+    const loc = await sealLocation(key, 1, "d-1", {
+      label: "Work", icon: "Briefcase", address: "X 1", latitude: null, longitude: null,
+    });
+    expect(await openDraft(key, 1, "d-1", loc)).toBeNull();
+  });
+
+  it("carries the key version it was sealed under", async () => {
+    const key = await generateDataKey();
+    const env = await sealDraft(key, 1, "d-1", { url: "https://example.com", title: null }, 3);
+    expect(env.v === 1 && env.k).toBe(3);
+    // The AAD is "<householdId>:drafts:<id>".
+    expect(await open(key, env, envelopeAad(1, "drafts", "d-1"))).toEqual({
+      url: "https://example.com",
+      title: null,
+    });
   });
 
   describe("a v0 envelope served while a key is present", () => {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Apartment, Location, Rating } from "./types";
+import type { Apartment, Draft, Location, Rating } from "./types";
 
 const nullableNumber = z.number().nullable();
 const nullableString = z.string().nullable();
@@ -48,4 +48,9 @@ export const locationSchema: z.ZodType<Location> = z.object({
   address: z.string().min(1),
   latitude: nullableNumber,
   longitude: nullableNumber,
+});
+
+export const draftSchema: z.ZodType<Draft> = z.object({
+  url: z.string(),
+  title: z.string().nullable().default(null),
 });

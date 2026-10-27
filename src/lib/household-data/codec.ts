@@ -1,7 +1,7 @@
 import { envelopeAad, open, seal, type Envelope } from "@/lib/crypto";
 import type { ZodType } from "zod";
-import { apartmentSchema, locationSchema, ratingSchema } from "./schemas";
-import type { Apartment, Location, Rating } from "./types";
+import { apartmentSchema, draftSchema, locationSchema, ratingSchema } from "./schemas";
+import type { Apartment, Draft, Location, Rating } from "./types";
 
 // One AAD per table so a ciphertext sealed as a rating can never be
 // presented as an apartment, and per row so it can never move between rows.
@@ -9,6 +9,7 @@ const TABLE = {
   apartments: "apartments",
   ratings: "ratings",
   locations: "locations",
+  drafts: "drafts",
 } as const;
 
 function ratingRowId(apartmentId: string, userId: string): string {
@@ -107,4 +108,23 @@ export function openLocation(
   envelope: Envelope
 ): Promise<Location | null> {
   return openRow(key, envelope, envelopeAad(householdId, TABLE.locations, id), locationSchema);
+}
+
+export function sealDraft(
+  key: CryptoKey | null,
+  householdId: number,
+  id: string,
+  data: Draft,
+  keyVersion = 1
+): Promise<Envelope> {
+  return seal(key, data, envelopeAad(householdId, TABLE.drafts, id), keyVersion);
+}
+
+export function openDraft(
+  key: CryptoKey | null,
+  householdId: number,
+  id: string,
+  envelope: Envelope
+): Promise<Draft | null> {
+  return openRow(key, envelope, envelopeAad(householdId, TABLE.drafts, id), draftSchema);
 }

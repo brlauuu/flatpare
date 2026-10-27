@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import {
+  apartmentDrafts,
   apartments,
   householdKeyWraps,
   householdMembers,
@@ -663,6 +664,10 @@ export async function rotateHouseholdKey(
       .select({ id: locations.id })
       .from(locations)
       .where(eq(locations.householdId, householdId));
+    const dRows = await tx
+      .select({ id: apartmentDrafts.id })
+      .from(apartmentDrafts)
+      .where(eq(apartmentDrafts.householdId, householdId));
     const versionOf = new Map(aRows.map((a) => [a.id, a.version]));
     const stale =
       !sameSet(aRows.map((a) => a.id), req.apartments.map((a) => a.id)) ||
@@ -671,13 +676,15 @@ export async function rotateHouseholdKey(
         rRows.map((r) => `${r.apartmentId}:${r.userId}`),
         req.ratings.map((r) => `${r.apartmentId}:${r.userId}`)
       ) ||
-      !sameSet(lRows.map((l) => l.id), req.locations.map((l) => l.id));
+      !sameSet(lRows.map((l) => l.id), req.locations.map((l) => l.id)) ||
+      !sameSet(dRows.map((d) => d.id), req.drafts.map((d) => d.id));
     if (stale) throw new CryptoStateError("Stale rows", 409);
 
     const envelopes = [
       ...req.apartments.map((a) => a.envelope),
       ...req.ratings.map((r) => r.envelope),
       ...req.locations.map((l) => l.envelope),
+      ...req.drafts.map((d) => d.envelope),
     ];
     for (const e of envelopes) {
       if (e !== null && (e.v !== 1 || e.k !== next)) {
@@ -733,6 +740,14 @@ export async function rotateHouseholdKey(
         .update(locations)
         .set({ envelope: JSON.stringify(l.envelope), updatedAt: now })
         .where(and(eq(locations.id, l.id), eq(locations.householdId, householdId)));
+    }
+    // Drafts carry no updated_at: rotation is the only re-seal they get.
+    for (const d of req.drafts) {
+      if (d.envelope === null) continue;
+      await tx
+        .update(apartmentDrafts)
+        .set({ envelope: JSON.stringify(d.envelope) })
+        .where(and(eq(apartmentDrafts.id, d.id), eq(apartmentDrafts.householdId, householdId)));
     }
     return { keyVersion: next };
   });

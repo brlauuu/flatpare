@@ -25,7 +25,7 @@ import { TEST_KDF_PARAMS } from "@/lib/crypto/__tests__/params";
 import { takeMemberKeypair } from "@/lib/crypto/__tests__/keypair-pool";
 import type { StatusResponse } from "@/components/crypto/flows";
 import { emptyApartment, EMPTY_RATING, type Apartment } from "@/lib/household-data/types";
-import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
+import type { ApartmentRow, DraftRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import { ApiClientError } from "../api-client";
 import { _resetBlobModeProbeForTests } from "@/lib/upload-pdf";
 import { isStaleKey, runRotateDataKey } from "../rotation";
@@ -38,6 +38,7 @@ const HID = 5;
 const A1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const A2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const L1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const D1 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const PDF_BYTES = new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52]);
 
 type FetchMock = Mock<(input: string, init?: RequestInit) => Promise<Response>>;
@@ -48,6 +49,7 @@ interface Server {
   apartments: Map<string, ApartmentRow>;
   ratings: Map<string, RatingRow>;
   locations: Map<string, LocationRow>;
+  drafts: Map<string, DraftRow>;
   files: Map<string, Uint8Array<ArrayBuffer>>;
   lastRotate: Record<string, unknown> | null;
   rotatePosts: number;
@@ -123,12 +125,17 @@ function installFetch() {
           if (l.envelope === null) continue;
           server.locations.set(l.id, { ...server.locations.get(l.id)!, envelope: l.envelope });
         }
+        for (const d of body.drafts) {
+          if (d.envelope === null) continue;
+          server.drafts.set(d.id, { ...server.drafts.get(d.id)!, envelope: d.envelope });
+        }
         for (const p of body.retiredPdfPaths) server.files.delete(p);
         return json({ keyVersion: server.keyVersion });
       }
       if (url === "/api/apartments" && method === "GET") return json([...server.apartments.values()]);
       if (url === "/api/ratings" && method === "GET") return json([...server.ratings.values()]);
       if (url === "/api/locations" && method === "GET") return json([...server.locations.values()]);
+      if (url === "/api/drafts" && method === "GET") return json([...server.drafts.values()]);
       if (url === "/api/files/upload-token") return json({ enabled: false }, 404);
       if (url === "/api/files" && method === "POST") {
         const form = init?.body as FormData;
@@ -189,6 +196,9 @@ beforeEach(async () => {
     locations: new Map([
       [L1, { id: L1, sortOrder: 0, envelope: await sealRow("locations", L1, { label: "Work", icon: "briefcase", address: "X", latitude: null, longitude: null }), createdAt: "", updatedAt: "" }],
     ]),
+    drafts: new Map([
+      [D1, { id: D1, createdBy: "m", createdByName: "Mia", envelope: await sealRow("drafts", D1, { url: "https://example.com/listing/9", title: "Later" }), createdAt: "" }],
+    ]),
     files: new Map([[pdfPath, sealedPdf.ct]]),
     lastRotate: null,
     rotatePosts: 0,
@@ -208,7 +218,7 @@ describe("runRotateDataKey", () => {
       kdfParams: TEST_KDF_PARAMS,
     });
 
-    expect(report).toEqual({ keyVersion: 2, rows: 4, pdfs: 1, pdfFailures: [] });
+    expect(report).toEqual({ keyVersion: 2, rows: 5, pdfs: 1, pdfFailures: [] });
     expect(server.keyVersion).toBe(2);
     const sent = server.lastRotate as {
       wraps: { userId: string; wrappedKey: string; publicKey: string }[];
@@ -229,6 +239,13 @@ describe("runRotateDataKey", () => {
     expect(await open(newKey, rating.envelope, envelopeAad(HID, "ratings", `${A1}:o`))).toMatchObject({ kitchen: 4 });
     const loc = server.locations.get(L1)!;
     expect(await open(newKey, loc.envelope, envelopeAad(HID, "locations", L1))).toMatchObject({ label: "Work" });
+    const draft = server.drafts.get(D1)!;
+    expect(draft.envelope.v === 1 && draft.envelope.k).toBe(2);
+    expect(await open(newKey, draft.envelope, envelopeAad(HID, "drafts", D1))).toEqual({
+      url: "https://example.com/listing/9",
+      title: "Later",
+    });
+    await expect(open(oldDataKey, draft.envelope, envelopeAad(HID, "drafts", D1))).rejects.toThrow();
 
     // The PDF was re-encrypted under the new key at the versioned path, and
     // the old file was retired.
@@ -259,7 +276,7 @@ describe("runRotateDataKey", () => {
 
     const { report } = await runRotateDataKey(status(), ownerKeys, { kdfParams: TEST_KDF_PARAMS });
 
-    expect(report.rows).toBe(3);
+    expect(report.rows).toBe(4);
     const sent = server.lastRotate as { apartments: { id: string; envelope: unknown }[] };
     expect(sent.apartments.find((a) => a.id === A2)?.envelope).toBeNull();
     expect(server.apartments.get(A2)!.version).toBe(1);
@@ -312,6 +329,21 @@ describe("runRotateDataKey", () => {
     server.keyVersion = 2;
     await expect(runRotateDataKey(status(), ownerKeys)).rejects.toThrow(/older household key/);
     expect(server.rotatePosts).toBe(0);
+  });
+});
+
+describe("runRotateDataKey with drafts", () => {
+  it("passes a corrupt draft through untouched", async () => {
+    const row = server.drafts.get(D1)!;
+    const corrupt = { v: 1 as const, k: 1, iv: row.envelope.v === 1 ? row.envelope.iv : "", ct: "QUJD" };
+    server.drafts.set(D1, { ...row, envelope: corrupt });
+
+    const { report } = await runRotateDataKey(status(), ownerKeys, { kdfParams: TEST_KDF_PARAMS });
+
+    expect(report.rows).toBe(4);
+    const sent = server.lastRotate as { drafts: { id: string; envelope: unknown }[] };
+    expect(sent.drafts).toEqual([{ id: D1, envelope: null }]);
+    expect(server.drafts.get(D1)!.envelope).toEqual(corrupt);
   });
 });
 

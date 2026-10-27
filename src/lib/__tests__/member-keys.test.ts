@@ -22,7 +22,8 @@ import {
   rotateHouseholdKey,
   setupMemberKeys,
 } from "../member-keys";
-import { apartments, locations, ratings } from "@/lib/db/schema";
+import { apartmentDrafts, apartments, locations, ratings } from "@/lib/db/schema";
+import { rotateSchema } from "@/lib/crypto-schemas";
 
 const kdf = { salt: "AAAA", memoryKib: 65536, iterations: 3, parallelism: 1, version: 1 as const };
 const member = (tag: string) => ({
@@ -37,6 +38,7 @@ beforeEach(async () => {
   await db.delete(ratings);
   await db.delete(apartments);
   await db.delete(locations);
+  await db.delete(apartmentDrafts);
   await db.delete(householdKeyWraps);
   await db.delete(memberKeys);
   await db.delete(householdMembers);
@@ -448,6 +450,8 @@ describe("CryptoStateError", () => {
 const A1 = "11111111-1111-4111-8111-111111111111";
 const A2 = "22222222-2222-4222-8222-222222222222";
 const L1 = "33333333-3333-4333-8333-333333333333";
+const D1 = "44444444-4444-4444-8444-444444444444";
+const D2 = "55555555-5555-4555-8555-555555555555";
 const sealed = (k: number, tag = "x") => ({
   v: 1 as const,
   k,
@@ -471,6 +475,7 @@ async function rotatableHousehold() {
   await db.insert(apartments).values({ id: A2, householdId: hid, envelope: JSON.stringify(sealed(1, "a2")) });
   await db.insert(ratings).values({ householdId: hid, apartmentId: A1, userId: "o", envelope: JSON.stringify(sealed(1, "r")) });
   await db.insert(locations).values({ id: L1, householdId: hid, sortOrder: 0, envelope: JSON.stringify(sealed(1, "l")) });
+  await db.insert(apartmentDrafts).values({ id: D1, householdId: hid, createdBy: "m", envelope: JSON.stringify(sealed(1, "d")) });
   return hid;
 }
 
@@ -488,6 +493,7 @@ function request(over: Partial<Parameters<typeof rotateHouseholdKey>[2]> = {}) {
     ],
     ratings: [{ apartmentId: A1, userId: "o", envelope: sealed(2, "r'") }],
     locations: [{ id: L1, envelope: sealed(2, "l'") }],
+    drafts: [{ id: D1, envelope: sealed(2, "d'") }],
     retiredPdfPaths: [],
     ...over,
   };
@@ -528,6 +534,40 @@ describe("rotateHouseholdKey", () => {
     expect(JSON.parse(r[0].envelope).ct).toBe(Buffer.from("r'").toString("base64"));
     const l = await db.select().from(locations);
     expect(JSON.parse(l[0].envelope).k).toBe(2);
+    const d = await db.select().from(apartmentDrafts);
+    expect(JSON.parse(d[0].envelope)).toEqual(sealed(2, "d'"));
+  });
+
+  it("leaves a null (corrupt) draft untouched and still rotates", async () => {
+    const hid = await rotatableHousehold();
+    await rotateHouseholdKey(hid, "o", request({ drafts: [{ id: D1, envelope: null }] }));
+    const d = await db.select().from(apartmentDrafts);
+    expect(JSON.parse(d[0].envelope)).toEqual(sealed(1, "d"));
+    expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(2);
+  });
+
+  it("refuses a request that omits drafts while the household holds one", async () => {
+    const hid = await rotatableHousehold();
+    const { drafts: _omitted, ...withoutDrafts } = request();
+    void _omitted;
+    // The route parses the body; an omitted field defaults to [].
+    const parsed = rotateSchema.parse(withoutDrafts);
+    expect(parsed.drafts).toEqual([]);
+    await expect(rotateHouseholdKey(hid, "o", parsed)).rejects.toMatchObject({
+      status: 409,
+      message: "Stale rows",
+    });
+    expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(1);
+    const d = await db.select().from(apartmentDrafts);
+    expect(JSON.parse(d[0].envelope)).toEqual(sealed(1, "d"));
+  });
+
+  it("accepts an omitted drafts field when the household has none", async () => {
+    const hid = await rotatableHousehold();
+    await db.delete(apartmentDrafts);
+    const { drafts: _omitted, ...withoutDrafts } = request();
+    void _omitted;
+    expect(await rotateHouseholdKey(hid, "o", rotateSchema.parse(withoutDrafts))).toEqual({ keyVersion: 2 });
   });
 
   it("leaves a null (corrupt) row untouched and still rotates", async () => {
@@ -580,6 +620,8 @@ describe("rotateHouseholdKey", () => {
     ["a moved apartment version", { apartments: [{ id: A1, version: 2, envelope: sealed(2) }, { id: A2, version: 1, envelope: sealed(2) }] }],
     ["a missing rating", { ratings: [] }],
     ["an extra location", { locations: [{ id: L1, envelope: sealed(2) }, { id: A2, envelope: sealed(2) }] }],
+    ["a missing draft", { drafts: [] }],
+    ["an extra draft", { drafts: [{ id: D1, envelope: sealed(2) }, { id: D2, envelope: sealed(2) }] }],
   ])("refuses %s as Stale rows", async (_label, over) => {
     const hid = await rotatableHousehold();
     await expect(rotateHouseholdKey(hid, "o", request(over))).rejects.toMatchObject({
@@ -587,10 +629,15 @@ describe("rotateHouseholdKey", () => {
       message: "Stale rows",
     });
     expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(1);
+    const d = await db.select().from(apartmentDrafts);
+    expect(JSON.parse(d[0].envelope)).toEqual(sealed(1, "d"));
   });
 
   it("refuses an envelope not sealed under the new version", async () => {
     const hid = await rotatableHousehold();
+    await expect(
+      rotateHouseholdKey(hid, "o", request({ drafts: [{ id: D1, envelope: sealed(1) }] }))
+    ).rejects.toMatchObject({ status: 400 });
     await expect(
       rotateHouseholdKey(hid, "o", request({ locations: [{ id: L1, envelope: sealed(1) }] }))
     ).rejects.toMatchObject({ status: 400 });

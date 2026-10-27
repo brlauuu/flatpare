@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_DRAFTS } from "@/lib/draft-limit";
 
 // Everything the client sends is base64 the server stores verbatim. 20000
 // chars comfortably holds a wrapped RSA-3072 PKCS#8 key (~2.4 KB base64).
@@ -103,6 +104,12 @@ export const rotateSchema = z.object({
     .array(z.object({ apartmentId: z.uuid(), userId: z.string().min(1), envelope: keptEnvelope }))
     .max(10000),
   locations: z.array(z.object({ id: z.uuid(), envelope: keptEnvelope })).max(50),
+  // Defaults to [] so a client from before drafts (#190) still parses; the
+  // row-set check then refuses it whenever the household holds a draft.
+  drafts: z
+    .array(z.object({ id: z.uuid(), envelope: keptEnvelope }))
+    .max(MAX_DRAFTS)
+    .default([]),
   retiredPdfPaths: z.array(z.string().min(1).max(1000)).max(1000),
 });
 export type RotateRequest = z.infer<typeof rotateSchema>;
