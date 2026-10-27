@@ -61,7 +61,7 @@ function isFresh(item: SharedItem, now: number): boolean {
  */
 async function withStash<T>(
   fallback: T,
-  work: (store: IDBObjectStore) => void,
+  work: (store: IDBObjectStore, fresh: SharedItem[]) => void,
   pick: (fresh: SharedItem[]) => T
 ): Promise<T> {
   let db: IDBDatabase;
@@ -83,7 +83,7 @@ async function withStash<T>(
           else store.delete(item.id);
         }
         fresh.sort((a, b) => b.createdAt - a.createdAt);
-        work(store);
+        work(store, fresh);
       };
       tx.oncomplete = () => resolve(pick(fresh));
       tx.onerror = () => reject(tx.error);
@@ -119,6 +119,22 @@ export function deleteShare(id: string): Promise<void> {
     undefined,
     (store) => {
       store.delete(id);
+    },
+    () => undefined
+  );
+}
+
+/**
+ * Keeps only `files` in the entry, after some of a multi-PDF share saved and
+ * some did not: reopening it then offers only what is still to add. Does
+ * nothing when the entry is gone or expired.
+ */
+export function keepShareFiles(id: string, files: File[]): Promise<void> {
+  return withStash<void>(
+    undefined,
+    (store, fresh) => {
+      const item = fresh.find((entry) => entry.id === id);
+      if (item) store.put({ ...item, files });
     },
     () => undefined
   );

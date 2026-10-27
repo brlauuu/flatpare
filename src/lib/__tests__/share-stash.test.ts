@@ -10,6 +10,7 @@ import {
   SHARE_TTL_MS,
   clearShares,
   deleteShare,
+  keepShareFiles,
   listShares,
   readShare,
   type SharedItem,
@@ -111,6 +112,24 @@ describe("share stash", () => {
     expect((await listShares()).map((s) => s.id)).toEqual(["b"]);
   });
 
+  it("keeps only the given files, leaving the rest of the entry", async () => {
+    const one = new File(["one"], "one.pdf", { type: "application/pdf" });
+    const two = new File(["two"], "two.pdf", { type: "application/pdf" });
+    await put(item("a", Date.now(), { url: "https://example.com/1", files: [one, two], dropped: 1 }));
+
+    await keepShareFiles("a", [two]);
+
+    const got = await readShare("a");
+    expect(got).toMatchObject({ id: "a", url: "https://example.com/1", dropped: 1 });
+    expect(got!.files).toHaveLength(1);
+    expect(await got!.files[0].text()).toBe("two");
+  });
+
+  it("does not recreate an entry that is gone", async () => {
+    await keepShareFiles("gone", [new File(["x"], "x.pdf")]);
+    expect(await rawIds()).toEqual([]);
+  });
+
   it("clears everything", async () => {
     await put(item("a", Date.now()));
     await clearShares();
@@ -122,6 +141,7 @@ describe("share stash", () => {
     expect(await readShare("a")).toBeNull();
     expect(await listShares()).toEqual([]);
     await expect(deleteShare("a")).resolves.toBeUndefined();
+    await expect(keepShareFiles("a", [])).resolves.toBeUndefined();
     await expect(clearShares()).resolves.toBeUndefined();
   });
 
@@ -137,6 +157,7 @@ describe("share stash", () => {
     expect(await readShare("a")).toBeNull();
     expect(await listShares()).toEqual([]);
     await expect(deleteShare("a")).resolves.toBeUndefined();
+    await expect(keepShareFiles("a", [])).resolves.toBeUndefined();
     await expect(clearShares()).resolves.toBeUndefined();
   });
 });
