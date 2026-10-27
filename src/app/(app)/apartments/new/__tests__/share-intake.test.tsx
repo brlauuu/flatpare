@@ -4,12 +4,14 @@
 import "fake-indexeddb/auto";
 import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, waitFor, cleanup, act } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   renderWithHouseholdData,
   makeApartmentView,
+  makeHouseholdData,
 } from "@/components/household-data/__tests__/fake-household-data";
+import { HouseholdDataContext } from "@/components/household-data/household-data-provider";
 import {
   SHARE_DB_NAME,
   SHARE_DB_VERSION,
@@ -80,6 +82,11 @@ function pdf(name = "listing.pdf") {
   return new File(["%PDF-1.4\n"], name, { type: "application/pdf" });
 }
 
+// The confirmation every share asks before anything is processed or saved.
+async function tap(name: "Add" | "Save", user = userEvent.setup()) {
+  await user.click(await screen.findByRole("button", { name }));
+}
+
 beforeEach(async () => {
   await clearShares();
   search = "";
@@ -106,6 +113,7 @@ describe("receiving a shared PDF", () => {
     vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
       makeApartmentView({ id, ...d })
     );
+    await tap("Add", user);
     const save = await screen.findByRole("button", { name: /^Save apartment$/i });
     expect(parsePdf).toHaveBeenCalledTimes(1);
     await user.click(save);
@@ -118,6 +126,7 @@ describe("receiving a shared PDF", () => {
     await put(entry("s1", { files: [pdf()], dropped: 2 }));
     search = "share=s1";
     renderWithHouseholdData(<UploadPage />);
+    await tap("Add");
     // The notice stays through processing; wait for the review step so the
     // assertion is not racing the step change.
     await screen.findByRole("button", { name: /^Save apartment$/i });
@@ -132,6 +141,7 @@ describe("receiving a shared PDF", () => {
     vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
       makeApartmentView({ id, ...d })
     );
+    await tap("Add", user);
     await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
     // Anchored on the deletion itself, not on the navigation: the page only
     // pushes after a 500ms timer, which would race the waitFor default.
@@ -144,6 +154,7 @@ describe("receiving a shared PDF", () => {
     const user = userEvent.setup();
     const { value } = renderWithHouseholdData(<UploadPage />);
     vi.mocked(value.createApartment).mockRejectedValue(new Error("402"));
+    await tap("Add", user);
     await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
     await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
     await act(async () => {});
@@ -155,8 +166,70 @@ describe("receiving a shared PDF", () => {
     await put(entry("s1", { files: [generic] }));
     search = "share=s1";
     renderWithHouseholdData(<UploadPage />);
+    await tap("Add");
     expect(await screen.findByRole("button", { name: /^Save apartment$/i })).toBeInTheDocument();
     expect(screen.queryByText("No PDF files selected")).not.toBeInTheDocument();
+  });
+});
+
+describe("confirming a shared PDF", () => {
+  it("asks first, with the count, and processes nothing until Add", async () => {
+    await put(entry("s1", { files: [pdf("a.pdf"), pdf("b.pdf")] }));
+    search = "share=s1";
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    expect(await screen.findByText("Add the 2 PDFs you shared?")).toBeInTheDocument();
+    expect(parsePdf).not.toHaveBeenCalled();
+    expect(encryptAndUploadPdf).not.toHaveBeenCalled();
+    await tap("Add");
+    await screen.findByRole("button", { name: /^Save all/i });
+    expect(parsePdf).toHaveBeenCalledTimes(2);
+    expect(value.createDraft).not.toHaveBeenCalled();
+  });
+
+  it("Discard deletes the entry and leaves the normal upload step", async () => {
+    await put(entry("s1", { url: LINK, files: [pdf()] }));
+    search = "share=s1";
+    const user = userEvent.setup();
+    renderWithHouseholdData(<UploadPage />);
+    expect(await screen.findByText("Add the PDF you shared?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    await waitFor(async () => expect(await readShare("s1")).toBeNull());
+    expect(screen.queryByText("Add the PDF you shared?")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose files" })).toBeInTheDocument();
+    expect(parsePdf).not.toHaveBeenCalled();
+  });
+
+  it("acts without asking again when the pick-up prompt confirmed it", async () => {
+    await put(entry("s1", { files: [pdf()] }));
+    search = "share=s1&confirmed=1";
+    renderWithHouseholdData(<UploadPage />);
+    expect(await screen.findByRole("button", { name: /^Save apartment$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
+  });
+
+  it("after a partial save keeps only the files that did not save", async () => {
+    await put(entry("s1", { files: [pdf("a.pdf"), pdf("b.pdf")] }));
+    search = "share=s1";
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment)
+      .mockImplementationOnce(async (id, d) => makeApartmentView({ id, ...d }))
+      .mockRejectedValueOnce(new Error("402"));
+    await tap("Add", user);
+    await user.click(await screen.findByRole("button", { name: /^Save all/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(2));
+    await waitFor(async () => expect((await readShare("s1"))?.files).toHaveLength(1));
+    expect(pushMock).not.toHaveBeenCalled();
+
+    // Reopening it (the pick-up prompt's Add) processes only the one left.
+    // Which one is not checked here: under jsdom, fake-indexeddb clones a
+    // File into a plain object, so the two cannot be told apart once stored.
+    cleanup();
+    vi.mocked(parsePdf).mockClear();
+    search = "share=s1&confirmed=1";
+    renderWithHouseholdData(<UploadPage />);
+    await screen.findByRole("button", { name: /^Save apartment$/i });
+    expect(parsePdf).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -169,6 +242,7 @@ describe("receiving a shared link", () => {
         <UploadPage />
       </StrictMode>
     );
+    await tap("Save");
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
     expect(value.createDraft).toHaveBeenCalledTimes(1);
     expect(value.createDraft).toHaveBeenCalledWith(LINK, "Nice flat");
@@ -179,6 +253,7 @@ describe("receiving a shared link", () => {
     await put(entry("s1", { text: `Shared from an app: ${LINK}` }));
     search = "share=s1";
     const { value } = renderWithHouseholdData(<UploadPage />);
+    await tap("Save");
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
     expect(value.createDraft).toHaveBeenCalledWith(LINK, null);
   });
@@ -190,9 +265,59 @@ describe("receiving a shared link", () => {
     vi.mocked(value.createDraft).mockRejectedValue(
       new ApiClientError(409, "Too many drafts", { error: "Too many drafts" })
     );
+    await tap("Save");
     expect(await screen.findByText(FULL)).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(await readShare("s1")).not.toBeNull();
+  });
+});
+
+describe("confirming a shared link", () => {
+  it("names the host and saves nothing until Save", async () => {
+    await put(entry("s1", { url: LINK }));
+    search = "share=s1";
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    expect(
+      await screen.findByText("Save the link you shared from www.example.ch?")
+    ).toBeInTheDocument();
+    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(await readShare("s1")).not.toBeNull();
+  });
+
+  it("Discard deletes the entry and creates no draft", async () => {
+    await put(entry("s1", { url: LINK }));
+    search = "share=s1";
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    await user.click(await screen.findByRole("button", { name: "Discard" }));
+    await waitFor(async () => expect(await readShare("s1")).toBeNull());
+    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Choose files" })).toBeInTheDocument();
+  });
+
+  it("creates the draft only once the store's first load is in", async () => {
+    await put(entry("s1", { url: LINK }));
+    search = "share=s1&confirmed=1";
+    const ui = <UploadPage />;
+    const loading = makeHouseholdData({ status: "loading" });
+    const { rerender } = render(
+      <HouseholdDataContext.Provider value={loading}>{ui}</HouseholdDataContext.Provider>
+    );
+    // The read has resolved and been applied (the share is pending, so the
+    // confirmation is not shown); with the store still loading, nothing was
+    // written.
+    await act(async () => {
+      await readShare("s1");
+    });
+    await act(async () => {});
+    expect(loading.createDraft).not.toHaveBeenCalled();
+
+    const ready = { ...loading, status: "ready" as const };
+    rerender(<HouseholdDataContext.Provider value={ready}>{ui}</HouseholdDataContext.Provider>);
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
+    expect(loading.createDraft).toHaveBeenCalledTimes(1);
+    expect(loading.createDraft).toHaveBeenCalledWith(LINK, null);
   });
 });
 

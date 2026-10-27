@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ interface UploadStepProps {
   onManualEntry: () => void;
   draftHost?: string | null;
   notice?: string | null;
+  /** The question asked before a share is acted on. */
+  shareConfirm?: ReactNode;
   error: { headline: string; details?: ErrorDetails } | null;
 }
 
@@ -28,6 +30,7 @@ export function UploadStep({
   onManualEntry,
   draftHost,
   notice,
+  shareConfirm,
   error,
 }: UploadStepProps) {
   const t = useTranslations("apartments.upload");
@@ -45,6 +48,8 @@ export function UploadStep({
       )}
 
       <ShareNotice text={notice} />
+
+      {shareConfirm}
 
       <div
         onDragOver={(e) => {

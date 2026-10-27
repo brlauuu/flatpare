@@ -103,7 +103,10 @@
     "fromDraft": "Añadiendo el enlace que guardaste: {host}",
     "shareUnavailable": "Lo que compartiste no llegó a Flatpare. Compártelo de nuevo o sube el PDF aquí.",
     "shareNothing": "No se compartió nada que Flatpare pueda usar: ni un PDF ni un enlace.",
-    "shareDropped": "{count, plural, one {Se omitió # archivo} other {Se omitieron # archivos}}: solo se pueden añadir PDF."
+    "shareDropped": "{count, plural, one {Se omitió # archivo} other {Se omitieron # archivos}}: solo se pueden añadir PDF.",
+    "shareConfirmPdf": "{count, plural, one {¿Añadir el PDF compartido?} other {¿Añadir los # PDF compartidos?}}",
+    "shareConfirmLink": "¿Guardar el enlace compartido de {host}?",
+    "shareSave": "Guardar"
   },
   "upload": {
     "title": "Subir anuncios",

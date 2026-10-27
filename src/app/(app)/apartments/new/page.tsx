@@ -20,6 +20,7 @@ import { useDraftCompletion } from "./_components/use-draft-completion";
 import { useShareIntake } from "./_components/use-share-intake";
 import { isPdfFile } from "./_components/pdf-file";
 import { ShareNotice, UploadStep } from "./_components/upload-step";
+import { ShareConfirm } from "./_components/share-confirm";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
 import { StatusBadge } from "./_components/status-badge";
@@ -45,6 +46,9 @@ export default function UploadPage() {
   const [error, setError] = useState<ErrorState | null>(null);
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
+  // Each item's file, kept after it saves: a partial save of a shared batch
+  // tells the share stash which of its files are done.
+  const itemFileRef = useRef<Map<string, File>>(new Map());
 
   // The post-save redirect is deferred so the "Saved" badges are visible for a
   // beat. Held in a ref and cleared on unmount: an uncancelled timer navigates
@@ -175,7 +179,10 @@ export default function UploadPage() {
       saved: false,
       discarded: false,
     }));
-    pdfFiles.forEach((file, i) => fileMapRef.current.set(newItems[i].id, file));
+    pdfFiles.forEach((file, i) => {
+      fileMapRef.current.set(newItems[i].id, file);
+      itemFileRef.current.set(newItems[i].id, file);
+    });
 
     setItems(newItems);
     setStep("processing");
@@ -195,10 +202,11 @@ export default function UploadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  const { sharedUrl, finishShare, notice } = useShareIntake({
+  const share = useShareIntake({
     onFiles: processFiles,
     onError: (headline) => setError({ headline }),
   });
+  const { sharedUrl, finishShare, notice } = share;
   const link = prefillUrl ?? sharedUrl;
   // Runs every commit. useShareIntake hands its files to processFiles from an
   // effect in the same commit that set sharedUrl, and withDraftUrl reads the
@@ -249,12 +257,16 @@ export default function UploadPage() {
     // "if all saved"; the condition did not. Found via #227: the test that
     // asserts a failed save does not redirect was passing only because it ran
     // before the timer fired, and flaked whenever load put it after.
-    const allSaved = items.every((i) => i.saved || i.discarded || savedNow.has(i.id));
-    if (allSaved) {
-      await Promise.all([finishDraft(), finishShare()]);
-      if (!mounted.current) return;
-      redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
+    const done = items.filter((i) => i.saved || i.discarded || savedNow.has(i.id));
+    if (done.length < items.length) {
+      // Reopening the share then offers only what did not save, so the
+      // apartments that did are not added (and paid for) twice.
+      await share.settleShare(done.flatMap((i) => itemFileRef.current.get(i.id) ?? []));
+      return;
     }
+    await Promise.all([finishDraft(), finishShare()]);
+    if (!mounted.current) return;
+    redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
   }
 
   async function handleSaveSingle(e: React.FormEvent) {
@@ -293,6 +305,13 @@ export default function UploadPage() {
         }}
         draftHost={draftHost}
         notice={notice}
+        shareConfirm={
+          <ShareConfirm
+            confirmation={share.confirmation}
+            onConfirm={share.confirmShare}
+            onDiscard={share.discardShare}
+          />
+        }
         error={error}
       />
     );

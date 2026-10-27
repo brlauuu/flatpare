@@ -103,7 +103,10 @@
     "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}",
     "shareUnavailable": "Diese Freigabe ist nicht bei Flatpare angekommen. Teile sie nochmals oder lade das PDF hier hoch.",
     "shareNothing": "Es wurde nichts geteilt, das Flatpare verwenden kann: kein PDF und kein Link.",
-    "shareDropped": "{count, plural, one {# Datei wurde} other {# Dateien wurden}} weggelassen: Nur PDFs können hinzugefügt werden."
+    "shareDropped": "{count, plural, one {# Datei wurde} other {# Dateien wurden}} weggelassen: Nur PDFs können hinzugefügt werden.",
+    "shareConfirmPdf": "{count, plural, one {Das geteilte PDF hinzufügen?} other {Die # geteilten PDFs hinzufügen?}}",
+    "shareConfirmLink": "Den geteilten Link von {host} speichern?",
+    "shareSave": "Speichern"
   },
   "upload": {
     "title": "Inserate hochladen",

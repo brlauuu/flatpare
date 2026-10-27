@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { SharedItem } from "@/lib/share-stash";
 
@@ -67,7 +67,7 @@ describe("PendingSharePrompt", () => {
     listShares.mockResolvedValue([entry("a", 0)]);
     render(<PendingSharePrompt />);
     await userEvent.click(await screen.findByRole("button", { name: "Add" }));
-    expect(push).toHaveBeenCalledWith("/apartments/new?share=a");
+    expect(push).toHaveBeenCalledWith("/apartments/new?share=a&confirmed=1");
     expect(screen.queryByRole("status")).toBeNull();
     expect(deleteShare).not.toHaveBeenCalled();
   });
@@ -80,31 +80,49 @@ describe("PendingSharePrompt", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  // The negatives below await the read's own promise inside act, so its
+  // state update has been applied before asserting absence; the positive
+  // control shows the same setup does render when the id differs.
+  async function renderAndSettle(stash: SharedItem[]) {
+    const read = Promise.resolve(stash);
+    listShares.mockReturnValue(read);
+    const result = render(<PendingSharePrompt />);
+    await act(async () => {
+      await read;
+    });
+    return result;
+  }
+
   it("stays away on the add page handling that share", async () => {
     pathname = "/apartments/new";
     search = "share=a";
-    listShares.mockResolvedValue([entry("a", 0)]);
-    render(<PendingSharePrompt />);
-    await vi.waitFor(() => expect(listShares).toHaveBeenCalled());
-    await Promise.resolve();
+    await renderAndSettle([entry("a", 0)]);
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("does show on the add page handling another share (control)", async () => {
+    pathname = "/apartments/new";
+    search = "share=b";
+    await renderAndSettle([entry("a", 0)]);
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("does not offer a share the add page consumed before navigating away", async () => {
     pathname = "/apartments/new";
     search = "share=a";
-    listShares.mockResolvedValue([entry("a", 0)]);
-    const { rerender } = render(<PendingSharePrompt />);
-    await vi.waitFor(() => expect(listShares).toHaveBeenCalledTimes(1));
+    const { rerender } = await renderAndSettle([entry("a", 0)]);
     // The add page created the draft, deleted the entry and replaced to the list.
-    listShares.mockResolvedValue([]);
+    const second = Promise.resolve<SharedItem[]>([]);
+    listShares.mockReturnValue(second);
     pathname = "/apartments";
     search = "";
     rerender(<PendingSharePrompt />);
     // Never shown on the new page, not even before the second read answers.
     expect(screen.queryByRole("status")).toBeNull();
-    await vi.waitFor(() => expect(listShares).toHaveBeenCalledTimes(2));
-    await Promise.resolve();
+    await act(async () => {
+      await second;
+    });
+    expect(listShares).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole("status")).toBeNull();
   });
 });

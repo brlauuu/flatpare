@@ -103,7 +103,10 @@
     "fromDraft": "Ajout du lien que tu as enregistré : {host}",
     "shareUnavailable": "Ce partage n'est pas arrivé jusqu'à Flatpare. Partage-le à nouveau ou importe le PDF ici.",
     "shareNothing": "Rien de ce qui a été partagé n'est utilisable par Flatpare : ni PDF ni lien.",
-    "shareDropped": "{count, plural, one {# fichier a été ignoré} other {# fichiers ont été ignorés}} : seuls les PDF peuvent être ajoutés."
+    "shareDropped": "{count, plural, one {# fichier a été ignoré} other {# fichiers ont été ignorés}} : seuls les PDF peuvent être ajoutés.",
+    "shareConfirmPdf": "{count, plural, one {Ajouter le PDF partagé ?} other {Ajouter les # PDF partagés ?}}",
+    "shareConfirmLink": "Enregistrer le lien partagé depuis {host} ?",
+    "shareSave": "Enregistrer"
   },
   "upload": {
     "title": "Ajouter des annonces",

@@ -53,7 +53,9 @@ export function PendingSharePrompt() {
           onClick={() => {
             const id = item.id;
             setItem(null);
-            router.push(`/apartments/new?share=${encodeURIComponent(id)}`);
+            // This tap is the confirmation, so the add page does not ask
+            // again (see use-share-intake.ts for why that is safe).
+            router.push(`/apartments/new?share=${encodeURIComponent(id)}&confirmed=1`);
           }}
         >
           {t("add")}
