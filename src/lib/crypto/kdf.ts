@@ -1,4 +1,5 @@
-import { argon2id } from "hash-wasm";
+import { argon2idBytes } from "./argon2";
+import type { KdfRequest, KdfResponse } from "./kdf-worker";
 
 export interface KdfParams {
   memoryKib: number;
@@ -28,16 +29,35 @@ export async function deriveKekBytes(
   if (params.version !== 1) {
     throw new Error(`Unsupported KDF version ${params.version}`);
   }
-  const out = await argon2id({
-    password: secret,
-    salt,
-    parallelism: params.parallelism,
-    iterations: params.iterations,
-    memorySize: params.memoryKib,
-    hashLength: 32,
-    outputType: "binary",
+  return (
+    (await deriveInWorker({ secret, salt, params })) ??
+    (await argon2idBytes(secret, salt, params))
+  );
+}
+
+// Argon2id in a Web Worker, so the page keeps responding while it runs
+// (#396). Null whenever a worker cannot do it — none in this environment
+// (tests, server), it failed to start, or it reported a failure — and the
+// caller then derives on the main thread as before: slower to the eye, never
+// stuck and never a different result.
+function deriveInWorker(req: KdfRequest): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (typeof Worker === "undefined") return Promise.resolve(null);
+  let worker: Worker;
+  try {
+    worker = new Worker(new URL("./kdf-worker.ts", import.meta.url), { type: "module" });
+  } catch {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    const finish = (bytes: Uint8Array<ArrayBuffer> | null) => {
+      worker.terminate();
+      resolve(bytes);
+    };
+    worker.onmessage = (e: MessageEvent<KdfResponse>) => finish(e.data.ok ? e.data.bytes : null);
+    worker.onerror = () => finish(null);
+    worker.onmessageerror = () => finish(null);
+    worker.postMessage(req);
   });
-  return new Uint8Array(out);
 }
 
 // The KEK is only ever used to wrap/unwrap other keys, never to encrypt
