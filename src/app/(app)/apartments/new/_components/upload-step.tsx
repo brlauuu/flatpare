@@ -9,10 +9,27 @@ interface UploadStepProps {
   onFiles: (files: FileList) => void;
   onManualEntry: () => void;
   draftHost?: string | null;
+  notice?: string | null;
   error: { headline: string; details?: ErrorDetails } | null;
 }
 
-export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadStepProps) {
+// What a share left out, said on whichever step the page is on.
+export function ShareNotice({ text }: { text?: string | null }) {
+  if (!text) return null;
+  return (
+    <p role="status" className="text-sm text-muted-foreground">
+      {text}
+    </p>
+  );
+}
+
+export function UploadStep({
+  onFiles,
+  onManualEntry,
+  draftHost,
+  notice,
+  error,
+}: UploadStepProps) {
   const t = useTranslations("apartments.upload");
   const tNew = useTranslations("apartments.new");
   const [dragOver, setDragOver] = useState(false);
@@ -26,6 +43,8 @@ export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadS
           {tNew("fromDraft", { host: draftHost })}
         </p>
       )}
+
+      <ShareNotice text={notice} />
 
       <div
         onDragOver={(e) => {

@@ -100,7 +100,10 @@
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Wohnung konnte nicht gespeichert werden",
     "processing": "Wird verarbeitet ({done}/{total})",
-    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}"
+    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}",
+    "shareUnavailable": "Diese Freigabe ist nicht bei Flatpare angekommen. Teile sie nochmals oder lade das PDF hier hoch.",
+    "shareNothing": "Es wurde nichts geteilt, das Flatpare verwenden kann: kein PDF und kein Link.",
+    "shareDropped": "{count, plural, one {# Datei wurde} other {# Dateien wurden}} weggelassen: Nur PDFs können hinzugefügt werden."
   },
   "upload": {
     "title": "Inserate hochladen",

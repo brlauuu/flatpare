@@ -15,11 +15,13 @@ import {
 import type { ErrorDetails } from "@/lib/fetch-error";
 import type { UploadItem } from "./types";
 import { StatusBadge } from "./status-badge";
+import { ShareNotice } from "./upload-step";
 
 interface ReviewStepProps {
   items: UploadItem[];
   saving: boolean;
   error: { headline: string; details?: ErrorDetails } | null;
+  notice?: string | null;
   onSaveAll: () => void;
   onUploadMore: () => void;
   onRetry: (id: string) => void;
@@ -33,6 +35,7 @@ export function ReviewStep({
   items,
   saving,
   error,
+  notice,
   onSaveAll,
   onUploadMore,
   onRetry,
@@ -70,6 +73,8 @@ export function ReviewStep({
       {allDone && savedCount > 0 && (
         <p className="text-sm text-muted-foreground">{t("allSaved")}</p>
       )}
+
+      <ShareNotice text={notice} />
 
       {error && <ErrorDisplay headline={error.headline} details={error.details} />}
 

@@ -100,7 +100,10 @@
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare l'appartamento",
     "processing": "Elaborazione ({done}/{total})",
-    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}"
+    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}",
+    "shareUnavailable": "Questa condivisione non è arrivata a Flatpare. Condividila di nuovo o carica qui il PDF.",
+    "shareNothing": "Non è stato condiviso nulla che Flatpare possa usare: nessun PDF e nessun link.",
+    "shareDropped": "{count, plural, one {# file è stato escluso} other {# file sono stati esclusi}}: si possono aggiungere solo PDF."
   },
   "upload": {
     "title": "Carica annunci",

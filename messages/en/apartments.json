@@ -100,7 +100,10 @@
     "nameRequired": "Name is required",
     "saveFailed": "Failed to save apartment",
     "processing": "Processing ({done}/{total})",
-    "fromDraft": "Adding the link you saved: {host}"
+    "fromDraft": "Adding the link you saved: {host}",
+    "shareUnavailable": "That share did not reach Flatpare. Share it again, or upload the PDF here.",
+    "shareNothing": "Nothing that Flatpare can use was shared: no PDF and no link.",
+    "shareDropped": "{count, plural, one {# file was} other {# files were}} left out: only PDFs can be added."
   },
   "upload": {
     "title": "Upload Listings",

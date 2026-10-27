@@ -100,7 +100,10 @@
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se ha podido guardar el piso",
     "processing": "Procesando ({done}/{total})",
-    "fromDraft": "Añadiendo el enlace que guardaste: {host}"
+    "fromDraft": "Añadiendo el enlace que guardaste: {host}",
+    "shareUnavailable": "Lo que compartiste no llegó a Flatpare. Compártelo de nuevo o sube el PDF aquí.",
+    "shareNothing": "No se compartió nada que Flatpare pueda usar: ni un PDF ni un enlace.",
+    "shareDropped": "{count, plural, one {Se omitió # archivo} other {Se omitieron # archivos}}: solo se pueden añadir PDF."
   },
   "upload": {
     "title": "Subir anuncios",

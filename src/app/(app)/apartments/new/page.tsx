@@ -17,7 +17,9 @@ import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
 import { useDraftCompletion } from "./_components/use-draft-completion";
-import { UploadStep } from "./_components/upload-step";
+import { useShareIntake } from "./_components/use-share-intake";
+import { isPdfFile } from "./_components/pdf-file";
+import { ShareNotice, UploadStep } from "./_components/upload-step";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
 import { StatusBadge } from "./_components/status-badge";
@@ -60,9 +62,13 @@ export default function UploadPage() {
     };
   }, []);
 
-  // The extracted link wins; the draft's fills only a form that has none.
+  // The extracted link wins; the draft's (or the share's) fills only a form
+  // that has none. Read through a ref: processFiles is memoised, and the
+  // shared link arrives after it was created.
+  const linkRef = useRef<string | null>(null);
   function withDraftUrl(form: ApartmentForm): ApartmentForm {
-    return prefillUrl && !form.listingUrl ? { ...form, listingUrl: prefillUrl } : form;
+    const url = linkRef.current;
+    return url && !form.listingUrl ? { ...form, listingUrl: url } : form;
   }
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
@@ -153,7 +159,7 @@ export default function UploadPage() {
   }
 
   const processFiles = useCallback(async (files: File[]) => {
-    const pdfFiles = files.filter((f) => f.type === "application/pdf");
+    const pdfFiles = files.filter(isPdfFile);
     if (pdfFiles.length === 0) {
       setError({ headline: t("noPdfs") });
       return;
@@ -188,6 +194,15 @@ export default function UploadPage() {
     // change it without a remount, and the summary follows it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
+
+  const { sharedUrl, finishShare, notice } = useShareIntake({
+    onFiles: processFiles,
+    onError: (headline) => setError({ headline }),
+  });
+  const link = prefillUrl ?? sharedUrl;
+  useEffect(() => {
+    linkRef.current = link;
+  });
 
   const handleFiles = useCallback(
     (fileList: FileList) => {
@@ -232,7 +247,7 @@ export default function UploadPage() {
     // before the timer fired, and flaked whenever load put it after.
     const allSaved = items.every((i) => i.saved || i.discarded || savedNow.has(i.id));
     if (allSaved) {
-      await finishDraft();
+      await Promise.all([finishDraft(), finishShare()]);
       if (!mounted.current) return;
       redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
     }
@@ -248,7 +263,7 @@ export default function UploadPage() {
     setError(null);
     try {
       const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
-      await finishDraft();
+      await Promise.all([finishDraft(), finishShare()]);
       if (!mounted.current) return;
       router.push(`/apartments/${created.id}`);
     } catch (err) {
@@ -268,11 +283,12 @@ export default function UploadPage() {
           setSingleForm({
             ...emptyApartmentForm,
             name: prefillTitle ?? "",
-            listingUrl: prefillUrl ?? "",
+            listingUrl: link ?? "",
           });
           setStep("single");
         }}
         draftHost={draftHost}
+        notice={notice}
         error={error}
       />
     );
@@ -285,6 +301,7 @@ export default function UploadPage() {
         <h1 className="title-page">
           {t("processing", { done: doneCount, total: items.length })}
         </h1>
+        <ShareNotice text={notice} />
         <div className="space-y-2">
           {items.map((item) => (
             <div
@@ -306,6 +323,7 @@ export default function UploadPage() {
         items={items}
         saving={saving}
         error={error}
+        notice={notice}
         onSaveAll={handleSaveAll}
         onUploadMore={() => {
           processingRef.current = false;
