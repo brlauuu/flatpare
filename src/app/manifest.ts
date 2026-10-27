@@ -13,9 +13,33 @@ export default function manifest(): MetadataRoute.Manifest {
     // "/" rather than "/apartments": the proxy sends an authenticated visitor
     // on to the list, and an unauthenticated one needs the login screen.
     start_url: "/",
+    id: "/",
+    scope: "/",
     display: "standalone",
     background_color: BACKGROUND,
     theme_color: THEME,
+    share_target: {
+      action: "/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        title: "title",
+        text: "text",
+        url: "url",
+        // Must match the field public/sw.js reads (form.getAll("pdf")).
+        files: [{ name: "pdf", accept: ["application/pdf", ".pdf"] }],
+      },
+    },
+    file_handlers: [
+      { action: "/apartments/new", accept: { "application/pdf": [".pdf"] } },
+    ],
+    shortcuts: [
+      {
+        name: "Add apartment",
+        url: "/apartments/new",
+        icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ],
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

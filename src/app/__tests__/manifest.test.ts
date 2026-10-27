@@ -54,4 +54,46 @@ describe("web app manifest", () => {
     const file = path.join(process.cwd(), "public", "apple-touch-icon.png");
     expect(fs.existsSync(file)).toBe(true);
   });
+
+  it("scopes the app to the root with a stable id", () => {
+    expect(m.id).toBe("/");
+    expect(m.scope).toBe("/");
+  });
+
+  it("declares a share target that receives links and PDFs", () => {
+    expect(m.share_target).toEqual({
+      action: "/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        title: "title",
+        text: "text",
+        url: "url",
+        files: [{ name: "pdf", accept: ["application/pdf", ".pdf"] }],
+      },
+    });
+  });
+
+  it("names the file field the worker reads", () => {
+    const worker = fs.readFileSync(path.join(process.cwd(), "public/sw.js"), "utf8");
+    const files = m.share_target?.params.files;
+    const name = (Array.isArray(files) ? files[0] : files)?.name;
+    expect(worker).toContain(`getAll("${name}")`);
+  });
+
+  it("opens PDFs with the add-apartment page", () => {
+    expect(m.file_handlers).toEqual([
+      { action: "/apartments/new", accept: { "application/pdf": [".pdf"] } },
+    ]);
+  });
+
+  it("offers an add-apartment shortcut", () => {
+    expect(m.shortcuts).toEqual([
+      {
+        name: "Add apartment",
+        url: "/apartments/new",
+        icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ]);
+  });
 });
