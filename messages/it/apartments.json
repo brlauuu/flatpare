@@ -188,5 +188,11 @@
     "save": "Salva",
     "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali.",
     "deleteFailed": "Impossibile eliminare questo link. Riprova."
+  },
+  "sharePrompt": {
+    "pdf": "Aggiungere il PDF condiviso?",
+    "link": "Aggiungere il link condiviso?",
+    "add": "Aggiungi",
+    "discard": "Scarta"
   }
 }

@@ -18,6 +18,13 @@ vi.mock("@/lib/crypto", () => ({
   clearKeys: () => clearKeysMock(),
 }));
 
+const order: string[] = [];
+vi.mock("@/lib/share-stash", () => ({
+  clearShares: async () => {
+    order.push("clearShares");
+  },
+}));
+
 import { NavBar } from "../nav-bar";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 
@@ -25,6 +32,7 @@ beforeEach(() => {
   signOutMock.mockReset();
   signOutMock.mockResolvedValue(undefined);
   clearKeysMock.mockClear();
+  order.length = 0;
 });
 
 afterEach(() => {
@@ -49,6 +57,17 @@ describe("NavBar user menu", () => {
       expect(signOutMock).toHaveBeenCalledWith({ callbackUrl: "/" });
     });
     expect(clearKeysMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears stashed shares before signing out", async () => {
+    signOutMock.mockImplementation(async () => {
+      order.push("signOut");
+    });
+    const user = userEvent.setup();
+    render(<NavBar userName="Alice" />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    await user.click(await screen.findByText("Sign out"));
+    await waitFor(() => expect(order).toEqual(["clearShares", "signOut"]));
   });
 
   it("confirms before signing out when there is an unsaved rating", async () => {

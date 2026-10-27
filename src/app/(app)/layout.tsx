@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { NavBar } from "@/components/nav-bar";
 import { CryptoGate } from "@/components/crypto/crypto-gate";
 import { HouseholdDataProvider } from "@/components/household-data/household-data-provider";
+import { PendingSharePrompt } from "@/components/pending-share-prompt";
 import { resolveHouseholdIdentity } from "@/lib/session";
 import { readLimits } from "@/lib/limits";
 import { requirePurchase } from "@/lib/billing-gate";
@@ -48,7 +49,10 @@ export default async function AppLayout({
       <main className="flex-1 px-4 py-6 pb-20 sm:pb-6">
         {identity ? (
           <CryptoGate>
-            <HouseholdDataProvider identity={identity} limits={limits}>{children}</HouseholdDataProvider>
+            <HouseholdDataProvider identity={identity} limits={limits}>
+              <PendingSharePrompt />
+              {children}
+            </HouseholdDataProvider>
           </CryptoGate>
         ) : null}
       </main>

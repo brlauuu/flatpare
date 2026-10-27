@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
+import { clearShares } from "@/lib/share-stash";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,7 +129,10 @@ export default function InvitationsPage() {
           <Button variant="outline" disabled={busy} onClick={() => post("/api/invitations/decline")}>
             {invitations.length > 0 ? t("declineAndStartOwn") : t("startOwn")}
           </Button>
-          <Button variant="ghost" onClick={() => signOut({ callbackUrl: "/" })}>
+          <Button variant="ghost" onClick={async () => {
+              await clearShares();
+              await signOut({ callbackUrl: "/" });
+            }}>
             {t("signOut")}
           </Button>
         </div>

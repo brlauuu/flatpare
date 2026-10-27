@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const clearSharesMock = vi.fn(async () => {});
+vi.mock("@/lib/share-stash", () => ({ clearShares: () => clearSharesMock() }));
 const signOutMock = vi.fn();
 vi.mock("next-auth/react", () => ({
   signOut: (...args: unknown[]) => signOutMock(...args),
@@ -97,7 +99,8 @@ describe("InvitationsPage", () => {
     render(<InvitationsPage />);
     expect(await screen.findByText(/no pending invitations/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Sign out/i }));
-    expect(signOutMock).toHaveBeenCalledWith({ callbackUrl: "/" });
+    await vi.waitFor(() => expect(signOutMock).toHaveBeenCalledWith({ callbackUrl: "/" }));
+    expect(clearSharesMock).toHaveBeenCalled();
   });
 
   it("polls every 15 s", async () => {

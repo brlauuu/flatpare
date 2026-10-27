@@ -188,5 +188,11 @@
     "save": "Enregistrer",
     "full": "La liste des liens à ajouter est pleine (20). Ajoute-en d'abord ou supprime-en.",
     "deleteFailed": "Impossible de supprimer ce lien. Réessaie."
+  },
+  "sharePrompt": {
+    "pdf": "Ajouter le PDF partagé ?",
+    "link": "Ajouter le lien partagé ?",
+    "add": "Ajouter",
+    "discard": "Ignorer"
   }
 }
