@@ -44,49 +44,55 @@ export function DraftsStrip() {
       <h2 className="title-section border-b px-3 py-2">{t("title")}</h2>
       <ul className="divide-y">
         {drafts.map((d) => (
-          <li
-            key={d.id}
-            className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-          >
-            {d.corrupt || d.url === null ? (
-              <span className="text-sm text-muted-foreground">{t("corrupt")}</span>
-            ) : (
-              <div className="min-w-0">
-                <a
-                  href={d.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block truncate text-sm font-medium underline"
-                >
-                  {d.title ?? hostOf(d.url)}
-                </a>
-                <span className="text-xs text-muted-foreground">
-                  {t("sharedBy", {
-                    name: d.createdByName ?? t("formerMember"),
-                    date: format.dateTime(new Date(d.createdAt), { dateStyle: "medium" }),
-                  })}
+          <li key={d.id} className="flex flex-col gap-2 px-3 py-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              {d.corrupt || d.url === null ? (
+                <span className="text-sm text-muted-foreground">
+                  {t("corrupt")}
                 </span>
-              </div>
-            )}
-            <div className="flex shrink-0 items-center gap-2">
-              {!d.corrupt && d.url !== null && (
-                <Link
-                  href={`/apartments/new?draft=${d.id}`}
-                  className={cn(buttonVariants({ size: "sm" }), "h-11 sm:h-8")}
-                >
-                  {t("add")}
-                </Link>
+              ) : (
+                <div className="min-w-0">
+                  <a
+                    href={d.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-sm font-medium underline"
+                  >
+                    {d.title ?? hostOf(d.url)}
+                  </a>
+                  <span className="text-xs text-muted-foreground">
+                    {t("sharedBy", {
+                      name: d.createdByName ?? t("formerMember"),
+                      date: format.dateTime(new Date(d.createdAt), {
+                        dateStyle: "medium",
+                      }),
+                    })}
+                  </span>
+                </div>
               )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-11 sm:h-8"
-                disabled={deleting.has(d.id)}
-                onClick={() => void remove(d.id)}
-              >
-                {t("delete")}
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                {!d.corrupt && d.url !== null && (
+                  <Link
+                    href={`/apartments/new?draft=${d.id}`}
+                    className={cn(
+                      buttonVariants({ size: "sm" }),
+                      "h-11 sm:h-8",
+                    )}
+                  >
+                    {t("add")}
+                  </Link>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-11 sm:h-8"
+                  disabled={deleting.has(d.id)}
+                  onClick={() => void remove(d.id)}
+                >
+                  {t("delete")}
+                </Button>
+              </div>
             </div>
             {failed.has(d.id) && (
               <p role="status" className="text-sm text-destructive">

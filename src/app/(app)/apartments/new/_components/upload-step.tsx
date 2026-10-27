@@ -48,7 +48,7 @@ export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadS
         <p className="text-muted-foreground">{t("drop")}</p>
         <input
           type="file"
-          accept=".pdf"
+          accept="application/pdf,.pdf"
           multiple
           className="hidden"
           id="pdf-file-input"

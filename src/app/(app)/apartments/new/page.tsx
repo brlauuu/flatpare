@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   type ApartmentForm,
@@ -16,7 +16,7 @@ import { parsePdf, ParsePdfError } from "@/components/household-data/process-cli
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
-import { hostOf } from "@/lib/household-data/links";
+import { useDraftCompletion } from "./_components/use-draft-completion";
 import { UploadStep } from "./_components/upload-step";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
@@ -33,14 +33,8 @@ export default function UploadPage() {
   const locale = languageOf(useLocale());
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
-  const { createApartment, deleteDraft, drafts, dataKey, identity } = useHouseholdData();
-  // "Add" on the To add strip links here with ?draft=<id>. An unknown or
-  // corrupt id is ignored: the page is simply the normal add page.
-  const draftId = useSearchParams()?.get("draft") ?? null;
-  const draft = drafts.find((d) => d.id === draftId && !d.corrupt && d.url) ?? null;
-  const draftUrl = draft?.url ?? null;
-  const draftTitle = draft?.title ?? null;
-  const draftHost = draftUrl ? hostOf(draftUrl) : null;
+  const { createApartment, dataKey, identity } = useHouseholdData();
+  const { prefillUrl, prefillTitle, draftHost, finishDraft } = useDraftCompletion();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -68,18 +62,7 @@ export default function UploadPage() {
 
   // The extracted link wins; the draft's fills only a form that has none.
   function withDraftUrl(form: ApartmentForm): ApartmentForm {
-    return draftUrl && !form.listingUrl ? { ...form, listingUrl: draftUrl } : form;
-  }
-
-  // The draft is spent only once everything on the page has saved. Its own
-  // failure changes nothing for the person: the apartment exists, the draft stays.
-  async function finishDraft() {
-    if (!draft) return;
-    try {
-      await deleteDraft(draft.id);
-    } catch {
-      // swallowed on purpose
-    }
+    return prefillUrl && !form.listingUrl ? { ...form, listingUrl: prefillUrl } : form;
   }
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
@@ -284,8 +267,8 @@ export default function UploadPage() {
         onManualEntry={() => {
           setSingleForm({
             ...emptyApartmentForm,
-            name: draftTitle ?? "",
-            listingUrl: draftUrl ?? "",
+            name: prefillTitle ?? "",
+            listingUrl: prefillUrl ?? "",
           });
           setStep("single");
         }}

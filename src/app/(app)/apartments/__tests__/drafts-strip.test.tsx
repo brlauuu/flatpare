@@ -77,6 +77,11 @@ describe("To add strip", () => {
     reject(new Error("boom"));
     expect(await screen.findByText("Could not delete this link. Try again.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
+    // The message sits under the row, not inside the flex row of buttons.
+    const message = screen.getByText("Could not delete this link. Try again.");
+    const row = screen.getByRole("button", { name: "Delete" }).parentElement!.parentElement!;
+    expect(row.contains(message)).toBe(false);
+    expect(row.nextElementSibling).toBe(message);
   });
 
   it("shows the title when there is one and formerMember when the sharer is gone", () => {

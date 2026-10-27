@@ -201,4 +201,11 @@ describe("completing a draft", () => {
     });
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  it("accepts PDFs by MIME type so the iPhone Files picker offers them", () => {
+    renderWithHouseholdData(<UploadPage />, { drafts: [] });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).toHaveAttribute("accept", "application/pdf,.pdf");
+    expect(input).toHaveAttribute("multiple");
+  });
 });
