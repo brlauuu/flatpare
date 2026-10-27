@@ -17,14 +17,16 @@ import {
 } from "@/components/crypto/flows";
 import {
   openApartment,
+  openDraft,
   openLocation,
   openRating,
   sealApartment,
+  sealDraft,
   sealLocation,
   sealRating,
 } from "@/lib/household-data/codec";
 import type { ApartmentPdf } from "@/lib/household-data/types";
-import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
+import type { ApartmentRow, DraftRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import type { Envelope } from "@/lib/crypto";
 import { ApiClientError, getJson } from "./api-client";
 import { downloadPdf, encryptAndUploadPdf } from "./pdf-files";
@@ -64,6 +66,7 @@ interface RotatePayload {
   apartments: { id: string; version: number; envelope: Envelope | null }[];
   ratings: { apartmentId: string; userId: string; envelope: Envelope | null }[];
   locations: { id: string; envelope: Envelope | null }[];
+  drafts: { id: string; envelope: Envelope | null }[];
   retiredPdfPaths: string[];
 }
 
@@ -114,10 +117,11 @@ export async function runRotateDataKey(
   const pdfFailures = new Set<string>();
 
   const prepare = async (): Promise<{ payload: RotatePayload; rows: number; pdfs: number }> => {
-    const [aRows, rRows, lRows] = await Promise.all([
+    const [aRows, rRows, lRows, dRows] = await Promise.all([
       getJson<ApartmentRow[]>("/api/apartments"),
       getJson<RatingRow[]>("/api/ratings"),
       getJson<LocationRow[]>("/api/locations"),
+      getJson<DraftRow[]>("/api/drafts"),
     ]);
     let rows = 0;
 
@@ -169,6 +173,14 @@ export async function runRotateDataKey(
       locations.push({ id: row.id, envelope });
     }
 
+    const drafts = [];
+    for (const row of dRows) {
+      const data = await openDraft(oldKey, householdId, row.id, row.envelope);
+      const envelope = data === null ? null : await sealDraft(newKey, householdId, row.id, data, next);
+      if (envelope) rows++;
+      drafts.push({ id: row.id, envelope });
+    }
+
     return {
       payload: {
         fromKeyVersion: from,
@@ -177,6 +189,7 @@ export async function runRotateDataKey(
         apartments,
         ratings,
         locations,
+        drafts,
         retiredPdfPaths: [...retired],
       },
       rows,

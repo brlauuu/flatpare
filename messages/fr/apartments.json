@@ -99,7 +99,8 @@
     "itemSaveFailed": "Échec de l’enregistrement",
     "nameRequired": "Le nom est obligatoire",
     "saveFailed": "Impossible d’enregistrer l’appartement",
-    "processing": "Traitement ({done}/{total})"
+    "processing": "Traitement ({done}/{total})",
+    "fromDraft": "Ajout du lien que tu as enregistré : {host}"
   },
   "upload": {
     "title": "Ajouter des annonces",
@@ -170,5 +171,19 @@
   },
   "errors": {
     "staleKey": "La clé du foyer a été changée par le propriétaire. Tes données ont été rechargées ; réessaie, s’il te plaît."
+  },
+  "drafts": {
+    "title": "À ajouter",
+    "sharedBy": "{name}, {date}",
+    "formerMember": "Ancien membre",
+    "add": "Ajouter",
+    "delete": "Supprimer",
+    "corrupt": "Ce lien n'a pas pu être lu.",
+    "paste": "Coller un lien",
+    "pasteNoLink": "Le presse-papiers ne contient aucun lien.",
+    "pasteField": "Colle le lien ici",
+    "save": "Enregistrer",
+    "full": "La liste des liens à ajouter est pleine (20). Ajoute-en d'abord ou supprime-en.",
+    "deleteFailed": "Impossible de supprimer ce lien. Réessaie."
   }
 }

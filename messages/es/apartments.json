@@ -99,7 +99,8 @@
     "itemSaveFailed": "No se ha podido guardar",
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se ha podido guardar el piso",
-    "processing": "Procesando ({done}/{total})"
+    "processing": "Procesando ({done}/{total})",
+    "fromDraft": "Añadiendo el enlace que guardaste: {host}"
   },
   "upload": {
     "title": "Subir anuncios",
@@ -170,5 +171,19 @@
   },
   "errors": {
     "staleKey": "Quien administra el hogar ha cambiado la clave del hogar. Tus datos se han vuelto a cargar; inténtalo de nuevo."
+  },
+  "drafts": {
+    "title": "Por añadir",
+    "sharedBy": "{name}, {date}",
+    "formerMember": "Antiguo miembro",
+    "add": "Añadir",
+    "delete": "Eliminar",
+    "corrupt": "No se pudo leer este enlace.",
+    "paste": "Pegar enlace",
+    "pasteNoLink": "El portapapeles no contiene ningún enlace.",
+    "pasteField": "Pega el enlace aquí",
+    "save": "Guardar",
+    "full": "La lista de enlaces por añadir está llena (20). Añade o elimina algunos primero.",
+    "deleteFailed": "No se pudo eliminar este enlace. Inténtalo de nuevo."
   }
 }

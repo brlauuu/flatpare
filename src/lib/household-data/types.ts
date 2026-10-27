@@ -57,6 +57,31 @@ export interface Location {
   longitude: number | null;
 }
 
+// A draft (#190): a listing link saved for later, before it becomes an
+// apartment. Only the URL and an optional title; nothing is fetched for it.
+export interface Draft {
+  url: string;
+  title: string | null;
+}
+
+export interface DecodedDraft {
+  id: string;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  data: Draft | null;
+}
+
+export interface DraftView {
+  id: string;
+  corrupt: boolean;
+  url: string | null;
+  title: string | null;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
 export function emptyApartment(name = ""): Apartment {
   return {
     name,

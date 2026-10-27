@@ -1,6 +1,6 @@
 import type { Envelope } from "@/lib/crypto";
-import type { ApartmentRecord, LocationRecord, RatingRecord } from "@/lib/db/schema";
-import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
+import type { ApartmentRecord, DraftRecord, LocationRecord, RatingRecord } from "@/lib/db/schema";
+import type { ApartmentRow, DraftRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import { displayName } from "@/lib/display-name";
 
 // Drizzle gives timestamps back as Date (or null before the default fires
@@ -45,5 +45,17 @@ export function locationRow(r: LocationRecord): LocationRow {
     envelope: parseStoredEnvelope(r.envelope),
     createdAt: isoOf(r.createdAt),
     updatedAt: isoOf(r.updatedAt),
+  };
+}
+
+export function draftRow(
+  r: DraftRecord & { creatorName: string | null; creatorEmail: string | null }
+): DraftRow {
+  return {
+    id: r.id,
+    createdBy: r.createdBy,
+    createdByName: r.createdBy === null ? null : displayName(r.creatorName, r.creatorEmail ?? ""),
+    envelope: parseStoredEnvelope(r.envelope),
+    createdAt: isoOf(r.createdAt),
   };
 }

@@ -245,6 +245,26 @@ export const locations = sqliteTable(
   (table) => [index("locations_household_idx").on(table.householdId)]
 );
 
+// Drafts (#190): links saved for later, sealed like every row. The server sets
+// created_by from the session; deleting the user leaves the draft (null).
+export const apartmentDrafts = sqliteTable(
+  "apartment_drafts",
+  {
+    id: text("id").primaryKey(),
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    envelope: text("envelope").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [index("apartment_drafts_household_idx").on(table.householdId)]
+);
+
 // E4 rate limiting for the /api/process/* blind proxies, which spend the
 // host's Gemini and Maps budget. Fixed one-hour windows: the point is
 // bounding spend, not smoothing traffic, and a fixed window is one atomic
@@ -363,6 +383,7 @@ export const betaRequests = sqliteTable("beta_requests", {
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;
+export type DraftRecord = typeof apartmentDrafts.$inferSelect;
 export type ProcessUsageRecord = typeof processUsage.$inferSelect;
 export type PaymentRecord = typeof payments.$inferSelect;
 export type BetaPass = typeof betaPasses.$inferSelect;

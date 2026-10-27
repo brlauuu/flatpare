@@ -99,7 +99,8 @@
     "itemSaveFailed": "Salvataggio non riuscito",
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare l'appartamento",
-    "processing": "Elaborazione ({done}/{total})"
+    "processing": "Elaborazione ({done}/{total})",
+    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}"
   },
   "upload": {
     "title": "Carica annunci",
@@ -170,5 +171,19 @@
   },
   "errors": {
     "staleKey": "Il proprietario ha cambiato la chiave del gruppo. I tuoi dati sono stati ricaricati; riprova."
+  },
+  "drafts": {
+    "title": "Da aggiungere",
+    "sharedBy": "{name}, {date}",
+    "formerMember": "Ex membro",
+    "add": "Aggiungi",
+    "delete": "Elimina",
+    "corrupt": "Impossibile leggere questo link.",
+    "paste": "Incolla link",
+    "pasteNoLink": "Gli appunti non contengono nessun link.",
+    "pasteField": "Incolla qui il link",
+    "save": "Salva",
+    "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali.",
+    "deleteFailed": "Impossibile eliminare questo link. Riprova."
   }
 }

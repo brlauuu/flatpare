@@ -5,6 +5,7 @@ import { renderWithHouseholdData } from "@/components/household-data/__tests__/f
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("@/components/household-data/process-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/household-data/process-client")>()),

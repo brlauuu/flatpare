@@ -9,6 +9,9 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- Save a listing link to add later: Paste link on the apartments list keeps it in a To add list, which costs no credit until the apartment is added. (#190)
+
 ## 0.20.3 — 2026-10-27
 
 ### Fixed
