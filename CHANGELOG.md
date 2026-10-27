@@ -4,10 +4,14 @@ Every merged pull request adds a line under **Unreleased**. A release moves
 those lines under a version heading and tags that commit. Versions follow
 [Semantic Versioning](https://semver.org/): while the beta runs they stay
 below 1.0, with a minor bump for a new user-visible capability and a patch
-bump for fixes, dependencies and internal work. 1.0.0 is cut when sign-ups
-open. See "Versioning and releases" in `AGENTS.md`.
+bump for fixes, dependencies and internal work. 1.0.0 is cut when Flatpare
+leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
+
+### Changed
+- For people running Flatpare from source: the start-up warning shown when a development run uses a cloud database now names that database's host and no longer claims the writes go to production. (#232)
+- Version 1.0.0 now marks the end of the beta rather than the opening of sign-ups; until then releases stay on 0.x. (#232)
 
 ## 0.20.1 — 2026-10-26
 
