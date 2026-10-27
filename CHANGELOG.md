@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.20.2 — 2026-10-27
+
 ### Changed
 - For people running Flatpare from source: the start-up warning shown when a development run uses a cloud database now names that database's host and no longer claims the writes go to production. (#232)
 - Version 1.0.0 now marks the end of the beta rather than the opening of sign-ups; until then releases stay on 0.x. (#232)
