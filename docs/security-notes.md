@@ -388,6 +388,21 @@ the server from the session: it says which member shared a draft, which is no mo
 `ratings.user_id` already says about who rated. Drafts are capped at 20 per household
 and cost no credit; a draft carries no address, coordinates, distances, PDF or ratings, so it cannot stand in for an apartment.
 
+### Accepted: shared PDFs wait unencrypted in the browser until saved (#190)
+
+The installed app registers a service worker (`public/sw.js`) that receives the phone's
+share sheet. Its scope is one request: a same-origin `POST /share-target`. It caches
+nothing and touches no other request. A shared PDF is held in the browser's IndexedDB
+(`flatpare-share`) as plain bytes until the person saves it, because the worker has no
+key and the page may be signed out or locked when the share arrives. The entry expires
+after 24 hours, is deleted once saved, and is cleared on sign-out. It is never sent to
+the server, except through the existing `/api/process/parse-pdf` privacy exception when
+the person goes on to add the apartment; the stored copy is then encrypted like any
+other. Anything with access to the browser profile (or XSS on the origin) can read the
+stash during that window, the same exposure as the unlocked keys. When no worker is
+active, `POST /share-target` redirects without reading the body or logging anything.
+A shared link is sealed as a draft like any row.
+
 ### Accepted: corrupt rows are shown, not hidden
 
 A row whose envelope fails to open or to validate renders as a placeholder marked
