@@ -99,7 +99,8 @@
     "itemSaveFailed": "Échec de l’enregistrement",
     "nameRequired": "Le nom est obligatoire",
     "saveFailed": "Impossible d’enregistrer l’appartement",
-    "processing": "Traitement ({done}/{total})"
+    "processing": "Traitement ({done}/{total})",
+    "fromDraft": "Ajout du lien que tu as enregistré : {host}"
   },
   "upload": {
     "title": "Ajouter des annonces",

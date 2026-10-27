@@ -99,7 +99,8 @@
     "itemSaveFailed": "Speichern fehlgeschlagen",
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Wohnung konnte nicht gespeichert werden",
-    "processing": "Wird verarbeitet ({done}/{total})"
+    "processing": "Wird verarbeitet ({done}/{total})",
+    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}"
   },
   "upload": {
     "title": "Inserate hochladen",

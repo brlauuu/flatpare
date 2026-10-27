@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   type ApartmentForm,
@@ -22,6 +22,14 @@ import { SingleEntryStep } from "./_components/single-entry-step";
 import { StatusBadge } from "./_components/status-badge";
 import type { UploadItem } from "./_components/types";
 
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
@@ -32,7 +40,14 @@ export default function UploadPage() {
   const locale = languageOf(useLocale());
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
-  const { createApartment, dataKey, identity } = useHouseholdData();
+  const { createApartment, deleteDraft, drafts, dataKey, identity } = useHouseholdData();
+  // "Add" on the To add strip links here with ?draft=<id>. An unknown or
+  // corrupt id is ignored: the page is simply the normal add page.
+  const draftId = useSearchParams()?.get("draft") ?? null;
+  const draft = drafts.find((d) => d.id === draftId && !d.corrupt && d.url) ?? null;
+  const draftUrl = draft?.url ?? null;
+  const draftTitle = draft?.title ?? null;
+  const draftHost = draftUrl ? hostOf(draftUrl) : null;
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -52,6 +67,22 @@ export default function UploadPage() {
       if (redirectTimer.current !== null) clearTimeout(redirectTimer.current);
     };
   }, []);
+
+  // The extracted link wins; the draft's fills only a form that has none.
+  function withDraftUrl(form: ApartmentForm): ApartmentForm {
+    return draftUrl && !form.listingUrl ? { ...form, listingUrl: draftUrl } : form;
+  }
+
+  // The draft is spent only once everything on the page has saved. Its own
+  // failure changes nothing for the person: the apartment exists, the draft stays.
+  async function finishDraft() {
+    if (!draft) return;
+    try {
+      await deleteDraft(draft.id);
+    } catch {
+      // swallowed on purpose
+    }
+  }
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -120,7 +151,7 @@ export default function UploadPage() {
 
     updateItem(itemId, {
       status: "done",
-      form: formFromExtracted(parsed.value.extracted),
+      form: withDraftUrl(formFromExtracted(parsed.value.extracted)),
       pdf: uploaded.status === "fulfilled" ? uploaded.value : null,
       pdfWarning: uploaded.status === "rejected" ? t("pdfStoreWarning") : undefined,
     });
@@ -196,9 +227,11 @@ export default function UploadPage() {
     setSaving(true);
     setError(null);
 
+    const savedNow = new Set<string>();
     for (const item of toSave) {
       try {
         await createApartment(item.id, apartmentFromForm(item.form, item.pdf));
+        savedNow.add(item.id);
         fileMapRef.current.delete(item.id);
         updateItem(item.id, { saved: true });
       } catch {
@@ -216,13 +249,11 @@ export default function UploadPage() {
     // "if all saved"; the condition did not. Found via #227: the test that
     // asserts a failed save does not redirect was passing only because it ran
     // before the timer fired, and flaked whenever load put it after.
-    setItems((prev) => {
-      const allSaved = prev.every((i) => i.saved || i.discarded);
-      if (allSaved) {
-        redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
-      }
-      return prev;
-    });
+    const allSaved = items.every((i) => i.saved || i.discarded || savedNow.has(i.id));
+    if (allSaved) {
+      await finishDraft();
+      redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
+    }
   }
 
   async function handleSaveSingle(e: React.FormEvent) {
@@ -235,6 +266,7 @@ export default function UploadPage() {
     setError(null);
     try {
       const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
+      await finishDraft();
       router.push(`/apartments/${created.id}`);
     } catch (err) {
       setError({
@@ -250,9 +282,14 @@ export default function UploadPage() {
       <UploadStep
         onFiles={handleFiles}
         onManualEntry={() => {
-          setSingleForm(emptyApartmentForm);
+          setSingleForm({
+            ...emptyApartmentForm,
+            name: draftTitle ?? "",
+            listingUrl: draftUrl ?? "",
+          });
           setStep("single");
         }}
+        draftHost={draftHost}
         error={error}
       />
     );

@@ -99,7 +99,8 @@
     "itemSaveFailed": "Salvataggio non riuscito",
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare l'appartamento",
-    "processing": "Elaborazione ({done}/{total})"
+    "processing": "Elaborazione ({done}/{total})",
+    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}"
   },
   "upload": {
     "title": "Carica annunci",

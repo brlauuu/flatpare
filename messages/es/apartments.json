@@ -99,7 +99,8 @@
     "itemSaveFailed": "No se ha podido guardar",
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se ha podido guardar el piso",
-    "processing": "Procesando ({done}/{total})"
+    "processing": "Procesando ({done}/{total})",
+    "fromDraft": "Añadiendo el enlace que guardaste: {host}"
   },
   "upload": {
     "title": "Subir anuncios",

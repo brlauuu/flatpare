@@ -7,6 +7,7 @@ import { makeApartmentView } from "@/components/household-data/__tests__/fake-ho
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/components/household-data/process-client", async (importOriginal) => ({

@@ -8,16 +8,24 @@ import type { ErrorDetails } from "@/lib/fetch-error";
 interface UploadStepProps {
   onFiles: (files: FileList) => void;
   onManualEntry: () => void;
+  draftHost?: string | null;
   error: { headline: string; details?: ErrorDetails } | null;
 }
 
-export function UploadStep({ onFiles, onManualEntry, error }: UploadStepProps) {
+export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadStepProps) {
   const t = useTranslations("apartments.upload");
+  const tNew = useTranslations("apartments.new");
   const [dragOver, setDragOver] = useState(false);
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <h1 className="title-page">{t("title")}</h1>
+
+      {draftHost && (
+        <p className="text-sm text-muted-foreground">
+          {tNew("fromDraft", { host: draftHost })}
+        </p>
+      )}
 
       <div
         onDragOver={(e) => {
