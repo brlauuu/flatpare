@@ -1,11 +1,13 @@
 // Which database the app is talking to, resolved once and described in a
 // form that is safe to print.
 //
-// This exists because `npm run dev` silently writes to production: `.env.local`
-// sets TURSO_DATABASE_URL, `isCloud` is a truthiness check on it, and the
-// presence of `data/flatpare.db` on disk actively suggests the opposite of
-// what is happening. On 2026-09-02 three test apartments and a display name
-// were seeded into the production database on that inference (#195).
+// This exists because `npm run dev` silently writes to a remote database:
+// `.env.local` sets TURSO_DATABASE_URL, `isCloud` is a truthiness check on it,
+// and the presence of `data/flatpare.db` on disk actively suggests the
+// opposite of what is happening. On 2026-09-02 three test apartments and a
+// display name were seeded into the production database on that inference
+// (#195). `.env.local` has named the separate `flatpare-dev` database since
+// 2026-09-19, but it is still shared, remote state.
 //
 // The resolution and the description live together on purpose: `src/lib/db`
 // creates its client from this, and `src/instrumentation.ts` logs from the
@@ -51,8 +53,10 @@ export function resolveDbTarget(env: NodeJS.ProcessEnv = process.env): DbTarget 
 }
 
 // The combination that is almost always a mistake: a development or test
-// process pointed at the cloud database. Returns null when there is nothing
-// to warn about.
+// process pointed at a cloud database. Which one it is cannot be told from
+// here (a dev database and production look alike), so the warning names the
+// host and says the writes are remote, never which database they reach.
+// Returns null when there is nothing to warn about.
 export function dbTargetWarning(
   target: DbTarget,
   env: NodeJS.ProcessEnv = process.env
@@ -60,9 +64,10 @@ export function dbTargetWarning(
   if (target.kind !== "cloud") return null;
   if (env.NODE_ENV === "production") return null;
   return (
-    `NODE_ENV=${env.NODE_ENV ?? "undefined"} but the database is CLOUD. ` +
-    "Writes from this process land in production. Run with an explicitly " +
-    "empty TURSO_DATABASE_URL to use the local file instead: " +
+    `NODE_ENV=${env.NODE_ENV ?? "undefined"} but the database is CLOUD ` +
+    `(${target.label}), not a local file. Writes from this process change ` +
+    "that remote database. Run with an explicitly empty TURSO_DATABASE_URL " +
+    "to use the local file instead: " +
     "`TURSO_DATABASE_URL= npm run dev`"
   );
 }

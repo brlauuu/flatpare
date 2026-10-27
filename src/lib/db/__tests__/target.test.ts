@@ -77,7 +77,11 @@ describe("dbTargetWarning", () => {
   it("warns when a non-production process is pointed at the cloud", () => {
     const warning = dbTargetWarning(cloud(), env({ NODE_ENV: "development" }));
     expect(warning).toContain("CLOUD");
-    expect(warning).toContain("land in production");
+    // It names the host and does not claim the database is production:
+    // `.env.local` points at a dev database that looks the same from here.
+    expect(warning).toContain("x.turso.io");
+    expect(warning).toContain("remote database");
+    expect(warning).not.toContain("production");
     expect(warning).toContain("TURSO_DATABASE_URL= npm run dev");
   });
 
