@@ -34,6 +34,7 @@ function entry(id: string, files: number): SharedItem {
 }
 
 beforeEach(() => {
+  listShares.mockReset();
   pathname = "/apartments";
   search = "";
   push.mockClear();
@@ -85,6 +86,24 @@ describe("PendingSharePrompt", () => {
     listShares.mockResolvedValue([entry("a", 0)]);
     render(<PendingSharePrompt />);
     await vi.waitFor(() => expect(listShares).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("does not offer a share the add page consumed before navigating away", async () => {
+    pathname = "/apartments/new";
+    search = "share=a";
+    listShares.mockResolvedValue([entry("a", 0)]);
+    const { rerender } = render(<PendingSharePrompt />);
+    await vi.waitFor(() => expect(listShares).toHaveBeenCalledTimes(1));
+    // The add page created the draft, deleted the entry and replaced to the list.
+    listShares.mockResolvedValue([]);
+    pathname = "/apartments";
+    search = "";
+    rerender(<PendingSharePrompt />);
+    // Never shown on the new page, not even before the second read answers.
+    expect(screen.queryByRole("status")).toBeNull();
+    await vi.waitFor(() => expect(listShares).toHaveBeenCalledTimes(2));
     await Promise.resolve();
     expect(screen.queryByRole("status")).toBeNull();
   });

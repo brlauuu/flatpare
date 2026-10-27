@@ -15,17 +15,24 @@ export function PendingSharePrompt() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [item, setItem] = useState<SharedItem | null>(null);
+  // The entry and the path it was read on; an answer for an earlier path is
+  // not shown, so the stale entry does not flash while the new read runs.
+  const [read, setRead] = useState<{ path: string; item: SharedItem | null } | null>(null);
+  const item = read?.path === pathname ? read.item : null;
+  const setItem = (next: SharedItem | null) => setRead({ path: pathname, item: next });
 
+  // Read again on every section change: the shared layout stays mounted, and
+  // the add page deletes the entry it consumed just before navigating away,
+  // so a list read once at load would offer a share that no longer exists.
   useEffect(() => {
     let cancelled = false;
     void listShares().then((all) => {
-      if (!cancelled) setItem(all[0] ?? null);
+      if (!cancelled) setRead({ path: pathname, item: all[0] ?? null });
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   if (!item) return null;
   if (pathname === "/apartments/new" && params.get("share") === item.id) {
