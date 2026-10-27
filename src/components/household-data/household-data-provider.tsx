@@ -33,14 +33,17 @@ import type {
   Apartment,
   ApartmentView,
   DecodedApartment,
+  DecodedDraft,
   DecodedLocation,
   DecodedRating,
+  DraftView,
   Location,
   LocationView,
   Rating,
 } from "@/lib/household-data/types";
 import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import { ApiClientError, getJson, sendJson } from "./api-client";
+import { fetchDrafts, postDraft, removeDraft, viewOfDraft } from "./drafts";
 import { enrichApartment } from "./enrichment";
 import { checkListing, distanceBetween, geocodeAddress } from "./process-client";
 import { isStaleKey, runRotateDataKey, type RotationReport } from "./rotation";
@@ -57,6 +60,7 @@ import {
   type RatingLine,
 } from "@/lib/household-data/export-format";
 import { newRowId } from "@/lib/household-data/ids";
+import { firstHttpUrl } from "@/lib/household-data/links";
 import type { Limits } from "@/lib/limits";
 
 export interface HouseholdIdentity {
@@ -89,6 +93,7 @@ export interface HouseholdDataContextValue {
   error: string | null;
   apartments: ApartmentView[];
   locations: LocationView[];
+  drafts: DraftView[];
   // Per-apartment message from the last failed enrichment; cleared on success.
   enrichmentError: Record<string, string>;
   reload(): Promise<void>;
@@ -100,6 +105,8 @@ export interface HouseholdDataContextValue {
   createLocation(id: string, data: Location): Promise<LocationView>;
   updateLocation(id: string, mutate: (l: Location) => Location): Promise<LocationView>;
   deleteLocation(id: string): Promise<void>;
+  createDraft(url: string, title: string | null): Promise<DraftView>;
+  deleteDraft(id: string): Promise<void>;
   moveLocation(id: string, direction: "up" | "down"): Promise<void>;
   runMaintenance(
     kind: MaintenanceKind,
@@ -137,9 +144,10 @@ interface Store {
   apartments: DecodedApartment[];
   ratings: DecodedRating[];
   locations: DecodedLocation[];
+  drafts: DecodedDraft[];
 }
 
-const EMPTY_STORE: Store = { apartments: [], ratings: [], locations: [] };
+const EMPTY_STORE: Store = { apartments: [], ratings: [], locations: [], drafts: [] };
 const LISTING_CONCURRENCY = 4;
 
 const STALE_KEY_MESSAGE =
@@ -271,10 +279,11 @@ export function HouseholdDataProvider({
     // Beside the rows, not part of them: the page must not wait on it.
     void refreshCredits();
     try {
-      const [aRows, rRows, lRows] = await Promise.all([
+      const [aRows, rRows, lRows, drafts] = await Promise.all([
         getJson<ApartmentRow[]>("/api/apartments"),
         getJson<RatingRow[]>("/api/ratings"),
         getJson<LocationRow[]>("/api/locations"),
+        fetchDrafts(dataKey, householdId),
       ]);
       const [apartments, ratings, locations] = await Promise.all([
         Promise.all(aRows.map(decodeApartment)),
@@ -286,7 +295,7 @@ export function HouseholdDataProvider({
       // user's own change off the screen. Drop it; the next refresh catches
       // up.
       if (background && commits.current !== commitsAtStart) return;
-      commit(() => ({ apartments, ratings, locations }));
+      commit(() => ({ apartments, ratings, locations, drafts }));
       setError(null);
       setStatus("ready");
     } catch (err) {
@@ -296,7 +305,7 @@ export function HouseholdDataProvider({
       setError(messageOf(err));
       setStatus("error");
     }
-  }, [commit, decodeApartment, decodeLocation, decodeRating, refreshCredits]);
+  }, [commit, dataKey, decodeApartment, decodeLocation, decodeRating, householdId, refreshCredits]);
 
   const reload = useCallback(() => load(false), [load]);
 
@@ -326,6 +335,7 @@ export function HouseholdDataProvider({
     () => deriveApartments(store.apartments, store.ratings, userId),
     [store.apartments, store.ratings, userId]
   );
+  const drafts = useMemo(() => store.drafts.map(viewOfDraft), [store.drafts]);
   const locations = useMemo(() => deriveLocations(store.locations), [store.locations]);
 
   const viewOf = useCallback(
@@ -614,6 +624,28 @@ export function HouseholdDataProvider({
     [commit]
   );
 
+  // ---- drafts (#190) ---------------------------------------------------------
+
+  const createDraft = useCallback(
+    async (url: string, title: string | null): Promise<DraftView> => {
+      const link = firstHttpUrl(url);
+      if (link === null) throw new Error("Not a web link");
+      const id = newRowId();
+      const saved = await postDraft(send, dataKey, householdId, keyVersion, id, { url: link, title });
+      commit((s) => ({ ...s, drafts: [...s.drafts, saved] }));
+      return viewOfDraft(saved);
+    },
+    [commit, dataKey, householdId, keyVersion, send]
+  );
+
+  const deleteDraft = useCallback(
+    async (id: string): Promise<void> => {
+      await removeDraft(id);
+      commit((s) => ({ ...s, drafts: s.drafts.filter((d) => d.id !== id) }));
+    },
+    [commit]
+  );
+
   const moveLocation = useCallback(
     async (id: string, direction: "up" | "down"): Promise<void> => {
       const rows = await sendJson<LocationRow[]>("POST", `/api/locations/${id}/move`, { direction });
@@ -756,6 +788,7 @@ export function HouseholdDataProvider({
       error,
       apartments,
       locations,
+      drafts,
       enrichmentError,
       credits,
       reload,
@@ -768,6 +801,8 @@ export function HouseholdDataProvider({
       updateLocation,
       deleteLocation,
       moveLocation,
+      createDraft,
+      deleteDraft,
       runMaintenance,
       rotateDataKey,
       exportHousehold,
@@ -775,9 +810,9 @@ export function HouseholdDataProvider({
       importHousehold,
     }),
     [
-      identity, limits, credits, dataKey, status, error, apartments, locations, enrichmentError, reload,
+      identity, limits, credits, dataKey, status, error, apartments, locations, drafts, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
-      createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
+      createLocation, updateLocation, deleteLocation, moveLocation, createDraft, deleteDraft, runMaintenance, rotateDataKey,
       exportHousehold, readImport, importHousehold,
     ]
   );

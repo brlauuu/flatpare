@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vite
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { useContext, useEffect } from "react";
 import { CryptoContext, type CryptoContextValue } from "@/components/crypto/crypto-context";
-import { generateDataKey, seal } from "@/lib/crypto";
+import { generateDataKey, open, seal } from "@/lib/crypto";
 import { envelopeAad } from "@/lib/crypto";
 import { emptyApartment, EMPTY_RATING, type Apartment, type Location } from "@/lib/household-data/types";
-import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
+import type { ApartmentRow, DraftRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import {
   HouseholdDataContext,
   HouseholdDataProvider,
@@ -27,6 +27,7 @@ interface FakeServer {
   apartments: Map<string, ApartmentRow>;
   ratings: Map<string, RatingRow>; // key `${apartmentId}:${userId}`
   locations: Map<string, LocationRow>;
+  drafts: Map<string, DraftRow>;
   process: {
     geocode: (address: string) => unknown;
     distance: (from: string, to: string) => unknown;
@@ -42,6 +43,7 @@ function makeServer(): FakeServer {
     apartments: new Map(),
     ratings: new Map(),
     locations: new Map(),
+    drafts: new Map(),
     process: {
       geocode: () => ({ lat: 47, lng: 8, postcode: "8000" }),
       distance: () => ({ bikeMin: 12, transitMin: 20 }),
@@ -107,6 +109,17 @@ function installFetch(server: FakeServer) {
       }
       if (mine && method === "DELETE") {
         server.ratings.delete(`${mine[1]}:${ME.userId}`);
+        return json(undefined, 204);
+      }
+      if (url === "/api/drafts" && method === "GET") return json([...server.drafts.values()]);
+      if (url === "/api/drafts" && method === "POST") {
+        const row: DraftRow = { id: body.id, createdBy: ME.userId, createdByName: ME.userName, envelope: body.envelope, createdAt: now() };
+        server.drafts.set(row.id, row);
+        return json(row, 201);
+      }
+      const draft = url.match(/^\/api\/drafts\/([^/]+)$/);
+      if (draft && method === "DELETE") {
+        server.drafts.delete(draft[1]);
         return json(undefined, 204);
       }
       if (url === "/api/locations" && method === "GET") return json([...server.locations.values()]);
@@ -497,6 +510,57 @@ describe("HouseholdDataProvider", () => {
 // #219: every seal carries the version of the key this device holds, and a
 // `409 Stale key` answer refreshes the crypto status and tells the caller to
 // try again once the store has reloaded under the new key.
+describe("drafts (#190)", () => {
+  const D1 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+  it("loads and decodes drafts, and marks an unreadable one corrupt", async () => {
+    const good = await seal(dataKey, { url: "https://a.ch/1", title: "Nice" }, envelopeAad(HID, "drafts", D1));
+    server.drafts.set(D1, { id: D1, createdBy: "u-other", createdByName: "Other", envelope: good, createdAt: "t" });
+    const foreign = await seal(dataKey, { url: "https://a.ch/2", title: null }, envelopeAad(HID, "drafts", "other-id"));
+    server.drafts.set("bad", { id: "bad", createdBy: null, createdByName: null, envelope: foreign, createdAt: "t" });
+    renderProvider();
+    const ctx = await ready();
+    expect(ctx.drafts.find((d) => d.id === D1)).toEqual({
+      id: D1, corrupt: false, url: "https://a.ch/1", title: "Nice", createdBy: "u-other", createdByName: "Other", createdAt: "t",
+    });
+    expect(ctx.drafts.find((d) => d.id === "bad")).toMatchObject({ corrupt: true, url: null, title: null });
+  });
+
+  it("createDraft posts a sealed envelope and adds the view", async () => {
+    renderProvider();
+    const ctx = await ready();
+    let view: Awaited<ReturnType<typeof ctx.createDraft>> | undefined;
+    await act(async () => {
+      view = await ctx.createDraft("https://a.ch/1", "Nice");
+    });
+    expect(view).toMatchObject({ url: "https://a.ch/1", title: "Nice", corrupt: false });
+    const row = server.drafts.get(view!.id)!;
+    const plain = await open(dataKey, row.envelope, envelopeAad(HID, "drafts", view!.id));
+    expect(plain).toEqual({ url: "https://a.ch/1", title: "Nice" });
+    await waitForContext((c) => c.drafts.length === 1);
+  });
+
+  it("createDraft rejects text that is not a web link without a request", async () => {
+    renderProvider();
+    const ctx = await ready();
+    const before = server.calls.length;
+    await expect(ctx.createDraft("not a link", null)).rejects.toThrow("Not a web link");
+    expect(server.calls.length).toBe(before);
+  });
+
+  it("deleteDraft removes it", async () => {
+    const env = await seal(dataKey, { url: "https://a.ch/1", title: null }, envelopeAad(HID, "drafts", D1));
+    server.drafts.set(D1, { id: D1, createdBy: null, createdByName: null, envelope: env, createdAt: "t" });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.deleteDraft(D1);
+    });
+    await waitForContext((c) => c.drafts.length === 0);
+    expect(server.drafts.size).toBe(0);
+  });
+});
+
 describe("data-key version", () => {
   beforeEach(() => {
     cryptoRefresh.mockClear();

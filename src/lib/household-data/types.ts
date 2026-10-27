@@ -64,6 +64,24 @@ export interface Draft {
   title: string | null;
 }
 
+export interface DecodedDraft {
+  id: string;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  data: Draft | null;
+}
+
+export interface DraftView {
+  id: string;
+  corrupt: boolean;
+  url: string | null;
+  title: string | null;
+  createdBy: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
 export function emptyApartment(name = ""): Apartment {
   return {
     name,
