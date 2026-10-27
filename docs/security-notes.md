@@ -380,6 +380,14 @@ they dismiss it (`household_members.recovery_kit_seen_at`); a newly promoted own
 too. The notice names a person and a date and nothing else; it does not carry the code,
 which still only ever exists on the screen of the person who made it.
 
+### Accepted: drafts are sealed links, and who shared one is plaintext (#190)
+
+A draft (a listing link saved to add later) is an envelope like any row, so the host
+sees neither the link nor its title. `apartment_drafts.created_by` is plaintext, set by
+the server from the session: it says which member shared a draft, which is no more than
+`ratings.user_id` already says about who rated. Drafts are capped at 20 per household
+and cost no credit, so the table cannot be used to spend anything.
+
 ### Accepted: corrupt rows are shown, not hidden
 
 A row whose envelope fails to open or to validate renders as a placeholder marked
