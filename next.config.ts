@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // The share-receiving service worker (#190): revalidated on every
+      // visit so an updated worker is picked up at once.
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache" }],
+      },
       // The map's label fonts (#339), used with a self-hoster's own map file.
       {
         source: `/${FONTS_DIR}/:path*`,

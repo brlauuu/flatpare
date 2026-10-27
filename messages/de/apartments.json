@@ -100,7 +100,13 @@
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Wohnung konnte nicht gespeichert werden",
     "processing": "Wird verarbeitet ({done}/{total})",
-    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}"
+    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}",
+    "shareUnavailable": "Diese Freigabe ist nicht bei Flatpare angekommen. Teile sie nochmals oder lade das PDF hier hoch.",
+    "shareNothing": "Es wurde nichts geteilt, das Flatpare verwenden kann: kein PDF und kein Link.",
+    "shareDropped": "{count, plural, one {# Datei wurde} other {# Dateien wurden}} weggelassen: Nur PDFs können hinzugefügt werden.",
+    "shareConfirmPdf": "{count, plural, one {Das geteilte PDF hinzufügen?} other {Die # geteilten PDFs hinzufügen?}}",
+    "shareConfirmLink": "Den geteilten Link von {host} speichern?",
+    "shareSave": "Speichern"
   },
   "upload": {
     "title": "Inserate hochladen",
@@ -185,5 +191,11 @@
     "save": "Speichern",
     "full": "Die Liste der Links zum Hinzufügen ist voll (20). Füge zuerst einige hinzu oder lösche welche.",
     "deleteFailed": "Dieser Link konnte nicht gelöscht werden. Versuche es noch einmal."
+  },
+  "sharePrompt": {
+    "pdf": "Das geteilte PDF hinzufügen?",
+    "link": "Den geteilten Link hinzufügen?",
+    "add": "Hinzufügen",
+    "discard": "Verwerfen"
   }
 }

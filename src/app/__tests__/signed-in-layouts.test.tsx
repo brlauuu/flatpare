@@ -38,6 +38,9 @@ vi.mock("@/lib/billing-gate", () => ({
 vi.mock("@/components/nav-bar", () => ({
   NavBar: ({ userName }: { userName: string }) => <div data-testid="nav">{userName}</div>,
 }));
+vi.mock("@/components/pending-share-prompt", () => ({
+  PendingSharePrompt: () => <div data-testid="pending-share" />,
+}));
 vi.mock("@/components/crypto/crypto-gate", () => ({
   CryptoGate: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="crypto-gate">{children}</div>
@@ -101,6 +104,8 @@ describe.each(LAYOUTS)("%s layout", (name, Layout) => {
     // below the gate.
     expect(gate).toContainElement(provider);
     expect(provider).toContainElement(screen.getByTestId("child"));
+    // The interrupted-share prompt (#190) only once the app is unlocked.
+    expect(provider).toContainElement(screen.getByTestId("pending-share"));
   });
 
   it("passes identity and limits down as props", async () => {

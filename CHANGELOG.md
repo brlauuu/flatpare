@@ -9,6 +9,12 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- On Android, share a PDF or a listing link from another app into the installed Flatpare: after one tap to confirm, a PDF opens the add flow and a link is saved to add later. A share interrupted by signing in is offered the next time you open the app. (#190)
+
+### Fixed
+- The PDF picker opens the Files app on iPhone. (#190)
+
 ## 0.21.0 — 2026-10-27
 
 ### Added

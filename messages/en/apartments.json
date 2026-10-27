@@ -100,7 +100,13 @@
     "nameRequired": "Name is required",
     "saveFailed": "Failed to save apartment",
     "processing": "Processing ({done}/{total})",
-    "fromDraft": "Adding the link you saved: {host}"
+    "fromDraft": "Adding the link you saved: {host}",
+    "shareUnavailable": "That share did not reach Flatpare. Share it again, or upload the PDF here.",
+    "shareNothing": "Nothing that Flatpare can use was shared: no PDF and no link.",
+    "shareDropped": "{count, plural, one {# file was} other {# files were}} left out: only PDFs can be added.",
+    "shareConfirmPdf": "{count, plural, one {Add the PDF you shared?} other {Add the # PDFs you shared?}}",
+    "shareConfirmLink": "Save the link you shared from {host}?",
+    "shareSave": "Save"
   },
   "upload": {
     "title": "Upload Listings",
@@ -185,5 +191,11 @@
     "save": "Save",
     "full": "The list of links to add is full (20). Add or delete some first.",
     "deleteFailed": "Could not delete this link. Try again."
+  },
+  "sharePrompt": {
+    "pdf": "Add the PDF you shared?",
+    "link": "Add the link you shared?",
+    "add": "Add",
+    "discard": "Discard"
   }
 }

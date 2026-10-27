@@ -74,8 +74,12 @@ export const config = {
     // The self-hosted map data and its fonts (#339) are OpenStreetMap data
     // and Noto Sans, nothing of anyone's; the map reads the country file in
     // many small range requests, and none of them should wait on auth().
+    // The share-receiving service worker and the share target's no-worker
+    // fallback (#190): the worker installs before sign-in, and a signed-out
+    // share POST through the proxy would get a 307 and be replayed as a POST
+    // to the landing page instead of the fallback's 303 to the add page.
     // A prefix like the entries before it: Next compiles this pattern itself,
     // and an anchored `\.svg$` inside the lookahead did not survive that.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|flatpare_logo|hero/|map-data/|map-fonts/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|flatpare_logo|hero/|map-data/|map-fonts/|sw.js|share-target).*)",
   ],
 };

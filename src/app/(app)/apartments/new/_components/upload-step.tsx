@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,10 +9,30 @@ interface UploadStepProps {
   onFiles: (files: FileList) => void;
   onManualEntry: () => void;
   draftHost?: string | null;
+  notice?: string | null;
+  /** The question asked before a share is acted on. */
+  shareConfirm?: ReactNode;
   error: { headline: string; details?: ErrorDetails } | null;
 }
 
-export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadStepProps) {
+// What a share left out, said on whichever step the page is on.
+export function ShareNotice({ text }: { text?: string | null }) {
+  if (!text) return null;
+  return (
+    <p role="status" className="text-sm text-muted-foreground">
+      {text}
+    </p>
+  );
+}
+
+export function UploadStep({
+  onFiles,
+  onManualEntry,
+  draftHost,
+  notice,
+  shareConfirm,
+  error,
+}: UploadStepProps) {
   const t = useTranslations("apartments.upload");
   const tNew = useTranslations("apartments.new");
   const [dragOver, setDragOver] = useState(false);
@@ -26,6 +46,10 @@ export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadS
           {tNew("fromDraft", { host: draftHost })}
         </p>
       )}
+
+      <ShareNotice text={notice} />
+
+      {shareConfirm}
 
       <div
         onDragOver={(e) => {
@@ -48,7 +72,7 @@ export function UploadStep({ onFiles, onManualEntry, draftHost, error }: UploadS
         <p className="text-muted-foreground">{t("drop")}</p>
         <input
           type="file"
-          accept=".pdf"
+          accept="application/pdf,.pdf"
           multiple
           className="hidden"
           id="pdf-file-input"

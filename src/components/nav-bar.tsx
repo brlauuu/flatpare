@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { clearKeys } from "@/lib/crypto";
+import { clearShares } from "@/lib/share-stash";
 import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -58,6 +59,7 @@ export function NavBar({ userName }: { userName: string }) {
       if (!ok) return;
     }
     await clearKeys();
+    await clearShares();
     await signOut({ callbackUrl: "/" });
   }
 

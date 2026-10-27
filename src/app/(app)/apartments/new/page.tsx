@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   type ApartmentForm,
@@ -16,8 +16,11 @@ import { parsePdf, ParsePdfError } from "@/components/household-data/process-cli
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
-import { hostOf } from "@/lib/household-data/links";
-import { UploadStep } from "./_components/upload-step";
+import { useDraftCompletion } from "./_components/use-draft-completion";
+import { useShareIntake } from "./_components/use-share-intake";
+import { isPdfFile } from "./_components/pdf-file";
+import { ShareNotice, UploadStep } from "./_components/upload-step";
+import { ShareConfirm } from "./_components/share-confirm";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
 import { StatusBadge } from "./_components/status-badge";
@@ -33,14 +36,8 @@ export default function UploadPage() {
   const locale = languageOf(useLocale());
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
-  const { createApartment, deleteDraft, drafts, dataKey, identity } = useHouseholdData();
-  // "Add" on the To add strip links here with ?draft=<id>. An unknown or
-  // corrupt id is ignored: the page is simply the normal add page.
-  const draftId = useSearchParams()?.get("draft") ?? null;
-  const draft = drafts.find((d) => d.id === draftId && !d.corrupt && d.url) ?? null;
-  const draftUrl = draft?.url ?? null;
-  const draftTitle = draft?.title ?? null;
-  const draftHost = draftUrl ? hostOf(draftUrl) : null;
+  const { createApartment, dataKey, identity } = useHouseholdData();
+  const { prefillUrl, prefillTitle, draftHost, finishDraft } = useDraftCompletion();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -49,6 +46,9 @@ export default function UploadPage() {
   const [error, setError] = useState<ErrorState | null>(null);
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
+  // Each item's file, kept after it saves: a partial save of a shared batch
+  // tells the share stash which of its files are done.
+  const itemFileRef = useRef<Map<string, File>>(new Map());
 
   // The post-save redirect is deferred so the "Saved" badges are visible for a
   // beat. Held in a ref and cleared on unmount: an uncancelled timer navigates
@@ -66,20 +66,13 @@ export default function UploadPage() {
     };
   }, []);
 
-  // The extracted link wins; the draft's fills only a form that has none.
+  // The extracted link wins; the draft's (or the share's) fills only a form
+  // that has none. Read through a ref: processFiles is memoised, and the
+  // shared link arrives after it was created.
+  const linkRef = useRef<string | null>(null);
   function withDraftUrl(form: ApartmentForm): ApartmentForm {
-    return draftUrl && !form.listingUrl ? { ...form, listingUrl: draftUrl } : form;
-  }
-
-  // The draft is spent only once everything on the page has saved. Its own
-  // failure changes nothing for the person: the apartment exists, the draft stays.
-  async function finishDraft() {
-    if (!draft) return;
-    try {
-      await deleteDraft(draft.id);
-    } catch {
-      // swallowed on purpose
-    }
+    const url = linkRef.current;
+    return url && !form.listingUrl ? { ...form, listingUrl: url } : form;
   }
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
@@ -170,7 +163,7 @@ export default function UploadPage() {
   }
 
   const processFiles = useCallback(async (files: File[]) => {
-    const pdfFiles = files.filter((f) => f.type === "application/pdf");
+    const pdfFiles = files.filter(isPdfFile);
     if (pdfFiles.length === 0) {
       setError({ headline: t("noPdfs") });
       return;
@@ -186,7 +179,10 @@ export default function UploadPage() {
       saved: false,
       discarded: false,
     }));
-    pdfFiles.forEach((file, i) => fileMapRef.current.set(newItems[i].id, file));
+    pdfFiles.forEach((file, i) => {
+      fileMapRef.current.set(newItems[i].id, file);
+      itemFileRef.current.set(newItems[i].id, file);
+    });
 
     setItems(newItems);
     setStep("processing");
@@ -205,6 +201,20 @@ export default function UploadPage() {
     // change it without a remount, and the summary follows it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
+
+  const share = useShareIntake({
+    onFiles: processFiles,
+    onError: (headline) => setError({ headline }),
+  });
+  const { sharedUrl, finishShare, notice } = share;
+  const link = prefillUrl ?? sharedUrl;
+  // Runs every commit. useShareIntake hands its files to processFiles from an
+  // effect in the same commit that set sharedUrl, and withDraftUrl reads the
+  // ref only after parsing awaits, so the link is in place by then. Do not
+  // move the hand-over out of an effect (see use-share-intake.ts).
+  useEffect(() => {
+    linkRef.current = link;
+  });
 
   const handleFiles = useCallback(
     (fileList: FileList) => {
@@ -247,12 +257,16 @@ export default function UploadPage() {
     // "if all saved"; the condition did not. Found via #227: the test that
     // asserts a failed save does not redirect was passing only because it ran
     // before the timer fired, and flaked whenever load put it after.
-    const allSaved = items.every((i) => i.saved || i.discarded || savedNow.has(i.id));
-    if (allSaved) {
-      await finishDraft();
-      if (!mounted.current) return;
-      redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
+    const done = items.filter((i) => i.saved || i.discarded || savedNow.has(i.id));
+    if (done.length < items.length) {
+      // Reopening the share then offers only what did not save, so the
+      // apartments that did are not added (and paid for) twice.
+      await share.settleShare(done.flatMap((i) => itemFileRef.current.get(i.id) ?? []));
+      return;
     }
+    await Promise.all([finishDraft(), finishShare()]);
+    if (!mounted.current) return;
+    redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
   }
 
   async function handleSaveSingle(e: React.FormEvent) {
@@ -265,7 +279,7 @@ export default function UploadPage() {
     setError(null);
     try {
       const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
-      await finishDraft();
+      await Promise.all([finishDraft(), finishShare()]);
       if (!mounted.current) return;
       router.push(`/apartments/${created.id}`);
     } catch (err) {
@@ -284,12 +298,20 @@ export default function UploadPage() {
         onManualEntry={() => {
           setSingleForm({
             ...emptyApartmentForm,
-            name: draftTitle ?? "",
-            listingUrl: draftUrl ?? "",
+            name: prefillTitle ?? "",
+            listingUrl: link ?? "",
           });
           setStep("single");
         }}
         draftHost={draftHost}
+        notice={notice}
+        shareConfirm={
+          <ShareConfirm
+            confirmation={share.confirmation}
+            onConfirm={share.confirmShare}
+            onDiscard={share.discardShare}
+          />
+        }
         error={error}
       />
     );
@@ -302,6 +324,7 @@ export default function UploadPage() {
         <h1 className="title-page">
           {t("processing", { done: doneCount, total: items.length })}
         </h1>
+        <ShareNotice text={notice} />
         <div className="space-y-2">
           {items.map((item) => (
             <div
@@ -323,6 +346,7 @@ export default function UploadPage() {
         items={items}
         saving={saving}
         error={error}
+        notice={notice}
         onSaveAll={handleSaveAll}
         onUploadMore={() => {
           processingRef.current = false;

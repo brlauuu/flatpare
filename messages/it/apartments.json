@@ -100,7 +100,13 @@
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare l'appartamento",
     "processing": "Elaborazione ({done}/{total})",
-    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}"
+    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}",
+    "shareUnavailable": "Questa condivisione non è arrivata a Flatpare. Condividila di nuovo o carica qui il PDF.",
+    "shareNothing": "Non è stato condiviso nulla che Flatpare possa usare: nessun PDF e nessun link.",
+    "shareDropped": "{count, plural, one {# file è stato escluso} other {# file sono stati esclusi}}: si possono aggiungere solo PDF.",
+    "shareConfirmPdf": "{count, plural, one {Aggiungere il PDF condiviso?} other {Aggiungere i # PDF condivisi?}}",
+    "shareConfirmLink": "Salvare il link condiviso da {host}?",
+    "shareSave": "Salva"
   },
   "upload": {
     "title": "Carica annunci",
@@ -185,5 +191,11 @@
     "save": "Salva",
     "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali.",
     "deleteFailed": "Impossibile eliminare questo link. Riprova."
+  },
+  "sharePrompt": {
+    "pdf": "Aggiungere il PDF condiviso?",
+    "link": "Aggiungere il link condiviso?",
+    "add": "Aggiungi",
+    "discard": "Scarta"
   }
 }
