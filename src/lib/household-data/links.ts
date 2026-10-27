@@ -14,3 +14,12 @@ export function firstHttpUrl(text: string): string | null {
   }
   return null;
 }
+
+export function isHttpUrl(text: string): boolean {
+  try {
+    const { protocol } = new URL(text);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}

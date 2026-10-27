@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, cleanup, waitFor } from "@testing-library/react";
+import { screen, cleanup, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
+import { makeApartmentView, renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
 import { ApiClientError } from "@/components/household-data/api-client";
 import { setTestLocale } from "@/i18n/__tests__/test-locale";
 import type { DraftView } from "@/lib/household-data/types";
@@ -75,7 +75,7 @@ describe("To add strip", () => {
       drafts: [draft({ corrupt: true, url: null, title: null })],
     });
     expect(screen.getByText(/could not be read/i)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Add" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "To add" })).queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
   });
 
@@ -128,6 +128,15 @@ describe("Paste link", () => {
     });
     await userEvent.click(screen.getByRole("button", { name: "Paste link" }));
     expect(await screen.findByText(/list of links to add is full \(20\)/)).toBeInTheDocument();
+  });
+
+  it("is still offered when the apartment limit is reached", () => {
+    renderWithHouseholdData(<ApartmentsPage />, {
+      apartments: [makeApartmentView({ id: "a1" })],
+      limits: { maxMembers: null, maxApartments: 1 },
+    });
+    expect(screen.getByRole("button", { name: "Paste link" })).toBeInTheDocument();
+    expect(screen.getByText("Limit reached")).toBeInTheDocument();
   });
 
   it("is also offered in the empty state", () => {

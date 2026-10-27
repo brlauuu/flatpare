@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHttpUrl } from "./links";
 import type { Apartment, Draft, Location, Rating } from "./types";
 
 const nullableNumber = z.number().nullable();
@@ -51,6 +52,6 @@ export const locationSchema: z.ZodType<Location> = z.object({
 });
 
 export const draftSchema: z.ZodType<Draft> = z.object({
-  url: z.string(),
+  url: z.string().refine(isHttpUrl),
   title: z.string().nullable().default(null),
 });

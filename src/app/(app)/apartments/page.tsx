@@ -332,6 +332,7 @@ export default function ApartmentsPage() {
               <ListIcon className="h-3.5 w-3.5" />
             </Button>
           </div>
+          <PasteLinkButton />
           {atApartmentLimit ? (
             <span
               className={cn(
@@ -344,15 +345,12 @@ export default function ApartmentsPage() {
               {t("limitReached")}
             </span>
           ) : (
-            <>
-            <PasteLinkButton />
             <Link
               href="/apartments/new"
               className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
             >
               {t("uploadNew")}
             </Link>
-            </>
           )}
         </div>
       </div>

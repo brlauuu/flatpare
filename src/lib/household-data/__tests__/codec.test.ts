@@ -69,6 +69,13 @@ describe("household-data codec", () => {
     expect(await openDraft(key, 1, "d-2", untitled)).toEqual({ url: "https://example.com/2", title: null });
   });
 
+  it("opens a draft whose url is not http(s) as null", async () => {
+    for (const url of ["javascript:alert(1)", "not a url", "data:text/html,x"]) {
+      const env = await sealDraft(null, 1, "d-1", { url, title: null });
+      expect(await openDraft(null, 1, "d-1", env)).toBeNull();
+    }
+  });
+
   it("defaults a missing draft title to null", async () => {
     const env = await sealDraft(null, 1, "d-1", { url: "https://example.com" } as never);
     expect(await openDraft(null, 1, "d-1", env)).toEqual({ url: "https://example.com", title: null });
