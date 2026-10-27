@@ -17,6 +17,14 @@ export interface RatingRow {
   updatedAt: string;
 }
 
+export interface DraftRow {
+  id: string;
+  createdBy: string | null;
+  createdByName: string | null;
+  envelope: Envelope;
+  createdAt: string;
+}
+
 export interface LocationRow {
   id: string;
   sortOrder: number;
