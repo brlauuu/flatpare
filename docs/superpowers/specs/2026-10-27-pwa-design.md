@@ -83,10 +83,12 @@ Add:
 **Plaintext shape** (`src/lib/household-data/types.ts`, zod in `schemas.ts`):
 
 ```ts
-interface Draft { url: string; title: string | null; sharedBy: string }  // sharedBy = user id
+interface Draft { url: string; title: string | null }
 ```
 
-**Storage**: migration 0025 adds `apartment_drafts`: `id` (client UUID), `household_id`, `envelope`, `created_at`. Same rules as the other envelope tables: the server never parses the envelope; AAD `"<householdId>:drafts:<id>"`; `requireEnvelopeMode`; writes refused unless sealed under the current key (`requireCurrentKey`).
+Who shared a draft is the plaintext `created_by` column (a user id), set by the server from the session, so a member cannot attribute a draft to someone else. It reveals no more than `ratings.user_id` already does. The envelope holds the link and title only.
+
+**Storage**: migration 0025 adds `apartment_drafts`: `id` (client UUID), `household_id`, `created_by` (users.id, set null on delete), `envelope`, `created_at`. Same rules as the other envelope tables: the server never parses the envelope; AAD `"<householdId>:drafts:<id>"`; `requireEnvelopeMode`; writes refused unless sealed under the current key (`requireCurrentKey`).
 
 **Routes** (`src/app/api/drafts/**`): `GET /api/drafts`, `POST /api/drafts`, `DELETE /api/drafts/:id`. Every handler: `requireMember()` -> `parseBody` -> work; unknown and foreign rows are 404. No update route: a draft is created, then completed or deleted.
 
@@ -98,7 +100,7 @@ interface Draft { url: string; title: string | null; sharedBy: string }  // shar
 
 **Key rotation**: `runRotateDataKey` and `rotateHouseholdKey` must re-seal drafts with the rest. The row-set check in the transaction gains drafts. The rotation test covers a draft.
 
-**Removing a member**: drafts they shared stay. "Shared by" falls back to "a former member".
+**Removing a member**: drafts they shared stay. If the creating user is deleted, `created_by` becomes null and "Shared by" shows "a former member".
 
 **Export/import**: drafts are not exported (builder's call, below).
 

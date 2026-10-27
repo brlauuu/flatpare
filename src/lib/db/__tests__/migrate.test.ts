@@ -521,6 +521,18 @@ describe("applyMigrations", () => {
     expect(pk.rows).toHaveLength(1);
   });
 
+  it("creates apartment_drafts (#190) with the envelope and the creator only", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    expect((await columnNames(client, "apartment_drafts")).sort()).toEqual([
+      "created_at",
+      "created_by",
+      "envelope",
+      "household_id",
+      "id",
+    ]);
+  });
+
   it("creates the beta pass tables (#239) with the host-side columns only", async () => {
     const client = createClient({ url: ":memory:" });
     await applyMigrations(client);
