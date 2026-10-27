@@ -183,6 +183,7 @@
     "pasteNoLink": "El portapapeles no contiene ningún enlace.",
     "pasteField": "Pega el enlace aquí",
     "save": "Guardar",
-    "full": "La lista de enlaces por añadir está llena (20). Añade o elimina algunos primero."
+    "full": "La lista de enlaces por añadir está llena (20). Añade o elimina algunos primero.",
+    "deleteFailed": "No se pudo eliminar este enlace. Inténtalo de nuevo."
   }
 }

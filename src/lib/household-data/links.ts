@@ -23,3 +23,11 @@ export function isHttpUrl(text: string): boolean {
     return false;
   }
 }
+
+export function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}

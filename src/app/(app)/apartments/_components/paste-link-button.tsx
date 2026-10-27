@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiClientError } from "@/components/household-data/api-client";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { cn } from "@/lib/utils";
 
 type Notice = { kind: "noLink" | "full" } | { kind: "error"; text: string } | null;
 
 export function PasteLinkButton({ className }: { className?: string }) {
   const t = useTranslations("apartments.drafts");
+  const errorDetails = useStoreErrorDetails();
   const { createDraft } = useHouseholdData();
   const [notice, setNotice] = useState<Notice>(null);
   const [showField, setShowField] = useState(false);
@@ -33,7 +35,7 @@ export function PasteLinkButton({ className }: { className?: string }) {
         // createDraft refuses text without a web link before any request.
         setNotice(
           err instanceof Error && err.message !== "Not a web link"
-            ? { kind: "error", text: err.message }
+            ? { kind: "error", text: errorDetails(err).message ?? "" }
             : { kind: "noLink" }
         );
       }
@@ -75,7 +77,8 @@ export function PasteLinkButton({ className }: { className?: string }) {
           }}
         >
           <Input
-            type="url"
+            type="text"
+            inputMode="url"
             aria-label={t("pasteField")}
             value={text}
             onChange={(e) => setText(e.target.value)}

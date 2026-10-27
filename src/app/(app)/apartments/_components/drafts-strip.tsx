@@ -1,23 +1,39 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
+import { hostOf } from "@/lib/household-data/links";
 import { cn } from "@/lib/utils";
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
 
 export function DraftsStrip() {
   const t = useTranslations("apartments.drafts");
   const format = useFormatter();
   const { drafts, deleteDraft } = useHouseholdData();
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+
+  async function remove(id: string) {
+    setDeleting((s) => new Set(s).add(id));
+    setFailed((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
+    try {
+      await deleteDraft(id);
+    } catch {
+      setFailed((s) => new Set(s).add(id));
+    } finally {
+      setDeleting((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
+  }
   if (drafts.length === 0) return null;
 
   return (
@@ -66,11 +82,17 @@ export function DraftsStrip() {
                 size="sm"
                 variant="outline"
                 className="h-11 sm:h-8"
-                onClick={() => void deleteDraft(d.id)}
+                disabled={deleting.has(d.id)}
+                onClick={() => void remove(d.id)}
               >
                 {t("delete")}
               </Button>
             </div>
+            {failed.has(d.id) && (
+              <p role="status" className="text-sm text-destructive">
+                {t("deleteFailed")}
+              </p>
+            )}
           </li>
         ))}
       </ul>

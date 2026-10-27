@@ -183,6 +183,7 @@
     "pasteNoLink": "Le presse-papiers ne contient aucun lien.",
     "pasteField": "Colle le lien ici",
     "save": "Enregistrer",
-    "full": "La liste des liens à ajouter est pleine (20). Ajoute-en d'abord ou supprime-en."
+    "full": "La liste des liens à ajouter est pleine (20). Ajoute-en d'abord ou supprime-en.",
+    "deleteFailed": "Impossible de supprimer ce lien. Réessaie."
   }
 }

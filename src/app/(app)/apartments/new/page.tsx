@@ -16,19 +16,12 @@ import { parsePdf, ParsePdfError } from "@/components/household-data/process-cli
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
+import { hostOf } from "@/lib/household-data/links";
 import { UploadStep } from "./_components/upload-step";
 import { ReviewStep } from "./_components/review-step";
 import { SingleEntryStep } from "./_components/single-entry-step";
 import { StatusBadge } from "./_components/status-badge";
 import type { UploadItem } from "./_components/types";
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
 
 interface ErrorState {
   headline: string;

@@ -183,6 +183,7 @@
     "pasteNoLink": "Gli appunti non contengono nessun link.",
     "pasteField": "Incolla qui il link",
     "save": "Salva",
-    "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali."
+    "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali.",
+    "deleteFailed": "Impossibile eliminare questo link. Riprova."
   }
 }

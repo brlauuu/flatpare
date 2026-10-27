@@ -183,6 +183,7 @@
     "pasteNoLink": "In der Zwischenablage ist kein Link.",
     "pasteField": "Füge den Link hier ein",
     "save": "Speichern",
-    "full": "Die Liste der Links zum Hinzufügen ist voll (20). Füge zuerst einige hinzu oder lösche welche."
+    "full": "Die Liste der Links zum Hinzufügen ist voll (20). Füge zuerst einige hinzu oder lösche welche.",
+    "deleteFailed": "Dieser Link konnte nicht gelöscht werden. Versuche es noch einmal."
   }
 }

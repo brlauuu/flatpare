@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { screen, cleanup, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeApartmentView, renderWithHouseholdData } from "@/components/household-data/__tests__/fake-household-data";
+import { StaleKeyError } from "@/components/household-data/household-data-provider";
 import { ApiClientError } from "@/components/household-data/api-client";
 import { setTestLocale } from "@/i18n/__tests__/test-locale";
 import type { DraftView } from "@/lib/household-data/types";
@@ -62,6 +63,22 @@ describe("To add strip", () => {
     expect(data.deleteDraft).toHaveBeenCalledWith("d1");
   });
 
+  it("disables Delete while in flight and shows an error when it fails", async () => {
+    let reject: (e: Error) => void = () => {};
+    const deleteDraft = vi.fn(
+      () => new Promise<void>((_, rej) => { reject = rej; })
+    );
+    renderWithHouseholdData(<ApartmentsPage />, { drafts: [draft()], deleteDraft });
+    const button = screen.getByRole("button", { name: "Delete" });
+    await userEvent.click(button);
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
+    expect(deleteDraft).toHaveBeenCalledTimes(1);
+    reject(new Error("boom"));
+    expect(await screen.findByText("Could not delete this link. Try again.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
+  });
+
   it("shows the title when there is one and formerMember when the sharer is gone", () => {
     renderWithHouseholdData(<ApartmentsPage />, {
       drafts: [draft({ title: "Nice flat", createdByName: null })],
@@ -112,6 +129,27 @@ describe("Paste link", () => {
     await userEvent.type(field, "https://y.ch/b");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(data.createDraft).toHaveBeenCalledWith("https://y.ch/b", null));
+  });
+
+  it("passes text with a link inside a sentence from the field to createDraft", async () => {
+    setClipboard(undefined);
+    const { value: data } = renderWithHouseholdData(<ApartmentsPage />, {});
+    await userEvent.click(screen.getByRole("button", { name: "Paste link" }));
+    const field = await screen.findByLabelText("Paste the link here");
+    await userEvent.type(field, "Look at this https://y.ch/b please");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(data.createDraft).toHaveBeenCalledWith("Look at this https://y.ch/b please", null)
+    );
+  });
+
+  it("puts store errors in the reader's language", async () => {
+    setClipboard(vi.fn().mockResolvedValue("https://x.ch/a"));
+    renderWithHouseholdData(<ApartmentsPage />, {
+      createDraft: vi.fn().mockRejectedValue(new StaleKeyError()),
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Paste link" }));
+    expect(await screen.findByText(/household key was changed/)).toBeInTheDocument();
   });
 
   it("falls back to the field when the clipboard API is missing", async () => {

@@ -386,7 +386,7 @@ A draft (a listing link saved to add later) is an envelope like any row, so the 
 sees neither the link nor its title. `apartment_drafts.created_by` is plaintext, set by
 the server from the session: it says which member shared a draft, which is no more than
 `ratings.user_id` already says about who rated. Drafts are capped at 20 per household
-and cost no credit, so the table cannot be used to spend anything.
+and cost no credit; a draft carries no address, coordinates, distances, PDF or ratings, so it cannot stand in for an apartment.
 
 ### Accepted: corrupt rows are shown, not hidden
 
