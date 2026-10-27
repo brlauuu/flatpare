@@ -170,5 +170,18 @@
   },
   "errors": {
     "staleKey": "The household key was changed by the owner. Your data has been reloaded; please try again."
+  },
+  "drafts": {
+    "title": "To add",
+    "sharedBy": "{name}, {date}",
+    "formerMember": "Former member",
+    "add": "Add",
+    "delete": "Delete",
+    "corrupt": "This link could not be read.",
+    "paste": "Paste link",
+    "pasteNoLink": "The clipboard holds no link.",
+    "pasteField": "Paste the link here",
+    "save": "Save",
+    "full": "The list of links to add is full (20). Add or delete some first."
   }
 }

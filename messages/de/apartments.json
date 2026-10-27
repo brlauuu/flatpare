@@ -170,5 +170,18 @@
   },
   "errors": {
     "staleKey": "Der Haushaltsschlüssel wurde von der Inhaberin oder dem Inhaber geändert. Deine Daten wurden neu geladen; bitte versuch es nochmals."
+  },
+  "drafts": {
+    "title": "Zum Hinzufügen",
+    "sharedBy": "{name}, {date}",
+    "formerMember": "Ehemaliges Mitglied",
+    "add": "Hinzufügen",
+    "delete": "Löschen",
+    "corrupt": "Dieser Link konnte nicht gelesen werden.",
+    "paste": "Link einfügen",
+    "pasteNoLink": "In der Zwischenablage ist kein Link.",
+    "pasteField": "Füge den Link hier ein",
+    "save": "Speichern",
+    "full": "Die Liste der Links zum Hinzufügen ist voll (20). Füge zuerst einige hinzu oder lösche welche."
   }
 }
