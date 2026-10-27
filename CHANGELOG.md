@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.20.3 — 2026-10-27
+
 ### Fixed
 - Unlocking with your passphrase or recovery code, and setting up your keys, no longer freezes the page: the key is now worked out in the background, so the page keeps responding (it used to stop for about half a second on a computer and two seconds on a slower phone). (#396)
 
