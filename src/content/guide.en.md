@@ -84,7 +84,7 @@ If no distance API is configured, you can enter times manually.
 
 - Single or bulk upload
 - **PDFs are encrypted in your browser before they are uploaded.** What gets stored is ciphertext; opening one decrypts it again on your device
-- Extraction uses Gemini 2.5 Flash. On flatpare.com it runs through Vercel AI Gateway with zero data retention: nothing is kept by Vercel or by the model provider
+- Extraction uses Gemini 2.5 Flash. On flatpare.com it runs only through model providers that guarantee zero data retention: the request is not kept once it is answered
 
 ### What the server can see
 

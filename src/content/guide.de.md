@@ -84,7 +84,7 @@ Ist keine Distanz-API eingerichtet, kannst du die Zeiten von Hand eintragen.
 
 - Einzeln oder mehrere auf einmal hochladen
 - **PDFs werden in deinem Browser verschlüsselt, bevor sie hochgeladen werden.** Gespeichert wird nur verschlüsselter Text; beim Öffnen wird das PDF auf deinem Gerät wieder entschlüsselt
-- Die Auswertung verwendet Gemini 2.5 Flash. Auf flatpare.com läuft sie über Vercel AI Gateway mit Zero Data Retention: Weder Vercel noch der Modellanbieter behält etwas
+- Die Auswertung verwendet Gemini 2.5 Flash. Auf flatpare.com läuft sie nur über Modellanbieter, die Zero Data Retention garantieren: Die Anfrage wird nicht aufbewahrt, sobald sie beantwortet ist
 
 ### Was der Server sehen kann
 

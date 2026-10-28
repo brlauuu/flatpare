@@ -47,14 +47,14 @@
     "seesMembers": "wer zu deinem Haushalt gehört;",
     "seesCounts": "wie viele Wohnungen, Bewertungen und Orte du hast, wer was bewertet hat und wann etwas hinzugefügt oder geändert wurde;",
     "seesPdfSize": "die Grösse jedes gespeicherten PDFs.",
-    "seesNever": "Nie, was eine Wohnung ist. Selbst betrieben gilt dasselbe, mit deinem eigenen Server an unserer Stelle.",
+    "seesNever": "Nie, was eine Wohnung ist: weder ihre Adresse noch eines ihrer Details, Bewertungen oder Kommentare. Selbst betrieben gilt dasselbe, mit deinem eigenen Server an unserer Stelle.",
     "exceptionTitle": "Die Ausnahme, klar gesagt",
     "exceptionIntro": "Ein paar Dinge gehen nicht im Browser. Dafür wird genau dieses eine Element lesbar gesendet, nur für diesen einen Aufruf verwendet, nie in unsere Datenbank geschrieben und nie protokolliert:",
-    "exceptionPdf": "<b>Ein PDF</b> geht an ein KI-Modell, das die Fakten herausliest und eine kurze Zusammenfassung schreibt. Auf flatpare.com läuft das über Vercel AI Gateway mit <zdr>Zero Data Retention</zdr>: Es nutzt nur Modellanbieter, die zugesagt haben, die Anfrage nicht aufzubewahren. Selbst betrieben ist es Google Gemini, ausser du richtest etwas anderes ein.",
-    "exceptionAddress": "<b>Eine Adresse</b> geht an Google Maps, für ihre Lage und die Velo- und ÖV-Zeiten (OpenRouteService bei einer selbst betriebenen Installation ohne Maps).",
-    "exceptionListing": "<b>Der Link eines Inserats</b> wird von unserem Server geöffnet, der die Seite von der Inserateplattform abruft, um zu prüfen, ob sie noch online ist.",
-    "tiles": "Karten laden ihre Strassen von OpenFreeMap; dieser Dienst sieht den Teil der Stadt auf dem Bildschirm, nie deine Wohnungen.",
-    "disavowal": "Darum bezeichnen wir das nicht als Zero-Knowledge."
+    "exceptionPdf": "<b>Ein PDF</b> geht an ein KI-Modell, das die Fakten herausliest und eine kurze Zusammenfassung schreibt. Auf flatpare.com nutzen wir nur Modellanbieter, die Zero Data Retention garantieren: Die Anfrage wird nicht aufbewahrt, sobald sie beantwortet ist. Selbst betrieben ist es Google Gemini, ausser du richtest etwas anderes ein.",
+    "exceptionAddress": "<b>Eine Adresse</b> geht allein an Google Maps: eine Adresse, um ihre Lage zu finden, oder zwei (die Wohnung und einer deiner Orte) für die Velo- und ÖV-Zeiten. Sie wird von unserem Server gesendet, ohne etwas, das dich oder deinen Haushalt nennt, und wir speichern sie nicht. Bei einer selbst betriebenen Installation ohne Maps übernimmt das OpenRouteService.",
+    "exceptionListing": "<b>Der Link eines Inserats</b> wird von unserem Server nur geöffnet, um zu prüfen, ob das Inserat noch online ist. Von der Seite wird nichts gelesen oder aufbewahrt.",
+    "tiles": "Die Strassen der Karte laden direkt aus deinem Browser von OpenFreeMap. OpenFreeMap sieht deine IP-Adresse und welchen Bereich der Karte du anschaust, nie deine Wohnungen oder Bewertungen.",
+    "disavowal": "Damit ist Flatpare datenschutzfreundlich by Design, aber nicht Zero-Knowledge."
   },
   "paths": {
     "eyebrow": "ZWEI WEGE",

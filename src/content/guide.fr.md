@@ -84,7 +84,7 @@ Si aucune API de distances n’est configurée, tu peux saisir les temps à la m
 
 - Ajout d’un seul fichier ou de plusieurs à la fois
 - **Les PDF sont chiffrés dans ton navigateur avant d’être envoyés.** Ce qui est enregistré, c’est du texte chiffré ; en ouvrir un le déchiffre à nouveau sur ton appareil
-- L’extraction utilise Gemini 2.5 Flash. Sur flatpare.com, elle passe par Vercel AI Gateway avec zéro conservation des données : rien n’est gardé ni par Vercel ni par le fournisseur du modèle
+- L’extraction utilise Gemini 2.5 Flash. Sur flatpare.com, elle passe uniquement par des fournisseurs de modèles qui garantissent zéro conservation des données : la requête n’est pas gardée une fois traitée
 
 ### Ce que le serveur peut voir
 
