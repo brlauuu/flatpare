@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.24.0 — 2026-10-28
+
 ### Added
 - Choose an apartment's code letters yourself when editing it. Any three letters work as long as no other apartment uses them; letters of deleted apartments are free again. (#410)
 
