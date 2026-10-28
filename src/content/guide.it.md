@@ -43,6 +43,8 @@ Vai su **Carica** nella barra di navigazione e trascina (o seleziona) un annunci
 
 Se l'IA non è configurata, compila i campi a mano. In entrambi i casi arrivi alla pagina dell'appartamento per controllare e correggere quello che è uscito sbagliato — l'estrazione è un punto di partenza, non un oracolo.
 
+Puoi anche aggiungere un appartamento a mano, senza PDF né indirizzo. Finché non ha né l'uno né l'altro è **non elaborato**: valutalo e inserisci quello che sai. Appena riceve un indirizzo o un PDF, Flatpare lo mette sulla mappa e ne misura le distanze.
+
 ### 6. Valuta gli appartamenti
 
 Nella pagina di ogni appartamento, valutalo in cinque categorie:
@@ -80,6 +82,8 @@ I tempi di percorrenza sono misurati da ogni appartamento verso ciascuno dei tuo
 
 Se nessun servizio di distanze è configurato, puoi inserire i tempi a mano.
 
+Cambiare più tardi l'indirizzo di un appartamento non rimisura nulla da solo: le sue distanze restano nascoste finché non premi **Rielabora** sulla sua pagina. Nella versione ospitata una rielaborazione usa un credito appartamento, e così anche **Ricalcola tutto** nella pagina Gruppo, una volta per l'intero calcolo. Aggiungere o modificare un luogo è gratuito.
+
 ### Gestione dei PDF
 
 - Caricamento singolo o multiplo
@@ -104,7 +108,7 @@ In **Impostazioni** puoi:
 
 Poiché i tuoi dati sono cifrati, nessuno può ripristinarli per te, nemmeno noi. Nella pagina **Gruppo**, sotto **I tuoi dati**, ogni membro può **esportare** l'intero gruppo come file ZIP: appartamenti, valutazioni, luoghi e i PDF originali, più un file per fogli di calcolo. **Il file non è cifrato**, quindi conservalo in un posto privato.
 
-Per ripristinare un export, apri la pagina Gruppo di un gruppo che non ha ancora appartamenti né luoghi e scegli **Importa**. Le valutazioni delle altre persone vengono aggiunte ai tuoi commenti, con il loro nome. Nella versione ospitata, ogni appartamento importato usa un credito appartamento.
+Per ripristinare un export, apri la pagina Gruppo di un gruppo che non ha ancora appartamenti né luoghi e scegli **Importa**. Le valutazioni delle altre persone vengono aggiunte ai tuoi commenti, con il loro nome. Un'importazione non chiama alcun servizio esterno e non usa crediti appartamento.
 
 ---
 
@@ -129,7 +133,7 @@ Un iPhone non può condividere nulla con Flatpare. Copia invece il link dell'ann
 
 ### Link da aggiungere più tardi
 
-**Da aggiungere**, in cima alla pagina Appartamenti, è l'elenco dei link del tuo gruppo che non sono ancora appartamenti. Tutto il gruppo lo vede, con il nome di chi ha salvato ogni link. Salvare un link è gratuito. Tocca **Aggiungi** per trasformarlo in un appartamento, con o senza il suo PDF; nella versione ospitata da noi, è allora che si usa un credito appartamento. Fino a 20 link possono aspettare contemporaneamente.
+**Da aggiungere**, in cima alla pagina Appartamenti, è l'elenco dei link del tuo gruppo che non sono ancora appartamenti. Tutto il gruppo lo vede, con il nome di chi ha salvato ogni link. Salvare un link è gratuito. Tocca **Aggiungi** per trasformarlo in un appartamento, con o senza il suo PDF; nella versione ospitata da noi, si usa un credito appartamento quando il suo PDF viene letto o il suo indirizzo trovato sulla mappa. Fino a 20 link possono aspettare contemporaneamente.
 
 ---
 
@@ -139,9 +143,9 @@ Un iPhone non può condividere nulla con Flatpare. Copia invece il link dell'ann
 
 Flatpare costa **CHF 5, una sola volta** — non è un abbonamento. Copre fino a 10 persone e 40 appartamenti in un gruppo.
 
-Il 40 conta gli appartamenti che **aggiungi**, non quelli che tieni: eliminarne uno libera spazio nel confronto, ma non ti restituisce il credito. Quando hai usato i tuoi 40, altri CHF 5 aggiungono altri 40 appartamenti.
+Il 40 conta gli appartamenti **elaborati**, non quelli che tieni: si usa un credito la prima volta che il PDF di un appartamento viene letto o il suo indirizzo trovato sulla mappa. Aggiungere un appartamento a mano, descriverlo e valutarlo è gratuito. Eliminarne uno libera spazio nel confronto, ma non ti restituisce il credito. Quando hai usato i tuoi 40, altri CHF 5 aggiungono altri 40 appartamenti.
 
-Esaurire i crediti ti impedisce solo di aggiungere nuovi appartamenti. Non ti blocca mai l'accesso a quelli che hai già.
+Esaurire i crediti impedisce solo di elaborare nuovi appartamenti: puoi comunque aggiungerli, descriverli e valutarli, ed elaborarli dopo averne comprati altri. Non ti blocca mai l'accesso a quelli che hai già.
 
 Gestire Flatpare in proprio è gratuito e non ha alcun limite.
 

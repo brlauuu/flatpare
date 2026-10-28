@@ -8,6 +8,8 @@ import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
 import { aiAvailable, readAiConfig } from "@/lib/ai-provider";
 import { DEFAULT_LOCALE, isLocale } from "@/locales/locales";
+import { chargeFirstProcessing } from "@/lib/billing";
+import { z } from "zod";
 
 // Privacy exception: the client decrypts the PDF and posts the plaintext
 // bytes here for one extraction call. The bytes are held in memory for the
@@ -22,6 +24,11 @@ import { DEFAULT_LOCALE, isLocale } from "@/locales/locales";
 // (#409, src/lib/find-listing.ts) — the landing page's privacy section names
 // it. Skipped when the person brought their own link (searchListing=0),
 // which wins over anything found. Counted under the parse-pdf rate limit.
+//
+// Reading a PDF is its apartment's first processing (#413) unless the
+// address was geocoded first: the apartment id (minted before the row
+// exists) is charged one credit the first time, just before the extraction.
+// Nothing is charged when no AI is configured, since nothing is called.
 export async function POST(req: Request) {
   let phase: "input" | "extract" = "input";
   try {
@@ -35,10 +42,13 @@ export async function POST(req: Request) {
     if (file.size > parsePdfMaxBytes()) {
       throw new ApiError("PDF too large to extract", 413);
     }
+    const apartmentId = z.uuid().safeParse(formData.get("apartmentId"));
+    if (!apartmentId.success) throw new ApiError("apartmentId is required", 400);
 
     if (!aiAvailable(readAiConfig())) {
       return NextResponse.json({ extracted: emptyExtraction(file.name), aiAvailable: false });
     }
+    await chargeFirstProcessing(householdId, apartmentId.data);
 
     phase = "extract";
     const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");

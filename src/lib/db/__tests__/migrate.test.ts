@@ -3,7 +3,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createClient } from "@libsql/client";
 import { applyMigrations, runMigrations } from "../migrate";
 
@@ -531,6 +531,61 @@ describe("applyMigrations", () => {
       "household_id",
       "id",
     ]);
+  });
+
+  it("creates apartment_charges (#413) with ids and a time only", async () => {
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    expect((await columnNames(client, "apartment_charges")).sort()).toEqual([
+      "apartment_id",
+      "charged_at",
+      "household_id",
+    ]);
+  });
+
+  it("0026 marks every existing apartment as charged (#413)", async () => {
+    // Apply up to 0025 from a copy of the folder whose journal stops there,
+    // add an apartment the old way, then apply the rest.
+    const tmp = fs.mkdtempSync(path.join(process.cwd(), "data", "migrate-0026-"));
+    try {
+      const source = path.join(process.cwd(), "drizzle");
+      fs.cpSync(source, tmp, { recursive: true });
+      const journalPath = path.join(tmp, "meta", "_journal.json");
+      const journal = JSON.parse(fs.readFileSync(journalPath, "utf8")) as {
+        entries: { tag: string }[];
+      };
+      const upTo = journal.entries.findIndex((e) => e.tag === "0026_apartment_charges");
+      journal.entries = journal.entries.slice(0, upTo);
+      fs.writeFileSync(journalPath, JSON.stringify(journal));
+
+      const client = createClient({ url: ":memory:" });
+      const { drizzle } = await import("drizzle-orm/libsql");
+      const { migrate } = await import("drizzle-orm/libsql/migrator");
+      await migrate(drizzle(client), { migrationsFolder: tmp });
+      await client.execute({
+        sql: "INSERT INTO users (id, email) VALUES ('u1', 'u1@example.com')",
+        args: [],
+      });
+      await client.execute({
+        sql: "INSERT INTO households (name, owner_id) VALUES ('H', 'u1')",
+        args: [],
+      });
+      await client.execute({
+        sql: "INSERT INTO apartments (id, household_id, envelope) VALUES ('a1', 1, '{\"v\":0,\"data\":{}}')",
+        args: [],
+      });
+
+      vi.stubEnv("FLATPARE_ENCRYPTION", "off");
+      await applyMigrations(client, { encryptionMode: "off" });
+      const rows = await client.execute({
+        sql: "SELECT household_id, apartment_id FROM apartment_charges",
+        args: [],
+      });
+      expect(rows.rows.map((r) => [Number(r.household_id), String(r.apartment_id)])).toEqual([[1, "a1"]]);
+    } finally {
+      vi.unstubAllEnvs();
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it("creates the beta pass tables (#239) with the host-side columns only", async () => {

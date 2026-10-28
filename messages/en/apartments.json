@@ -32,7 +32,8 @@
     "rent": "CHF {amount, number}",
     "rooms": "{count, number} rooms",
     "roomsShort": "{count, number} rm",
-    "size": "{size, number} m²"
+    "size": "{size, number} m²",
+    "notProcessed": "Not processed"
   },
   "corrupt": {
     "title": "This apartment could not be decrypted",
@@ -47,13 +48,14 @@
     "notFound": "Apartment not found",
     "deleteFailed": "Couldn't delete apartment",
     "pdfOpenFailed": "Couldn't open PDF",
-    "reprocessConfirm": "Reprocess this apartment? Fields you haven't edited will be refreshed from the PDF. Fields you've edited will stay.",
+    "reprocessConfirm": "{billing, select, on {Reprocess this apartment for one apartment credit? Its address is located again and every distance measured again. With a PDF, fields you haven't edited are refreshed from it; fields you've edited stay.} other {Reprocess this apartment? Its address is located again and every distance measured again. With a PDF, fields you haven't edited are refreshed from it; fields you've edited stay.}}",
     "reprocessFailed": "Couldn't reprocess apartment",
     "nameRequired": "Name is required",
     "saveFailed": "Couldn't save changes",
     "ratingSaveFailed": "Couldn't save rating",
     "availableFrom": "Available from: {date}",
-    "showOnMap": "View on map"
+    "showOnMap": "View on map",
+    "processFailed": "Couldn't process apartment"
   },
   "actions": {
     "viewPdf": "View PDF",
@@ -87,7 +89,9 @@
     "bike": "{minutes} min bike",
     "bikeNone": "— bike",
     "transit": "{minutes} min transit",
-    "transitNone": "— transit"
+    "transitNone": "— transit",
+    "addressChanged": "The address changed. Reprocess the apartment to measure its distances again.",
+    "addressChangedHint": "The distances belonged to the old address, so they are hidden until the apartment is reprocessed."
   },
   "new": {
     "pdfStoreWarning": "PDF could not be stored — the apartment will be saved without it",
@@ -124,7 +128,8 @@
     "size": "{size} m²",
     "rooms": "{count} rooms",
     "retry": "Retry",
-    "linkFound": "Listing link found by a web search. It may be the wrong page: check it before saving."
+    "linkFound": "Listing link found by a web search. It may be the wrong page: check it before saving.",
+    "notRead": "Not read: no apartment credits left. Save it now and rate it, then process it after buying more."
   },
   "single": {
     "title": "Add Apartment Manually",
@@ -175,7 +180,7 @@
     "other": "{name}'s Rating"
   },
   "credits": {
-    "left": "<n>{count}</n> {count, plural, one {apartment} other {apartments}} left to add",
+    "left": "<n>{count}</n> {count, plural, one {apartment} other {apartments}} left to process",
     "runningLow": "(running low)",
     "noneLeft": "(none left)",
     "buyMore": "Buy more"
@@ -202,5 +207,14 @@
     "link": "Add the link you shared?",
     "add": "Add",
     "discard": "Discard"
+  },
+  "processing": {
+    "title": "Not processed yet",
+    "empty": "{billing, select, on {Rate and describe it for free. Add an address or a PDF to find it on the map and measure its distances; that uses one apartment credit.} other {Rate and describe it as you like. Add an address or a PDF to find it on the map and measure its distances.}}",
+    "pending": "{billing, select, on {Its address or PDF is saved but not processed yet. Processing uses one apartment credit.} other {Its address or PDF is saved but not processed yet.}}",
+    "noneLeft": "No apartment credits left.",
+    "buyMore": "Buy more",
+    "process": "{billing, select, on {Process (1 credit)} other {Process}}",
+    "processing": "Processing..."
   }
 }

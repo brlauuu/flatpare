@@ -11,7 +11,6 @@ import {
   type RatingLine,
 } from "@/lib/household-data/export-format";
 import type { ImportReport } from "@/components/household-data/export-import";
-import type { Credits } from "@/components/household-data/household-data-provider";
 import type { Limits } from "@/lib/limits";
 
 // Export and import (#191), on the Household page for every member. The
@@ -90,13 +89,12 @@ function ExportPanel() {
 type Translate = ReturnType<typeof useTranslations<"household.data">>;
 
 // Why an import of `count` apartments cannot start, or null. Checked before
-// anything is written, so a short balance never leaves half a household.
-function blockedReason(t: Translate, count: number, limits: Limits, credits: Credits | null): string | null {
+// anything is written, so a full household never ends up half imported. No
+// credit is spent (#413): an import calls no outside service, and its
+// apartments arrive processed or not, as they were exported.
+function blockedReason(t: Translate, count: number, limits: Limits): string | null {
   if (limits.maxApartments !== null && count > limits.maxApartments) {
     return t("overCap", { count, max: limits.maxApartments });
-  }
-  if (credits !== null && count > credits.remaining) {
-    return t("overCredits", { count, remaining: credits.remaining });
   }
   return null;
 }
@@ -121,7 +119,7 @@ function useRatingLine(): RatingLine {
 function ImportPanel({ onDone }: { onDone: (report: ImportReport) => void }) {
   const t = useTranslations("household.data");
   const format = useFormatter();
-  const { credits, limits, readImport, importHousehold } = useHouseholdData();
+  const { limits, readImport, importHousehold } = useHouseholdData();
   const ratingLine = useRatingLine();
   const [parsed, setParsed] = useState<ParsedExport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +157,7 @@ function ImportPanel({ onDone }: { onDone: (report: ImportReport) => void }) {
   }
 
   const count = parsed?.apartments.length ?? 0;
-  const blocked = parsed ? blockedReason(t, count, limits, credits) : null;
+  const blocked = parsed ? blockedReason(t, count, limits) : null;
   const importLabel = progress
     ? t("importingProgress", { done: progress[0], total: progress[1] })
     : importing
@@ -193,9 +191,6 @@ function ImportPanel({ onDone }: { onDone: (report: ImportReport) => void }) {
               date: format.dateTime(new Date(parsed.manifest.exportedAt), { dateStyle: "medium" }),
             })}
           </p>
-          {credits !== null && blocked === null && count > 0 && (
-            <p className="text-muted-foreground">{t("usesCredits", { count })}</p>
-          )}
           {blocked && (
             <p role="alert" className="text-destructive">
               {blocked}

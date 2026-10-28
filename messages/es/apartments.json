@@ -32,7 +32,8 @@
     "rent": "CHF {amount, number}",
     "rooms": "{count, number} hab.",
     "roomsShort": "{count, number} hab.",
-    "size": "{size, number} m²"
+    "size": "{size, number} m²",
+    "notProcessed": "Sin procesar"
   },
   "corrupt": {
     "title": "No se ha podido descifrar este piso",
@@ -47,13 +48,14 @@
     "notFound": "Piso no encontrado",
     "deleteFailed": "No se ha podido eliminar el piso",
     "pdfOpenFailed": "No se ha podido abrir el PDF",
-    "reprocessConfirm": "¿Volver a procesar este piso? Los campos que no has editado se actualizarán a partir del PDF. Los que has editado se mantendrán.",
+    "reprocessConfirm": "{billing, select, on {¿Volver a procesar este piso por un crédito de piso? Su dirección se vuelve a localizar y cada distancia se vuelve a medir. Con un PDF, los campos que no has editado se actualizan a partir de él; los que has editado se mantienen.} other {¿Volver a procesar este piso? Su dirección se vuelve a localizar y cada distancia se vuelve a medir. Con un PDF, los campos que no has editado se actualizan a partir de él; los que has editado se mantienen.}}",
     "reprocessFailed": "No se ha podido volver a procesar el piso",
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se han podido guardar los cambios",
     "ratingSaveFailed": "No se ha podido guardar la valoración",
     "availableFrom": "Disponible desde: {date}",
-    "showOnMap": "Ver en el mapa"
+    "showOnMap": "Ver en el mapa",
+    "processFailed": "No se ha podido procesar el piso"
   },
   "actions": {
     "viewPdf": "Ver PDF",
@@ -87,7 +89,9 @@
     "bike": "{minutes} min en bici",
     "bikeNone": "— en bici",
     "transit": "{minutes} min en transporte público",
-    "transitNone": "— en transporte público"
+    "transitNone": "— en transporte público",
+    "addressChanged": "La dirección ha cambiado. Vuelve a procesar el piso para medir de nuevo sus distancias.",
+    "addressChangedHint": "Las distancias eran de la dirección anterior, así que están ocultas hasta que el piso se vuelva a procesar."
   },
   "new": {
     "pdfStoreWarning": "No se ha podido guardar el PDF; el piso se guardará sin él",
@@ -124,7 +128,8 @@
     "size": "{size} m²",
     "rooms": "{count} hab.",
     "retry": "Reintentar",
-    "linkFound": "Enlace del anuncio encontrado con una búsqueda en la web. Puede llevar a la página equivocada: compruébalo antes de guardar."
+    "linkFound": "Enlace del anuncio encontrado con una búsqueda en la web. Puede llevar a la página equivocada: compruébalo antes de guardar.",
+    "notRead": "Sin leer: no te quedan créditos de piso. Guárdalo y puntúalo ahora, y procésalo después de comprar más."
   },
   "single": {
     "title": "Añadir un piso a mano",
@@ -175,7 +180,7 @@
     "other": "Valoración de {name}"
   },
   "credits": {
-    "left": "Te {count, plural, one {queda} other {quedan}} <n>{count}</n> {count, plural, one {piso} other {pisos}} por añadir",
+    "left": "Te {count, plural, one {queda} other {quedan}} <n>{count}</n> {count, plural, one {piso} other {pisos}} por procesar",
     "runningLow": "(quedan pocos)",
     "noneLeft": "(no queda ninguno)",
     "buyMore": "Comprar más"
@@ -202,5 +207,14 @@
     "link": "¿Añadir el enlace compartido?",
     "add": "Añadir",
     "discard": "Descartar"
+  },
+  "processing": {
+    "title": "Aún sin procesar",
+    "empty": "{billing, select, on {Puntúalo y descríbelo gratis. Añade una dirección o un PDF para situarlo en el mapa y medir sus distancias; eso usa un crédito de piso.} other {Puntúalo y descríbelo como quieras. Añade una dirección o un PDF para situarlo en el mapa y medir sus distancias.}}",
+    "pending": "{billing, select, on {Su dirección o su PDF está guardado, pero aún no se ha procesado. Procesarlo usa un crédito de piso.} other {Su dirección o su PDF está guardado, pero aún no se ha procesado.}}",
+    "noneLeft": "No te quedan créditos de piso.",
+    "buyMore": "Comprar más",
+    "process": "{billing, select, on {Procesar (1 crédito)} other {Procesar}}",
+    "processing": "Procesando..."
   }
 }

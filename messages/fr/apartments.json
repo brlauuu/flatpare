@@ -32,7 +32,8 @@
     "rent": "CHF {amount, number}",
     "rooms": "{count, number} pièces",
     "roomsShort": "{count, number} p.",
-    "size": "{size, number} m²"
+    "size": "{size, number} m²",
+    "notProcessed": "Non traité"
   },
   "corrupt": {
     "title": "Cet appartement n’a pas pu être déchiffré",
@@ -47,13 +48,14 @@
     "notFound": "Appartement introuvable",
     "deleteFailed": "Impossible de supprimer l’appartement",
     "pdfOpenFailed": "Impossible d’ouvrir le PDF",
-    "reprocessConfirm": "Retraiter cet appartement ? Les champs que tu n’as pas modifiés seront mis à jour à partir du PDF. Ceux que tu as modifiés resteront tels quels.",
+    "reprocessConfirm": "{billing, select, on {Retraiter cet appartement pour un crédit d’appartement ? Son adresse est localisée à nouveau et chaque distance mesurée à nouveau. Avec un PDF, les champs que tu n’as pas modifiés sont mis à jour à partir de celui-ci ; ceux que tu as modifiés restent tels quels.} other {Retraiter cet appartement ? Son adresse est localisée à nouveau et chaque distance mesurée à nouveau. Avec un PDF, les champs que tu n’as pas modifiés sont mis à jour à partir de celui-ci ; ceux que tu as modifiés restent tels quels.}}",
     "reprocessFailed": "Impossible de retraiter l’appartement",
     "nameRequired": "Le nom est obligatoire",
     "saveFailed": "Impossible d’enregistrer les modifications",
     "ratingSaveFailed": "Impossible d’enregistrer l’évaluation",
     "availableFrom": "Disponible dès le : {date}",
-    "showOnMap": "Voir sur la carte"
+    "showOnMap": "Voir sur la carte",
+    "processFailed": "Impossible de traiter l’appartement"
   },
   "actions": {
     "viewPdf": "Voir le PDF",
@@ -87,7 +89,9 @@
     "bike": "{minutes} min à vélo",
     "bikeNone": "— à vélo",
     "transit": "{minutes} min en transports",
-    "transitNone": "— en transports"
+    "transitNone": "— en transports",
+    "addressChanged": "L’adresse a changé. Retraite l’appartement pour mesurer à nouveau ses distances.",
+    "addressChangedHint": "Les distances correspondaient à l’ancienne adresse ; elles sont masquées jusqu’à ce que l’appartement soit retraité."
   },
   "new": {
     "pdfStoreWarning": "Le PDF n’a pas pu être stocké — l’appartement sera enregistré sans lui",
@@ -124,7 +128,8 @@
     "size": "{size} m²",
     "rooms": "{count} pièces",
     "retry": "Réessayer",
-    "linkFound": "Lien de l'annonce trouvé par une recherche sur le web. Il peut mener à la mauvaise page : vérifie-le avant d'enregistrer."
+    "linkFound": "Lien de l'annonce trouvé par une recherche sur le web. Il peut mener à la mauvaise page : vérifie-le avant d'enregistrer.",
+    "notRead": "Non lu : plus aucun crédit d’appartement. Enregistre-le et note-le maintenant, puis traite-le après en avoir acheté d’autres."
   },
   "single": {
     "title": "Ajouter un appartement manuellement",
@@ -175,7 +180,7 @@
     "other": "Évaluation de {name}"
   },
   "credits": {
-    "left": "{count, plural, one {Encore <n>{count}</n> appartement à ajouter} other {Encore <n>{count}</n> appartements à ajouter}}",
+    "left": "{count, plural, one {Encore <n>{count}</n> appartement à traiter} other {Encore <n>{count}</n> appartements à traiter}}",
     "runningLow": "(bientôt épuisé)",
     "noneLeft": "(plus aucun)",
     "buyMore": "En acheter plus"
@@ -202,5 +207,14 @@
     "link": "Ajouter le lien partagé ?",
     "add": "Ajouter",
     "discard": "Ignorer"
+  },
+  "processing": {
+    "title": "Pas encore traité",
+    "empty": "{billing, select, on {Note-le et décris-le gratuitement. Ajoute une adresse ou un PDF pour le placer sur la carte et mesurer ses distances ; cela utilise un crédit d’appartement.} other {Note-le et décris-le comme tu veux. Ajoute une adresse ou un PDF pour le placer sur la carte et mesurer ses distances.}}",
+    "pending": "{billing, select, on {Son adresse ou son PDF est enregistré, mais pas encore traité. Le traitement utilise un crédit d’appartement.} other {Son adresse ou son PDF est enregistré, mais pas encore traité.}}",
+    "noneLeft": "Plus aucun crédit d’appartement.",
+    "buyMore": "En acheter plus",
+    "process": "{billing, select, on {Traiter (1 crédit)} other {Traiter}}",
+    "processing": "Traitement..."
   }
 }

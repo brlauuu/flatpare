@@ -243,11 +243,12 @@ describe("Landing", () => {
       expect(pageText()).toMatch(/one-time payment/i);
     });
 
-    // The quota counts apartments ADDED, not held.
-    it("discloses that deleting an apartment does not refund the credit", () => {
+    // The quota counts apartments PROCESSED, not held, and not added (#413).
+    it("discloses what spends a credit, and that deleting does not refund it", () => {
       renderLanding();
       const text = pageText();
-      expect(text).toMatch(/counts apartments you\s*add/i);
+      expect(text).toMatch(/counts apartments processed/i);
+      expect(text).toMatch(/adding and rating one by hand is free/i);
       expect(text).toMatch(/does not give the\s*credit back/i);
     });
 

@@ -13,8 +13,11 @@ export interface GeocodeResult {
   reason?: string;
 }
 
-export function geocodeAddress(address: string): Promise<GeocodeResult> {
-  return sendJson<GeocodeResult>("POST", "/api/process/geocode", { address });
+// `apartmentId` is sent only when this call is the apartment's first
+// processing, which spends its credit (#413). A location of interest, and an
+// apartment already processed, are geocoded without it.
+export function geocodeAddress(address: string, apartmentId?: string): Promise<GeocodeResult> {
+  return sendJson<GeocodeResult>("POST", "/api/process/geocode", apartmentId ? { address, apartmentId } : { address });
 }
 
 export function distanceBetween(from: string, to: string): Promise<ApartmentDistance> {
@@ -26,7 +29,9 @@ export async function checkListing(url: string): Promise<boolean | null> {
   return gone;
 }
 
-export type ParsePdfReason = "quota" | "invalid_pdf" | "unknown";
+// no_credits: the household has no apartment credit left for the apartment's
+// first processing (#413).
+export type ParsePdfReason = "quota" | "invalid_pdf" | "no_credits" | "unknown";
 
 export class ParsePdfError extends Error {
   reason: ParsePdfReason;
@@ -52,12 +57,17 @@ export async function parsePdf(
   bytes: Uint8Array<ArrayBuffer>,
   filename: string,
   locale: Locale,
+  // The apartment the PDF belongs to (minted before its row exists). Reading
+  // it is that apartment's first processing unless it was charged before
+  // (#413).
+  apartmentId: string,
   // False when the person brought their own link: no search is paid for.
   searchListing = true
 ): Promise<ParsePdfResult> {
   const form = new FormData();
   form.append("file", new File([bytes], filename, { type: "application/pdf" }));
   form.append("locale", locale);
+  form.append("apartmentId", apartmentId);
   if (!searchListing) form.append("searchListing", "0");
   const res = await fetch("/api/process/parse-pdf", { method: "POST", body: form });
   let body: Record<string, unknown> = {};
@@ -71,9 +81,11 @@ export async function parsePdf(
     const reason: ParsePdfReason =
       body.reason === "quota" || body.reason === "invalid_pdf"
         ? body.reason
-        : res.status === 413 || res.status === 400
-          ? "invalid_pdf"
-          : "unknown";
+        : res.status === 402
+          ? "no_credits"
+          : res.status === 413 || res.status === 400
+            ? "invalid_pdf"
+            : "unknown";
     throw new ParsePdfError(
       message,
       reason,

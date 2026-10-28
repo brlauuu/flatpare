@@ -49,11 +49,11 @@ describe("CreditBalance", () => {
     expect(screen.getByRole("link", { name: /buy more/i })).toHaveAttribute("href", "/billing");
   });
 
-  it("says it counts apartments to ADD, and handles the singular", () => {
+  it("says it counts apartments to PROCESS, and handles the singular", () => {
     const { unmount } = renderWithHouseholdData(<CreditBalance />, { credits: credits(12) });
-    expect(screen.getByTestId("credit-balance")).toHaveTextContent("12 apartments left to add");
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("12 apartments left to process");
     unmount();
     renderWithHouseholdData(<CreditBalance />, { credits: credits(1) });
-    expect(screen.getByTestId("credit-balance")).toHaveTextContent("1 apartment left to add");
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("1 apartment left to process");
   });
 });

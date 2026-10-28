@@ -1,7 +1,11 @@
 import { z } from "zod";
 
+// `apartmentId` names the apartment being processed, which is what the
+// first-processing charge keys on (#413). A location of interest is
+// geocoded without one, and that is free.
 export const geocodeRequestSchema = z.object({
   address: z.string().trim().min(1).max(500),
+  apartmentId: z.uuid().optional(),
 });
 
 export const distanceRequestSchema = z.object({

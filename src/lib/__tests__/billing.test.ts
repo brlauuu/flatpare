@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { apartments, households, householdMembers } from "@/lib/db/schema";
+import { apartmentCharges, apartments, households, householdMembers } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { createApartmentRow } from "../apartments-store";
 import {
   CREDITS_PER_PURCHASE,
   billingEnabled,
+  chargeFirstProcessing,
+  chargeRecompute,
+  chargeReprocess,
   grantApartmentCredits,
   readCreditBalance,
 } from "../billing";
@@ -39,6 +42,7 @@ async function activeCount() {
 }
 
 beforeEach(async () => {
+  await db.delete(apartmentCharges);
   await db.delete(apartments);
   await db.delete(householdMembers);
   await db.delete(households);
@@ -92,113 +96,153 @@ describe("createApartmentRow with billing OFF", () => {
 describe("createApartmentRow with billing ON", () => {
   beforeEach(enableBilling);
 
-  it("refuses with 402 when the household has no credits", async () => {
-    await expect(
-      createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).rejects.toMatchObject({ status: 402, message: "No apartment credits left" });
-    expect(await activeCount()).toBe(0);
-  });
-
-  it("allows exactly as many adds as credits granted", async () => {
-    await grantApartmentCredits(hid, 3);
-    for (let i = 0; i < 3; i++) {
-      await expect(
-        createApartmentRow(hid, { id: newId(), envelope: ENVELOPE }),
-        `add ${i + 1}`
-      ).resolves.toBeTruthy();
-    }
-    await expect(
-      createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).rejects.toMatchObject({ status: 402 });
-  });
-
-  // The term the landing page sells, and the one most likely to be disputed.
-  it("does NOT refund a credit when an apartment is deleted", async () => {
-    await grantApartmentCredits(hid, 2);
-    const first = await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
+  // #413: an apartment someone only rates and describes calls nothing
+  // outside the app, so creating it is free — even with no credits at all.
+  it("spends no credit, even with none left", async () => {
     await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
-
-    await db.delete(apartments).where(eq(apartments.id, first.id));
-
-    expect(await activeCount()).toBe(1);
-    expect((await counters()).used).toBe(2);
-    // Room in the comparison, but no credit left to fill it with.
-    await expect(
-      createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).rejects.toMatchObject({ status: 402 });
+    await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
+    expect(await activeCount()).toBe(2);
+    expect((await counters()).used).toBe(0);
   });
 
-  it("stacks a second purchase on top of the first", async () => {
-    await grantApartmentCredits(hid, 2);
-    await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
+  it("still enforces the active-row cap", async () => {
+    process.env.MAX_APARTMENTS = "1";
     await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
     await expect(
       createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).rejects.toMatchObject({ status: 402 });
+    ).rejects.toMatchObject({ message: "Apartment limit reached" });
+  });
+});
 
-    await grantApartmentCredits(hid, 2);
-    await expect(
-      createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).resolves.toBeTruthy();
-    expect((await counters())).toMatchObject({ granted: 4, used: 3 });
+describe("chargeFirstProcessing", () => {
+  it("is free when billing is off and records nothing", async () => {
+    await chargeFirstProcessing(hid, newId());
+    expect((await counters()).used).toBe(0);
+    expect(await db.select().from(apartmentCharges)).toEqual([]);
   });
 
-  describe("a credit is never burned by a failed create", () => {
-    it("gives it back when the id is a duplicate", async () => {
+  describe("with billing ON", () => {
+    beforeEach(enableBilling);
+
+    it("refuses with 402 when the household has no credits", async () => {
+      const id = newId();
+      await expect(chargeFirstProcessing(hid, id)).rejects.toMatchObject({
+        status: 402,
+        message: "No apartment credits left",
+      });
+      expect(await db.select().from(apartmentCharges)).toEqual([]);
+    });
+
+    it("spends one credit per apartment, the first time only", async () => {
       await grantApartmentCredits(hid, 2);
       const id = newId();
-      await createApartmentRow(hid, { id, envelope: ENVELOPE });
-      await expect(
-        createApartmentRow(hid, { id, envelope: ENVELOPE })
-      ).rejects.toMatchObject({ message: "Duplicate id" });
-
+      await chargeFirstProcessing(hid, id);
+      // The geocode after the PDF, a retry, a second distance pass: free.
+      await chargeFirstProcessing(hid, id);
+      await chargeFirstProcessing(hid, id);
       expect((await counters()).used).toBe(1);
-      // The second credit is still spendable.
-      await expect(
-        createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-      ).resolves.toBeTruthy();
+
+      await chargeFirstProcessing(hid, newId());
+      expect((await counters()).used).toBe(2);
+      await expect(chargeFirstProcessing(hid, newId())).rejects.toMatchObject({ status: 402 });
+      // An apartment already charged still processes at zero credits.
+      await expect(chargeFirstProcessing(hid, id)).resolves.toBeUndefined();
     });
 
-    it("gives it back when the active-row cap refuses the insert", async () => {
-      process.env.MAX_APARTMENTS = "1";
+    // The term the landing page sells, and the one most likely to be disputed.
+    it("does NOT refund a credit when the apartment is deleted", async () => {
+      await grantApartmentCredits(hid, 1);
+      const created = await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
+      await chargeFirstProcessing(hid, created.id);
+      await db.delete(apartments).where(eq(apartments.id, created.id));
+      expect((await counters()).used).toBe(1);
+      await expect(chargeFirstProcessing(hid, newId())).rejects.toMatchObject({ status: 402 });
+    });
+
+    it("stacks a second purchase on top of the first", async () => {
+      await grantApartmentCredits(hid, 1);
+      await chargeFirstProcessing(hid, newId());
+      await expect(chargeFirstProcessing(hid, newId())).rejects.toMatchObject({ status: 402 });
+      await grantApartmentCredits(hid, 2);
+      await chargeFirstProcessing(hid, newId());
+      expect(await counters()).toMatchObject({ granted: 3, used: 2 });
+    });
+
+    it("charges once when the same apartment is processed concurrently", async () => {
       await grantApartmentCredits(hid, 5);
-      await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
-      await expect(
-        createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-      ).rejects.toMatchObject({ message: "Apartment limit reached" });
-
-      // One row added, one credit used — not two.
+      const id = newId();
+      const results = await Promise.allSettled(
+        Array.from({ length: 8 }, () => chargeFirstProcessing(hid, id))
+      );
+      expect(results.every((r) => r.status === "fulfilled")).toBe(true);
       expect((await counters()).used).toBe(1);
     });
+
+    it("takes the claim back when the credit cannot be spent", async () => {
+      const id = newId();
+      await expect(chargeFirstProcessing(hid, id)).rejects.toMatchObject({ status: 402 });
+      // After buying, the same apartment is charged rather than waved through.
+      await grantApartmentCredits(hid, 1);
+      await chargeFirstProcessing(hid, id);
+      expect((await counters()).used).toBe(1);
+    });
+
+    it("does not let concurrent first processings overspend the last credit", async () => {
+      await grantApartmentCredits(hid, 3);
+      const results = await Promise.allSettled(
+        Array.from({ length: 8 }, () => chargeFirstProcessing(hid, newId()))
+      );
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(3);
+      expect((await counters()).used).toBe(3);
+      expect(await db.select().from(apartmentCharges)).toHaveLength(3);
+    });
+
+    it("counts per household", async () => {
+      await grantApartmentCredits(hid, 1);
+      const [other] = await db
+        .insert(households)
+        .values({ name: "Other", ownerId: "o" })
+        .returning();
+      await grantApartmentCredits(other.id, 1);
+      const id = newId();
+      await chargeFirstProcessing(hid, id);
+      // The same id in another household is another apartment's charge.
+      await chargeFirstProcessing(other.id, id);
+      expect((await counters()).used).toBe(1);
+      await expect(chargeFirstProcessing(other.id, newId())).rejects.toMatchObject({ status: 402 });
+    });
+  });
+});
+
+describe("chargeReprocess and chargeRecompute", () => {
+  it("are free when billing is off", async () => {
+    await chargeReprocess(hid, newId());
+    await chargeRecompute(hid);
+    expect((await counters()).used).toBe(0);
   });
 
-  it("does not let concurrent adds overspend the last credit", async () => {
-    await grantApartmentCredits(hid, 3);
-    const results = await Promise.allSettled(
-      Array.from({ length: 8 }, () =>
-        createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-      )
-    );
-    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(3);
-    expect(await activeCount()).toBe(3);
-    expect((await counters()).used).toBe(3);
-  });
+  describe("with billing ON", () => {
+    beforeEach(enableBilling);
 
-  it("counts per household", async () => {
-    await grantApartmentCredits(hid, 1);
-    const [other] = await db
-      .insert(households)
-      .values({ name: "Other", ownerId: "o" })
-      .returning();
-    await grantApartmentCredits(other.id, 1);
+    it("a reprocess spends one credit every time, and makes later calls free", async () => {
+      await grantApartmentCredits(hid, 3);
+      const id = newId();
+      await chargeReprocess(hid, id);
+      // An apartment never charged before (an imported one): the calls the
+      // reprocess makes are covered by it.
+      await chargeFirstProcessing(hid, id);
+      expect((await counters()).used).toBe(1);
+      await chargeReprocess(hid, id);
+      expect((await counters()).used).toBe(2);
+    });
 
-    await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
-    await expect(
-      createApartmentRow(hid, { id: newId(), envelope: ENVELOPE })
-    ).rejects.toMatchObject({ status: 402 });
-    await expect(
-      createApartmentRow(other.id, { id: newId(), envelope: ENVELOPE })
-    ).resolves.toBeTruthy();
+    it("a recompute spends one credit for the whole run", async () => {
+      await grantApartmentCredits(hid, 1);
+      await chargeRecompute(hid);
+      expect((await counters()).used).toBe(1);
+      await expect(chargeRecompute(hid)).rejects.toMatchObject({ status: 402 });
+      await expect(chargeReprocess(hid, newId())).rejects.toMatchObject({ status: 402 });
+    });
   });
 });
 
@@ -222,7 +266,7 @@ describe("readCreditBalance", () => {
   it("reports granted, used and remaining", async () => {
     enableBilling();
     await grantApartmentCredits(hid, 5);
-    await createApartmentRow(hid, { id: newId(), envelope: ENVELOPE });
+    await chargeFirstProcessing(hid, newId());
     expect(await readCreditBalance(hid)).toEqual({
       granted: 5,
       used: 1,

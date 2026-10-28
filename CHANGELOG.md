@@ -9,6 +9,12 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- Adding an apartment no longer uses a credit. You can add one by hand, rate it and fill in everything you know for free; a credit is used the first time it is processed, when its PDF is read or its address is placed on the map, and only once for both. Reprocessing an apartment uses one credit, and so does Recompute all on the Household page, once for the whole run; both say so before you click. Adding or changing a location of interest stays free, and so does importing an export (#413).
+- Changing an apartment's address no longer measures it again by itself. Its distances are hidden, with a note, until you reprocess it (#413).
+- Out of credits, an apartment can still be added and rated: its address or PDF is saved, and the apartment page offers to process it once you have bought more. A PDF read for an apartment you already described fills only the empty fields (#413).
+
 ## 0.25.0 — 2026-10-28
 
 ### Added

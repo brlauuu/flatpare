@@ -73,7 +73,7 @@
       "betaKeep": "Fordere unten Zugang an. Was ein Beta-Konto bekommt, gehört dir: Weder deine Daten noch dein Guthaben werden dir weggenommen, wenn die Beta endet.",
       "limits": "Bis zu 10 Personen und 40 Wohnungen.",
       "more": "Brauchst du mehr? Für weitere CHF 5 kommen 40 Wohnungen dazu.",
-      "quota": "Die 40 zählen die Wohnungen, die du hinzufügst: Wenn du eine löschst, bekommst du das Guthaben nicht zurück.",
+      "quota": "Die 40 zählen verarbeitete Wohnungen, also wenn ihr PDF gelesen oder ihre Adresse auf der Karte gefunden wird; eine Wohnung von Hand hinzufügen und bewerten kostet nichts. Wenn du eine löschst, bekommst du das Guthaben nicht zurück.",
       "noReset": "Dein Schlüssel stammt aus deiner Passphrase, dazu kommt ein Wiederherstellungscode, den du ausdruckst. Es gibt kein Zurücksetzen — verlierst du beides, sind die Daten weg, auch für uns.",
       "createAccount": "Konto erstellen →"
     },

@@ -4,11 +4,6 @@ import { apartments, type ApartmentRecord } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api-error";
 import { isUniqueConstraintError } from "@/lib/unique-constraint";
 import { readLimits } from "@/lib/limits";
-import {
-  billingEnabled,
-  consumeApartmentCredit,
-  refundApartmentCredit,
-} from "@/lib/billing";
 
 // Creates one apartment row, enforcing MAX_APARTMENTS (E5).
 //
@@ -21,28 +16,22 @@ import {
 // `createLocation` enforces MAX_LOCATIONS the same way (#225).
 //
 // Counting needs no decryption — `envelope` is never opened here.
+//
+// Creating spends no credit (#413): an apartment someone only rates and
+// describes calls nothing outside the app. The credit is spent by its first
+// processing, in the process routes (chargeFirstProcessing).
 export async function createApartmentRow(
   householdId: number,
   input: { id: string; envelope: string }
 ): Promise<ApartmentRecord> {
   const { maxApartments } = readLimits();
 
-  // E6: spend a credit BEFORE inserting, so two concurrent adds at the last
-  // credit cannot both proceed. No-op when billing is off (self-hosting).
-  // Refunded below if the insert then fails, so a duplicate id or the
-  // active-row cap does not silently burn a credit the customer paid for.
-  if (!(await consumeApartmentCredit(householdId))) {
-    throw new ApiError("No apartment credits left", 402);
-  }
-
-  let inserted = false;
   try {
     if (maxApartments === null) {
       const [created] = await db
         .insert(apartments)
         .values({ id: input.id, householdId, envelope: input.envelope })
         .returning();
-      inserted = true;
       return created;
     }
 
@@ -67,16 +56,11 @@ export async function createApartmentRow(
       .from(apartments)
       .where(eq(apartments.id, input.id))
       .limit(1);
-    inserted = true;
     return created;
   } catch (err) {
     // A duplicate id must keep its own message — the client distinguishes a
     // retryable id clash from a hard entitlement refusal.
     if (isUniqueConstraintError(err)) throw new ApiError("Duplicate id", 409);
     throw err;
-  } finally {
-    // Every path that did not produce a row gives the credit back: the
-    // active-row cap, a duplicate id, or an unexpected failure.
-    if (!inserted && billingEnabled()) await refundApartmentCredit(householdId);
   }
 }

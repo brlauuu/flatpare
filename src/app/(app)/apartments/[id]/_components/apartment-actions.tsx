@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 
 interface ApartmentActionsProps {
   hasPdf: boolean;
+  // Processed, with a PDF or an address to process again (#413).
+  canReprocess: boolean;
   listingUrl: string | null;
   /** The household map with this apartment highlighted; null when it has no coordinates. */
   mapHref: string | null;
@@ -44,6 +46,7 @@ function Label({ icon: Icon, text, spin = false }: { icon: LucideIcon; text: str
 
 export function ApartmentActions({
   hasPdf,
+  canReprocess,
   listingUrl,
   mapHref,
   editing,
@@ -97,7 +100,7 @@ export function ApartmentActions({
       <Button
         variant="outline"
         size="sm"
-        disabled={reprocessing || editing || !hasPdf}
+        disabled={reprocessing || editing || !canReprocess}
         onClick={onReprocess}
         title={t("reprocess")}
         className={ACTION}

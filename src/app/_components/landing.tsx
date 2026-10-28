@@ -32,7 +32,8 @@ import { BetaRequestForm } from "./beta-request-form";
 //   2. "zero-knowledge" is never claimed; the processing exception is real.
 //   3. Never "open source": the licence is O'SAASY, source-available.
 //   4. The price says what it is — CHF 5, once, not a subscription — and the
-//      quota's catch is disclosed: deleting does not refund a credit.
+//      quota's catch is disclosed: a credit is spent by processing an
+//      apartment (#413), and deleting one does not refund it.
 //   5. While sign-ups are closed, the hosted card strikes through the price and
 //      says the beta is free (#322, #323), and that beta data and credits are
 //      kept, in the same terms as the beta-ready notice in login-form.tsx and

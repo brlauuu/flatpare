@@ -26,6 +26,9 @@ function makeApartmentView(over: Partial<ApartmentView> & { id: string }): Apart
     avgFloorplan: null,
     avgOverall: null,
     myRating: null,
+    addressChanged: false,
+    // Most tests are about an apartment as it was before #413: processed.
+    processed: true,
     ...over,
   };
 }

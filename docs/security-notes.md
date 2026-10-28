@@ -386,7 +386,8 @@ A draft (a listing link saved to add later) is an envelope like any row, so the 
 sees neither the link nor its title. `apartment_drafts.created_by` is plaintext, set by
 the server from the session: it says which member shared a draft, which is no more than
 `ratings.user_id` already says about who rated. Drafts are capped at 20 per household
-and cost no credit; a draft carries no address, coordinates, distances, PDF or ratings, so it cannot stand in for an apartment.
+and cost no credit. Since #413 an apartment costs none either until it is processed, so
+a draft is no longer a way around anything.
 
 ### Accepted: shared PDFs wait unencrypted in the browser until saved (#190)
 
@@ -566,16 +567,36 @@ credits means "no new apartments", never "no access".
 `CryptoGate`, and paying must not require first unlocking a key the user may not have
 set up.
 
-### Accepted: credit consumption is optimistic, with a refund on failure
+### Accepted: a credit is spent by processing, claimed before it is spent (#413)
 
-A credit is consumed **before** the insert, by a guarded single-statement
-`UPDATE ... WHERE apartments_ever_added < apartment_credits_granted`, and refunded in a
-`finally` when no row was produced. Consuming after a successful insert reads more
-naturally but lets two concurrent adds overspend the last credit; an 8-way concurrency
-test asserts exactly 3 succeed with 3 credits. The residual is the reverse direction:
-a process killed between the consume and the refund leaves the customer one credit
-short. That is visible and correctable, whereas silent overspend is neither. **Do not
-wrap this in `db.transaction`** — see #225.
+Creating an apartment is free. Its first processing (the PDF read, or the address
+geocoded, whichever comes first) spends one credit, in the process route, before the
+outbound call: `chargeFirstProcessing` inserts `(household_id, apartment_id)` into
+`apartment_charges` (insert-or-ignore, the claim), and only the call that wrote the row
+spends, by the guarded single-statement
+`UPDATE ... WHERE apartments_ever_added < apartment_credits_granted`. When nothing is
+left to spend, the claim is deleted and the call answers 402. An 8-way test pins one
+credit for eight concurrent calls on one apartment, and three for eight apartments with
+three credits. The residual: while a claim waits on its spend, a concurrent call for the
+same apartment goes through free, and if the spend then fails that one processing was
+never paid for. It needs two concurrent first calls for one apartment in a household
+with no credit, which the app never makes. A process killed between the claim and the
+spend leaves the same apartment processed for free; visible in the counters, and the
+customer's favour. **Do not wrap this in `db.transaction`** — see #225.
+
+### Accepted: what spends a credit is named by the client (#413)
+
+The server cannot see an address, so it cannot tell "an address was added" from any
+other geocode. It charges on what the request says: a geocode or PDF read that names an
+apartment id is that apartment's first processing; a geocode without one (a location of
+interest, or an apartment the client knows is processed) is free; a reprocess and a
+"recompute all" are explicit charged requests (`POST /api/apartments/:id/reprocess`,
+`POST /api/billing/recompute`). A modified client can therefore geocode without naming
+the apartment and pay nothing. That is the same posture as the two spend holes recorded
+under Apartment credits in AGENTS.md, which a modified client could already use without
+limit: the honest client never spends silently, and the mechanism that would bound a
+dishonest one is `PROCESS_RATE_LIMIT_PER_HOUR`, deliberately unset for now. The PDF
+read, the most expensive call, always requires an apartment id.
 
 ### Accepted: entitlement caps are unlimited by default
 
@@ -661,14 +682,16 @@ variant may come later.
 Any member can export. Every member already holds the data key and can read every
 row, so a role check would protect nothing.
 
-### Accepted: an import is an ordinary add, and spends credits
+### Accepted: an import is an ordinary add, and spends no credit
 
 The import seals each row in the browser and posts it through the same routes as a
 hand-made add, so the server applies every check it always does: membership, the
-envelope mode, the current key version, `MAX_APARTMENTS` and the credit counter. A
-separate "import, do not charge" path could not tell an import from an add and would
-be a free-add door, so there is none. The import makes no outside call: coordinates,
-short codes and distances travel in the file, so no address is sent to a geocoder.
+envelope mode, the current key version and `MAX_APARTMENTS`. Since #413 adding spends
+no credit, so neither does an import: it makes no outside call, and coordinates, short
+codes and distances travel in the file, so no address is sent to a geocoder. Imported
+apartments keep their processed state. The server holds no charge for their new ids,
+so the first call that names one later (a retry after a failed geocode, a PDF attached)
+spends a credit once; a reprocess is charged as always.
 
 It runs only into a household with no apartments and no locations. That is checked
 in the browser against the loaded store, not by the server; two members importing

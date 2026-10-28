@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  fillFromExtraction,
   INFERABLE_FIELDS,
   diffInferableFields,
   mergeUserEdit,
@@ -102,5 +103,42 @@ describe("applyExtraction", () => {
     expect(next.summary).toBe("my own words");
     expect(next.rawExtractedData).toEqual(raw);
     expect(next.userEditedFields).toEqual(["summary"]);
+  });
+});
+
+// #413: a PDF never overwrites what a member already entered.
+describe("fillFromExtraction", () => {
+  it("fills only empty fields and protects the ones already filled", () => {
+    const current = {
+      ...emptyApartment("Our name"),
+      address: "Typed 1",
+      rentChf: null,
+      summary: "  ",
+    };
+    const incoming = {
+      name: "PDF name",
+      address: "PDF 2",
+      sizeM2: 70,
+      numRooms: 3,
+      numBathrooms: 1,
+      numBalconies: 0,
+      hasWashingMachine: true,
+      rentChf: 2100,
+      listingUrl: "https://example.com/x",
+      summary: "From the PDF",
+      availableFrom: "2026-12-01",
+    };
+    const next = fillFromExtraction(current, incoming, { raw: true });
+    expect(next).toMatchObject({
+      name: "Our name",
+      address: "Typed 1",
+      sizeM2: 70,
+      rentChf: 2100,
+      summary: "From the PDF",
+      rawExtractedData: { raw: true },
+    });
+    expect(next.userEditedFields.sort()).toEqual(["address", "name"]);
+    // A later reprocess keeps them too.
+    expect(applyExtraction(next, incoming, {})).toMatchObject({ name: "Our name", address: "Typed 1" });
   });
 });

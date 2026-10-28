@@ -43,6 +43,8 @@ Va sur **Ajouter** dans la barre de navigation et glisse (ou sélectionne) une a
 
 Si aucune IA n’est configurée, remplis les champs à la main. Dans les deux cas, tu arrives sur la page de l’appartement pour vérifier et corriger ce qui serait faux — l’extraction est un point de départ, pas un oracle.
 
+Tu peux aussi ajouter un appartement à la main, sans PDF ni adresse. Tant qu’il n’a ni l’un ni l’autre, il est **non traité** : note-le et remplis ce que tu sais. Dès qu’il reçoit une adresse ou un PDF, Flatpare le place sur la carte et mesure ses distances.
+
 ### 6. Évaluer les appartements
 
 Sur la page de chaque appartement, évalue-le selon cinq catégories :
@@ -80,6 +82,8 @@ Les temps de trajet sont mesurés depuis chaque appartement jusqu’à chacun de
 
 Si aucune API de distances n’est configurée, tu peux saisir les temps à la main.
 
+Changer plus tard l’adresse d’un appartement ne remesure rien tout seul : ses distances sont masquées jusqu’à ce que tu appuies sur **Retraiter** sur sa page. Sur la version hébergée, un retraitement utilise un crédit d’appartement, tout comme **Tout recalculer** sur la page Foyer, une fois pour tout le calcul. Ajouter ou modifier un lieu est gratuit.
+
 ### Gestion des PDF
 
 - Ajout d’un seul fichier ou de plusieurs à la fois
@@ -104,7 +108,7 @@ Dans **Réglages**, tu peux :
 
 Comme tes données sont chiffrées, personne ne peut les restaurer pour toi, pas même nous. Sur la page **Foyer**, sous **Tes données**, chaque membre peut **exporter** tout le foyer dans un fichier ZIP : appartements, évaluations, lieux et PDF originaux, plus un fichier tableur. **Le fichier n'est pas chiffré**, garde-le donc dans un endroit privé.
 
-Pour récupérer un export, ouvre la page Foyer d'un foyer qui n'a encore ni appartements ni lieux, et choisis **Importer**. Les évaluations des autres personnes sont ajoutées à tes propres commentaires, avec leur nom. Sur la version hébergée, chaque appartement importé utilise un crédit d'appartement.
+Pour récupérer un export, ouvre la page Foyer d'un foyer qui n'a encore ni appartements ni lieux, et choisis **Importer**. Les évaluations des autres personnes sont ajoutées à tes propres commentaires, avec leur nom. Une importation n’appelle aucun service extérieur et n’utilise aucun crédit d’appartement.
 
 ---
 
@@ -129,7 +133,7 @@ Un iPhone ne peut rien partager vers Flatpare. Copie plutôt le lien de l'annonc
 
 ### Des liens à ajouter plus tard
 
-**À ajouter**, en haut de la page Appartements, est la liste des liens de ton foyer qui ne sont pas encore des appartements. Tout le foyer la voit, avec le nom de qui a enregistré chaque lien. Enregistrer un lien est gratuit. Touche **Ajouter** pour en faire un appartement, avec ou sans son PDF ; sur la version hébergée, c'est à ce moment qu'un crédit d'appartement est utilisé. Jusqu'à 20 liens peuvent attendre en même temps.
+**À ajouter**, en haut de la page Appartements, est la liste des liens de ton foyer qui ne sont pas encore des appartements. Tout le foyer la voit, avec le nom de qui a enregistré chaque lien. Enregistrer un lien est gratuit. Touche **Ajouter** pour en faire un appartement, avec ou sans son PDF ; sur la version hébergée, un crédit d’appartement est utilisé quand son PDF est lu ou son adresse placée sur la carte. Jusqu'à 20 liens peuvent attendre en même temps.
 
 ---
 
@@ -139,9 +143,9 @@ Un iPhone ne peut rien partager vers Flatpare. Copie plutôt le lien de l'annonc
 
 Flatpare coûte **CHF 5, une seule fois** — pas d’abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans un foyer.
 
-Les 40 comptent les appartements que tu **ajoutes**, pas ceux que tu gardes : en supprimer un libère de la place dans ta comparaison mais ne rend pas le crédit. Quand tu as utilisé tes 40, CHF 5 de plus ajoutent 40 appartements de plus.
+Les 40 comptent les appartements **traités**, pas ceux que tu gardes : un crédit est utilisé la première fois que le PDF d’un appartement est lu ou que son adresse est placée sur la carte. Ajouter un appartement à la main, le décrire et le noter est gratuit. En supprimer un libère de la place dans ta comparaison mais ne rend pas le crédit. Quand tu as utilisé tes 40, CHF 5 de plus ajoutent 40 appartements de plus.
 
-Épuiser tes crédits t’empêche seulement d’ajouter de nouveaux appartements. Cela ne te bloque jamais l’accès à ceux que tu as déjà.
+Épuiser tes crédits empêche seulement de traiter de nouveaux appartements : tu peux toujours les ajouter, les décrire et les noter, puis les traiter après en avoir acheté d’autres. Cela ne te bloque jamais l’accès à ceux que tu as déjà.
 
 Faire tourner Flatpare toi-même est gratuit et sans aucune limite.
 

@@ -21,7 +21,7 @@ vi.mock("@/components/household-data/pdf-files", () => ({
 
 import UploadPage from "../page";
 import { setTestLocale } from "@/i18n/__tests__/test-locale";
-import { parsePdf } from "@/components/household-data/process-client";
+import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 
 const PDF = { path: "/api/uploads/households/7/x.pdf.enc", iv: "AAAA" };
@@ -189,6 +189,47 @@ describe("batch review flow", () => {
     await user.click(screen.getByRole("button", { name: /Save apartment/i }));
     await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
     expect(vi.mocked(value.createApartment).mock.calls[0][1].pdf).toBeNull();
+  });
+
+  // #413: reading the PDF spends the apartment's credit.
+  it("saves a read PDF as processed, and names its id to the read", async () => {
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) => makeApartmentView({ id, ...data }));
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await user.click(await screen.findByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    const [id, data] = vi.mocked(value.createApartment).mock.calls[0];
+    expect(vi.mocked(parsePdf).mock.calls[0][3]).toBe(id);
+    expect(data.processed).toBe(true);
+  });
+
+  it("keeps a PDF it could not read for want of credit, to save unprocessed", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdf).mockRejectedValue(new ParsePdfError("No apartment credits left", "no_credits", 402));
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) => makeApartmentView({ id, ...data }));
+    await uploadFiles(user, [makePdfFile("Flat on the hill.pdf")]);
+    expect(await screen.findByText(/Not read: no apartment credits left/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1]).toMatchObject({
+      name: "Flat on the hill",
+      processed: false,
+      rawExtractedData: null,
+      pdf: PDF,
+    });
+  });
+
+  it("saves as unprocessed when no AI is configured, since nothing was read", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdf).mockResolvedValue({ extracted: { name: "a" }, aiAvailable: false });
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) => makeApartmentView({ id, ...data }));
+    await uploadFiles(user, [makePdfFile("a.pdf")]);
+    await user.click(await screen.findByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].processed).toBe(false);
   });
 
   it("marks an item 'Failed to save' when the store rejects it and does not redirect", async () => {

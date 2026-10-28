@@ -11,10 +11,16 @@ export interface MaintenanceReport {
 
 // Pure planners: which rows a maintenance pass should touch. The provider
 // runs the network calls and writes.
+//
+// The geocode pass only retries an address that was processed and did not
+// resolve. It never processes an apartment for the first time or catches up
+// a changed address: both spend a credit (#413), and a page visit must not.
 export function planGeocodeMaintenance(apartments: ApartmentView[]): ApartmentView[] {
   return apartments.filter(
     (a) =>
       !a.corrupt &&
+      a.processed &&
+      !a.addressChanged &&
       a.address !== null &&
       a.address.trim() !== "" &&
       (a.latitude === null || a.longitude === null)

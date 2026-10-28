@@ -11,6 +11,10 @@ export const distanceSchema = z.object({
   transitMin: z.number().int().nullable(),
 });
 
+// `processed` and `processedAddress` (#413) are absent from envelopes
+// written before them. Such an apartment was paid for when it was created,
+// and every address change then was geocoded at once, so its coordinates —
+// when it has any — belong to the address it holds now.
 export const apartmentSchema: z.ZodType<Apartment> = z.object({
   name: z.string(),
   address: nullableString,
@@ -32,7 +36,17 @@ export const apartmentSchema: z.ZodType<Apartment> = z.object({
   listingCheckedAt: nullableString,
   distances: z.record(z.string(), distanceSchema),
   pdf: z.object({ path: z.string(), iv: nullableString }).nullable(),
-});
+  processed: z.boolean().default(true),
+  processedAddress: nullableString.optional(),
+}).transform((a) => ({
+  ...a,
+  processedAddress:
+    a.processedAddress !== undefined
+      ? a.processedAddress
+      : a.latitude !== null && a.longitude !== null
+        ? a.address
+        : null,
+}));
 
 export const ratingSchema: z.ZodType<Rating> = z.object({
   kitchen: stars,

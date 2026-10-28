@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { apartments, households, householdMembers } from "@/lib/db/schema";
+import { apartmentCharges, apartments, households, householdMembers } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { UnauthorizedError } from "@/lib/household";
 
@@ -23,6 +23,7 @@ vi.mock("@/lib/storage", async (importOriginal) => {
 
 import { GET as listGET, POST as createPOST } from "../route";
 import { PUT as updatePUT, DELETE as removeDELETE } from "../[id]/route";
+import { POST as reprocessPOST } from "../[id]/reprocess/route";
 
 const ID_A = "11111111-1111-4111-8111-111111111111";
 const ID_B = "22222222-2222-4222-8222-222222222222";
@@ -135,35 +136,14 @@ describe("POST /api/apartments", () => {
     expect(row.householdId).toBe(hid);
   });
 
-  // Decided on #294: credits are one shared household pool. Any member may
-  // add an apartment and spend from it; there is no owner-only rule and no
-  // per-member budget. This pins that decision against a well-meant role
-  // check on create.
-  it("lets a non-owner member spend the household's shared credits", async () => {
+  // #413: creating is free. The credit is spent by the first processing
+  // (the process routes), so an apartment can be added and rated at zero.
+  it("creates an apartment with billing on and no credits left", async () => {
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
-    await db
-      .update(households)
-      .set({ apartmentCreditsGranted: 2, apartmentsEverAdded: 0 })
-      .where(eq(households.id, hid));
-    currentSession.userId = "m";
-    currentSession.role = "member";
-
     const res = await createPOST(json("POST", { id: ID_A, envelope: v1("a") }));
     expect(res.status).toBe(201);
-
-    // The owner then draws on the same counter the member just spent from.
-    currentSession.userId = "o";
-    currentSession.role = "owner";
-    expect((await createPOST(json("POST", { id: ID_B, envelope: v1("b") }))).status).toBe(201);
-
     const [h] = await db.select().from(households).where(eq(households.id, hid));
-    expect(h.apartmentsEverAdded).toBe(2);
-
-    // Spent by either of them, the pool is empty for both.
-    currentSession.userId = "m";
-    currentSession.role = "member";
-    const ID_C = "33333333-3333-4333-8333-333333333333";
-    expect((await createPOST(json("POST", { id: ID_C, envelope: v1("c") }))).status).toBe(402);
+    expect(h.apartmentsEverAdded).toBe(0);
   });
 
   it("409s a duplicate id, even from another household", async () => {
@@ -309,5 +289,47 @@ describe("stale data-key version", () => {
     expect((await stale.json()).error).toBe("Stale key");
     const fresh = await updatePUT(json("PUT", { version: 1, envelope: { ...v1("b"), k: 2 } }), params(ID_A));
     expect(fresh.status).toBe(200);
+  });
+});
+
+// #413: a reprocess is an explicit, charged request — one credit each time.
+describe("POST /api/apartments/:id/reprocess", () => {
+  const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+  const req = () => new Request("http://localhost/api/apartments/x/reprocess", { method: "POST" });
+
+  async function used() {
+    const [h] = await db.select().from(households).where(eq(households.id, hid));
+    return h.apartmentsEverAdded;
+  }
+
+  beforeEach(async () => {
+    await db.delete(apartmentCharges);
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
+  });
+
+  it("spends one credit per reprocess and records the apartment as charged", async () => {
+    await seed(ID_A, hid);
+    await db.update(households).set({ apartmentCreditsGranted: 2 }).where(eq(households.id, hid));
+    expect((await reprocessPOST(req(), ctx(ID_A))).status).toBe(200);
+    expect((await reprocessPOST(req(), ctx(ID_A))).status).toBe(200);
+    expect(await used()).toBe(2);
+    expect(await db.select().from(apartmentCharges)).toHaveLength(1);
+    expect((await reprocessPOST(req(), ctx(ID_A))).status).toBe(402);
+  });
+
+  it("404s an unknown, foreign or malformed id without spending", async () => {
+    await seed(ID_B, otherHid);
+    await db.update(households).set({ apartmentCreditsGranted: 2 }).where(eq(households.id, hid));
+    expect((await reprocessPOST(req(), ctx(ID_A))).status).toBe(404);
+    expect((await reprocessPOST(req(), ctx(ID_B))).status).toBe(404);
+    expect((await reprocessPOST(req(), ctx("nope"))).status).toBe(404);
+    expect(await used()).toBe(0);
+  });
+
+  it("is free when billing is off", async () => {
+    vi.unstubAllEnvs();
+    await seed(ID_A, hid);
+    expect((await reprocessPOST(req(), ctx(ID_A))).status).toBe(200);
+    expect(await used()).toBe(0);
   });
 });

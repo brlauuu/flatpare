@@ -90,12 +90,13 @@
     "reorderError": "Die Reihenfolge konnte nicht geändert werden",
     "loadError": "Die Orte konnten nicht geladen werden",
     "recomputeTitle": "Distanzen neu berechnen",
-    "recomputeBody": "Berechnet die Velo- und ÖV-Minuten für jede Kombination aus Wohnung und Ort neu.",
+    "recomputeBody": "{billing, select, on {Berechnet die Velo- und ÖV-Minuten für jede Kombination aus Wohnung und Ort neu. Verbraucht ein Wohnungsguthaben für den ganzen Durchgang.} other {Berechnet die Velo- und ÖV-Minuten für jede Kombination aus Wohnung und Ort neu.}}",
     "recomputeError": "Die Distanzen konnten nicht neu berechnet werden",
     "recomputingProgress": "Wird neu berechnet… {done} von {total}",
     "recomputing": "Wird neu berechnet…",
     "recompute": "Alle neu berechnen",
-    "recomputed": "{updated} Wohnungen neu berechnet{failed, plural, =0 {} other { (# fehlgeschlagen)}}{skipped, plural, =0 {} other { (# übersprungen — ohne Adresse)}}"
+    "recomputed": "{updated} Wohnungen neu berechnet{failed, plural, =0 {} other { (# fehlgeschlagen)}}{skipped, plural, =0 {} other { (# übersprungen — ohne Adresse)}}",
+    "recomputeConfirm": "Alle Distanzen neu berechnen? Das verbraucht ein Wohnungsguthaben für den ganzen Durchgang."
   },
   "iconPicker": {
     "title": "Symbol wählen",
@@ -133,8 +134,6 @@
     "importBody": "Stelle einen Flatpare-Export in diesem Haushalt wieder her. Das geht nur, solange der Haushalt keine Wohnungen und keine Orte hat. Bewertungen anderer Personen werden mit ihrem Namen zu deinen eigenen Kommentaren hinzugefügt.",
     "chooseFile": "Exportdatei wählen",
     "fileSummary": "Diese Datei enthält {apartments, plural, one {# Wohnung} other {# Wohnungen}}, {locations, plural, one {# Ort} other {# Orte}} und {ratings, plural, one {# Bewertung} other {# Bewertungen}}, exportiert am {date}.",
-    "usesCredits": "Der Import verbraucht {count, plural, one {# Wohnungsguthaben} other {# Wohnungsguthaben}}.",
-    "overCredits": "Damit kämen {count, plural, one {# Wohnung} other {# Wohnungen}} dazu, aber der Haushalt hat nur noch {remaining, plural, one {# Guthaben} other {# Guthaben}}.",
     "overCap": "Damit kämen {count, plural, one {# Wohnung} other {# Wohnungen}} dazu, aber ein Haushalt kann höchstens {max} haben.",
     "import": "Importieren",
     "importing": "Wird importiert…",

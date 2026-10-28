@@ -347,7 +347,7 @@ describe("member limit (#187)", () => {
         remaining: 0,
       });
       await screen.findByText("Members");
-      expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to add");
+      expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to process");
       expect(screen.getByRole("link", { name: /buy more/i })).toBeInTheDocument();
     }
   );

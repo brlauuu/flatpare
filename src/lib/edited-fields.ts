@@ -54,3 +54,28 @@ export function applyExtraction(
   }
   return next;
 }
+
+function isEmpty(value: unknown): boolean {
+  return value === null || value === undefined || (typeof value === "string" && value.trim() === "");
+}
+
+// A PDF read for an apartment someone already described (#413): it fills
+// only the fields that are still empty and never overwrites what a member
+// entered. The fields that were filled in are marked as edited, so a later
+// reprocess leaves them alone too.
+export function fillFromExtraction(
+  current: Apartment,
+  incoming: InferableFields,
+  raw: Record<string, unknown>
+): Apartment {
+  const next: Apartment = { ...current, rawExtractedData: raw };
+  const kept: InferableField[] = [];
+  for (const field of INFERABLE_FIELDS) {
+    if (isEmpty(current[field])) {
+      (next as Record<InferableField, unknown>)[field] = incoming[field];
+    } else {
+      kept.push(field);
+    }
+  }
+  return { ...next, userEditedFields: Array.from(new Set([...current.userEditedFields, ...kept])) };
+}

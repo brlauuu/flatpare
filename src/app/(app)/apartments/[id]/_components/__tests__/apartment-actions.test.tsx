@@ -5,11 +5,12 @@ import { showOnMapHref } from "../show-on-map";
 
 afterEach(cleanup);
 
-function renderActions(mapHref: string | null) {
+function renderActions(mapHref: string | null, canReprocess = true) {
   const noop = vi.fn();
   render(
     <ApartmentActions
       hasPdf
+      canReprocess={canReprocess}
       listingUrl="https://example.ch/1"
       mapHref={mapHref}
       editing={false}
@@ -41,6 +42,16 @@ describe("ApartmentActions (#407)", () => {
       expect(el.querySelector("svg")).not.toBeNull();
       expect(el).toHaveAttribute("title");
     }
+  });
+});
+
+describe("Reprocess (#413)", () => {
+  it("is available only for a processed apartment with something to process", () => {
+    renderActions(null, true);
+    expect(screen.getByRole("button", { name: "Reprocess" })).toBeEnabled();
+    cleanup();
+    renderActions(null, false);
+    expect(screen.getByRole("button", { name: "Reprocess" })).toBeDisabled();
   });
 });
 

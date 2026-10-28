@@ -73,7 +73,7 @@
       "betaKeep": "Demande l’accès ci-dessous. Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.",
       "limits": "Jusqu’à 10 personnes et 40 appartements.",
       "more": "Besoin de plus ? CHF 5 de plus ajoutent 40 appartements de plus.",
-      "quota": "Les 40 comptent les appartements que tu ajoutes : en supprimer un ne rend pas le crédit.",
+      "quota": "Les 40 comptent les appartements traités, quand leur PDF est lu ou leur adresse placée sur la carte ; en ajouter un à la main et le noter est gratuit. En supprimer un ne rend pas le crédit.",
       "noReset": "Ta clé vient de ta phrase secrète, avec un code de récupération que tu imprimes. Il n’y a pas de réinitialisation — perds les deux et les données sont perdues, pour nous aussi.",
       "createAccount": "Créer ton compte →"
     },

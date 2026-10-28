@@ -17,9 +17,9 @@ export const LOW_CREDITS = 5;
 // Renders NOTHING when billing is off: `credits` is null then, and a
 // self-hoster must not see a quota that does not exist.
 //
-// The wording says "to add" on purpose. This counts apartments ever ADDED,
-// which is a different number from the "N of 40" held-at-once counter that
-// can sit right beside it.
+// The wording says "to process" on purpose (#413). This counts processings
+// paid for, which is a different number from the "N of 40" held-at-once
+// counter that can sit right beside it.
 export function CreditBalance({ className }: { className?: string }) {
   const t = useTranslations("apartments.credits");
   const { credits } = useHouseholdData();
