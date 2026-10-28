@@ -79,6 +79,13 @@ describe("LanguageMenu (#288)", () => {
   it("names the current language in the active locale's words", async () => {
     setTestLocale("de");
     render(<LanguageMenu />);
-    expect(screen.getByRole("button", { name: /Deutsch/ })).toHaveTextContent("de");
+    expect(screen.getByRole("button", { name: /Deutsch/ })).toBeInTheDocument();
+  });
+
+  // The globe alone, not the code beside it, and not a flag (#407).
+  it("shows only the globe; the language is in the button's name", () => {
+    setTestLocale("de");
+    render(<LanguageMenu />);
+    expect(screen.getByRole("button", { name: /Deutsch/ })).toHaveTextContent("");
   });
 });

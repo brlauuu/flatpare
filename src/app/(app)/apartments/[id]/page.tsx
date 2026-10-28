@@ -36,7 +36,7 @@ import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
-import { ShowOnMapLink } from "./_components/show-on-map-link";
+import { showOnMapHref } from "./_components/show-on-map";
 
 interface ErrorState {
   headline: string;
@@ -299,6 +299,7 @@ export default function ApartmentDetailPage() {
         <ApartmentActions
           hasPdf={apartment.pdf !== null}
           listingUrl={apartment.listingUrl}
+          mapHref={showOnMapHref(apartment)}
           editing={editing}
           reprocessing={reprocessing}
           deleting={deleting}
@@ -349,8 +350,6 @@ export default function ApartmentDetailPage() {
           apartmentAddress={apartment.address}
         />
       )}
-
-      <ShowOnMapLink id={apartment.id} latitude={apartment.latitude} longitude={apartment.longitude} />
 
       <Separator />
 
