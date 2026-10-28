@@ -92,6 +92,7 @@ export default function ApartmentDetailPage() {
     identity,
     dataKey,
     credits,
+    enrichmentError,
     updateApartment,
     deleteApartment,
     rateApartment,
@@ -303,6 +304,7 @@ export default function ApartmentDetailPage() {
 
       <ProcessingNotice
         apartment={apartment}
+        failed={enrichmentError[apartment.id] !== undefined}
         credits={credits}
         processing={processing}
         onProcess={() => void process()}

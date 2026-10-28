@@ -215,6 +215,9 @@
     "noneLeft": "No apartment credits left.",
     "buyMore": "Buy more",
     "process": "{billing, select, on {Process (1 credit)} other {Process}}",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "unplacedTitle": "Not on the map yet",
+    "unplaced": "{billing, select, on {The address could not be placed on the map. Trying again uses no credit.} other {The address could not be placed on the map.}}",
+    "retry": "Try again"
   }
 }

@@ -215,6 +215,9 @@
     "noneLeft": "Plus aucun crédit d’appartement.",
     "buyMore": "En acheter plus",
     "process": "{billing, select, on {Traiter (1 crédit)} other {Traiter}}",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "unplacedTitle": "Pas encore sur la carte",
+    "unplaced": "{billing, select, on {L’adresse n’a pas pu être placée sur la carte. Réessayer n’utilise aucun crédit.} other {L’adresse n’a pas pu être placée sur la carte.}}",
+    "retry": "Réessayer"
   }
 }

@@ -215,6 +215,9 @@
     "noneLeft": "Kein Wohnungsguthaben mehr übrig.",
     "buyMore": "Mehr kaufen",
     "process": "{billing, select, on {Verarbeiten (1 Guthaben)} other {Verarbeiten}}",
-    "processing": "Wird verarbeitet..."
+    "processing": "Wird verarbeitet...",
+    "unplacedTitle": "Noch nicht auf der Karte",
+    "unplaced": "{billing, select, on {Die Adresse konnte nicht auf der Karte gefunden werden. Ein neuer Versuch verbraucht kein Guthaben.} other {Die Adresse konnte nicht auf der Karte gefunden werden.}}",
+    "retry": "Erneut versuchen"
   }
 }

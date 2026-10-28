@@ -215,6 +215,29 @@ describe("Apartment detail — not processed yet", () => {
     expect(value.processApartment).not.toHaveBeenCalled();
   });
 
+  // A reprocess whose geocode then failed: the credit is spent, so the retry
+  // must be free and must not go through Reprocess, which charges again.
+  it("offers a free retry when a processed address could not be placed", async () => {
+    const apt = makeApartmentView({ id: "a1", name: "Flat", address: "Street 1", processed: true, processedAddress: null });
+    const { value } = setupWith({
+      apartments: [apt],
+      enrichmentError: { a1: "Request failed (500)" },
+      credits: { granted: 40, used: 3, remaining: 37 },
+    });
+    expect(screen.getByText("Not on the map yet")).toBeInTheDocument();
+    expect(screen.getByText(/Trying again uses no credit/)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(value.processApartment).toHaveBeenCalledWith("a1"));
+    expect(value.chargeReprocess).not.toHaveBeenCalled();
+  });
+
+  it("shows no retry while a processed address is merely being placed", () => {
+    setupWith({
+      apartments: [makeApartmentView({ id: "a1", name: "Flat", address: "Street 1", processed: true, processedAddress: null })],
+    });
+    expect(screen.queryByTestId("processing-notice")).toBeNull();
+  });
+
   it("hides stale distances behind a note when the address changed", () => {
     setupWith({
       apartments: [makeApartmentView({ id: "a1", name: "Flat", address: "New 1", processedAddress: "Old 2", addressChanged: true })],

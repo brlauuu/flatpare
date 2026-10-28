@@ -215,6 +215,9 @@
     "noneLeft": "No te quedan créditos de piso.",
     "buyMore": "Comprar más",
     "process": "{billing, select, on {Procesar (1 crédito)} other {Procesar}}",
-    "processing": "Procesando..."
+    "processing": "Procesando...",
+    "unplacedTitle": "Aún no está en el mapa",
+    "unplaced": "{billing, select, on {No se ha podido situar la dirección en el mapa. Volver a intentarlo no usa ningún crédito.} other {No se ha podido situar la dirección en el mapa.}}",
+    "retry": "Volver a intentarlo"
   }
 }

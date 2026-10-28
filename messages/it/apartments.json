@@ -215,6 +215,9 @@
     "noneLeft": "Nessun credito appartamento rimasto.",
     "buyMore": "Acquistane altri",
     "process": "{billing, select, on {Elabora (1 credito)} other {Elabora}}",
-    "processing": "Elaborazione..."
+    "processing": "Elaborazione...",
+    "unplacedTitle": "Non ancora sulla mappa",
+    "unplaced": "{billing, select, on {Non è stato possibile trovare l'indirizzo sulla mappa. Riprovare non usa crediti.} other {Non è stato possibile trovare l'indirizzo sulla mappa.}}",
+    "retry": "Riprova"
   }
 }
