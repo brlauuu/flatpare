@@ -108,6 +108,31 @@ To bring an export back, open the Household page of a household that has no apar
 
 ---
 
+## On your phone
+
+Flatpare works in your phone's browser. You can also install it, so it opens from its own icon like an app.
+
+### Install Flatpare
+
+- **Android:** open the menu under your name and choose **Install app**, or tap **Install** on the tip at the top of the Apartments page.
+- **iPhone and iPad:** tap the Share button, choose **Add to Home Screen**, then **Add**. **Install app** in the menu under your name shows the same steps.
+
+### Share listings into Flatpare (Android)
+
+Once Flatpare is installed on Android, it appears in your phone's share menu. Share a PDF from your files or your email, and Flatpare asks whether to add it, then reads it like any upload. Share a link from your browser or a listing app, and Flatpare saves it under **To add**.
+
+If you are signed out, or Flatpare is locked, when you share, the item waits on your phone for a day. Sign in or unlock, and Flatpare asks whether to add it.
+
+### Paste link (iPhone and everywhere else)
+
+An iPhone cannot share into Flatpare. Copy the listing's link instead, open Flatpare, and tap **Paste link** on the Apartments page. The link is saved under **To add**.
+
+### Links to add later
+
+**To add**, at the top of the Apartments page, is your household's list of links that are not apartments yet. Everyone in the household sees it, with who saved each link. Saving a link is free. Tap **Add** to make it an apartment, with or without its PDF; on the hosted version, that is when an apartment credit is used. Up to 20 links can wait at once.
+
+---
+
 ## If you are on the hosted version
 
 **During the private beta it is free.** What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.

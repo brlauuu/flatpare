@@ -25,6 +25,13 @@ vi.mock("@/lib/share-stash", () => ({
   },
 }));
 
+let installState = "none";
+const promptInstallMock = vi.fn(async () => {});
+vi.mock("@/components/install/install-prompt", () => ({
+  useInstallState: () => installState,
+  promptInstall: () => promptInstallMock(),
+}));
+
 import { NavBar, shortName } from "../nav-bar";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 
@@ -33,6 +40,8 @@ beforeEach(() => {
   signOutMock.mockResolvedValue(undefined);
   clearKeysMock.mockClear();
   order.length = 0;
+  installState = "none";
+  promptInstallMock.mockClear();
 });
 
 afterEach(() => {
@@ -125,6 +134,39 @@ describe("NavBar sections", () => {
     await user.click(screen.getByRole("button", { name: /Alice/i }));
     const guide = await screen.findByRole("menuitem", { name: "Guide" });
     expect(guide).toHaveAttribute("href", "/guide");
+  });
+});
+
+// #190: the item shows only where installing is possible and not yet done.
+describe("NavBar install item", () => {
+  async function openMenu() {
+    const user = userEvent.setup();
+    render(<NavBar userName="Alice" />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    await screen.findByRole("menuitem", { name: "Guide" });
+    return user;
+  }
+
+  it.each(["none", "installed"])("is absent when the state is %s", async (state) => {
+    installState = state;
+    await openMenu();
+    expect(screen.queryByRole("menuitem", { name: "Install app" })).toBeNull();
+  });
+
+  it("shows the browser's prompt where there is one", async () => {
+    installState = "prompt";
+    const user = await openMenu();
+    await user.click(screen.getByRole("menuitem", { name: "Install app" }));
+    expect(promptInstallMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains Add to Home Screen on an iPhone", async () => {
+    installState = "ios";
+    const user = await openMenu();
+    await user.click(screen.getByRole("menuitem", { name: "Install app" }));
+    expect(await screen.findByRole("dialog", { name: "Add Flatpare to your Home Screen" })).toBeInTheDocument();
+    expect(screen.getByText(/Choose "Add to Home Screen"/)).toBeInTheDocument();
+    expect(promptInstallMock).not.toHaveBeenCalled();
   });
 });
 

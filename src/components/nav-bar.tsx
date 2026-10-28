@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { ThemedLogo } from "@/components/themed-logo";
 import { usePathname } from "next/navigation";
@@ -11,11 +12,14 @@ import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageMenu } from "@/components/language-menu";
+import { InstallHelpDialog } from "@/components/install/install-help-dialog";
+import { promptInstall, useInstallState } from "@/components/install/install-prompt";
 import {
   BookOpen,
   Building2,
   ChevronDown,
   Columns3,
+  Download,
   LogOut,
   Map as MapIcon,
   Settings,
@@ -73,6 +77,9 @@ function NavLabel({ children }: { children: React.ReactNode }) {
 export function NavBar({ userName }: { userName: string }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const install = useInstallState();
+  // Outside the menu: the menu closes, and unmounts its items, on the click.
+  const [installHelpOpen, setInstallHelpOpen] = useState(false);
 
   async function handleSignOut() {
     if (getUnsavedRating()) {
@@ -123,12 +130,24 @@ export function NavBar({ userName }: { userName: string }) {
                 <BookOpen className="h-3.5 w-3.5" />
                 {t("menu.guide")}
               </DropdownMenuItem>
+              {/* Only where installing is possible and not done (#190). */}
+              {(install === "prompt" || install === "ios") && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    install === "prompt" ? void promptInstall() : setInstallHelpOpen(true)
+                  }
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t("menu.install")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="h-3.5 w-3.5" />
                 {t("menu.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <InstallHelpDialog open={installHelpOpen} onOpenChange={setInstallHelpOpen} />
         </div>
       </div>
       {/* Mobile bottom nav */}

@@ -108,6 +108,31 @@ Um einen Export zurückzuholen, öffne die Haushaltsseite eines Haushalts, der n
 
 ---
 
+## Auf dem Handy
+
+Flatpare läuft im Browser deines Handys. Du kannst es auch installieren, dann öffnet es sich wie eine App über ein eigenes Symbol.
+
+### Flatpare installieren
+
+- **Android:** Öffne das Menü unter deinem Namen und wähle **App installieren**, oder tippe im Hinweis oben auf der Seite Wohnungen auf **Installieren**.
+- **iPhone und iPad:** Tippe auf die Teilen-Taste, wähle **Zum Home-Bildschirm** und dann **Hinzufügen**. **App installieren** im Menü unter deinem Namen zeigt dieselben Schritte.
+
+### Inserate an Flatpare teilen (Android)
+
+Sobald Flatpare auf Android installiert ist, erscheint es im Teilen-Menü deines Handys. Teile ein PDF aus deinen Dateien oder einer E-Mail, und Flatpare fragt, ob es hinzugefügt werden soll, und liest es dann wie jeden Upload. Teile einen Link aus deinem Browser oder einer Inserate-App, und Flatpare speichert ihn unter **Zum Hinzufügen**.
+
+Bist du beim Teilen abgemeldet oder ist Flatpare gesperrt, wartet das Geteilte einen Tag lang auf deinem Handy. Melde dich an oder entsperre, und Flatpare fragt, ob es hinzugefügt werden soll.
+
+### Link einfügen (iPhone und überall sonst)
+
+Ein iPhone kann nichts an Flatpare teilen. Kopiere stattdessen den Link des Inserats, öffne Flatpare und tippe auf der Seite Wohnungen auf **Link einfügen**. Der Link wird unter **Zum Hinzufügen** gespeichert.
+
+### Links für später
+
+**Zum Hinzufügen**, oben auf der Seite Wohnungen, ist die Liste deines Haushalts mit Links, die noch keine Wohnungen sind. Alle im Haushalt sehen sie, mit dem Namen, wer welchen Link gespeichert hat. Einen Link zu speichern kostet nichts. Tippe auf **Hinzufügen**, um daraus eine Wohnung zu machen, mit oder ohne PDF; in der gehosteten Version wird erst dann ein Wohnungsguthaben verbraucht. Bis zu 20 Links können gleichzeitig warten.
+
+---
+
 ## Wenn du die gehostete Version nutzt
 
 **Während der privaten Beta ist es gratis.** Was ein Beta-Konto bekommt, gehört dir: Weder deine Daten noch dein Guthaben werden dir weggenommen, wenn die Beta endet.

@@ -17,8 +17,22 @@
   },
   "menu": {
     "guide": "Guide",
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "install": "Installer l'app"
   },
   "confirmSignOut": "Tu as des modifications d’évaluation non enregistrées. Te déconnecter quand même ? Ta saisie sera perdue.",
-  "unknownUser": "Inconnu"
+  "unknownUser": "Inconnu",
+  "install": {
+    "howTitle": "Ajouter Flatpare à l'écran d'accueil",
+    "close": "Fermer",
+    "howShare": "Touche le bouton Partager <icon></icon>.",
+    "howAdd": "Choisis « Sur l'écran d'accueil », puis Ajouter.",
+    "howOpen": "Ouvre Flatpare depuis l'écran d'accueil. Il s'ouvre comme une app, sans barre d'adresse.",
+    "howPaste": "Pour ajouter une annonce, copie son lien, puis touche Coller un lien sur la page Appartements.",
+    "hintShare": "Installe Flatpare pour ajouter des appartements depuis d'autres apps.",
+    "hintPaste": "Ajoute Flatpare à l'écran d'accueil, puis ajoute des annonces avec Coller un lien.",
+    "install": "Installer",
+    "how": "Comment",
+    "dismiss": "Masquer cette astuce"
+  }
 }
