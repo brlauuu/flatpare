@@ -84,7 +84,7 @@ Si no hay ninguna API de distancias configurada, puedes introducir los tiempos a
 
 - Subida de uno o de varios a la vez
 - **Los PDF se cifran en tu navegador antes de subirse.** Lo que se guarda es texto cifrado; al abrir uno, se vuelve a descifrar en tu dispositivo
-- La extracción usa Gemini 2.5 Flash. En flatpare.com pasa por Vercel AI Gateway con retención de datos cero: ni Vercel ni el proveedor del modelo guardan nada
+- La extracción usa Gemini 2.5 Flash. En flatpare.com solo pasa por proveedores de modelos que garantizan retención de datos cero: la petición no se guarda una vez respondida
 
 ### Lo que ve el servidor
 

@@ -47,14 +47,14 @@
     "seesMembers": "who is in your household;",
     "seesCounts": "how many apartments, ratings and places you have, who rated what, and when each was added or changed;",
     "seesPdfSize": "the size of each stored PDF.",
-    "seesNever": "Never what an apartment is. Self-hosted, the same holds with your own server in our place.",
+    "seesNever": "Never what an apartment is: not its address, any of its details, ratings or comments. Self-hosted, the same holds with your own server in our place.",
     "exceptionTitle": "The exception, stated plainly",
     "exceptionIntro": "A few things cannot be done in a browser. For those, that single item is sent in readable form, used for that one call, never written to our database and never logged:",
-    "exceptionPdf": "<b>A PDF</b> goes to an AI model that reads the facts out and writes a short summary. On flatpare.com that is through Vercel AI Gateway with <zdr>zero data retention</zdr>: it only uses model providers that have agreed not to keep the request. Self-hosted, it is Google Gemini unless you configure another.",
-    "exceptionAddress": "<b>An address</b> goes to Google Maps, for its location and the bike and transit times (OpenRouteService on a self-hosted setup without Maps).",
-    "exceptionListing": "<b>A listing's link</b> is opened by our server, which fetches the page from the listing site to check it is still online.",
-    "tiles": "Maps load their streets from OpenFreeMap, which sees the part of the city on screen, never your apartments.",
-    "disavowal": "That is why we do not describe this as zero-knowledge."
+    "exceptionPdf": "<b>A PDF</b> goes to an AI model that reads the facts out and writes a short summary. On flatpare.com we use only model providers that guarantee zero data retention: the request is not kept once it is answered. Self-hosted, it is Google Gemini unless you configure another.",
+    "exceptionAddress": "<b>An address</b> goes to Google Maps, on its own: one address to find where it is, or two (the apartment and one of your places) for the bike and transit times. It is sent from our server, with nothing that names you or your household, and we do not store it. On a self-hosted setup without Maps, OpenRouteService does this.",
+    "exceptionListing": "<b>A listing's link</b> is opened by our server only to check that the listing is still online. Nothing is read from the page or kept.",
+    "tiles": "The map's streets load from OpenFreeMap, directly from your browser. OpenFreeMap sees your IP address and which area of the map you are viewing, never your apartments or ratings.",
+    "disavowal": "This makes Flatpare private by design, but not zero-knowledge."
   },
   "paths": {
     "eyebrow": "TWO WAYS IN",

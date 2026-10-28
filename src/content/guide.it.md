@@ -84,7 +84,7 @@ Se nessun servizio di distanze è configurato, puoi inserire i tempi a mano.
 
 - Caricamento singolo o multiplo
 - **I PDF vengono cifrati nel tuo browser prima di essere caricati.** Quello che viene salvato è testo cifrato; aprirne uno lo decifra di nuovo sul tuo dispositivo
-- L'estrazione usa Gemini 2.5 Flash. Su flatpare.com passa da Vercel AI Gateway con zero conservazione dei dati: né Vercel né il fornitore del modello conservano nulla
+- L'estrazione usa Gemini 2.5 Flash. Su flatpare.com passa solo da fornitori di modelli che garantiscono zero conservazione dei dati: la richiesta non viene conservata dopo la risposta
 
 ### Cosa può vedere il server
 

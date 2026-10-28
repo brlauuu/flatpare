@@ -47,14 +47,14 @@
     "seesMembers": "quién forma parte de tu hogar;",
     "seesCounts": "cuántos pisos, valoraciones y lugares tienes, quién valoró qué y cuándo se añadió o cambió cada cosa;",
     "seesPdfSize": "el tamaño de cada PDF guardado.",
-    "seesNever": "Nunca qué es un piso. Si lo instalas tú, vale lo mismo, con tu propio servidor en nuestro lugar.",
+    "seesNever": "Nunca qué es un piso: ni su dirección, ni ninguno de sus detalles, valoraciones o comentarios. Si lo instalas tú, vale lo mismo, con tu propio servidor en nuestro lugar.",
     "exceptionTitle": "La excepción, sin rodeos",
     "exceptionIntro": "Algunas cosas no se pueden hacer en un navegador. Para ellas, ese único elemento se envía legible, se usa solo para esa llamada, nunca se escribe en nuestra base de datos y nunca se registra:",
-    "exceptionPdf": "<b>Un PDF</b> va a un modelo de IA que extrae los datos y escribe un breve resumen. En flatpare.com eso pasa por Vercel AI Gateway con <zdr>retención de datos cero</zdr>: solo usa proveedores de modelos que se han comprometido a no guardar la petición. Si lo instalas tú, es Google Gemini salvo que configures otro.",
-    "exceptionAddress": "<b>Una dirección</b> va a Google Maps, para su ubicación y los tiempos en bici y en transporte público (OpenRouteService en una instalación propia sin Maps).",
-    "exceptionListing": "<b>El enlace de un anuncio</b> lo abre nuestro servidor, que descarga la página del sitio del anuncio para comprobar que sigue en línea.",
-    "tiles": "Los mapas cargan sus calles de OpenFreeMap, que ve la parte de la ciudad que hay en pantalla, nunca tus pisos.",
-    "disavowal": "Por eso no lo describimos como zero-knowledge."
+    "exceptionPdf": "<b>Un PDF</b> va a un modelo de IA que extrae los datos y escribe un breve resumen. En flatpare.com solo usamos proveedores de modelos que garantizan retención de datos cero: la petición no se guarda una vez respondida. Si lo instalas tú, es Google Gemini salvo que configures otro.",
+    "exceptionAddress": "<b>Una dirección</b> va sola a Google Maps: una dirección para saber dónde está, o dos (el piso y uno de tus lugares) para los tiempos en bici y en transporte público. Se envía desde nuestro servidor, sin nada que te nombre a ti o a tu hogar, y no la guardamos. En una instalación propia sin Maps, lo hace OpenRouteService.",
+    "exceptionListing": "<b>El enlace de un anuncio</b> lo abre nuestro servidor solo para comprobar que el anuncio sigue en línea. No se lee ni se guarda nada de la página.",
+    "tiles": "Las calles del mapa se cargan de OpenFreeMap, directamente desde tu navegador. OpenFreeMap ve tu dirección IP y qué zona del mapa estás mirando, nunca tus pisos ni tus valoraciones.",
+    "disavowal": "Esto hace que Flatpare proteja la privacidad desde el diseño, pero no es zero-knowledge."
   },
   "paths": {
     "eyebrow": "DOS FORMAS DE EMPEZAR",

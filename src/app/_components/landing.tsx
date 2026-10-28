@@ -38,9 +38,10 @@ import { BetaRequestForm } from "./beta-request-form";
 //      kept, in the same terms as the beta-ready notice in login-form.tsx and
 //      the `say:` line in scripts/beta-pass.mjs.
 //   6. The privacy section names every third party that sees plaintext, and
-//      what it sees. On flatpare.com PDFs go through Vercel AI Gateway with
+//      what it sees. On flatpare.com PDFs go only to model providers with
 //      zero data retention, which AI_PROVIDER=gateway on the hosted
 //      deployment makes true (src/lib/ai-provider.ts) — keep the two in step.
+//      The gateway itself is not named on the page (#405).
 //
 // `access` decides the hosted path's call to action. While sign-ups are
 // closed (the hosted deployment's private beta) it is the beta-invite form;
@@ -55,8 +56,6 @@ const TAGS = [
   { icon: Lock, key: "privacy", href: "#privacy" },
   { icon: BarChart3, key: "data", href: null },
 ] as const;
-
-const ZDR_URL = "https://vercel.com/docs/ai-gateway/security-and-compliance/zdr";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <span className="lp-mono text-[13px] tracking-[0.08em] text-(--lp-muted)">{children}</span>;
@@ -275,14 +274,7 @@ function Privacy() {
           <p className="m-0 text-base leading-relaxed text-(--lp-body)">{t("exceptionIntro")}</p>
           <ul className="m-0 list-disc pl-5 text-[15px] leading-[1.7] text-(--lp-body)">
             <li>
-              {t.rich("exceptionPdf", {
-                b,
-                zdr: (chunks) => (
-                  <a href={ZDR_URL} className="font-semibold text-(--lp-accent-text)">
-                    {chunks}
-                  </a>
-                ),
-              })}
+              {t.rich("exceptionPdf", { b })}
             </li>
             <li>{t.rich("exceptionAddress", { b })}</li>
             <li>{t.rich("exceptionListing", { b })}</li>

@@ -148,7 +148,7 @@ describe("Landing", () => {
       renderLanding();
       const text = pageText();
       if (text.toLowerCase().includes("zero-knowledge")) {
-        expect(text).toMatch(/do not describe this as zero-knowledge/i);
+        expect(text).toMatch(/private by design, but not zero-knowledge/i);
       }
       expect(text).not.toMatch(/\bis\s+zero-knowledge\b/i);
       expect(text).not.toMatch(/\btruly\s+zero-knowledge\b/i);
@@ -161,10 +161,10 @@ describe("Landing", () => {
       expect(privacy).toHaveTextContent(/The exception, stated plainly/);
       expect(privacy).toHaveTextContent(/Google Maps/);
       expect(privacy).toHaveTextContent(/Gemini/);
-      expect(privacy).toHaveTextContent(/fetches the page from the listing site/);
+      expect(privacy).toHaveTextContent(/only to check that the listing is still online/);
       expect(privacy).toHaveTextContent(/never written to our database/i);
       expect(privacy).toHaveTextContent(/never logged/i);
-      expect(privacy).toHaveTextContent(/do not describe this as zero-knowledge/i);
+      expect(privacy).toHaveTextContent(/private by design, but not zero-knowledge/i);
     });
 
     // "Can and can't see": the metadata the server holds is named too
@@ -177,15 +177,22 @@ describe("Landing", () => {
       expect(privacy).toHaveTextContent(/size of each stored PDF/);
     });
 
-    // True because the hosted deployment runs AI_PROVIDER=gateway (#333).
-    it("says the hosted PDF reading has zero data retention, and links Vercel's terms", () => {
+    // True because the hosted deployment runs AI_PROVIDER=gateway (#333);
+    // the gateway itself is not named (#405).
+    it("says the hosted PDF reading has zero data retention, without naming the gateway", () => {
       renderLanding();
       const privacy = document.getElementById("privacy")!;
-      expect(privacy).toHaveTextContent(/Vercel AI Gateway/);
-      expect(within(privacy).getByRole("link", { name: "zero data retention" })).toHaveAttribute(
-        "href",
-        "https://vercel.com/docs/ai-gateway/security-and-compliance/zdr"
-      );
+      expect(privacy).toHaveTextContent(/guarantee zero data retention/);
+      expect(privacy).not.toHaveTextContent(/Vercel/);
+    });
+
+    it("says what each outside service sees, and no more (#405)", () => {
+      renderLanding();
+      const privacy = document.getElementById("privacy")!;
+      expect(privacy).toHaveTextContent(/with nothing that names you or your household/);
+      expect(privacy).toHaveTextContent(/Nothing is read from the page or kept/);
+      expect(privacy).toHaveTextContent(/sees your IP address and which area of the map/);
+      expect(privacy).toHaveTextContent(/not its address, any of its details, ratings or comments/);
     });
 
     // It applies to self-hosting too, so it lives in its own section (#323).
