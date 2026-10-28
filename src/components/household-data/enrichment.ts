@@ -1,6 +1,6 @@
 import type { EnrichmentPlan } from "@/lib/household-data/enrich";
 import { missingDistances } from "@/lib/household-data/enrich";
-import { postcodeFromShortCode, uniqueShortCode } from "@/lib/household-data/short-code";
+import { withPostcode } from "@/lib/household-data/short-code";
 import type { Apartment, ApartmentDistance, LocationView } from "@/lib/household-data/types";
 import { mapConcurrent } from "@/lib/household-data/concurrency";
 import { distanceBetween, geocodeAddress } from "./process-client";
@@ -18,35 +18,17 @@ function located(loc: LocationView): boolean {
 export async function enrichApartment(
   data: Apartment,
   locations: LocationView[],
-  takenCodes: Set<string>,
+  takenLetters: Set<string>,
   plan: EnrichmentPlan,
   random: () => number = Math.random
 ): Promise<Apartment> {
   let next: Apartment = { ...data, distances: { ...data.distances } };
-  let postcode: string | null = data.shortCode ? postcodeFromShortCode(data.shortCode) : null;
 
   const address = next.address?.trim() ?? "";
   if (plan.geocode && address !== "") {
     const geo = await geocodeAddress(address);
-    next = { ...next, latitude: geo.lat, longitude: geo.lng };
-    postcode = geo.postcode;
+    next = withPostcode({ ...next, latitude: geo.lat, longitude: geo.lng }, geo.postcode, takenLetters, random);
     if (geo.lat === null) next = { ...next, distances: {} };
-  }
-
-  if (plan.shortCode) {
-    next = {
-      ...next,
-      shortCode: uniqueShortCode(
-        {
-          numRooms: next.numRooms,
-          numBathrooms: next.numBathrooms,
-          hasWashingMachine: next.hasWashingMachine,
-          postcode,
-        },
-        takenCodes,
-        random
-      ),
-    };
   }
 
   if (next.latitude !== null && next.longitude !== null && address !== "") {

@@ -22,6 +22,7 @@ import {
 import { mapConcurrent } from "@/lib/household-data/concurrency";
 import { deriveApartments, deriveLocations } from "@/lib/household-data/derive";
 import { planEnrichment, pruneDistances, type EnrichmentPlan } from "@/lib/household-data/enrich";
+import { lettersOf, postcodeFromShortCode, syncShortCode, withPostcode } from "@/lib/household-data/short-code";
 import {
   planDistanceMaintenance,
   planGeocodeMaintenance,
@@ -409,13 +410,23 @@ export function HouseholdDataProvider({
     [currentLocations, putApartment, refetchApartment]
   );
 
-  const takenCodes = useCallback((except: string) => {
+  const takenLetters = useCallback((except: string) => {
     const taken = new Set<string>();
     for (const a of storeRef.current.apartments) {
-      if (a.id !== except && a.data?.shortCode) taken.add(a.data.shortCode);
+      const letters = a.id === except ? null : lettersOf(a.data?.shortCode ?? null);
+      if (letters) taken.add(letters);
     }
     return taken;
   }, []);
+
+  // Enrichment ran on a snapshot; the row may have been edited since. Take
+  // only the geocoded postcode from it and rebuild the code from the row as
+  // it is now, so a letters or rooms change made meanwhile is kept.
+  const geocodedCode = useCallback(
+    (id: string, current: Apartment, enriched: Apartment) =>
+      withPostcode(current, postcodeFromShortCode(enriched.shortCode ?? ""), takenLetters(id)).shortCode,
+    [takenLetters]
+  );
 
   // Runs a plan for one row and writes the result. Failures are recorded
   // per row in enrichmentError; the row itself is already saved.
@@ -424,12 +435,12 @@ export function HouseholdDataProvider({
       try {
         const row = storeRef.current.apartments.find((a) => a.id === id);
         if (!row || row.data === null) return;
-        const enriched = await enrichApartment(row.data, currentLocations(), takenCodes(id), plan);
+        const enriched = await enrichApartment(row.data, currentLocations(), takenLetters(id), plan);
         await writeApartment(id, (a) => ({
           ...a,
           latitude: enriched.latitude,
           longitude: enriched.longitude,
-          shortCode: enriched.shortCode,
+          shortCode: plan.geocode ? geocodedCode(id, a, enriched) : a.shortCode,
           distances: enriched.distances,
         }));
         setEnrichmentError((prev) => {
@@ -442,11 +453,12 @@ export function HouseholdDataProvider({
         setEnrichmentError((prev) => ({ ...prev, [id]: messageOf(err) }));
       }
     },
-    [currentLocations, takenCodes, writeApartment]
+    [currentLocations, geocodedCode, takenLetters, writeApartment]
   );
 
   const createApartment = useCallback(
-    async (id: string, data: Apartment): Promise<ApartmentView> => {
+    async (id: string, given: Apartment): Promise<ApartmentView> => {
+      const data = syncShortCode(null, given, takenLetters(id));
       const envelope = await sealApartment(dataKey, householdId, id, data, keyVersion);
       let saved: ApartmentRow;
       try {
@@ -466,17 +478,17 @@ export function HouseholdDataProvider({
       void runEnrichment(id, planEnrichment(null, data));
       return viewOf(id);
     },
-    [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, viewOf]
+    [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, takenLetters, viewOf]
   );
 
   const updateApartment = useCallback(
     async (id: string, mutate: (a: Apartment) => Apartment): Promise<ApartmentView> => {
-      const { previous, next } = await writeApartment(id, mutate);
+      const { previous, next } = await writeApartment(id, (a) => syncShortCode(a, mutate(a), takenLetters(id)));
       const plan = planEnrichment(previous, next);
-      if (plan.geocode || plan.shortCode || plan.distances) void runEnrichment(id, plan);
+      if (plan.geocode || plan.distances) void runEnrichment(id, plan);
       return viewOf(id);
     },
-    [runEnrichment, viewOf, writeApartment]
+    [runEnrichment, takenLetters, viewOf, writeApartment]
   );
 
   const retryEnrichment = useCallback(
@@ -677,9 +689,8 @@ export function HouseholdDataProvider({
             if (!row || row.data === null) {
               report.skipped++;
             } else {
-              const enriched = await enrichApartment(row.data, currentLocations(), takenCodes(apt.id), {
+              const enriched = await enrichApartment(row.data, currentLocations(), takenLetters(apt.id), {
                 geocode: true,
-                shortCode: row.data.shortCode === null,
                 distances: true,
               });
               if (enriched.latitude === null) {
@@ -689,7 +700,7 @@ export function HouseholdDataProvider({
                   ...a,
                   latitude: enriched.latitude,
                   longitude: enriched.longitude,
-                  shortCode: enriched.shortCode,
+                  shortCode: geocodedCode(apt.id, a, enriched),
                   distances: enriched.distances,
                 }));
                 report.updated++;
@@ -730,7 +741,7 @@ export function HouseholdDataProvider({
       });
       return report;
     },
-    [currentLocations, fillDistances, takenCodes, userId, writeApartment]
+    [currentLocations, fillDistances, geocodedCode, takenLetters, userId, writeApartment]
   );
 
   // ---- rotation ------------------------------------------------------------

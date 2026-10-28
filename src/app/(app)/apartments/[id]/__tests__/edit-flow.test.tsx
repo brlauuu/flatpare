@@ -156,3 +156,83 @@ describe("Apartment detail edit flow", () => {
     expect(next.availableFrom).toBe("2026-07-15");
   }, 10000);
 });
+
+// #410: the letters can be changed, to any three no other apartment uses.
+describe("Apartment detail code letters", () => {
+  const coded = makeApartmentView({ ...A1, numRooms: 3, numBathrooms: null, shortCode: "KXR-3B-?b-W?-8004" });
+  const other = makeApartmentView({ id: "b2", name: "Bahnhofstrasse 1", shortCode: "ABC-2B-1b-WN-8000" });
+
+  function setupCoded() {
+    currentParamsId = "a1";
+    const rendered = renderWithHouseholdData(<ApartmentDetailPage />, { apartments: [coded, other] });
+    vi.mocked(rendered.value.updateApartment).mockImplementation(async (id, mutate) =>
+      makeApartmentView({ ...mutate(coded), id })
+    );
+    return rendered;
+  }
+
+  async function openEdit(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: /^Edit$/ }));
+    return screen.getByLabelText("Code letters") as HTMLInputElement;
+  }
+
+  it("starts from the apartment's letters and saves new ones, keeping the rest of the code", async () => {
+    const user = userEvent.setup();
+    const { value } = setupCoded();
+    const field = await openEdit(user);
+    expect(field.value).toBe("KXR");
+    await user.clear(field);
+    await user.type(field, "oil");
+    expect(field.value).toBe("OIL");
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
+    const [, mutate] = vi.mocked(value.updateApartment).mock.calls[0];
+    expect(mutate(coded).shortCode).toBe("OIL-3B-?b-W?-8004");
+  });
+
+  it("names the apartment that already uses the letters and keeps Save off", async () => {
+    const user = userEvent.setup();
+    const { value } = setupCoded();
+    const field = await openEdit(user);
+    await user.clear(field);
+    await user.type(field, "ABC");
+    expect(screen.getByText("Bahnhofstrasse 1 already uses ABC. Choose other letters.")).toBeInTheDocument();
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: /^Save$/ })).toBeDisabled();
+    expect(value.updateApartment).not.toHaveBeenCalled();
+  });
+
+  it("refuses fewer than three letters", async () => {
+    const user = userEvent.setup();
+    setupCoded();
+    const field = await openEdit(user);
+    await user.clear(field);
+    await user.type(field, "K1");
+    expect(field.value).toBe("K1");
+    expect(screen.getByText("Use exactly three letters, A to Z.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Save$/ })).toBeDisabled();
+  });
+
+  it("frees a deleted apartment's letters: only apartments still held count", async () => {
+    const user = userEvent.setup();
+    currentParamsId = "a1";
+    const { value } = renderWithHouseholdData(<ApartmentDetailPage />, { apartments: [coded] });
+    vi.mocked(value.updateApartment).mockImplementation(async (id, mutate) => makeApartmentView({ ...mutate(coded), id }));
+    const field = await openEdit(user);
+    await user.clear(field);
+    await user.type(field, "ABC");
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
+  });
+
+  it("leaves the code to the save when the apartment has none yet", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    const field = await openEdit(user);
+    expect(field.value).toBe("");
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
+    const [, mutate] = vi.mocked(value.updateApartment).mock.calls[0];
+    expect(mutate(A1).shortCode).toBe(A1.shortCode);
+  });
+});

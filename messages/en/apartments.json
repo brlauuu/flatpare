@@ -159,7 +159,11 @@
   },
   "edit": {
     "title": "Edit apartment",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "codeLabel": "Code letters",
+    "codeHint": "Three letters, A to Z, that no other apartment uses. The rest of the code follows the details below.",
+    "codeInvalid": "Use exactly three letters, A to Z.",
+    "codeTaken": "{name} already uses {letters}. Choose other letters."
   },
   "rating": {
     "yours": "Your Rating ({name})",

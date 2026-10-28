@@ -9,33 +9,33 @@ const loc = (id: string): LocationView => ({
 
 describe("planEnrichment", () => {
   it("does everything for a new apartment with an address", () => {
-    expect(planEnrichment(null, base)).toEqual({ geocode: true, shortCode: true, distances: true });
+    expect(planEnrichment(null, base)).toEqual({ geocode: true, distances: true });
   });
 
-  it("only builds a short code for a new apartment without an address", () => {
+  it("fetches nothing for a new apartment without an address", () => {
     expect(planEnrichment(null, { ...base, address: null })).toEqual({
-      geocode: false, shortCode: true, distances: false,
+      geocode: false, distances: false,
     });
   });
 
   it("re-geocodes and recomputes distances when the address changes", () => {
     expect(planEnrichment(base, { ...base, address: "B 2" })).toEqual({
-      geocode: true, shortCode: true, distances: true,
+      geocode: true, distances: true,
     });
   });
 
-  it("re-rolls only the short code when rooms, baths or washing machine change", () => {
+  it("fetches nothing when rooms, baths or washing machine change; the write rebuilds the code (#410)", () => {
     expect(planEnrichment(base, { ...base, numRooms: 4 })).toEqual({
-      geocode: false, shortCode: true, distances: false,
+      geocode: false, distances: false,
     });
     expect(planEnrichment(base, { ...base, hasWashingMachine: null })).toEqual({
-      geocode: false, shortCode: true, distances: false,
+      geocode: false, distances: false,
     });
   });
 
   it("does nothing when only unrelated fields change", () => {
     expect(planEnrichment(base, { ...base, rentChf: 999, summary: "x" })).toEqual({
-      geocode: false, shortCode: false, distances: false,
+      geocode: false, distances: false,
     });
   });
 });

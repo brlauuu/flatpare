@@ -159,7 +159,11 @@
   },
   "edit": {
     "title": "Modifica appartamento",
-    "saving": "Salvataggio…"
+    "saving": "Salvataggio…",
+    "codeLabel": "Lettere del codice",
+    "codeHint": "Tre lettere dalla A alla Z che nessun altro appartamento usa. Il resto del codice segue i dati qui sotto.",
+    "codeInvalid": "Usa esattamente tre lettere dalla A alla Z.",
+    "codeTaken": "{name} usa già {letters}. Scegli altre lettere."
   },
   "rating": {
     "yours": "La tua valutazione ({name})",

@@ -19,7 +19,7 @@ describe("enrichApartment", () => {
   it("geocodes, builds a unique short code and computes distances to located locations", async () => {
     const data = { ...emptyApartment("A"), address: "Somewhere 1", numRooms: 3.5, numBathrooms: 1, hasWashingMachine: true };
     const out = await enrichApartment(data, [loc("l1"), loc("l2", null)], new Set(), {
-      geocode: true, shortCode: true, distances: true,
+      geocode: true, distances: true,
     });
     expect(out.latitude).toBe(47.1);
     expect(out.longitude).toBe(8.5);
@@ -28,27 +28,31 @@ describe("enrichApartment", () => {
     expect(mockDistance).toHaveBeenCalledWith("Somewhere 1", "l1 street");
   });
 
-  it("re-rolls the short code letters until unique", async () => {
-    const data = { ...emptyApartment("A"), address: "Somewhere 1", numRooms: 2, numBathrooms: 1, hasWashingMachine: false };
-    const random = vi.fn().mockReturnValue(0);
-    const first = await enrichApartment(data, [], new Set(), { geocode: true, shortCode: true, distances: false }, random);
-    const second = await enrichApartment(data, [], new Set([first.shortCode as string]), { geocode: true, shortCode: true, distances: false }, random);
-    // With a constant random source every re-roll produces the same letters,
-    // so the collision persists and the last candidate is returned unchanged.
-    expect(second.shortCode).toBe(first.shortCode);
+  it("puts the geocoded postcode into the code and keeps its letters", async () => {
+    const data = { ...emptyApartment("A"), address: "Somewhere 1", numRooms: 2, numBathrooms: 1, hasWashingMachine: false, shortCode: "KXR-2B-1b-WN-?" };
+    const out = await enrichApartment(data, [], new Set(), { geocode: true, distances: false });
+    expect(out.shortCode).toBe("KXR-2B-1b-WN-8000");
   });
 
-  it("keeps the old postcode when only the short-code inputs changed", async () => {
-    const data = { ...emptyApartment("A"), address: "Somewhere 1", numRooms: 4, numBathrooms: 2, hasWashingMachine: null, shortCode: "ABC-3B-1b-WY-8001", latitude: 1, longitude: 1 };
-    const out = await enrichApartment(data, [], new Set(), { geocode: false, shortCode: true, distances: false });
+  it("picks letters no other apartment uses when the code has none", async () => {
+    const rolls = [0, 0, 0, 0.5, 0.5, 0.5]; // AAA, then NNN
+    let i = 0;
+    const data = { ...emptyApartment("A"), address: "Somewhere 1" };
+    const out = await enrichApartment(data, [], new Set(["AAA"]), { geocode: true, distances: false }, () => rolls[i++]);
+    expect(out.shortCode).toBe("NNN-?B-?b-W?-8000");
+  });
+
+  it("does not touch the code when nothing is geocoded", async () => {
+    const data = { ...emptyApartment("A"), address: "Somewhere 1", numRooms: 4, shortCode: "ABC-3B-1b-WY-8001", latitude: 1, longitude: 1 };
+    const out = await enrichApartment(data, [], new Set(), { geocode: false, distances: false });
     expect(mockGeocode).not.toHaveBeenCalled();
-    expect(out.shortCode).toMatch(/-4B-2b-W\?-8001$/);
+    expect(out.shortCode).toBe("ABC-3B-1b-WY-8001");
   });
 
   it("leaves coordinates null when geocoding is unresolved and skips distances", async () => {
     mockGeocode.mockResolvedValue({ lat: null, lng: null, postcode: null, reason: "unresolved" });
     const data = { ...emptyApartment("A"), address: "Nowhere" };
-    const out = await enrichApartment(data, [loc("l1")], new Set(), { geocode: true, shortCode: true, distances: true });
+    const out = await enrichApartment(data, [loc("l1")], new Set(), { geocode: true, distances: true });
     expect(out.latitude).toBeNull();
     expect(out.distances).toEqual({});
     expect(out.shortCode).toMatch(/-\?B-\?b-W\?-\?$/);
@@ -57,7 +61,7 @@ describe("enrichApartment", () => {
 
   it("fills only missing distances when the plan does not ask for all", async () => {
     const data = { ...emptyApartment("A"), address: "X", latitude: 1, longitude: 1, distances: { l1: { bikeMin: 99, transitMin: 99 } } };
-    const out = await enrichApartment(data, [loc("l1"), loc("l2")], new Set(), { geocode: false, shortCode: false, distances: false });
+    const out = await enrichApartment(data, [loc("l1"), loc("l2")], new Set(), { geocode: false, distances: false });
     expect(out.distances.l1).toEqual({ bikeMin: 99, transitMin: 99 });
     expect(out.distances.l2).toEqual({ bikeMin: "l2 street".length, transitMin: null });
   });

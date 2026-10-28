@@ -312,6 +312,35 @@ describe("HouseholdDataProvider", () => {
     expect(server.apartments.get(A1)?.version).toBe(2);
   });
 
+  // #410: the code follows the data in the save itself, so it updated even
+  // where the distance step behind it failed (which used to drop it).
+  it("rebuilds the code in the save when a bathroom is added, keeping its letters", async () => {
+    await seedLocation(L1, { label: "Work", icon: "Briefcase", address: "Office 1", latitude: 47, longitude: 8 });
+    await seed(A1, { ...emptyApartment("Flat"), address: "Street 5", latitude: 47, longitude: 8, numRooms: 3, shortCode: "KXR-3B-?b-W?-8004" });
+    server.process.distance = () => {
+      throw new Error("distance service down");
+    };
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.updateApartment(A1, (a) => ({ ...a, numBathrooms: 1 }));
+    });
+    expect((captured as HouseholdDataContextValue).apartments[0].shortCode).toBe("KXR-3B-1b-W?-8004");
+    const stored = await open(dataKey, server.apartments.get(A1)!.envelope, envelopeAad(HID, "apartments", A1));
+    expect(stored).toMatchObject({ shortCode: "KXR-3B-1b-W?-8004" });
+  });
+
+  it("gives a new apartment letters no other apartment uses, then fills in the postcode", async () => {
+    await seed(A2, { ...emptyApartment("Other"), shortCode: "AAA-1B-1b-WN-8000" });
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(0.5);
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.createApartment(A1, { ...emptyApartment("New"), address: "Street 5", numRooms: 2 });
+    });
+    await waitForContext((c) => c.apartments.find((a) => a.id === A1)?.shortCode === "NNN-2B-?b-W?-8000");
+  });
+
   it("records an enrichment error and retryEnrichment clears it", async () => {
     server.process.geocode = () => {
       throw new Error("geocoder down");

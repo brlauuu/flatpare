@@ -2,30 +2,24 @@ import type { Apartment, LocationView } from "./types";
 
 export interface EnrichmentPlan {
   geocode: boolean;
-  shortCode: boolean;
   distances: boolean;
 }
 
-// Decides, from a before/after pair, what the client must compute after a
-// write: coordinates when the address changed, the short code when any of
-// its inputs changed, distances whenever coordinates will change.
+// Decides, from a before/after pair, what the client must fetch after a
+// write: coordinates when the address changed, distances whenever
+// coordinates will change. The short code is not here: it is rebuilt in the
+// write itself (syncShortCode), so it never waits on a network call (#410).
 export function planEnrichment(
   previous: Apartment | null,
   next: Apartment
 ): EnrichmentPlan {
   const hasAddress = next.address !== null && next.address.trim() !== "";
   if (previous === null) {
-    return { geocode: hasAddress, shortCode: true, distances: hasAddress };
+    return { geocode: hasAddress, distances: hasAddress };
   }
   const addressChanged = previous.address !== next.address;
-  const codeInputsChanged =
-    addressChanged ||
-    previous.numRooms !== next.numRooms ||
-    previous.numBathrooms !== next.numBathrooms ||
-    previous.hasWashingMachine !== next.hasWashingMachine;
   return {
     geocode: addressChanged && hasAddress,
-    shortCode: codeInputsChanged,
     distances: addressChanged && hasAddress,
   };
 }

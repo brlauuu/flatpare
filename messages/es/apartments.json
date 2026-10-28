@@ -159,7 +159,11 @@
   },
   "edit": {
     "title": "Editar piso",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "codeLabel": "Letras del código",
+    "codeHint": "Tres letras de la A a la Z que ningún otro piso use. El resto del código sigue los datos de abajo.",
+    "codeInvalid": "Usa exactamente tres letras de la A a la Z.",
+    "codeTaken": "{name} ya usa {letters}. Elige otras letras."
   },
   "rating": {
     "yours": "Tu valoración ({name})",

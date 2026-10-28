@@ -9,6 +9,12 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+- Choose an apartment's code letters yourself when editing it. Any three letters work as long as no other apartment uses them; letters of deleted apartments are free again. (#410)
+
+### Fixed
+- An apartment's code now updates as soon as you change its rooms, bathrooms or washing machine, and keeps its letters. It used to pick new letters, and could stay unchanged when looking up distances failed. (#410)
+
 ## 0.23.0 — 2026-10-28
 
 ### Added

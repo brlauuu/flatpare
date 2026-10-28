@@ -159,7 +159,11 @@
   },
   "edit": {
     "title": "Modifier l’appartement",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "codeLabel": "Lettres du code",
+    "codeHint": "Trois lettres de A à Z qu’aucun autre appartement n’utilise. Le reste du code suit les informations ci-dessous.",
+    "codeInvalid": "Utilise exactement trois lettres de A à Z.",
+    "codeTaken": "{name} utilise déjà {letters}. Choisis d’autres lettres."
   },
   "rating": {
     "yours": "Ton évaluation ({name})",
