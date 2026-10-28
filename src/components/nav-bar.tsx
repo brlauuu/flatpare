@@ -11,7 +11,18 @@ import { cn } from "@/lib/utils";
 import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageMenu } from "@/components/language-menu";
-import { BookOpen, ChevronDown, LogOut, User } from "lucide-react";
+import {
+  BookOpen,
+  Building2,
+  ChevronDown,
+  Columns3,
+  LogOut,
+  Map as MapIcon,
+  Settings,
+  Upload,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -20,16 +31,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // `key` names the label in the `nav` catalogue: `items.<key>` on the desktop
-// bar, `short.<key>` on the phone's bottom bar, where six share 360px and a
-// translation may need a shorter word (#288).
-const navItems = [
-  { href: "/apartments", key: "apartments" },
-  { href: "/apartments/new", key: "upload" },
-  { href: "/compare", key: "compare" },
-  { href: "/map", key: "map" },
-  { href: "/household", key: "household" },
-  { href: "/settings", key: "settings" },
-] as const;
+// bar, `short.<key>` on the phone's bottom bar. The phone shows the icon
+// only (#404); the short label is what a screen reader hears.
+type NavKey = "apartments" | "upload" | "compare" | "map" | "household" | "settings";
+const navItems: readonly { href: string; key: NavKey; icon: LucideIcon }[] = [
+  { href: "/apartments", key: "apartments", icon: Building2 },
+  { href: "/apartments/new", key: "upload", icon: Upload },
+  { href: "/compare", key: "compare", icon: Columns3 },
+  { href: "/map", key: "map", icon: MapIcon },
+  { href: "/household", key: "household", icon: Users },
+  { href: "/settings", key: "settings", icon: Settings },
+];
+
+const NAME_CHARS = 7;
+
+/** The first seven characters of the name, then "...", so a long name cannot
+ * push the nav bar onto two lines (#407). Counts characters, not UTF-16 units. */
+export function shortName(name: string): string {
+  const chars = Array.from(name.trim());
+  return chars.length > NAME_CHARS ? `${chars.slice(0, NAME_CHARS).join("")}...` : chars.join("");
+}
 // Guide lives in the user menu (#330): seven items did not fit the phone's
 // bottom bar at 360px once Map was added.
 
@@ -65,9 +86,9 @@ export function NavBar({ userName }: { userName: string }) {
 
   return (
     <header className="border-b-3 border-frame bg-card print:hidden">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/apartments" className="flex min-h-11 items-center sm:min-h-0">
-          <ThemedLogo width={120} height={37} className="h-8 w-auto" priority />
+      <div className="mx-auto flex h-12 max-w-5xl items-center justify-between gap-2 px-4 sm:h-14">
+        <Link href="/apartments" className="flex min-h-11 shrink-0 items-center sm:min-h-0">
+          <ThemedLogo width={120} height={37} className="h-7 w-auto sm:h-8" priority />
         </Link>
         <nav className="hidden items-center gap-1 sm:flex">
           {navItems.map((item) => (
@@ -86,13 +107,15 @@ export function NavBar({ userName }: { userName: string }) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
           <LanguageMenu signedIn />
           <ThemeToggle />
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">
-              <User className="h-3.5 w-3.5" />
-              <span>{userName}</span>
+            <DropdownMenuTrigger
+              title={userName}
+              className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <span>{shortName(userName)}</span>
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
@@ -115,14 +138,18 @@ export function NavBar({ userName }: { userName: string }) {
             key={item.href}
             href={item.href}
             aria-current={pathname === item.href ? "page" : undefined}
+            title={t(`short.${item.key}`)}
             className={cn(
-              "flex min-h-11 flex-1 items-center justify-center py-3 text-center text-xs transition-colors",
+              "flex h-12 flex-1 items-center justify-center transition-colors",
               pathname === item.href
-                ? "bg-primary font-bold text-primary-foreground"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground"
             )}
           >
-            <NavLabel>{t(`short.${item.key}`)}</NavLabel>
+            <NavLabel>
+              <item.icon className="size-5" aria-hidden />
+              <span className="sr-only">{t(`short.${item.key}`)}</span>
+            </NavLabel>
           </Link>
         ))}
       </nav>

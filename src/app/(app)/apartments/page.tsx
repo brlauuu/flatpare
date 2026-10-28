@@ -198,10 +198,6 @@ export default function ApartmentsPage() {
   return (
     <div className="space-y-6">
       <DraftsStrip />
-      <Link href="/map" className={cn(buttonVariants({ variant: "outline" }), "h-11 sm:h-9")}>
-        <MapIcon className="h-4 w-4" />
-        {t("viewOnMap")}
-      </Link>
       {failedEnrichments.length > 0 && (
         <div
           role="status"
@@ -222,29 +218,40 @@ export default function ApartmentsPage() {
           ))}
         </div>
       )}
-      <div className="relative w-full max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          weight="frame"
-          type="text"
-          aria-label={t("searchLabel")}
-          placeholder={t("searchPlaceholder")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="h-11 pl-9 pr-9 sm:h-9"
-        />
-        {query.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label={t("clearSearch")}
-            onClick={() => setQuery("")}
-            className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 p-0 sm:h-7 sm:w-7"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+      {/* The map button sits beside the search, as an icon (#408). */}
+      <div className="flex items-center gap-2">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            weight="frame"
+            type="text"
+            aria-label={t("searchLabel")}
+            placeholder={t("searchPlaceholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-11 pl-9 pr-9 sm:h-9"
+          />
+          {query.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label={t("clearSearch")}
+              onClick={() => setQuery("")}
+              className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 p-0 sm:h-7 sm:w-7"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <Link
+          href="/map"
+          aria-label={t("viewOnMap")}
+          title={t("viewOnMap")}
+          className={cn(buttonVariants({ variant: "outline" }), "h-11 w-11 shrink-0 p-0 sm:h-9 sm:w-9")}
+        >
+          <MapIcon className="h-4 w-4" aria-hidden />
+        </Link>
       </div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">

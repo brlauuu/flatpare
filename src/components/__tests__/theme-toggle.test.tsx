@@ -64,11 +64,11 @@ describe("ThemeToggle", () => {
     expect(window.localStorage.getItem("theme")).toBe("light");
   });
 
-  // The landing page keeps its yellow edge in dark mode this way.
-  it("lets a caller replace the edge colour", () => {
-    renderToggle("border-(--lp-chip-line)");
+  // Just the sun or moon, on every page (#407).
+  it("has no frame or shadow", () => {
+    renderToggle();
     const button = screen.getByRole("button");
-    expect(button).toHaveClass("border-(--lp-chip-line)");
     expect(button).not.toHaveClass("border-frame");
+    expect(button.className).not.toMatch(/shadow-button|border-\[3px\]/);
   });
 });

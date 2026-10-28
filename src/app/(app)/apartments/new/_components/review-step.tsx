@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   Card,
@@ -56,14 +57,16 @@ export function ReviewStep({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Stacks on a phone: side by side, the title and both buttons were
+          wider than the screen and pushed the page sideways (#406). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="title-page">{t("title")}</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onUploadMore}>
+          <Button variant="outline" onClick={onUploadMore} className="h-11 flex-1 sm:h-9 sm:flex-none">
             {t("uploadMore")}
           </Button>
           {saveable.length > 0 && (
-            <Button onClick={onSaveAll} disabled={saving}>
+            <Button onClick={onSaveAll} disabled={saving} className="h-11 flex-1 sm:h-9 sm:flex-none">
               {saving ? t("saving") : t("save", { count: saveable.length })}
             </Button>
           )}
@@ -91,11 +94,14 @@ export function ReviewStep({
                   onUpdateItem(item.id, { expanded: !item.expanded })
                 }
               >
-                <div className="flex items-center justify-between">
+                <div className="flex min-w-0 items-center justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-sm text-muted-foreground">
-                      {item.expanded ? "▼" : "▶"}
-                    </span>
+                    {/* An icon, not "▶": phones draw that character as an emoji. */}
+                    {item.expanded ? (
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    )}
                     <div className="min-w-0">
                       <CardTitle className="text-base truncate">
                         {item.form.name || item.fileName}

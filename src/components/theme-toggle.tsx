@@ -21,6 +21,7 @@ function useIsClient(): boolean {
 // (`defaultTheme="system"` in theme-provider.tsx); a press stores an
 // explicit choice. The resolved theme is unknown before hydration, so the
 // button renders as "light" until then — same size either way, no shift.
+// Just the sun or moon, no frame (#407).
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useIsClient();
@@ -32,7 +33,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       className={cn(
-        "grid size-11 shrink-0 cursor-pointer place-items-center border-[3px] border-frame bg-card text-foreground shadow-button",
+        "grid size-11 shrink-0 cursor-pointer place-items-center rounded-md text-foreground transition-colors hover:bg-muted",
         className
       )}
     >

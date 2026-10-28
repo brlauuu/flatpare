@@ -89,20 +89,26 @@ function Nav({ release }: { release: ReleaseInfo | null }) {
           <ReleaseNotice version={release.version} href={RELEASES_URL} />
         </div>
       )}
-      <nav aria-label={t("label")} className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[15px] font-medium">
+      {/* One line on a phone (#404): GitHub as its mark only, the globe and the
+          bare sun or moon. */}
+      <nav aria-label={t("label")} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-medium sm:gap-x-5">
         <a href="#video" className="hidden text-(--lp-ink) no-underline hover:underline sm:inline">
           {t("howItWorks")}
         </a>
         <a href="#paths" className="hidden text-(--lp-ink) no-underline hover:underline sm:inline">
           {t("pricing")}
         </a>
-        <a href={REPO_URL} className="inline-flex items-center gap-1.5 text-(--lp-ink) no-underline hover:underline">
+        <a
+          href={REPO_URL}
+          aria-label="GitHub"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 text-(--lp-ink) no-underline hover:underline sm:min-w-0"
+        >
           <GithubMark />
-          GitHub
+          <span className="hidden sm:inline">GitHub</span>
         </a>
         <SignInButton className="lp-btn lp-btn-secondary min-h-11 px-4">{t("signIn")}</SignInButton>
         <LanguageMenu />
-        <ThemeToggle className="border-(--lp-chip-line)" />
+        <ThemeToggle />
       </nav>
     </header>
   );
@@ -124,7 +130,12 @@ function Hero({ access }: { access: PublicAccess }) {
             <br />
             <span className="text-(--lp-accent-text)">{t("titleLine2")}</span>
           </h1>
-          <ul aria-label={t("tagsLabel")} className="m-0 flex list-none flex-wrap gap-2.5 p-0">
+          {/* One under another on a phone, one row from `sm` up (#404): wrapped
+              two-and-one looked accidental. */}
+          <ul
+            aria-label={t("tagsLabel")}
+            className="m-0 flex list-none flex-col items-start gap-2.5 p-0 sm:flex-row sm:flex-wrap"
+          >
             {TAGS.map(({ icon: Icon, key, href }) => {
               const content = (
                 <>
@@ -148,7 +159,8 @@ function Hero({ access }: { access: PublicAccess }) {
           <p className="m-0 max-w-[520px] text-[19px] leading-[1.55] text-(--lp-body)">
             {t("lead")}
           </p>
-          <div className="flex flex-wrap gap-3.5">
+          {/* Full width and equal on a phone, side by side from `sm` up (#404). */}
+          <div className="flex flex-col gap-3.5 sm:flex-row sm:flex-wrap">
             {access === "closed" ? (
               <a href="#hosted" className="lp-btn lp-btn-primary">
                 {t("requestInvite")}

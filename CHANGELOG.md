@@ -9,6 +9,15 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+- On a phone, the bottom bar shows icons only, the top bar is shorter and shows your name cut to seven characters, the language menu is a globe and the theme switch a plain sun or moon. (#404, #407)
+- On a phone, the apartment page's actions are a row of icons, and View on map is among them. (#407)
+- The map button sits beside the search on the apartments list, as an icon. (#408)
+- On a phone, the landing page's three tags stack one under another and its two buttons are full width; the header fits on one line. (#404)
+
+### Fixed
+- On a phone, the review step after uploading PDFs no longer runs off the right edge of the screen. (#406)
+
 ## 0.22.2 — 2026-10-28
 
 ### Changed

@@ -25,7 +25,7 @@ vi.mock("@/lib/share-stash", () => ({
   },
 }));
 
-import { NavBar } from "../nav-bar";
+import { NavBar, shortName } from "../nav-bar";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
 
 beforeEach(() => {
@@ -44,6 +44,24 @@ describe("NavBar user menu", () => {
   it("shows the signed-in user's name", () => {
     render(<NavBar userName="Alice" />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
+  });
+
+  // #407: a long name used to wrap the nav bar onto two lines.
+  it("shows a long name cut to seven characters, the whole name on hover", () => {
+    render(<NavBar userName="Đorđe Relić" />);
+    const trigger = screen.getByRole("button", { name: /Đorđe R\.\.\./ });
+    expect(trigger).toHaveAttribute("title", "Đorđe Relić");
+    expect(screen.queryByText("Đorđe Relić")).toBeNull();
+  });
+
+  it("phone bar: icons only, each still named for a screen reader (#404)", () => {
+    render(<NavBar userName="Alice" />);
+    const navs = screen.getAllByRole("navigation");
+    const phone = navs[navs.length - 1];
+    for (const link of Array.from(phone.querySelectorAll("a"))) {
+      expect(link.querySelector("svg")).not.toBeNull();
+      expect(link.querySelector(".sr-only")?.textContent).toBeTruthy();
+    }
   });
 
   it("signs out when 'Sign out' is clicked", async () => {
@@ -141,5 +159,17 @@ describe("NavBar logo", () => {
     expect(sources).toHaveLength(2);
     expect(sources.some((src) => src.includes("flatpare_logo_blue.svg"))).toBe(true);
     expect(sources.some((src) => src.includes("flatpare_logo_yellow.svg"))).toBe(true);
+  });
+});
+
+describe("shortName", () => {
+  it("keeps up to seven characters as they are", () => {
+    expect(shortName("Alice")).toBe("Alice");
+    expect(shortName("Abcdefg")).toBe("Abcdefg");
+  });
+
+  it("cuts after seven characters, counting characters rather than code units", () => {
+    expect(shortName("Abcdefgh")).toBe("Abcdefg...");
+    expect(shortName("𝒜𝒜𝒜𝒜𝒜𝒜𝒜𝒜")).toBe("𝒜𝒜𝒜𝒜𝒜𝒜𝒜...");
   });
 });

@@ -21,6 +21,10 @@ import { languageOf, LOCALE_NAMES, LOCALES, writeLocaleCookie, type Locale } fro
 // Signed in, the choice is also saved on the account so it follows the
 // person to another device and picks the language of emails sent to them;
 // that save is best-effort — the cookie already changed the page.
+//
+// The trigger is the globe alone (#407); its label names the current
+// language. Not flags: a language is not a country (French, Italian and
+// German are all Swiss languages here, English is no one country's).
 export function LanguageMenu({ signedIn = false, className }: { signedIn?: boolean; className?: string }) {
   const t = useTranslations("language");
   const locale = languageOf(useLocale());
@@ -45,13 +49,12 @@ export function LanguageMenu({ signedIn = false, className }: { signedIn?: boole
       <DropdownMenuTrigger
         aria-label={t("choose", { current: LOCALE_NAMES[locale] })}
         className={cn(
-          "flex min-h-11 items-center gap-1 rounded-md px-2 py-1 text-sm font-bold uppercase transition-colors hover:bg-muted sm:min-h-0",
+          "grid size-11 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted",
           pending && "opacity-60",
           className
         )}
       >
-        <Globe className="h-4 w-4" aria-hidden />
-        <span>{locale}</span>
+        <Globe className="h-[18px] w-[18px]" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
         {LOCALES.map((l) => (
