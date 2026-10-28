@@ -119,6 +119,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **`MAX_DRAFTS = 20` per household** (`src/lib/draft-limit.ts`, a leaf), enforced by one conditional `INSERT ... SELECT ... WHERE count < 20` in `src/lib/drafts.ts` (not a `db.transaction`, #225); over it is `409 { error: "Too many drafts" }`. A constant, not an env var: it bounds a free row type.
 - **Creating a draft costs no credit and calls nothing outside the app** (no geocode, distance or listing check). The credit is spent when the apartment is added from `/apartments/new?draft=<id>`; `runMaintenance` ignores drafts. Paste link and the "To add" strip therefore show at the apartment cap too.
 - **Rotation re-seals drafts with everything else**: `runRotateDataKey` sends `drafts`, and `rotateHouseholdKey` checks the draft row set like the others. The request's `drafts` defaults to `[]`, so a client that omits the set while drafts exist is refused as Stale rows rather than leaving drafts under the old key.
+- **The person's link wins over the PDF's.** Completing a draft or a share with one PDF saves the draft's or the share's link, not the one the extraction found (often dead, #409); with several PDFs the link fills only forms without one, since nobody knows which PDF it belongs to (`withDraftUrl` in the add page).
 - **Drafts are not exported** (builder's call: a draft is not yet an apartment). Store: `useHouseholdData()` exposes `drafts`, `createDraft`, `deleteDraft`; a draft that fails to open is a corrupt placeholder with a delete button.
 
 ## Blind proxies (E4)
