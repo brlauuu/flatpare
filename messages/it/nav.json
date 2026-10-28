@@ -17,8 +17,22 @@
   },
   "menu": {
     "guide": "Guida",
-    "signOut": "Esci"
+    "signOut": "Esci",
+    "install": "Installa l'app"
   },
   "confirmSignOut": "Hai modifiche alle valutazioni non salvate. Vuoi uscire lo stesso? Quello che hai inserito andrà perso.",
-  "unknownUser": "Sconosciuto"
+  "unknownUser": "Sconosciuto",
+  "install": {
+    "howTitle": "Aggiungi Flatpare alla schermata Home",
+    "close": "Chiudi",
+    "howShare": "Tocca il pulsante Condividi <icon></icon>.",
+    "howAdd": "Scegli «Aggiungi alla schermata Home», poi Aggiungi.",
+    "howOpen": "Apri Flatpare dalla schermata Home. Si apre come un'app, senza barra degli indirizzi.",
+    "howPaste": "Per aggiungere un annuncio, copia il suo link, poi tocca Incolla link nella pagina Appartamenti.",
+    "hintShare": "Installa Flatpare per aggiungere appartamenti da altre app.",
+    "hintPaste": "Aggiungi Flatpare alla schermata Home, poi aggiungi annunci con Incolla link.",
+    "install": "Installa",
+    "how": "Come",
+    "dismiss": "Nascondi questo suggerimento"
+  }
 }

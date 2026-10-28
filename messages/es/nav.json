@@ -17,8 +17,22 @@
   },
   "menu": {
     "guide": "Guía",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "install": "Instalar la app"
   },
   "confirmSignOut": "Tienes cambios sin guardar en una valoración. ¿Cerrar sesión de todos modos? Lo que has escrito se perderá.",
-  "unknownUser": "Desconocido"
+  "unknownUser": "Desconocido",
+  "install": {
+    "howTitle": "Añadir Flatpare a la pantalla de inicio",
+    "close": "Cerrar",
+    "howShare": "Toca el botón Compartir <icon></icon>.",
+    "howAdd": "Elige «Añadir a pantalla de inicio» y luego Añadir.",
+    "howOpen": "Abre Flatpare desde la pantalla de inicio. Se abre como una app, sin barra de direcciones.",
+    "howPaste": "Para añadir un anuncio, copia su enlace y toca Pegar enlace en la página Pisos.",
+    "hintShare": "Instala Flatpare para añadir pisos desde otras apps.",
+    "hintPaste": "Añade Flatpare a la pantalla de inicio y añade anuncios con Pegar enlace.",
+    "install": "Instalar",
+    "how": "Cómo",
+    "dismiss": "Ocultar este consejo"
+  }
 }

@@ -108,6 +108,31 @@ Per ripristinare un export, apri la pagina Gruppo di un gruppo che non ha ancora
 
 ---
 
+## Sul telefono
+
+Flatpare funziona nel browser del telefono. Puoi anche installarlo: si apre allora come un'app, dalla sua icona.
+
+### Installare Flatpare
+
+- **Android:** apri il menu sotto il tuo nome e scegli **Installa l'app**, oppure tocca **Installa** nel suggerimento in cima alla pagina Appartamenti.
+- **iPhone e iPad:** tocca il pulsante Condividi, scegli **Aggiungi alla schermata Home**, poi **Aggiungi**. **Installa l'app** nel menu sotto il tuo nome mostra gli stessi passaggi.
+
+### Condividere annunci con Flatpare (Android)
+
+Una volta installato su Android, Flatpare compare nel menu di condivisione del telefono. Condividi un PDF dai tuoi file o da un'e-mail: Flatpare chiede se aggiungerlo, poi lo legge come qualsiasi caricamento. Condividi un link dal browser o da un'app di annunci: Flatpare lo salva in **Da aggiungere**.
+
+Se al momento della condivisione non hai effettuato l'accesso, o Flatpare è bloccato, l'elemento aspetta un giorno sul telefono. Accedi o sblocca, e Flatpare chiede se aggiungerlo.
+
+### Incolla link (iPhone e ovunque altrove)
+
+Un iPhone non può condividere nulla con Flatpare. Copia invece il link dell'annuncio, apri Flatpare e tocca **Incolla link** nella pagina Appartamenti. Il link viene salvato in **Da aggiungere**.
+
+### Link da aggiungere più tardi
+
+**Da aggiungere**, in cima alla pagina Appartamenti, è l'elenco dei link del tuo gruppo che non sono ancora appartamenti. Tutto il gruppo lo vede, con il nome di chi ha salvato ogni link. Salvare un link è gratuito. Tocca **Aggiungi** per trasformarlo in un appartamento, con o senza il suo PDF; nella versione ospitata da noi, è allora che si usa un credito appartamento. Fino a 20 link possono aspettare contemporaneamente.
+
+---
+
 ## Se usi la versione ospitata da noi
 
 **Durante la beta privata è gratuito.** Ciò che ottiene un account beta resta tuo: né i tuoi dati né i tuoi crediti ti vengono tolti quando la beta finisce.

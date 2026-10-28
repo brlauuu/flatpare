@@ -108,6 +108,31 @@ Pour récupérer un export, ouvre la page Foyer d'un foyer qui n'a encore ni app
 
 ---
 
+## Sur ton téléphone
+
+Flatpare fonctionne dans le navigateur de ton téléphone. Tu peux aussi l'installer : il s'ouvre alors comme une app, depuis sa propre icône.
+
+### Installer Flatpare
+
+- **Android :** ouvre le menu sous ton nom et choisis **Installer l'app**, ou touche **Installer** dans l'astuce en haut de la page Appartements.
+- **iPhone et iPad :** touche le bouton Partager, choisis **Sur l'écran d'accueil**, puis **Ajouter**. **Installer l'app** dans le menu sous ton nom montre les mêmes étapes.
+
+### Partager des annonces vers Flatpare (Android)
+
+Une fois Flatpare installé sur Android, il apparaît dans le menu de partage de ton téléphone. Partage un PDF depuis tes fichiers ou ton e-mail : Flatpare te demande s'il faut l'ajouter, puis le lit comme n'importe quel ajout. Partage un lien depuis ton navigateur ou une app d'annonces : Flatpare l'enregistre sous **À ajouter**.
+
+Si tu es déconnecté ou si Flatpare est verrouillé au moment du partage, l'élément attend un jour sur ton téléphone. Connecte-toi ou déverrouille, et Flatpare te demande s'il faut l'ajouter.
+
+### Coller un lien (iPhone et partout ailleurs)
+
+Un iPhone ne peut rien partager vers Flatpare. Copie plutôt le lien de l'annonce, ouvre Flatpare et touche **Coller un lien** sur la page Appartements. Le lien est enregistré sous **À ajouter**.
+
+### Des liens à ajouter plus tard
+
+**À ajouter**, en haut de la page Appartements, est la liste des liens de ton foyer qui ne sont pas encore des appartements. Tout le foyer la voit, avec le nom de qui a enregistré chaque lien. Enregistrer un lien est gratuit. Touche **Ajouter** pour en faire un appartement, avec ou sans son PDF ; sur la version hébergée, c'est à ce moment qu'un crédit d'appartement est utilisé. Jusqu'à 20 liens peuvent attendre en même temps.
+
+---
+
 ## Si tu utilises la version hébergée
 
 **Pendant la bêta privée, c’est gratuit.** Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.

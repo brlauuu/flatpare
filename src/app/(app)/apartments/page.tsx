@@ -2,6 +2,7 @@
 
 import { useSortText } from "@/components/use-sort-text";
 import { CreditBalance } from "@/components/credit-balance";
+import { InstallHint } from "@/components/install/install-hint";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -174,6 +175,9 @@ export default function ApartmentsPage() {
   if (apartments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <div className="w-full max-w-2xl empty:hidden">
+          <InstallHint />
+        </div>
         <div className="rounded-full bg-muted p-4">
           <Building2 className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -197,6 +201,7 @@ export default function ApartmentsPage() {
 
   return (
     <div className="space-y-6">
+      <InstallHint />
       <DraftsStrip />
       {failedEnrichments.length > 0 && (
         <div

@@ -108,6 +108,31 @@ Para recuperar una exportación, abre la página Hogar de un hogar que aún no t
 
 ---
 
+## En el móvil
+
+Flatpare funciona en el navegador del móvil. También puedes instalarlo: así se abre como una app, desde su propio icono.
+
+### Instalar Flatpare
+
+- **Android:** abre el menú bajo tu nombre y elige **Instalar la app**, o toca **Instalar** en el consejo de arriba de la página Pisos.
+- **iPhone y iPad:** toca el botón Compartir, elige **Añadir a pantalla de inicio** y luego **Añadir**. **Instalar la app** en el menú bajo tu nombre muestra los mismos pasos.
+
+### Compartir anuncios con Flatpare (Android)
+
+Cuando Flatpare está instalado en Android, aparece en el menú de compartir del móvil. Comparte un PDF desde tus archivos o tu correo: Flatpare pregunta si quieres añadirlo y luego lo lee como cualquier subida. Comparte un enlace desde el navegador o una app de anuncios: Flatpare lo guarda en **Por añadir**.
+
+Si al compartir no has iniciado sesión, o Flatpare está bloqueado, el elemento espera un día en tu móvil. Inicia sesión o desbloquea, y Flatpare pregunta si quieres añadirlo.
+
+### Pegar enlace (iPhone y en cualquier otro sitio)
+
+Un iPhone no puede compartir nada con Flatpare. Copia en su lugar el enlace del anuncio, abre Flatpare y toca **Pegar enlace** en la página Pisos. El enlace se guarda en **Por añadir**.
+
+### Enlaces para añadir más tarde
+
+**Por añadir**, arriba en la página Pisos, es la lista de enlaces de tu hogar que aún no son pisos. Todo el hogar la ve, con el nombre de quién guardó cada enlace. Guardar un enlace es gratis. Toca **Añadir** para convertirlo en un piso, con o sin su PDF; en la versión alojada, es entonces cuando se usa un crédito de piso. Hasta 20 enlaces pueden esperar a la vez.
+
+---
+
 ## Si usas la versión alojada
 
 **Durante la beta privada es gratis.** Lo que recibe una cuenta de la beta es tuyo: ni tus datos ni tus créditos se retiran cuando termine la beta.

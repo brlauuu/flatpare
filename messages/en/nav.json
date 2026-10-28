@@ -17,8 +17,22 @@
   },
   "menu": {
     "guide": "Guide",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "install": "Install app"
   },
   "confirmSignOut": "You have unsaved rating changes. Sign out anyway? Your input will be discarded.",
-  "unknownUser": "Unknown"
+  "unknownUser": "Unknown",
+  "install": {
+    "howTitle": "Add Flatpare to your Home Screen",
+    "close": "Close",
+    "howShare": "Tap the Share button <icon></icon>.",
+    "howAdd": "Choose \"Add to Home Screen\", then Add.",
+    "howOpen": "Open Flatpare from your Home Screen. It opens like an app, without the address bar.",
+    "howPaste": "To add a listing, copy its link, then tap Paste link on the Apartments page.",
+    "hintShare": "Install Flatpare to add apartments from other apps.",
+    "hintPaste": "Add Flatpare to your Home Screen, then add listings with Paste link.",
+    "install": "Install",
+    "how": "How",
+    "dismiss": "Hide this tip"
+  }
 }

@@ -17,8 +17,22 @@
   },
   "menu": {
     "guide": "Anleitung",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "install": "App installieren"
   },
   "confirmSignOut": "Du hast ungespeicherte Änderungen an einer Bewertung. Trotzdem abmelden? Deine Eingaben gehen verloren.",
-  "unknownUser": "Unbekannt"
+  "unknownUser": "Unbekannt",
+  "install": {
+    "howTitle": "Flatpare zum Home-Bildschirm hinzufügen",
+    "close": "Schliessen",
+    "howShare": "Tippe auf die Teilen-Taste <icon></icon>.",
+    "howAdd": "Wähle «Zum Home-Bildschirm», dann Hinzufügen.",
+    "howOpen": "Öffne Flatpare vom Home-Bildschirm. Es öffnet sich wie eine App, ohne Adressleiste.",
+    "howPaste": "Um ein Inserat hinzuzufügen, kopiere seinen Link und tippe auf der Seite Wohnungen auf Link einfügen.",
+    "hintShare": "Installiere Flatpare, um Wohnungen aus anderen Apps hinzuzufügen.",
+    "hintPaste": "Füge Flatpare zum Home-Bildschirm hinzu und füge Inserate mit Link einfügen hinzu.",
+    "install": "Installieren",
+    "how": "Wie",
+    "dismiss": "Tipp ausblenden"
+  }
 }
