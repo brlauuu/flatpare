@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.25.0 — 2026-10-28
+
 ### Added
 
 - When a PDF has no link to its listing, or the link no longer works, Flatpare searches the web for the listing with its title, address, website and language, and fills in the first link it finds. The review card says the link came from a search so you can check it before saving. A link you saved or shared yourself is never replaced, and if nothing is found the PDF's link stays. On flatpare.com the search keeps nothing of the request; the privacy section and the guide say so (#409).
