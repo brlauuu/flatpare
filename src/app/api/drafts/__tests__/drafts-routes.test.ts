@@ -15,12 +15,12 @@ vi.mock("@/lib/session", () => ({
   }),
 }));
 
-import { GET as listGET, POST as createPOST } from "../route";
+import * as draftsRoute from "../route";
+import { GET as listGET } from "../route";
 import { DELETE as removeDELETE } from "../[id]/route";
 
 const uuid = (n: number) => `${String(n).padStart(8, "0")}-0000-4000-8000-000000000000`;
 const v1 = (tag: string) => ({ v: 1 as const, iv: "AAAAAAAAAAAAAAAA", ct: Buffer.from(tag).toString("base64") });
-const v0 = { v: 0 as const, data: { url: "https://example.com" } };
 
 function json(method: string, body?: unknown) {
   return new Request("http://localhost/api/drafts", {
@@ -56,86 +56,41 @@ beforeEach(async () => {
 
 afterEach(() => vi.unstubAllEnvs());
 
+async function insertDraft(id: string, householdId = hid, createdBy = "o") {
+  await db.insert(apartmentDrafts).values({ id, householdId, createdBy, envelope: JSON.stringify(v1("a")) });
+}
+
+// Since #413 no draft is made: a link becomes an unprocessed apartment. The
+// routes that remain let the store turn the drafts left into apartments.
 describe("/api/drafts", () => {
+  it("has no create route any more", () => {
+    expect("POST" in draftsRoute).toBe(false);
+  });
+
   it("401s without a session", async () => {
     signedIn = false;
     expect((await listGET()).status).toBe(401);
-    expect((await createPOST(json("POST", { id: uuid(1), envelope: v1("a") }))).status).toBe(401);
     expect((await removeDELETE(json("DELETE"), params(uuid(1)))).status).toBe(401);
   });
 
-  it("answers 404 to a non-member on all three handlers", async () => {
+  it("answers 404 to a non-member on both handlers", async () => {
     await db.delete(householdMembers).where(eq(householdMembers.userId, "o"));
     expect((await listGET()).status).toBe(404);
-    expect((await createPOST(json("POST", { id: uuid(1), envelope: v1("a") }))).status).toBe(404);
     expect((await removeDELETE(json("DELETE"), params(uuid(1)))).status).toBe(404);
   });
 
-  it("creates as the caller, lists with the creator's name, deletes", async () => {
-    const res = await createPOST(
-      json("POST", { id: uuid(1), createdBy: "x", envelope: v1("a") })
-    );
-    expect(res.status).toBe(201);
-    expect(await res.json()).toMatchObject({
-      id: uuid(1),
-      createdBy: "o",
-      createdByName: "Olive",
-      envelope: v1("a"),
-    });
+  it("lists with the creator's name, deletes", async () => {
+    await insertDraft(uuid(1));
     const list = await (await listGET()).json();
     expect(list).toHaveLength(1);
-    expect(list[0].createdBy).toBe("o");
+    expect(list[0]).toMatchObject({ id: uuid(1), createdBy: "o", createdByName: "Olive", envelope: v1("a") });
     expect((await removeDELETE(json("DELETE"), params(uuid(1)))).status).toBe(204);
     expect(await (await listGET()).json()).toEqual([]);
   });
 
-  it("refuses an envelope of the wrong mode with 400", async () => {
-    expect((await createPOST(json("POST", { id: uuid(1), envelope: v0 }))).status).toBe(400);
-  });
-
-  it("refuses a stale key with 409", async () => {
-    await db.update(households).set({ keyVersion: 2 }).where(eq(households.id, hid));
-    const res = await createPOST(json("POST", { id: uuid(1), envelope: v1("a") }));
-    expect(res.status).toBe(409);
-    expect((await res.json()).error).toBe("Stale key");
-  });
-
-  it("refuses a duplicate id with 409", async () => {
-    await createPOST(json("POST", { id: uuid(1), envelope: v1("a") }));
-    const res = await createPOST(json("POST", { id: uuid(1), envelope: v1("b") }));
-    expect(res.status).toBe(409);
-    expect((await res.json()).error).toBe("Duplicate id");
-  });
-
-  it("refuses the 21st draft with 409", async () => {
-    for (let i = 1; i <= 20; i++) {
-      expect((await createPOST(json("POST", { id: uuid(i), envelope: v1("a") }))).status).toBe(201);
-    }
-    const res = await createPOST(json("POST", { id: uuid(21), envelope: v1("a") }));
-    expect(res.status).toBe(409);
-    expect((await res.json()).error).toBe("Too many drafts");
-  });
-
   it("answers 404 deleting a foreign or non-uuid id", async () => {
-    await db.insert(apartmentDrafts).values({
-      id: uuid(9),
-      householdId: otherHid,
-      createdBy: "x",
-      envelope: JSON.stringify(v1("a")),
-    });
+    await insertDraft(uuid(9), otherHid, "x");
     expect((await removeDELETE(json("DELETE"), params(uuid(9)))).status).toBe(404);
     expect((await removeDELETE(json("DELETE"), params("nope"))).status).toBe(404);
-  });
-
-  it("never touches the credit counters, billing on", async () => {
-    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
-    await db
-      .update(households)
-      .set({ apartmentCreditsGranted: 5, apartmentsEverAdded: 2 })
-      .where(eq(households.id, hid));
-    await createPOST(json("POST", { id: uuid(1), envelope: v1("a") }));
-    const [h] = await db.select().from(households).where(eq(households.id, hid));
-    expect(h.apartmentCreditsGranted).toBe(5);
-    expect(h.apartmentsEverAdded).toBe(2);
   });
 });

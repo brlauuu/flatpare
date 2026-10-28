@@ -37,6 +37,9 @@ interface FakeServer {
   billing: { enabled: boolean; granted: number; used: number; fail: boolean };
   // Apartment ids whose first processing was charged (#413).
   charged: Set<string>;
+  // Stored PDFs (#413): POST /api/files paths, and the ones deleted.
+  files: Set<string>;
+  deletedFiles: string[];
   calls: { method: string; url: string; body?: unknown }[];
 }
 
@@ -53,6 +56,8 @@ function makeServer(): FakeServer {
     },
     billing: { enabled: false, granted: 0, used: 0, fail: false },
     charged: new Set(),
+    files: new Set(),
+    deletedFiles: [],
     calls: [],
   };
 }
@@ -126,10 +131,18 @@ function installFetch(server: FakeServer) {
         return json(undefined, 204);
       }
       if (url === "/api/drafts" && method === "GET") return json([...server.drafts.values()]);
-      if (url === "/api/drafts" && method === "POST") {
-        const row: DraftRow = { id: body.id, createdBy: ME.userId, createdByName: ME.userName, envelope: body.envelope, createdAt: now() };
-        server.drafts.set(row.id, row);
-        return json(row, 201);
+      // Blob off: uploads go through POST /api/files.
+      if (url === "/api/files/upload-token" && method === "GET") return json({ error: "off" }, 404);
+      if (url === "/api/files" && method === "POST" && init?.body instanceof FormData) {
+        const file = init.body.get("file") as File;
+        const path = `/api/uploads/households/${HID}/${file.name}`;
+        server.files.add(path);
+        return json({ path }, 201);
+      }
+      if (url === "/api/files" && method === "DELETE") {
+        server.deletedFiles.push(body.path);
+        server.files.delete(body.path);
+        return json(undefined, 204);
       }
       const draft = url.match(/^\/api\/drafts\/([^/]+)$/);
       if (draft && method === "DELETE") {
@@ -682,54 +695,144 @@ describe("HouseholdDataProvider", () => {
 // #219: every seal carries the version of the key this device holds, and a
 // `409 Stale key` answer refreshes the crypto status and tells the caller to
 // try again once the store has reloaded under the new key.
-describe("drafts (#190)", () => {
+describe("drafts left from before #413", () => {
   const D1 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  const D2 = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 
-  it("loads and decodes drafts, and marks an unreadable one corrupt", async () => {
-    const good = await seal(dataKey, { url: "https://a.ch/1", title: "Nice" }, envelopeAad(HID, "drafts", D1));
-    server.drafts.set(D1, { id: D1, createdBy: "u-other", createdByName: "Other", envelope: good, createdAt: "t" });
-    const foreign = await seal(dataKey, { url: "https://a.ch/2", title: null }, envelopeAad(HID, "drafts", "other-id"));
-    server.drafts.set("bad", { id: "bad", createdBy: null, createdByName: null, envelope: foreign, createdAt: "t" });
+  async function seedDraft(id: string, data: { url: string; title: string | null }, aadId = id) {
+    const envelope = await seal(dataKey, data, envelopeAad(HID, "drafts", aadId));
+    server.drafts.set(id, { id, createdBy: "u-other", createdByName: "Other", envelope, createdAt: "t" });
+  }
+
+  it("turns each draft into an unprocessed apartment with the same id, then deletes it", async () => {
+    await seedDraft(D1, { url: "https://a.ch/1", title: "Nice" });
+    await seedDraft(D2, { url: "https://b.ch/2", title: null });
     renderProvider();
-    const ctx = await ready();
-    expect(ctx.drafts.find((d) => d.id === D1)).toEqual({
-      id: D1, corrupt: false, url: "https://a.ch/1", title: "Nice", createdBy: "u-other", createdByName: "Other", createdAt: "t",
+    const ctx = await waitForContext((c) => c.apartments.length === 2);
+    expect(ctx.apartments.find((a) => a.id === D1)).toMatchObject({
+      name: "Nice",
+      listingUrl: "https://a.ch/1",
+      processed: false,
     });
-    expect(ctx.drafts.find((d) => d.id === "bad")).toMatchObject({ corrupt: true, url: null, title: null });
+    // No title: named after the site.
+    expect(ctx.apartments.find((a) => a.id === D2)?.name).toBe("b.ch");
+    await waitFor(() => expect(server.drafts.size).toBe(0));
+    // Creating calls nothing outside the app.
+    expect(server.calls.some((c) => c.url.startsWith("/api/process/"))).toBe(false);
   });
 
-  it("createDraft posts a sealed envelope and adds the view", async () => {
+  it("only deletes a draft another device already turned into an apartment", async () => {
+    await seed(D1, emptyApartment("Made elsewhere"));
+    await seedDraft(D1, { url: "https://a.ch/1", title: "Nice" });
     renderProvider();
-    const ctx = await ready();
-    let view: Awaited<ReturnType<typeof ctx.createDraft>> | undefined;
+    await ready();
+    await waitFor(() => expect(server.drafts.size).toBe(0));
+    expect(server.apartments.size).toBe(1);
+    expect((captured as HouseholdDataContextValue).apartments[0].name).toBe("Made elsewhere");
+  });
+
+  it("leaves a draft that cannot be opened where it is", async () => {
+    await seedDraft(D1, { url: "https://a.ch/1", title: null }, "other-id");
+    renderProvider();
+    await ready();
+    await waitFor(() =>
+      expect(server.calls.some((c) => c.method === "GET" && c.url === "/api/drafts")).toBe(true)
+    );
+    expect(server.drafts.size).toBe(1);
+    expect(server.apartments.size).toBe(0);
+  });
+
+  it("stops looking once no draft is left", async () => {
+    renderProvider();
+    await ready();
+    const listed = () => server.calls.filter((c) => c.method === "GET" && c.url === "/api/drafts").length;
+    await waitFor(() => expect(listed()).toBe(1));
     await act(async () => {
-      view = await ctx.createDraft("https://a.ch/1", "Nice");
+      await (captured as HouseholdDataContextValue).reload();
     });
-    expect(view).toMatchObject({ url: "https://a.ch/1", title: "Nice", corrupt: false });
-    const row = server.drafts.get(view!.id)!;
-    const plain = await open(dataKey, row.envelope, envelopeAad(HID, "drafts", view!.id));
-    expect(plain).toEqual({ url: "https://a.ch/1", title: "Nice" });
-    await waitForContext((c) => c.drafts.length === 1);
+    await ready();
+    expect(listed()).toBe(1);
   });
 
-  it("createDraft rejects text that is not a web link without a request", async () => {
+  it("keeps the page working when the drafts cannot be listed", async () => {
+    await seed(A1, emptyApartment("Flat"));
+    const real = fetch as Mock;
+    const inner = real.getMockImplementation()!;
+    real.mockImplementation(async (input: string, init?: RequestInit) =>
+      input === "/api/drafts" ? json({ error: "boom" }, 500) : inner(input, init)
+    );
+    renderProvider();
+    const ctx = await ready();
+    expect(ctx.apartments).toHaveLength(1);
+    expect(ctx.error).toBeNull();
+  });
+});
+
+describe("createApartmentFromLink (#413)", () => {
+  it("adds an unprocessed apartment for the link, free", async () => {
+    server.billing = { enabled: true, granted: 0, used: 0, fail: false };
+    renderProvider();
+    const ctx = await ready();
+    let id = "";
+    await act(async () => {
+      ({ id } = await ctx.createApartmentFromLink("look at https://homegate.ch/x please", "Bright flat"));
+    });
+    const view = (await waitForContext((c) => c.apartments.length === 1)).apartments[0];
+    expect(view).toMatchObject({ id, name: "Bright flat", listingUrl: "https://homegate.ch/x", processed: false });
+    expect(server.calls.some((c) => c.url.startsWith("/api/process/"))).toBe(false);
+  });
+
+  it("rejects text without a web link before any request", async () => {
     renderProvider();
     const ctx = await ready();
     const before = server.calls.length;
-    await expect(ctx.createDraft("not a link", null)).rejects.toThrow("Not a web link");
+    await expect(ctx.createApartmentFromLink("not a link", null)).rejects.toThrow("Not a web link");
     expect(server.calls.length).toBe(before);
   });
+});
 
-  it("deleteDraft removes it", async () => {
-    const env = await seal(dataKey, { url: "https://a.ch/1", title: null }, envelopeAad(HID, "drafts", D1));
-    server.drafts.set(D1, { id: D1, createdBy: null, createdByName: null, envelope: env, createdAt: "t" });
+describe("attachPdf (#413)", () => {
+  const bytes = () => new Uint8Array([37, 80, 68, 70]) as Uint8Array<ArrayBuffer>;
+
+  it("stores the PDF under a fresh name and points the row at it", async () => {
+    await seed(A1, emptyApartment("Flat"));
     renderProvider();
     const ctx = await ready();
     await act(async () => {
-      await ctx.deleteDraft(D1);
+      await ctx.attachPdf(A1, bytes());
     });
-    await waitForContext((c) => c.drafts.length === 0);
-    expect(server.drafts.size).toBe(0);
+    const pdf = (await waitForContext((c) => c.apartments[0].pdf !== null)).apartments[0].pdf!;
+    expect(pdf.path).toMatch(new RegExp(`/${A1}\\.r[0-9a-f]{12}\\.pdf\\.enc$`));
+    expect(server.files.has(pdf.path)).toBe(true);
+    expect(server.deletedFiles).toEqual([]);
+  });
+
+  it("deletes the replaced file only after the row points at the new one", async () => {
+    const old = `/api/uploads/households/${HID}/${A1}.pdf.enc`;
+    server.files.add(old);
+    await seed(A1, { ...emptyApartment("Flat"), pdf: { path: old, iv: null } });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.attachPdf(A1, bytes());
+    });
+    await waitFor(() => expect(server.deletedFiles).toEqual([old]));
+    const put = server.calls.findIndex((c) => c.method === "PUT" && c.url === `/api/apartments/${A1}`);
+    const del = server.calls.findIndex((c) => c.method === "DELETE" && c.url === "/api/files");
+    expect(put).toBeGreaterThan(-1);
+    expect(del).toBeGreaterThan(put);
+    expect((captured as HouseholdDataContextValue).apartments[0].pdf?.path).not.toBe(old);
+  });
+
+  it("deletes the new file and keeps the old one when the write fails", async () => {
+    const old = `/api/uploads/households/${HID}/${A1}.pdf.enc`;
+    await seed(A1, { ...emptyApartment("Flat"), pdf: { path: old, iv: null } });
+    renderProvider();
+    const ctx = await ready();
+    server.apartments.delete(A1);
+    await expect(ctx.attachPdf(A1, bytes())).rejects.toThrow();
+    await waitFor(() => expect(server.deletedFiles).toHaveLength(1));
+    expect(server.deletedFiles[0]).not.toBe(old);
   });
 });
 

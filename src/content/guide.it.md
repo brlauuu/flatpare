@@ -123,17 +123,17 @@ Flatpare funziona nel browser del telefono. Puoi anche installarlo: si apre allo
 
 ### Condividere annunci con Flatpare (Android)
 
-Una volta installato su Android, Flatpare compare nel menu di condivisione del telefono. Condividi un PDF dai tuoi file o da un'e-mail: Flatpare chiede se aggiungerlo, poi lo legge come qualsiasi caricamento. Condividi un link dal browser o da un'app di annunci: Flatpare lo salva in **Da aggiungere**.
+Una volta installato su Android, Flatpare compare nel menu di condivisione del telefono. Condividi un PDF dai tuoi file o da un'e-mail: Flatpare chiede se aggiungerlo, poi lo legge come qualsiasi caricamento. Condividi un link dal browser o da un'app di annunci: Flatpare lo aggiunge come appartamento non ancora elaborato e lo apre.
 
 Se al momento della condivisione non hai effettuato l'accesso, o Flatpare è bloccato, l'elemento aspetta un giorno sul telefono. Accedi o sblocca, e Flatpare chiede se aggiungerlo.
 
 ### Incolla link (iPhone e ovunque altrove)
 
-Un iPhone non può condividere nulla con Flatpare. Copia invece il link dell'annuncio, apri Flatpare e tocca **Incolla link** nella pagina Appartamenti. Il link viene salvato in **Da aggiungere**.
+Un iPhone non può condividere nulla con Flatpare. Copia invece il link dell'annuncio, apri Flatpare e tocca **Incolla link** nella pagina Appartamenti. Flatpare aggiunge un appartamento per il link e lo apre.
 
-### Link da aggiungere più tardi
+### Appartamenti da un link
 
-**Da aggiungere**, in cima alla pagina Appartamenti, è l'elenco dei link del tuo gruppo che non sono ancora appartamenti. Tutto il gruppo lo vede, con il nome di chi ha salvato ogni link. Salvare un link è gratuito. Tocca **Aggiungi** per trasformarlo in un appartamento, con o senza il suo PDF; nella versione ospitata da noi, si usa un credito appartamento quando il suo PDF viene letto o il suo indirizzo trovato sulla mappa. Fino a 20 link possono aspettare contemporaneamente.
+Un appartamento aggiunto da un link tiene il link ed è segnato **Non elaborato** nell'elenco. Aggiungerlo è gratuito, e tutto il gruppo può subito valutarlo e descriverlo. Nella sua pagina, **Allega PDF** aggiunge il PDF dell'annuncio e lo legge; con un indirizzo viene trovato sulla mappa. Nella versione ospitata da noi, la prima delle due cose usa un credito appartamento, e l'altra è poi gratuita. **Sostituisci PDF** cambia il PDF con uno più recente senza leggerlo, quindi i dati restano come sono; tocca **Rielabora** se vuoi che venga letto. I link salvati in **Da aggiungere** prima di questa modifica sono diventati appartamenti di questo tipo.
 
 ---
 

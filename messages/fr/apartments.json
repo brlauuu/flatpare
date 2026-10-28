@@ -55,7 +55,9 @@
     "ratingSaveFailed": "Impossible d’enregistrer l’évaluation",
     "availableFrom": "Disponible dès le : {date}",
     "showOnMap": "Voir sur la carte",
-    "processFailed": "Impossible de traiter l’appartement"
+    "processFailed": "Impossible de traiter l’appartement",
+    "replacePdfConfirm": "Remplacer le PDF de cet appartement ? Le nouveau est enregistré mais pas lu, donc les informations restent telles quelles. L’ancien PDF est supprimé.",
+    "attachFailed": "Impossible de joindre le PDF"
   },
   "actions": {
     "viewPdf": "Voir le PDF",
@@ -65,7 +67,10 @@
     "reprocess": "Retraiter",
     "reprocessing": "Retraitement…",
     "delete": "Supprimer",
-    "deleting": "Suppression…"
+    "deleting": "Suppression…",
+    "attachPdf": "Joindre un PDF",
+    "replacePdf": "Remplacer le PDF",
+    "attaching": "Ajout…"
   },
   "metrics": {
     "rentPerMonth": "CHF {amount, number}/mois",
@@ -104,13 +109,11 @@
     "nameRequired": "Le nom est obligatoire",
     "saveFailed": "Impossible d’enregistrer l’appartement",
     "processing": "Traitement ({done}/{total})",
-    "fromDraft": "Ajout du lien que tu as enregistré : {host}",
     "shareUnavailable": "Ce partage n'est pas arrivé jusqu'à Flatpare. Partage-le à nouveau ou importe le PDF ici.",
     "shareNothing": "Rien de ce qui a été partagé n'est utilisable par Flatpare : ni PDF ni lien.",
     "shareDropped": "{count, plural, one {# fichier a été ignoré} other {# fichiers ont été ignorés}} : seuls les PDF peuvent être ajoutés.",
     "shareConfirmPdf": "{count, plural, one {Ajouter le PDF partagé ?} other {Ajouter les # PDF partagés ?}}",
-    "shareConfirmLink": "Enregistrer le lien partagé depuis {host} ?",
-    "shareSave": "Enregistrer"
+    "shareConfirmLink": "Ajouter un appartement pour le lien partagé depuis {host} ?"
   },
   "upload": {
     "title": "Ajouter des annonces",
@@ -188,19 +191,12 @@
   "errors": {
     "staleKey": "La clé du foyer a été changée par le propriétaire. Tes données ont été rechargées ; réessaie, s’il te plaît."
   },
-  "drafts": {
-    "title": "À ajouter",
-    "sharedBy": "{name}, {date}",
-    "formerMember": "Ancien membre",
-    "add": "Ajouter",
-    "delete": "Supprimer",
-    "corrupt": "Ce lien n'a pas pu être lu.",
+  "pasteLink": {
     "paste": "Coller un lien",
     "pasteNoLink": "Le presse-papiers ne contient aucun lien.",
     "pasteField": "Colle le lien ici",
     "save": "Enregistrer",
-    "full": "La liste des liens à ajouter est pleine (20). Ajoute-en d'abord ou supprime-en.",
-    "deleteFailed": "Impossible de supprimer ce lien. Réessaie."
+    "full": "Ce foyer a déjà autant d’appartements qu’il peut en avoir. Supprimes-en d’abord un."
   },
   "sharePrompt": {
     "pdf": "Ajouter le PDF partagé ?",

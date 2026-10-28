@@ -9,6 +9,14 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+
+- On an apartment's page, **Attach PDF** adds the listing's PDF and reads it, and **Replace PDF** swaps it for a newer one without reading it, so the details you have stay as they are (#413).
+
+### Changed
+
+- A link you paste or share becomes an apartment straight away, not processed yet and free, and opens so you can add its address or PDF. The **To add** list is gone: the links saved there have become apartments like these (#413).
+
 ## 0.26.0 — 2026-10-28
 
 ### Changed

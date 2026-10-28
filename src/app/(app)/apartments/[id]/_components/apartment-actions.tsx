@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import {
   ExternalLink,
+  FilePlus,
   FileText,
+  FileUp,
   Link2Off,
   Map as MapIcon,
   Pencil,
@@ -23,10 +26,13 @@ interface ApartmentActionsProps {
   mapHref: string | null;
   editing: boolean;
   reprocessing: boolean;
+  attaching: boolean;
   deleting: boolean;
   onEdit: () => void;
   onViewPdf: () => void;
   onReprocess: () => void;
+  // Attaches the PDF chosen, or replaces the one there (#413).
+  onAttachPdf: (file: File) => void;
   onDelete: () => void;
 }
 
@@ -51,14 +57,18 @@ export function ApartmentActions({
   mapHref,
   editing,
   reprocessing,
+  attaching,
   deleting,
   onEdit,
   onViewPdf,
   onReprocess,
+  onAttachPdf,
   onDelete,
 }: ApartmentActionsProps) {
   const t = useTranslations("apartments.actions");
   const tDetail = useTranslations("apartments.detail");
+  const fileInput = useRef<HTMLInputElement>(null);
+  const attachLabel = attaching ? t("attaching") : hasPdf ? t("replacePdf") : t("attachPdf");
   return (
     <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
       {hasPdf && (
@@ -68,6 +78,29 @@ export function ApartmentActions({
           <Label icon={FileText} text={t("viewPdf")} />
         </Button>
       )}
+      <input
+        ref={fileInput}
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        data-testid="attach-pdf-input"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // Cleared so choosing the same file again still fires a change.
+          e.target.value = "";
+          if (file) onAttachPdf(file);
+        }}
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={attaching || reprocessing || editing}
+        onClick={() => fileInput.current?.click()}
+        title={attachLabel}
+        className={ACTION}
+      >
+        <Label icon={hasPdf ? FileUp : FilePlus} text={attachLabel} />
+      </Button>
       {listingUrl ? (
         <a
           href={listingUrl}

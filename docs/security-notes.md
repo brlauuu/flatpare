@@ -385,9 +385,11 @@ which still only ever exists on the screen of the person who made it.
 A draft (a listing link saved to add later) is an envelope like any row, so the host
 sees neither the link nor its title. `apartment_drafts.created_by` is plaintext, set by
 the server from the session: it says which member shared a draft, which is no more than
-`ratings.user_id` already says about who rated. Drafts are capped at 20 per household
-and cost no credit. Since #413 an apartment costs none either until it is processed, so
-a draft is no longer a way around anything.
+`ratings.user_id` already says about who rated. Since #413 no draft is created: a link
+becomes an unprocessed apartment, free like the draft was, and the store turns the
+drafts left into apartments with the same ids and deletes them. The conversion runs on
+any member's device and goes through `POST /api/apartments` like any create, so it
+needs no new trust; `created_by` goes with the draft.
 
 ### Accepted: shared PDFs wait unencrypted in the browser until saved (#190)
 
@@ -402,7 +404,7 @@ the person goes on to add the apartment; the stored copy is then encrypted like 
 other. Anything with access to the browser profile (or XSS on the origin) can read the
 stash during that window, the same exposure as the unlocked keys. When no worker is
 active, `POST /share-target` redirects without reading the body or logging anything.
-A shared link is sealed as a draft like any row.
+A shared link becomes an unprocessed apartment, sealed like any row (#413).
 
 ### Accepted: any website can put a share in the stash; only the person's tap acts on it (#190)
 
@@ -411,12 +413,13 @@ auto-submit a form to `https://flatpare.com/share-target` with a link, a title o
 and the worker stashes it exactly like a share from the phone's share sheet: it cannot
 tell the two apart (`referrer` can be suppressed, and `Sec-Fetch-*` headers are not
 visible to a worker). Acted on automatically, that would let a stranger's page plant a
-phishing link in the household's To add strip under the visitor's name, take a draft
-slot, or start a paid PDF extraction and an orphaned upload.
+phishing link in the household's apartment list, take a slot under the apartment cap,
+or start a paid PDF extraction and an orphaned upload.
 
 So nothing in the stash is acted on without the person's tap. The add page asks first
-("Add the PDF you shared?" with the count, or "Save the link you shared from <host>?")
-and processes, uploads and saves nothing until Add or Save; Discard deletes the entry.
+("Add the PDF you shared?" with the count, or "Add an apartment for the link you shared
+from <host>?") and processes, uploads and saves nothing until Add; Discard deletes the
+entry.
 The pick-up prompt is the other way in, and its Add is itself the tap: it passes
 `confirmed=1`, which cannot be used to skip the question, because the entry id is a
 random UUID minted in this browser that no other site learns, and an unknown id only
@@ -466,15 +469,18 @@ starts quoting the input back in that field, the scrub in
 E4's own requirement is that no plaintext is persisted at any layer, and the rate
 limiter is a counter, so this is not in tension: `process_usage` holds a household id,
 an endpoint name, an hour bucket and an integer. Nothing in it derives from an
-address, a URL or a PDF. Both the schema comment and a migration test assert the
+address, a URL or a PDF. Since #413 it is written for every call, not only when a limit
+is set, so the host can compare calls with the credits spent. Both the schema comment and a migration test assert the
 column list so a future column is a deliberate decision rather than a drift.
 
 ### Accepted: rate limits are unlimited by default
 
-`PROCESS_RATE_LIMIT_PER_HOUR` unset means no limit and no row written. That is the
-self-hoster's default — `docker compose up` must work with no configuration, and a
-self-hoster spends their own Gemini and Maps keys. The hosted deployment sets an
-explicit value. The consequence is that a fresh self-hosted install has no ceiling on
+`PROCESS_RATE_LIMIT_PER_HOUR` unset means no limit. Calls are still counted in
+`process_usage` (#413), which a self-hoster's database then holds too; it says how many
+calls a household made per hour and nothing else. That is the self-hoster's default —
+`docker compose up` must work with no configuration, and a self-hoster spends their own
+Gemini and Maps keys. The hosted deployment leaves it unset for now, by decision (see
+Apartment credits in AGENTS.md). The consequence is that a fresh self-hosted install has no ceiling on
 its own API spend until the operator sets one.
 
 Windows are fixed hours, not sliding. A caller can therefore spend two full
@@ -597,6 +603,35 @@ under Apartment credits in AGENTS.md, which a modified client could already use 
 limit: the honest client never spends silently, and the mechanism that would bound a
 dishonest one is `PROCESS_RATE_LIMIT_PER_HOUR`, deliberately unset for now. The PDF
 read, the most expensive call, always requires an apartment id.
+
+Three ways a modified client can process without paying, all accepted:
+
+1. Geocode without naming an apartment (above). The server cannot tell an apartment's
+   address from a location's, and a label saying which would be one the client sets.
+2. Reuse an apartment id that is already paid for. Every later call naming a charged id
+   is free, so a client could pay one credit and then read any number of PDFs, or
+   geocode any number of addresses, under that id, including an id it made up. Counting
+   free reads per charge would narrow the PDF case; it is not built.
+3. Measure distances, which never charge (as before #413).
+
+All three need a signed-in member of a household that has paid at least once (the
+purchase gate). What makes them visible is the host's own record, kept per household
+and never per member: `process_usage` counts every process call whether or not a limit
+is set, and `credit_spends` records what each credit paid for (first processing,
+reprocess, recompute). `scripts/usage-report.mjs` puts the two side by side and marks a
+household whose PDF reads or geocodes run far ahead of its credits. Neither table holds
+request content or names a member or an apartment; the migration tests pin their
+columns. It detects; it does not cap.
+
+### Accepted: any member can delete any stored file of their household (#413)
+
+Replacing an apartment's PDF uploads the new file under a fresh name and then deletes
+the old one through `DELETE /api/files`, which takes a path and deletes it when it
+resolves to the caller's own household (400 otherwise). The server cannot see which row
+points at which file, so it cannot check that the file is no longer in use: a member
+could delete another apartment's PDF of the same household. That is the trust a member
+already has, since any member can delete any apartment, PDF included, with the existing
+`DELETE /api/apartments/:id`.
 
 ### Accepted: entitlement caps are unlimited by default
 

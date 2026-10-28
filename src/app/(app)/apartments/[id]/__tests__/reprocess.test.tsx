@@ -247,3 +247,76 @@ describe("Apartment detail — not processed yet", () => {
     expect(screen.queryByText(/min bike/)).toBeNull();
   });
 });
+
+// #413: a PDF can be attached to an apartment that has none, or replace the
+// one it has. Attaching reads it (the first processing); replacing stores it
+// only.
+describe("Apartment detail — attach or replace the PDF", () => {
+  const file = () => new File([new Uint8Array([37, 80, 68, 70])], "listing.pdf", { type: "application/pdf" });
+
+  it("attaches a PDF and reads it, filling only the empty fields", async () => {
+    const apartment = makeApartmentView({
+      id: "a1",
+      name: "From a link",
+      rentChf: 1900,
+      processed: false,
+      pdf: null,
+      rawExtractedData: null,
+    });
+    const user = userEvent.setup();
+    const { value } = setup(apartment);
+    expect(screen.getByRole("button", { name: "Attach PDF" })).toBeInTheDocument();
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    await waitFor(() => expect(value.updateApartment).toHaveBeenCalled());
+    expect(value.attachPdf).toHaveBeenCalledWith("a1", expect.any(Uint8Array));
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1");
+    const mutate = vi.mocked(value.updateApartment).mock.calls[0][1];
+    const next = mutate({ ...apartment });
+    expect(next.processed).toBe(true);
+    // The member's rent stays; the PDF's summary fills the empty field.
+    expect(next.rentChf).toBe(1900);
+    expect(next.summary).toBe("Refreshed summary after reprocess.");
+    // Nothing asks first: there was no PDF to replace.
+    expect(window.confirm).not.toHaveBeenCalled();
+  });
+
+  it("replaces a PDF after asking, and reads nothing", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    await waitFor(() => expect(value.attachPdf).toHaveBeenCalled());
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/^Replace this apartment's PDF\?/));
+    expect(screen.getByRole("button", { name: "Replace PDF" })).toBeInTheDocument();
+    expect(parsePdf).not.toHaveBeenCalled();
+    expect(value.updateApartment).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when replacing is cancelled", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    vi.mocked(window.confirm).mockReturnValue(false);
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    expect(value.attachPdf).not.toHaveBeenCalled();
+  });
+
+  it("keeps the PDF attached and says so when it cannot be read for want of credit", async () => {
+    const apartment = makeApartmentView({ id: "a1", name: "From a link", processed: false, pdf: null, rawExtractedData: null });
+    vi.mocked(parsePdf).mockRejectedValue(new ParsePdfError("No apartment credits left", "no_credits", 402));
+    const user = userEvent.setup();
+    const { value } = setup(apartment);
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    expect(await screen.findByText("Couldn't process apartment")).toBeInTheDocument();
+    expect(value.attachPdf).toHaveBeenCalled();
+    expect(value.updateApartment).not.toHaveBeenCalled();
+  });
+
+  it("says when the PDF could not be attached, and reads nothing", async () => {
+    const apartment = makeApartmentView({ id: "a1", name: "From a link", processed: false, pdf: null, rawExtractedData: null });
+    const user = userEvent.setup();
+    const { value } = setup(apartment);
+    vi.mocked(value.attachPdf).mockRejectedValue(new Error("Upload failed (500)"));
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    expect(await screen.findByText("Couldn't attach the PDF")).toBeInTheDocument();
+    expect(parsePdf).not.toHaveBeenCalled();
+  });
+});

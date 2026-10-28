@@ -52,8 +52,8 @@ function sharedLink(item: SharedItem): string | null {
   return firstHttpUrl(item.text ?? "") ?? (item.url ? firstHttpUrl(item.url) : null);
 }
 
-function isDraftListFull(err: unknown): boolean {
-  return err instanceof ApiClientError && err.status === 409 && err.message === "Too many drafts";
+function isAtApartmentCap(err: unknown): boolean {
+  return err instanceof ApiClientError && err.status === 409 && err.message === "Apartment limit reached";
 }
 
 type IntakeT = (key: "shareUnavailable" | "shareNothing" | "shareDropped", values?: { count: number }) => string;
@@ -79,25 +79,29 @@ async function readCandidate(id: string, t: IntakeT): Promise<ReadOutcome> {
   return { kind: "candidate", candidate: { id, files, link, title: item.title }, notice };
 }
 
-interface DraftDeps {
-  createDraft(url: string, title: string | null): Promise<unknown>;
+interface LinkDeps {
+  createApartmentFromLink(url: string, title: string | null): Promise<{ id: string }>;
   errorDetails(err: unknown): { message?: string };
   router: { replace(href: string): void };
   t: IntakeT;
-  tDrafts: (key: "full") => string;
+  tLink: (key: "full") => string;
 }
 
-/** Saves a shared link as a draft; answers the error to show, or null. */
-async function saveDraft(candidate: Candidate, deps: DraftDeps): Promise<string | null> {
+/**
+ * Adds a shared link as an unprocessed apartment (#413), free, and opens it;
+ * answers the error to show, or null.
+ */
+async function saveLink(candidate: Candidate, deps: LinkDeps): Promise<string | null> {
+  let id: string;
   try {
-    await deps.createDraft(candidate.link!, candidate.title);
+    ({ id } = await deps.createApartmentFromLink(candidate.link!, candidate.title));
   } catch (err) {
-    return isDraftListFull(err)
-      ? deps.tDrafts("full")
+    return isAtApartmentCap(err)
+      ? deps.tLink("full")
       : (deps.errorDetails(err).message ?? deps.t("shareUnavailable"));
   }
   await deleteShare(candidate.id);
-  deps.router.replace("/apartments");
+  deps.router.replace(`/apartments/${id}`);
   return null;
 }
 
@@ -174,22 +178,22 @@ function createShareEntry() {
 // person confirms: any website can post a form to /share-target, and the
 // worker cannot tell that from the phone's share sheet. Once confirmed, PDFs
 // go into the normal add flow and the entry is deleted once everything saved;
-// a link alone becomes a draft. The entry survives until then, so a reload
-// offers it again.
+// a link alone becomes an unprocessed apartment (#413). The entry survives
+// until then, so a reload offers it again.
 export function useShareIntake({ onFiles, onError }: ShareIntakeOptions): ShareIntake {
   const t = useTranslations("apartments.new");
-  const tDrafts = useTranslations("apartments.drafts");
+  const tLink = useTranslations("apartments.pasteLink");
   const errorDetails = useStoreErrorDetails();
   const router = useRouter();
-  const { createDraft, status } = useHouseholdData();
+  const { createApartmentFromLink, status } = useHouseholdData();
   const { shareId, confirmed } = shareParams(useSearchParams());
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  // The share being acted on: confirmed, and the store's first load is in (a
-  // draft committed while that load is in flight is overwritten by its
-  // answer, so the link would vanish from the To add strip). Latched here so
+  // The share being acted on: confirmed, and the store's first load is in (an
+  // apartment added while that load is in flight is overwritten by its
+  // answer, so the shared link would vanish from the list). Latched here so
   // a later reload of the store does not take the shared link away mid-way.
   const [live, setLive] = useState<Candidate | null>(null);
   const actNow = candidate && accepted && status === "ready" ? candidate : null;
@@ -200,9 +204,9 @@ export function useShareIntake({ onFiles, onError }: ShareIntakeOptions): ShareI
   const acted = useRef<string | null>(null);
   const [entry] = useState(createShareEntry);
   const mounted = useRef(true);
-  const latest = useRef({ onFiles, onError, createDraft, errorDetails, router, t, tDrafts });
+  const latest = useRef({ onFiles, onError, createApartmentFromLink, errorDetails, router, t, tLink });
   useEffect(() => {
-    latest.current = { onFiles, onError, createDraft, errorDetails, router, t, tDrafts };
+    latest.current = { onFiles, onError, createApartmentFromLink, errorDetails, router, t, tLink };
   });
   useEffect(() => {
     mounted.current = true;
@@ -244,7 +248,7 @@ export function useShareIntake({ onFiles, onError }: ShareIntakeOptions): ShareI
       latest.current.onFiles(live.files);
       return;
     }
-    void saveDraft(live, latest.current).then((message) => {
+    void saveLink(live, latest.current).then((message) => {
       if (mounted.current && message) latest.current.onError(message);
     });
   }, [live, entry]);

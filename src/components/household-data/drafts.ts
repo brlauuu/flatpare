@@ -1,8 +1,12 @@
-// Fetch + codec work for drafts (#190), kept out of the provider.
-import { openDraft, sealDraft } from "@/lib/household-data/codec";
-import type { Draft, DecodedDraft, DraftView } from "@/lib/household-data/types";
+// Drafts (#190) were links saved to add later. Since #413 a link becomes an
+// unprocessed apartment straight away, which costs nothing either, so no new
+// draft is made; the ones left are turned into apartments when the store
+// loads (adoptDrafts). Kept out of the provider.
+import { openDraft } from "@/lib/household-data/codec";
+import { apartmentFromLink } from "@/lib/household-data/links";
+import type { Apartment, DecodedDraft } from "@/lib/household-data/types";
 import type { DraftRow } from "@/lib/household-data/wire";
-import { getJson, sendJson } from "./api-client";
+import { ApiClientError, getJson, sendJson } from "./api-client";
 
 async function decodeDraft(key: CryptoKey | null, householdId: number, row: DraftRow): Promise<DecodedDraft> {
   const data = await openDraft(key, householdId, row.id, row.envelope);
@@ -21,33 +25,35 @@ export async function fetchDrafts(key: CryptoKey | null, householdId: number): P
   return Promise.all(rows.map((row) => decodeDraft(key, householdId, row)));
 }
 
-type Send = <T>(method: "POST" | "PUT" | "DELETE", url: string, body?: unknown) => Promise<T>;
-
-export async function postDraft(
-  send: Send,
-  key: CryptoKey | null,
-  householdId: number,
-  keyVersion: number,
-  id: string,
-  data: Draft
-): Promise<DecodedDraft> {
-  const envelope = await sealDraft(key, householdId, id, data, keyVersion);
-  const saved = await send<DraftRow>("POST", "/api/drafts", { id, envelope });
-  return { id: saved.id, createdBy: saved.createdBy, createdByName: saved.createdByName, createdAt: saved.createdAt, data };
-}
-
 export async function removeDraft(id: string): Promise<void> {
   await sendJson<void>("DELETE", `/api/drafts/${id}`);
 }
 
-export function viewOfDraft(d: DecodedDraft): DraftView {
-  return {
-    id: d.id,
-    corrupt: d.data === null,
-    url: d.data?.url ?? null,
-    title: d.data?.title ?? null,
-    createdBy: d.createdBy,
-    createdByName: d.createdByName,
-    createdAt: d.createdAt,
-  };
+// Turns each draft into an unprocessed apartment with the same id, then
+// deletes the draft. A 409 "Duplicate id" means another device (or an earlier
+// load whose delete failed) already made the apartment: the draft just goes.
+// Any other failure, the apartment cap included, leaves the draft for the
+// next load. A draft that cannot be opened stays as it is: nothing can be
+// made from it, and rotation still re-seals it.
+export async function adoptDrafts(
+  drafts: DecodedDraft[],
+  create: (id: string, data: Apartment) => Promise<unknown>
+): Promise<number> {
+  let adopted = 0;
+  for (const d of drafts) {
+    if (d.data === null) continue;
+    try {
+      await create(d.id, apartmentFromLink(d.data.url, d.data.title));
+      adopted += 1;
+    } catch (err) {
+      if (!(err instanceof ApiClientError && err.status === 409 && err.message === "Duplicate id")) continue;
+    }
+    try {
+      await removeDraft(d.id);
+    } catch {
+      // The apartment exists; the next load finds the draft, gets "Duplicate
+      // id" and deletes it then.
+    }
+  }
+  return adopted;
 }

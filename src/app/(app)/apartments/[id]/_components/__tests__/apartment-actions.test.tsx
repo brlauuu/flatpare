@@ -15,10 +15,12 @@ function renderActions(mapHref: string | null, canReprocess = true) {
       mapHref={mapHref}
       editing={false}
       reprocessing={false}
+      attaching={false}
       deleting={false}
       onEdit={noop}
       onViewPdf={noop}
       onReprocess={noop}
+      onAttachPdf={noop}
       onDelete={noop}
     />
   );

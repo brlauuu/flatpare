@@ -44,9 +44,10 @@ export function _resetBlobModeProbeForTests() {
 export async function uploadEncryptedFile(
   bytes: Uint8Array<ArrayBuffer>,
   apartmentId: string,
-  keyVersion = 1
+  keyVersion = 1,
+  revision?: string
 ): Promise<string> {
-  const fileName = pdfFileName(apartmentId, keyVersion);
+  const fileName = pdfFileName(apartmentId, keyVersion, revision);
   const body = new Blob([bytes], { type: "application/octet-stream" });
   const probe = await probeBlobMode();
 
@@ -71,6 +72,7 @@ export async function uploadEncryptedFile(
   formData.append("file", body, fileName);
   formData.append("apartmentId", apartmentId);
   formData.append("keyVersion", String(keyVersion));
+  if (revision) formData.append("revision", revision);
   const res = await fetch(FILES_URL, { method: "POST", body: formData });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };

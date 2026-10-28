@@ -45,7 +45,7 @@ import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 const LINK = "https://www.example.ch/listing/7";
 const UNAVAILABLE = "That share did not reach Flatpare. Share it again, or upload the PDF here.";
 const NOTHING = "Nothing that Flatpare can use was shared: no PDF and no link.";
-const FULL = "The list of links to add is full (20). Add or delete some first.";
+const FULL = "This household holds as many apartments as it may. Delete one first.";
 
 function entry(id: string, extra: Partial<SharedItem> = {}): SharedItem {
   return {
@@ -83,7 +83,7 @@ function pdf(name = "listing.pdf") {
 }
 
 // The confirmation every share asks before anything is processed or saved.
-async function tap(name: "Add" | "Save", user = userEvent.setup()) {
+async function tap(name: "Add", user = userEvent.setup()) {
   await user.click(await screen.findByRole("button", { name }));
 }
 
@@ -119,7 +119,7 @@ describe("receiving a shared PDF", () => {
     await user.click(save);
     await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
     expect(vi.mocked(value.createApartment).mock.calls[0][1].listingUrl).toBe(LINK);
-    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(value.createApartmentFromLink).not.toHaveBeenCalled();
   });
 
   it("keeps the shared link over the one read from the PDF", async () => {
@@ -201,7 +201,7 @@ describe("confirming a shared PDF", () => {
     await tap("Add");
     await screen.findByRole("button", { name: /^Save all/i });
     expect(parsePdf).toHaveBeenCalledTimes(2);
-    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(value.createApartmentFromLink).not.toHaveBeenCalled();
   });
 
   it("Discard deletes the entry and leaves the normal upload step", async () => {
@@ -252,7 +252,7 @@ describe("confirming a shared PDF", () => {
 });
 
 describe("receiving a shared link", () => {
-  it("saves it as a draft once, deletes the entry and goes to the list", async () => {
+  it("adds it as an unprocessed apartment once, deletes the entry and opens it (#413)", async () => {
     await put(entry("s1", { url: LINK, title: "Nice flat", dropped: 1 }));
     search = "share=s1";
     const { value } = renderWithHouseholdData(
@@ -260,10 +260,10 @@ describe("receiving a shared link", () => {
         <UploadPage />
       </StrictMode>
     );
-    await tap("Save");
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
-    expect(value.createDraft).toHaveBeenCalledTimes(1);
-    expect(value.createDraft).toHaveBeenCalledWith(LINK, "Nice flat");
+    await tap("Add");
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    expect(value.createApartmentFromLink).toHaveBeenCalledTimes(1);
+    expect(value.createApartmentFromLink).toHaveBeenCalledWith(LINK, "Nice flat");
     expect(await readShare("s1")).toBeNull();
   });
 
@@ -271,19 +271,19 @@ describe("receiving a shared link", () => {
     await put(entry("s1", { text: `Shared from an app: ${LINK}` }));
     search = "share=s1";
     const { value } = renderWithHouseholdData(<UploadPage />);
-    await tap("Save");
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
-    expect(value.createDraft).toHaveBeenCalledWith(LINK, null);
+    await tap("Add");
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    expect(value.createApartmentFromLink).toHaveBeenCalledWith(LINK, null);
   });
 
-  it("says the list is full and keeps the entry", async () => {
+  it("says the household is at its apartment cap and keeps the entry", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
     const { value } = renderWithHouseholdData(<UploadPage />);
-    vi.mocked(value.createDraft).mockRejectedValue(
-      new ApiClientError(409, "Too many drafts", { error: "Too many drafts" })
+    vi.mocked(value.createApartmentFromLink).mockRejectedValue(
+      new ApiClientError(409, "Apartment limit reached", { error: "Apartment limit reached" })
     );
-    await tap("Save");
+    await tap("Add");
     expect(await screen.findByText(FULL)).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(await readShare("s1")).not.toBeNull();
@@ -291,30 +291,30 @@ describe("receiving a shared link", () => {
 });
 
 describe("confirming a shared link", () => {
-  it("names the host and saves nothing until Save", async () => {
+  it("names the host and adds nothing until Add", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
     const { value } = renderWithHouseholdData(<UploadPage />);
     expect(
-      await screen.findByText("Save the link you shared from www.example.ch?")
+      await screen.findByText("Add an apartment for the link you shared from www.example.ch?")
     ).toBeInTheDocument();
-    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(value.createApartmentFromLink).not.toHaveBeenCalled();
     expect(await readShare("s1")).not.toBeNull();
   });
 
-  it("Discard deletes the entry and creates no draft", async () => {
+  it("Discard deletes the entry and adds nothing", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
     const user = userEvent.setup();
     const { value } = renderWithHouseholdData(<UploadPage />);
     await user.click(await screen.findByRole("button", { name: "Discard" }));
     await waitFor(async () => expect(await readShare("s1")).toBeNull());
-    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(value.createApartmentFromLink).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Choose files" })).toBeInTheDocument();
   });
 
-  it("creates the draft only once the store's first load is in", async () => {
+  it("adds the apartment only once the store's first load is in", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1&confirmed=1";
     const ui = <UploadPage />;
@@ -329,13 +329,13 @@ describe("confirming a shared link", () => {
       await readShare("s1");
     });
     await act(async () => {});
-    expect(loading.createDraft).not.toHaveBeenCalled();
+    expect(loading.createApartmentFromLink).not.toHaveBeenCalled();
 
     const ready = { ...loading, status: "ready" as const };
     rerender(<HouseholdDataContext.Provider value={ready}>{ui}</HouseholdDataContext.Provider>);
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments"));
-    expect(loading.createDraft).toHaveBeenCalledTimes(1);
-    expect(loading.createDraft).toHaveBeenCalledWith(LINK, null);
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    expect(loading.createApartmentFromLink).toHaveBeenCalledTimes(1);
+    expect(loading.createApartmentFromLink).toHaveBeenCalledWith(LINK, null);
   });
 });
 
@@ -358,7 +358,7 @@ describe("a share that cannot be used", () => {
     const { value } = renderWithHouseholdData(<UploadPage />);
     expect(await screen.findByText(NOTHING)).toBeInTheDocument();
     expect(screen.getByText("1 file was left out: only PDFs can be added.")).toBeInTheDocument();
-    expect(value.createDraft).not.toHaveBeenCalled();
+    expect(value.createApartmentFromLink).not.toHaveBeenCalled();
   });
 });
 

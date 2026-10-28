@@ -543,6 +543,19 @@ describe("applyMigrations", () => {
     ]);
   });
 
+  it("creates credit_spends (#413) with a household, a kind and a time only", async () => {
+    // The host's own log of what each credit paid for. A column naming a
+    // member or an apartment would be a new decision, not a detail.
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    expect((await columnNames(client, "credit_spends")).sort()).toEqual([
+      "household_id",
+      "id",
+      "kind",
+      "spent_at",
+    ]);
+  });
+
   it("0026 marks every existing apartment as charged (#413)", async () => {
     // Apply up to 0025 from a copy of the folder whose journal stops there,
     // add an apartment the old way, then apply the rest.

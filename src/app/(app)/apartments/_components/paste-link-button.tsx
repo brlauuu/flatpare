@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,13 @@ import { cn } from "@/lib/utils";
 
 type Notice = { kind: "noLink" | "full" } | { kind: "error"; text: string } | null;
 
+// Adds an unprocessed apartment for a pasted link (#413), free, and opens it:
+// the link is saved, and the address or the PDF can be added there.
 export function PasteLinkButton({ className }: { className?: string }) {
-  const t = useTranslations("apartments.drafts");
+  const t = useTranslations("apartments.pasteLink");
+  const router = useRouter();
   const errorDetails = useStoreErrorDetails();
-  const { createDraft } = useHouseholdData();
+  const { createApartmentFromLink } = useHouseholdData();
   const [notice, setNotice] = useState<Notice>(null);
   const [showField, setShowField] = useState(false);
   const [text, setText] = useState("");
@@ -25,14 +29,15 @@ export function PasteLinkButton({ className }: { className?: string }) {
     setBusy(true);
     setNotice(null);
     try {
-      await createDraft(raw, null);
+      const created = await createApartmentFromLink(raw, null);
       setShowField(false);
       setText("");
+      router.push(`/apartments/${created.id}`);
     } catch (err) {
-      if (err instanceof ApiClientError && err.status === 409 && err.message === "Too many drafts") {
+      if (err instanceof ApiClientError && err.status === 409 && err.message === "Apartment limit reached") {
         setNotice({ kind: "full" });
       } else {
-        // createDraft refuses text without a web link before any request.
+        // createApartmentFromLink refuses text without a web link before any request.
         setNotice(
           err instanceof Error && err.message !== "Not a web link"
             ? { kind: "error", text: errorDetails(err).message ?? "" }

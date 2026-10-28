@@ -55,7 +55,9 @@
     "ratingSaveFailed": "Non è stato possibile salvare la valutazione",
     "availableFrom": "Disponibile dal: {date}",
     "showOnMap": "Vedi sulla mappa",
-    "processFailed": "Impossibile elaborare l'appartamento"
+    "processFailed": "Impossibile elaborare l'appartamento",
+    "replacePdfConfirm": "Sostituire il PDF di questo appartamento? Il nuovo viene salvato ma non letto, quindi i dati restano come sono. Il vecchio PDF viene eliminato.",
+    "attachFailed": "Impossibile allegare il PDF"
   },
   "actions": {
     "viewPdf": "Vedi PDF",
@@ -65,7 +67,10 @@
     "reprocess": "Rielabora",
     "reprocessing": "Rielaborazione…",
     "delete": "Elimina",
-    "deleting": "Eliminazione…"
+    "deleting": "Eliminazione…",
+    "attachPdf": "Allega PDF",
+    "replacePdf": "Sostituisci PDF",
+    "attaching": "Allegamento…"
   },
   "metrics": {
     "rentPerMonth": "CHF {amount, number}/mese",
@@ -104,13 +109,11 @@
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare l'appartamento",
     "processing": "Elaborazione ({done}/{total})",
-    "fromDraft": "Stai aggiungendo il link che hai salvato: {host}",
     "shareUnavailable": "Questa condivisione non è arrivata a Flatpare. Condividila di nuovo o carica qui il PDF.",
     "shareNothing": "Non è stato condiviso nulla che Flatpare possa usare: nessun PDF e nessun link.",
     "shareDropped": "{count, plural, one {# file è stato escluso} other {# file sono stati esclusi}}: si possono aggiungere solo PDF.",
     "shareConfirmPdf": "{count, plural, one {Aggiungere il PDF condiviso?} other {Aggiungere i # PDF condivisi?}}",
-    "shareConfirmLink": "Salvare il link condiviso da {host}?",
-    "shareSave": "Salva"
+    "shareConfirmLink": "Aggiungere un appartamento per il link condiviso da {host}?"
   },
   "upload": {
     "title": "Carica annunci",
@@ -188,19 +191,12 @@
   "errors": {
     "staleKey": "Il proprietario ha cambiato la chiave del gruppo. I tuoi dati sono stati ricaricati; riprova."
   },
-  "drafts": {
-    "title": "Da aggiungere",
-    "sharedBy": "{name}, {date}",
-    "formerMember": "Ex membro",
-    "add": "Aggiungi",
-    "delete": "Elimina",
-    "corrupt": "Impossibile leggere questo link.",
+  "pasteLink": {
     "paste": "Incolla link",
     "pasteNoLink": "Gli appunti non contengono nessun link.",
     "pasteField": "Incolla qui il link",
     "save": "Salva",
-    "full": "L'elenco dei link da aggiungere è pieno (20). Aggiungine prima alcuni o eliminali.",
-    "deleteFailed": "Impossibile eliminare questo link. Riprova."
+    "full": "Questo gruppo ha già tutti gli appartamenti che può avere. Eliminane prima uno."
   },
   "sharePrompt": {
     "pdf": "Aggiungere il PDF condiviso?",

@@ -42,7 +42,6 @@ import {
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { ApartmentCard } from "./_components/apartment-card";
 import { ApartmentRow } from "./_components/apartment-row";
-import { DraftsStrip } from "./_components/drafts-strip";
 import { PasteLinkButton } from "./_components/paste-link-button";
 
 type ViewMode = "grid" | "list";
@@ -189,9 +188,6 @@ export default function ApartmentsPage() {
           {t("uploadFirst")}
         </Link>
         <PasteLinkButton className="items-center" />
-        <div className="w-full max-w-2xl">
-          <DraftsStrip />
-        </div>
         {/* Here too: a household that just bought, or deleted everything,
             holds no apartments and still has a balance (#305). */}
         <CreditBalance />
@@ -202,7 +198,6 @@ export default function ApartmentsPage() {
   return (
     <div className="space-y-6">
       <InstallHint />
-      <DraftsStrip />
       {failedEnrichments.length > 0 && (
         <div
           role="status"
@@ -344,7 +339,7 @@ export default function ApartmentsPage() {
               <ListIcon className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <PasteLinkButton />
+          {!atApartmentLimit && <PasteLinkButton />}
           {atApartmentLimit ? (
             <span
               className={cn(

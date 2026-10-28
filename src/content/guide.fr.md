@@ -123,17 +123,17 @@ Flatpare fonctionne dans le navigateur de ton téléphone. Tu peux aussi l'insta
 
 ### Partager des annonces vers Flatpare (Android)
 
-Une fois Flatpare installé sur Android, il apparaît dans le menu de partage de ton téléphone. Partage un PDF depuis tes fichiers ou ton e-mail : Flatpare te demande s'il faut l'ajouter, puis le lit comme n'importe quel ajout. Partage un lien depuis ton navigateur ou une app d'annonces : Flatpare l'enregistre sous **À ajouter**.
+Une fois Flatpare installé sur Android, il apparaît dans le menu de partage de ton téléphone. Partage un PDF depuis tes fichiers ou ton e-mail : Flatpare te demande s'il faut l'ajouter, puis le lit comme n'importe quel ajout. Partage un lien depuis ton navigateur ou une app d'annonces : Flatpare l'ajoute comme appartement pas encore traité, puis l'ouvre.
 
 Si tu es déconnecté ou si Flatpare est verrouillé au moment du partage, l'élément attend un jour sur ton téléphone. Connecte-toi ou déverrouille, et Flatpare te demande s'il faut l'ajouter.
 
 ### Coller un lien (iPhone et partout ailleurs)
 
-Un iPhone ne peut rien partager vers Flatpare. Copie plutôt le lien de l'annonce, ouvre Flatpare et touche **Coller un lien** sur la page Appartements. Le lien est enregistré sous **À ajouter**.
+Un iPhone ne peut rien partager vers Flatpare. Copie plutôt le lien de l'annonce, ouvre Flatpare et touche **Coller un lien** sur la page Appartements. Flatpare ajoute un appartement pour le lien et l'ouvre.
 
-### Des liens à ajouter plus tard
+### Des appartements à partir d'un lien
 
-**À ajouter**, en haut de la page Appartements, est la liste des liens de ton foyer qui ne sont pas encore des appartements. Tout le foyer la voit, avec le nom de qui a enregistré chaque lien. Enregistrer un lien est gratuit. Touche **Ajouter** pour en faire un appartement, avec ou sans son PDF ; sur la version hébergée, un crédit d’appartement est utilisé quand son PDF est lu ou son adresse placée sur la carte. Jusqu'à 20 liens peuvent attendre en même temps.
+Un appartement ajouté à partir d'un lien garde le lien et est marqué **Non traité** dans la liste. L'ajouter est gratuit, et tout le foyer peut tout de suite l'évaluer et le décrire. Sur sa page, **Joindre un PDF** ajoute le PDF de l'annonce et le lit ; avec une adresse, il est placé sur la carte. Sur la version hébergée, le premier des deux utilise un crédit d’appartement, et l'autre est ensuite gratuit. **Remplacer le PDF** change le PDF pour un plus récent sans le lire, donc les informations restent telles quelles ; touche **Retraiter** si tu veux qu'il soit lu. Les liens enregistrés sous **À ajouter** avant ce changement sont devenus des appartements de ce type.
 
 ---
 

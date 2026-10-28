@@ -55,7 +55,9 @@
     "ratingSaveFailed": "No se ha podido guardar la valoración",
     "availableFrom": "Disponible desde: {date}",
     "showOnMap": "Ver en el mapa",
-    "processFailed": "No se ha podido procesar el piso"
+    "processFailed": "No se ha podido procesar el piso",
+    "replacePdfConfirm": "¿Reemplazar el PDF de este piso? El nuevo se guarda pero no se lee, así que los datos se quedan como están. El PDF anterior se elimina.",
+    "attachFailed": "No se ha podido adjuntar el PDF"
   },
   "actions": {
     "viewPdf": "Ver PDF",
@@ -65,7 +67,10 @@
     "reprocess": "Volver a procesar",
     "reprocessing": "Procesando...",
     "delete": "Eliminar",
-    "deleting": "Eliminando..."
+    "deleting": "Eliminando...",
+    "attachPdf": "Adjuntar PDF",
+    "replacePdf": "Reemplazar PDF",
+    "attaching": "Adjuntando..."
   },
   "metrics": {
     "rentPerMonth": "CHF {amount, number}/mes",
@@ -104,13 +109,11 @@
     "nameRequired": "El nombre es obligatorio",
     "saveFailed": "No se ha podido guardar el piso",
     "processing": "Procesando ({done}/{total})",
-    "fromDraft": "Añadiendo el enlace que guardaste: {host}",
     "shareUnavailable": "Lo que compartiste no llegó a Flatpare. Compártelo de nuevo o sube el PDF aquí.",
     "shareNothing": "No se compartió nada que Flatpare pueda usar: ni un PDF ni un enlace.",
     "shareDropped": "{count, plural, one {Se omitió # archivo} other {Se omitieron # archivos}}: solo se pueden añadir PDF.",
     "shareConfirmPdf": "{count, plural, one {¿Añadir el PDF compartido?} other {¿Añadir los # PDF compartidos?}}",
-    "shareConfirmLink": "¿Guardar el enlace compartido de {host}?",
-    "shareSave": "Guardar"
+    "shareConfirmLink": "¿Añadir un piso para el enlace compartido de {host}?"
   },
   "upload": {
     "title": "Subir anuncios",
@@ -188,19 +191,12 @@
   "errors": {
     "staleKey": "Quien administra el hogar ha cambiado la clave del hogar. Tus datos se han vuelto a cargar; inténtalo de nuevo."
   },
-  "drafts": {
-    "title": "Por añadir",
-    "sharedBy": "{name}, {date}",
-    "formerMember": "Antiguo miembro",
-    "add": "Añadir",
-    "delete": "Eliminar",
-    "corrupt": "No se pudo leer este enlace.",
+  "pasteLink": {
     "paste": "Pegar enlace",
     "pasteNoLink": "El portapapeles no contiene ningún enlace.",
     "pasteField": "Pega el enlace aquí",
     "save": "Guardar",
-    "full": "La lista de enlaces por añadir está llena (20). Añade o elimina algunos primero.",
-    "deleteFailed": "No se pudo eliminar este enlace. Inténtalo de nuevo."
+    "full": "Este hogar ya tiene todos los pisos que puede tener. Elimina uno primero."
   },
   "sharePrompt": {
     "pdf": "¿Añadir el PDF compartido?",

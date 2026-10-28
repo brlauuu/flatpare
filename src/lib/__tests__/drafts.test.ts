@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { apartmentDrafts, households, users } from "@/lib/db/schema";
-import { createDraft, deleteDraft, listDrafts, MAX_DRAFTS } from "@/lib/drafts";
+import { deleteDraft, listDrafts } from "@/lib/drafts";
 import { eq } from "drizzle-orm";
 
 const uuid = (n: number) => `${String(n).padStart(8, "0")}-0000-4000-8000-000000000000`;
 const ENV = JSON.stringify({ v: 0, data: {} });
 
 let hid: number;
+
+// Since #413 nothing creates a draft; these are the ones left from before.
+async function createDraft(householdId: number, input: { id: string; createdBy: string; envelope: string }) {
+  await db.insert(apartmentDrafts).values({ ...input, householdId });
+}
 
 beforeEach(async () => {
   await db.delete(apartmentDrafts);
@@ -19,7 +24,7 @@ beforeEach(async () => {
 });
 
 describe("drafts", () => {
-  it("lists a created draft with its creator", async () => {
+  it("lists a draft with its creator", async () => {
     await createDraft(hid, { id: uuid(1), createdBy: "o", envelope: ENV });
     const rows = await listDrafts(hid);
     expect(rows).toHaveLength(1);
@@ -40,26 +45,6 @@ describe("drafts", () => {
     expect(await deleteDraft(other.id, uuid(1))).toBe(false);
     expect(await deleteDraft(hid, uuid(1))).toBe(true);
     expect(await listDrafts(hid)).toEqual([]);
-  });
-
-  it("caps at 20 and refuses the 21st with 409", async () => {
-    expect(MAX_DRAFTS).toBe(20);
-    for (let i = 1; i <= MAX_DRAFTS; i++) {
-      await createDraft(hid, { id: uuid(i), createdBy: "o", envelope: ENV });
-    }
-    await expect(
-      createDraft(hid, { id: uuid(99), createdBy: "o", envelope: ENV })
-    ).rejects.toMatchObject({ message: "Too many drafts", status: 409 });
-  });
-
-  it("lets concurrent creates fill exactly the cap", async () => {
-    const results = await Promise.allSettled(
-      Array.from({ length: 25 }, (_, i) =>
-        createDraft(hid, { id: uuid(i + 1), createdBy: "o", envelope: ENV })
-      )
-    );
-    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(MAX_DRAFTS);
-    expect(await listDrafts(hid)).toHaveLength(MAX_DRAFTS);
   });
 
   it("leaves the draft with a null creator when the user is deleted", async () => {

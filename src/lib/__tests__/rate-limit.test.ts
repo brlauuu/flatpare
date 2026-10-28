@@ -53,9 +53,11 @@ describe("processRateLimitPerHour", () => {
 });
 
 describe("consumeRateLimit", () => {
-  it("is a no-op when the limit is unset, touching no table", async () => {
+  it("counts every call but refuses none when the limit is unset (#413)", async () => {
     for (let i = 0; i < 50; i++) await consumeRateLimit(hid, "geocode");
-    expect(await db.select().from(processUsage)).toHaveLength(0);
+    const rows = await db.select().from(processUsage);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].count).toBe(50);
   });
 
   it("allows exactly the configured number of calls, then throws 429", async () => {
