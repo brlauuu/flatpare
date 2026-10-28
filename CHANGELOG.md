@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.22.2 — 2026-10-28
+
 ### Changed
 - The privacy section on the landing page and the guide say more exactly what each outside service receives: an address goes to Google Maps on its own, a listing link is opened only to check it is online, the map service sees which area you view, and nothing about an apartment is readable by us. (#405)
 
