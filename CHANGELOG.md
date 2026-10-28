@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.22.3 — 2026-10-28
+
 ### Changed
 - On a phone, the bottom bar shows icons only, the top bar is shorter and shows your name cut to seven characters, the language menu is a globe and the theme switch a plain sun or moon. (#404, #407)
 - On a phone, the apartment page's actions are a row of icons, and View on map is among them. (#407)
