@@ -124,12 +124,19 @@ export function formToFields(form: ApartmentForm): ApartmentFieldValues {
   };
 }
 
-export function apartmentFromForm(form: ApartmentForm, pdf: ApartmentPdf | null): Apartment {
+// `processed`: the form was filled from a PDF that was read, which spent the
+// apartment's credit (#413). An apartment entered by hand starts unprocessed.
+export function apartmentFromForm(
+  form: ApartmentForm,
+  pdf: ApartmentPdf | null,
+  processed = false
+): Apartment {
   return {
     ...emptyApartment(form.name),
     ...formToFields(form),
     rawExtractedData: form.rawExtractedData,
     pdf,
+    processed,
   };
 }
 

@@ -43,6 +43,8 @@ Ve a **Subir** en la barra de navegación y arrastra (o selecciona) un anuncio e
 
 Si no hay IA configurada, rellena los campos a mano. En cualquier caso llegas a la página del piso para revisar y corregir lo que haya salido mal: la extracción es un punto de partida, no un oráculo.
 
+También puedes añadir un piso a mano, sin PDF ni dirección. Mientras no tenga ninguno de los dos está **sin procesar**: puntúalo y rellena lo que sepas. En cuanto reciba una dirección o un PDF, Flatpare lo sitúa en el mapa y mide sus distancias.
+
 ### 6. Valora los pisos
 
 En la página de cada piso, valóralo en cinco categorías:
@@ -80,6 +82,8 @@ Los tiempos de trayecto se miden desde cada piso hasta cada uno de tus lugares g
 
 Si no hay ninguna API de distancias configurada, puedes introducir los tiempos a mano.
 
+Cambiar más tarde la dirección de un piso no vuelve a medir nada por sí solo: sus distancias quedan ocultas hasta que pulses **Volver a procesar** en su página. En la versión alojada, volver a procesarlo usa un crédito de piso, igual que **Recalcular todo** en la página Hogar, una vez para todo el cálculo. Añadir o cambiar un lugar es gratis.
+
 ### Gestión de los PDF
 
 - Subida de uno o de varios a la vez
@@ -104,7 +108,7 @@ En **Ajustes**, puedes:
 
 Como tus datos están cifrados, nadie puede restaurarlos por ti, ni siquiera nosotros. En la página **Hogar**, en **Tus datos**, cualquier miembro puede **exportar** todo el hogar como archivo ZIP: pisos, valoraciones, lugares y los PDF originales, además de un archivo de hoja de cálculo. **El archivo no está cifrado**, así que guárdalo en un lugar privado.
 
-Para recuperar una exportación, abre la página Hogar de un hogar que aún no tenga pisos ni lugares y elige **Importar**. Las valoraciones de otras personas se añaden a tus propios comentarios, con su nombre. En la versión alojada, cada piso importado usa un crédito de piso.
+Para recuperar una exportación, abre la página Hogar de un hogar que aún no tenga pisos ni lugares y elige **Importar**. Las valoraciones de otras personas se añaden a tus propios comentarios, con su nombre. Una importación no llama a ningún servicio externo y no usa créditos de piso.
 
 ---
 
@@ -129,7 +133,7 @@ Un iPhone no puede compartir nada con Flatpare. Copia en su lugar el enlace del 
 
 ### Enlaces para añadir más tarde
 
-**Por añadir**, arriba en la página Pisos, es la lista de enlaces de tu hogar que aún no son pisos. Todo el hogar la ve, con el nombre de quién guardó cada enlace. Guardar un enlace es gratis. Toca **Añadir** para convertirlo en un piso, con o sin su PDF; en la versión alojada, es entonces cuando se usa un crédito de piso. Hasta 20 enlaces pueden esperar a la vez.
+**Por añadir**, arriba en la página Pisos, es la lista de enlaces de tu hogar que aún no son pisos. Todo el hogar la ve, con el nombre de quién guardó cada enlace. Guardar un enlace es gratis. Toca **Añadir** para convertirlo en un piso, con o sin su PDF; en la versión alojada, se usa un crédito de piso cuando se lee su PDF o se sitúa su dirección en el mapa. Hasta 20 enlaces pueden esperar a la vez.
 
 ---
 
@@ -139,9 +143,9 @@ Un iPhone no puede compartir nada con Flatpare. Copia en su lugar el enlace del 
 
 Flatpare cuesta **CHF 5, una sola vez**; no es una suscripción. Cubre hasta 10 personas y 40 pisos en un hogar.
 
-Los 40 cuentan los pisos que **añades**, no los que conservas: eliminar uno libera sitio en tu comparación, pero no te devuelve el crédito. Cuando hayas usado tus 40, otros CHF 5 añaden otros 40.
+Los 40 cuentan los pisos **procesados**, no los que conservas: se usa un crédito la primera vez que se lee el PDF de un piso o se sitúa su dirección en el mapa. Añadir un piso a mano, describirlo y puntuarlo es gratis. Eliminar uno libera sitio en tu comparación, pero no te devuelve el crédito. Cuando hayas usado tus 40, otros CHF 5 añaden otros 40.
 
-Quedarte sin créditos solo te impide añadir pisos nuevos. Nunca te bloquea el acceso a los que ya tienes.
+Quedarte sin créditos solo impide procesar pisos nuevos: puedes seguir añadiéndolos, describiéndolos y puntuándolos, y procesarlos después de comprar más. Nunca te bloquea el acceso a los que ya tienes.
 
 Instalar Flatpare por tu cuenta es gratis y no tiene ningún límite.
 

@@ -138,7 +138,7 @@ describe("completing a draft", () => {
     renderWithHouseholdData(<UploadPage />, { drafts: [draft()] });
     await upload(user, [pdf("a.pdf")]);
     await screen.findByRole("button", { name: /^Save apartment$/i });
-    expect(vi.mocked(parsePdf).mock.calls[0][3]).toBe(false);
+    expect(vi.mocked(parsePdf).mock.calls[0][4]).toBe(false);
     expect(screen.queryByText(/found by a web search/)).not.toBeInTheDocument();
   });
 
@@ -153,7 +153,7 @@ describe("completing a draft", () => {
     renderWithHouseholdData(<UploadPage />, { drafts: [] });
     await upload(user, [pdf("a.pdf")]);
     expect(await screen.findByText(/Listing link found by a web search/)).toBeInTheDocument();
-    expect(vi.mocked(parsePdf).mock.calls[0][3]).toBe(true);
+    expect(vi.mocked(parsePdf).mock.calls[0][4]).toBe(true);
   });
 
   it("PDF path, several PDFs: extracted URL kept, draft URL fills items without one, delete once after all saved", async () => {

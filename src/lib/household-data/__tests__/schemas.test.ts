@@ -35,6 +35,24 @@ describe("household-data schemas", () => {
     expect(apartmentSchema.parse(full)).toEqual(full);
   });
 
+  // #413: an envelope written before the processing fields was paid for when
+  // it was created, and its coordinates belong to the address it holds.
+  it("reads an envelope from before #413 as processed", () => {
+    const { processed: _p, processedAddress: _a, ...old } = emptyApartment("Flat");
+    const geocoded = { ...old, address: "A 1", latitude: 1, longitude: 2 };
+    expect(apartmentSchema.parse(geocoded)).toMatchObject({ processed: true, processedAddress: "A 1" });
+    // Never geocoded (no address, or one that did not resolve): nothing to match.
+    expect(apartmentSchema.parse({ ...old, address: "A 1" })).toMatchObject({
+      processed: true,
+      processedAddress: null,
+    });
+  });
+
+  it("keeps the processing fields of a newer envelope as written", () => {
+    const fresh = { ...emptyApartment("Flat"), address: "B 2", latitude: 1, longitude: 2, processedAddress: "A 1" };
+    expect(apartmentSchema.parse(fresh)).toMatchObject({ processed: false, processedAddress: "A 1" });
+  });
+
   it("bounds ratings to 0..5 integers", () => {
     expect(ratingSchema.safeParse(EMPTY_RATING).success).toBe(true);
     expect(ratingSchema.safeParse({ ...EMPTY_RATING, kitchen: 6 }).success).toBe(false);

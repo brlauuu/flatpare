@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CheckCircle2, Circle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Hourglass } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function GoneBadge() {
@@ -11,6 +11,17 @@ export function GoneBadge() {
     >
       <AlertTriangle className="h-3 w-3" />
       {t("gone")}
+    </Badge>
+  );
+}
+
+// Added by hand or from a link, and not processed yet (#413).
+export function NotProcessedBadge() {
+  const t = useTranslations("apartments.badges");
+  return (
+    <Badge variant="outline" className="gap-1 text-muted-foreground">
+      <Hourglass className="h-3 w-3" />
+      {t("notProcessed")}
     </Badge>
   );
 }

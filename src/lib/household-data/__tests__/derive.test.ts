@@ -38,6 +38,31 @@ describe("deriveApartments", () => {
     expect(v.name).toBe("Unreadable apartment");
   });
 
+  // #413: a changed address hides what belongs to the old one, and changing
+  // it back shows it again.
+  it("hides coordinates and distances when the address changed after processing", () => {
+    const processed = {
+      ...emptyApartment("Flat"),
+      processed: true,
+      address: "A 1",
+      processedAddress: "A 1",
+      latitude: 1,
+      longitude: 2,
+      distances: { l: { bikeMin: 5, transitMin: 9 } },
+    };
+    const [same] = deriveApartments([apt("a", { ...processed, address: " A 1 " })], [], "u1");
+    expect(same).toMatchObject({ addressChanged: false, latitude: 1, distances: { l: { bikeMin: 5 } } });
+
+    const [moved] = deriveApartments([apt("a", { ...processed, address: "B 2" })], [], "u1");
+    expect(moved).toMatchObject({ addressChanged: true, latitude: null, longitude: null, distances: {} });
+
+    const [cleared] = deriveApartments([apt("a", { ...processed, address: null })], [], "u1");
+    expect(cleared.addressChanged).toBe(true);
+
+    const [never] = deriveApartments([apt("a", { ...emptyApartment("Flat"), address: "A 1" })], [], "u1");
+    expect(never.addressChanged).toBe(false);
+  });
+
   it("drops corrupt ratings and ratings of unknown apartments", () => {
     const [v] = deriveApartments(
       [apt("a")],

@@ -1,20 +1,27 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { households, payments } from "@/lib/db/schema";
+import { apartmentCharges, households, payments } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api-error";
 import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
 // E6 apartment credits.
 //
-// A credit is spent by ADDING an apartment, not by holding one: adding is what
-// costs real money (a Gemini extraction, a geocode, two distance elements per
-// saved location), while holding costs a few hundred bytes of ciphertext.
+// A credit is spent by PROCESSING an apartment (#413), not by adding or
+// holding one: processing is what costs real money (an AI extraction, a
+// geocode, two distance elements per saved location), while an apartment
+// someone rated and described by hand costs a few hundred bytes of
+// ciphertext. The first processing of each apartment — reading its PDF or
+// geocoding its address, whichever comes first — spends one credit; a
+// reprocess and a "recompute all" spend one each, by explicit request.
 // Deleting an apartment frees a slot against MAX_APARTMENTS but does not
 // refund the credit, and the landing page says so in as many words.
 //
 // This is separate from E5's cap, which counts CURRENT rows. Both apply:
 //   - MAX_APARTMENTS  — how many you may hold at once (E5)
-//   - credits         — how many you may ever add (E6)
+//   - credits         — how many processings you may ever pay for (E6)
+//
+// The counter is still called apartments_ever_added; since #413 it counts
+// credits spent, which is what it always counted.
 
 // One $5 purchase.
 export const CREDITS_PER_PURCHASE = 40;
@@ -82,22 +89,71 @@ export async function consumeApartmentCredit(
   return Number(result.rowsAffected ?? 0) > 0;
 }
 
-// Puts a consumed credit back. Used only to compensate when the insert that
-// the credit was consumed for then fails — a duplicate id, or the active-row
-// cap. Without it a failed create would silently burn a credit the customer
-// paid for.
-//
-// Guarded so it can never drive the counter below zero, which would hand out
-// free credits if it were ever called spuriously.
-export async function refundApartmentCredit(householdId: number): Promise<void> {
-  if (!billingEnabled()) return;
+function noCredits(): ApiError {
+  return new ApiError("No apartment credits left", 402);
+}
 
-  await db.run(sql`
-    UPDATE households
-       SET apartments_ever_added = apartments_ever_added - 1
-     WHERE id = ${householdId}
-       AND apartments_ever_added > 0
+// Records the apartment as charged. True when this call wrote the row, false
+// when it was already there.
+async function markCharged(householdId: number, apartmentId: string): Promise<boolean> {
+  const result = await db.run(sql`
+    INSERT INTO apartment_charges (household_id, apartment_id)
+    VALUES (${householdId}, ${apartmentId})
+    ON CONFLICT DO NOTHING
   `);
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+async function unmarkCharged(householdId: number, apartmentId: string): Promise<void> {
+  await db
+    .delete(apartmentCharges)
+    .where(
+      and(
+        eq(apartmentCharges.householdId, householdId),
+        eq(apartmentCharges.apartmentId, apartmentId)
+      )
+    );
+}
+
+// The first processing of an apartment (#413): free when this apartment id
+// was charged before, otherwise one credit. Called by the process routes for
+// every request that names an apartment, before the outbound call.
+//
+// Record first, then spend — the stamp-then-grant order of
+// grantBetaPassCredits. The insert is the claim: of two concurrent first
+// calls exactly one writes the row and spends, the other finds it and goes
+// through free. When the credit cannot be spent the claim is taken back.
+// Spending first instead refused concurrent calls for the same apartment
+// whenever the household had fewer credits than calls in flight. Each step
+// is one statement, not a transaction (#225).
+export async function chargeFirstProcessing(
+  householdId: number,
+  apartmentId: string
+): Promise<void> {
+  if (!billingEnabled()) return;
+  if (!(await markCharged(householdId, apartmentId))) return;
+  if (await consumeApartmentCredit(householdId)) return;
+  await unmarkCharged(householdId, apartmentId);
+  throw noCredits();
+}
+
+// A reprocess, asked for explicitly: always one credit. Also records the
+// apartment as charged, so the calls the reprocess then makes are free even
+// for an apartment that was never charged (an imported one).
+export async function chargeReprocess(
+  householdId: number,
+  apartmentId: string
+): Promise<void> {
+  if (!billingEnabled()) return;
+  if (!(await consumeApartmentCredit(householdId))) throw noCredits();
+  await markCharged(householdId, apartmentId);
+}
+
+// "Recompute all" on the Household page: one credit for the whole run,
+// however many apartments it measures (decided on #413).
+export async function chargeRecompute(householdId: number): Promise<void> {
+  if (!billingEnabled()) return;
+  if (!(await consumeApartmentCredit(householdId))) throw noCredits();
 }
 
 // Adds credits to a household. The webhook will be the only caller in

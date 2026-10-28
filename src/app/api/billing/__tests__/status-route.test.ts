@@ -18,6 +18,7 @@ vi.mock("@/lib/session", () => ({
 }));
 
 import { GET as statusGET } from "../status/route";
+import { POST as recomputePOST } from "../recompute/route";
 
 const ORIGINAL_KEY = process.env.STRIPE_SECRET_KEY;
 
@@ -109,5 +110,29 @@ describe("GET /api/billing/status", () => {
     signedIn = false;
     const { status: code } = await status();
     expect(code).toBe(401);
+  });
+});
+
+// #413: "Recompute all" on the Household page spends one credit for the whole
+// run, asked for before the client measures anything.
+describe("POST /api/billing/recompute", () => {
+  it("spends one credit, and 402s when none is left", async () => {
+    await grantApartmentCredits(hid, 1);
+    expect((await recomputePOST()).status).toBe(200);
+    expect((await status()).body).toMatchObject({ used: 1, remaining: 0 });
+    const refused = await recomputePOST();
+    expect(refused.status).toBe(402);
+    expect(await refused.json()).toEqual({ error: "No apartment credits left" });
+  });
+
+  it("is free when billing is off", async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    expect((await recomputePOST()).status).toBe(200);
+    expect((await status()).body).toMatchObject({ used: 0 });
+  });
+
+  it("401s without a session", async () => {
+    signedIn = false;
+    expect((await recomputePOST()).status).toBe(401);
   });
 });

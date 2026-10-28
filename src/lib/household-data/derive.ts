@@ -1,5 +1,6 @@
 import {
   emptyApartment,
+  type Apartment,
   type ApartmentView,
   type DecodedApartment,
   type DecodedLocation,
@@ -16,6 +17,13 @@ function average(ratings: RatingView[], category: Category): number | null {
   const scores = ratings.map((r) => r[category]).filter((v) => v > 0);
   if (scores.length === 0) return null;
   return scores.reduce((a, b) => a + b, 0) / scores.length;
+}
+
+// The address was processed, and has been edited since (#413). Changing it
+// back to the processed one makes the coordinates and distances current
+// again, which is why they are hidden in the view rather than deleted.
+export function addressChanged(a: Apartment): boolean {
+  return a.processedAddress !== null && (a.address ?? "").trim() !== a.processedAddress.trim();
 }
 
 export function deriveApartments(
@@ -47,9 +55,17 @@ export function deriveApartments(
       myRating: mine.find((r) => r.userId === userId)?.overallFeeling || null,
     };
     if (row.data === null) {
-      return { ...emptyApartment("Unreadable apartment"), ...meta, corrupt: true as const };
+      return {
+        ...emptyApartment("Unreadable apartment"),
+        ...meta,
+        addressChanged: false,
+        corrupt: true as const,
+      };
     }
-    return { ...row.data, ...meta };
+    if (addressChanged(row.data)) {
+      return { ...row.data, ...meta, addressChanged: true, latitude: null, longitude: null, distances: {} };
+    }
+    return { ...row.data, ...meta, addressChanged: false };
   });
 }
 

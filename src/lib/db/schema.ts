@@ -22,12 +22,13 @@ export const households = sqliteTable("households", {
   // record rather than the user's data, so neither is encrypted — the server
   // must read them to enforce the quota.
   //
-  // `apartmentsEverAdded` is MONOTONIC: it counts apartments added over the
-  // household's lifetime and is never decremented by a delete. That is the
-  // whole point — a credit is spent by *adding* an apartment, because adding
-  // is what costs money (PDF extraction, geocoding, distance calls), while
-  // holding one costs a few hundred bytes of ciphertext. The landing page
-  // states this explicitly.
+  // `apartmentsEverAdded` is MONOTONIC: it counts credits spent over the
+  // household's lifetime and is never decremented by a delete. A credit is
+  // spent by *processing* an apartment (#413; before that, by adding one),
+  // because processing is what costs money (PDF extraction, geocoding,
+  // distance calls), while holding one costs a few hundred bytes of
+  // ciphertext. The name predates #413. The landing page states this
+  // explicitly.
   apartmentCreditsGranted: integer("apartment_credits_granted")
     .notNull()
     .default(0),
@@ -289,6 +290,28 @@ export const processUsage = sqliteTable(
     primaryKey({
       columns: [table.householdId, table.endpoint, table.windowStart],
     }),
+  ]
+);
+
+// #413: which apartments have had their first processing paid for. Creating
+// an apartment is free; the first call that processes it (reading its PDF or
+// geocoding its address) spends one credit and writes this row, and every
+// later call for the same id is free. Keyed by the client-minted apartment
+// id with no foreign key, because a PDF is read before its apartment row
+// exists. Holds no content: a household id, an apartment id and a time.
+export const apartmentCharges = sqliteTable(
+  "apartment_charges",
+  {
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    apartmentId: text("apartment_id").notNull(),
+    chargedAt: integer("charged_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [
+    primaryKey({ columns: [table.householdId, table.apartmentId] }),
   ]
 );
 

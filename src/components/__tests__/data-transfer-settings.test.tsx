@@ -169,28 +169,17 @@ describe("DataTransferSettings: import", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 
-  it("says how many credits it uses when billing is on", async () => {
+  // #413: an import makes no outside call, so it spends no credit, even at zero.
+  it("imports with billing on and no credits left", async () => {
     const user = userEvent.setup();
     renderWithHouseholdData(<DataTransferSettings />, {
-      credits: { granted: 40, used: 0, remaining: 40 },
+      credits: { granted: 40, used: 40, remaining: 0 },
       readImport: vi.fn(async () => parsedExport()),
     });
     await user.upload(screen.getByLabelText("Choose an export file"), zipFile());
-    expect(await screen.findByText("Importing uses 2 apartment credits.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Import" })).toBeEnabled();
-  });
-
-  it("refuses up front when the household has too few credits", async () => {
-    const user = userEvent.setup();
-    renderWithHouseholdData(<DataTransferSettings />, {
-      credits: { granted: 40, used: 39, remaining: 1 },
-      readImport: vi.fn(async () => parsedExport()),
-    });
-    await user.upload(screen.getByLabelText("Choose an export file"), zipFile());
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This would add 2 apartments, but the household has 1 credit left."
-    );
-    expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Import" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/apartment credit/)).not.toBeInTheDocument();
   });
 
   it("refuses up front when the file holds more apartments than a household may", async () => {

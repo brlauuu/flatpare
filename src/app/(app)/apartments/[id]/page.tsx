@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +11,6 @@ import { AddressLink } from "@/components/address-link";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   formFromApartment,
-  formFromExtracted,
   formToFields,
   type ApartmentForm,
 } from "@/components/apartment-form-fields";
@@ -23,10 +22,8 @@ import {
 } from "@/components/apartment-rating-panel";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { downloadPdf } from "@/components/household-data/pdf-files";
-import { languageOf } from "@/locales/locales";
-import { parsePdf } from "@/components/household-data/process-client";
 import type { ErrorDetails } from "@/lib/fetch-error";
-import { applyExtraction, mergeUserEdit } from "@/lib/edited-fields";
+import { mergeUserEdit } from "@/lib/edited-fields";
 import { useApartmentPager } from "@/components/household-data/use-apartment-pager";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { setUnsavedRating } from "@/lib/unsaved-changes";
@@ -36,6 +33,8 @@ import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
+import { ProcessingNotice } from "./_components/processing-notice";
+import { useApartmentProcessing } from "./_components/use-apartment-processing";
 import { showOnMapHref } from "./_components/show-on-map";
 import { useCodeLettersError } from "./_components/use-code-letters-error";
 import { lettersOf, withLetters } from "@/lib/household-data/short-code";
@@ -82,7 +81,6 @@ export default function ApartmentDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-  const locale = languageOf(useLocale());
   const t = useTranslations("apartments.detail");
   const tc = useTranslations("apartments.corrupt");
   const errorDetails = useStoreErrorDetails();
@@ -93,6 +91,8 @@ export default function ApartmentDetailPage() {
     locations,
     identity,
     dataKey,
+    credits,
+    enrichmentError,
     updateApartment,
     deleteApartment,
     rateApartment,
@@ -110,7 +110,11 @@ export default function ApartmentDetailPage() {
   const [editLetters, setEditLetters] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const codeLettersError = useCodeLettersError(apartments, apartment, editLetters);
-  const [reprocessing, setReprocessing] = useState(false);
+  const { processing, reprocessing, process, reprocess } = useApartmentProcessing(
+    apartment,
+    () => setError(null),
+    (headline, err) => setError({ headline, details: errorDetails(err) })
+  );
 
   // My stored rating, if any. The draft is re-seeded from it whenever the
   // stored copy changes (first load, after a save) — keyed on id + updatedAt
@@ -161,29 +165,6 @@ export default function ApartmentDetailPage() {
       setError(null);
     } catch (err) {
       setError({ headline: t("pdfOpenFailed"), details: errorDetails(err) });
-    }
-  }
-
-  async function handleReprocess() {
-    if (!apartment?.pdf) return;
-    const ok = window.confirm(t("reprocessConfirm"));
-    if (!ok) return;
-    setReprocessing(true);
-    setError(null);
-    try {
-      const bytes = await downloadPdf(dataKey, identity.householdId, apartment.id, apartment.pdf);
-      const { extracted } = await parsePdf(bytes, `${apartment.id}.pdf`, locale);
-      // Coerce through the form helpers so the extraction lands as typed
-      // Apartment fields, then keep whatever the user edited by hand.
-      const fields = formToFields(formFromExtracted(extracted));
-      await updateApartment(apartment.id, (current) => applyExtraction(current, fields, extracted));
-    } catch (err) {
-      setError({
-        headline: t("reprocessFailed"),
-        details: errorDetails(err),
-      });
-    } finally {
-      setReprocessing(false);
     }
   }
 
@@ -308,6 +289,7 @@ export default function ApartmentDetailPage() {
         </div>
         <ApartmentActions
           hasPdf={apartment.pdf !== null}
+          canReprocess={apartment.processed && (apartment.pdf !== null || apartment.address !== null)}
           listingUrl={apartment.listingUrl}
           mapHref={showOnMapHref(apartment)}
           editing={editing}
@@ -315,10 +297,18 @@ export default function ApartmentDetailPage() {
           deleting={deleting}
           onEdit={startEdit}
           onViewPdf={() => void handleViewPdf()}
-          onReprocess={() => void handleReprocess()}
+          onReprocess={() => void reprocess()}
           onDelete={() => void handleDelete()}
         />
       </div>
+
+      <ProcessingNotice
+        apartment={apartment}
+        failed={enrichmentError[apartment.id] !== undefined}
+        credits={credits}
+        processing={processing}
+        onProcess={() => void process()}
+      />
 
       {apartment.summary && (
         <Card>
@@ -361,6 +351,7 @@ export default function ApartmentDetailPage() {
           locations={locations}
           distances={apartment.distances}
           apartmentAddress={apartment.address}
+          addressChanged={apartment.addressChanged}
         />
       )}
 

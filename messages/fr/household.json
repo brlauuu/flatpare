@@ -90,12 +90,13 @@
     "reorderError": "Impossible de réorganiser",
     "loadError": "Impossible de charger les lieux",
     "recomputeTitle": "Recalculer les distances",
-    "recomputeBody": "Recalcule les minutes à vélo et en transports pour chaque paire appartement × lieu.",
+    "recomputeBody": "{billing, select, on {Recalcule les minutes à vélo et en transports pour chaque paire appartement × lieu. Utilise un crédit d’appartement pour tout le calcul.} other {Recalcule les minutes à vélo et en transports pour chaque paire appartement × lieu.}}",
     "recomputeError": "Impossible de recalculer les distances",
     "recomputingProgress": "Recalcul… {done} sur {total}",
     "recomputing": "Recalcul…",
     "recompute": "Tout recalculer",
-    "recomputed": "{updated} appartements recalculés{failed, plural, =0 {} other { (# en échec)}}{skipped, plural, =0 {} other { (# ignorés — pas d’adresse)}}"
+    "recomputed": "{updated} appartements recalculés{failed, plural, =0 {} other { (# en échec)}}{skipped, plural, =0 {} other { (# ignorés — pas d’adresse)}}",
+    "recomputeConfirm": "Recalculer toutes les distances ? Cela utilise un crédit d’appartement pour tout le calcul."
   },
   "iconPicker": {
     "title": "Choisir une icône",
@@ -133,8 +134,6 @@
     "importBody": "Restaure un export Flatpare dans ce foyer. Ce n'est possible que tant que le foyer n'a ni appartements ni lieux. Les évaluations des autres personnes sont ajoutées à tes propres commentaires, avec leur nom.",
     "chooseFile": "Choisir un fichier d'export",
     "fileSummary": "Ce fichier contient {apartments, plural, one {# appartement} other {# appartements}}, {locations, plural, one {# lieu} other {# lieux}} et {ratings, plural, one {# évaluation} other {# évaluations}}, exporté le {date}.",
-    "usesCredits": "L'importation utilise {count, plural, one {# crédit d'appartement} other {# crédits d'appartement}}.",
-    "overCredits": "Cela ajouterait {count, plural, one {# appartement} other {# appartements}}, mais il reste {remaining, plural, one {# crédit} other {# crédits}} au foyer.",
     "overCap": "Cela ajouterait {count, plural, one {# appartement} other {# appartements}}, mais un foyer peut en contenir {max} au maximum.",
     "import": "Importer",
     "importing": "Importation…",

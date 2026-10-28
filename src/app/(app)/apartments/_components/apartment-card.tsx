@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { GoneBadge, RatedBadge } from "./apartment-badges";
+import { GoneBadge, NotProcessedBadge, RatedBadge } from "./apartment-badges";
 import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
@@ -22,6 +22,7 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
         <CardContent className="flex flex-1 flex-col gap-2 p-4">
           <div data-card-badges className="flex flex-wrap items-center gap-1.5">
             {apt.listingGone && <GoneBadge />}
+            {!apt.processed && <NotProcessedBadge />}
             <RatedBadge myRating={apt.myRating} />
           </div>
           <div data-card-code className="flex min-h-7 items-center">

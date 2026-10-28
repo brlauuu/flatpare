@@ -116,6 +116,8 @@ export default function UploadPage() {
       errorRetryAfterSeconds: undefined,
       pdfWarning: undefined,
       linkFound: undefined,
+      processed: undefined,
+      notRead: undefined,
     });
     let bytes: Uint8Array<ArrayBuffer>;
     try {
@@ -133,13 +135,28 @@ export default function UploadPage() {
     // place by then. A link the person brought makes the search pointless.
     const searchListing = !linkRef.current;
     const [parsed, uploaded] = await Promise.allSettled([
-      parsePdf(bytes, file.name, locale, searchListing),
+      parsePdf(bytes, file.name, locale, itemId, searchListing),
       encryptAndUploadPdf(dataKey, identity.householdId, itemId, bytes),
     ]);
 
+    const pdf = uploaded.status === "fulfilled" ? uploaded.value : null;
+    const pdfWarning = uploaded.status === "rejected" ? t("pdfStoreWarning") : undefined;
     if (parsed.status === "rejected") {
       const err: unknown = parsed.reason;
       const known = err instanceof ParsePdfError ? err : null;
+      // No credit left to read it (#413): keep it, unread, so it can be
+      // saved and rated now and processed after buying more.
+      if (known?.reason === "no_credits") {
+        updateItem(itemId, {
+          status: "done",
+          form: withDraftUrl({ ...emptyApartmentForm, name: file.name.replace(/\.pdf$/i, "") }),
+          pdf,
+          pdfWarning,
+          processed: false,
+          notRead: true,
+        });
+        return;
+      }
       updateItem(itemId, {
         status: "error",
         error: err instanceof Error ? err.message : t("parseFailed"),
@@ -153,8 +170,10 @@ export default function UploadPage() {
       status: "done",
       form: withDraftUrl(formFromExtracted(parsed.value.extracted)),
       linkFound: searchListing && parsed.value.listingFound === true,
-      pdf: uploaded.status === "fulfilled" ? uploaded.value : null,
-      pdfWarning: uploaded.status === "rejected" ? t("pdfStoreWarning") : undefined,
+      pdf,
+      pdfWarning,
+      // Without an AI provider nothing was read, and nothing was charged.
+      processed: parsed.value.aiAvailable,
     });
   }
 
@@ -249,7 +268,7 @@ export default function UploadPage() {
     const savedNow = new Set<string>();
     for (const item of toSave) {
       try {
-        await createApartment(item.id, apartmentFromForm(item.form, item.pdf));
+        await createApartment(item.id, apartmentFromForm(item.form, item.pdf, item.processed === true));
         savedNow.add(item.id);
         fileMapRef.current.delete(item.id);
         updateItem(item.id, { saved: true });

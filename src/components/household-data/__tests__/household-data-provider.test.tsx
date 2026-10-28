@@ -35,7 +35,9 @@ interface FakeServer {
   };
   // What GET /api/billing/status answers; `credits` is granted minus used.
   billing: { enabled: boolean; granted: number; used: number; fail: boolean };
-  calls: { method: string; url: string }[];
+  // Apartment ids whose first processing was charged (#413).
+  charged: Set<string>;
+  calls: { method: string; url: string; body?: unknown }[];
 }
 
 function makeServer(): FakeServer {
@@ -50,6 +52,7 @@ function makeServer(): FakeServer {
       checkListing: () => ({ gone: false }),
     },
     billing: { enabled: false, granted: 0, used: 0, fail: false },
+    charged: new Set(),
     calls: [],
   };
 }
@@ -67,8 +70,15 @@ function installFetch(server: FakeServer) {
     vi.fn(async (input: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       const url = input;
-      server.calls.push({ method, url });
       const body = init?.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
+      server.calls.push({ method, url, body });
+      // Spends one credit, or answers 402 (#413).
+      const spend = (): Response | null => {
+        if (!server.billing.enabled) return null;
+        if (server.billing.used >= server.billing.granted) return json({ error: "No apartment credits left" }, 402);
+        server.billing.used += 1;
+        return null;
+      };
 
       if (url === "/api/billing/status" && method === "GET") {
         if (server.billing.fail) return json({ error: "boom" }, 500);
@@ -76,11 +86,15 @@ function installFetch(server: FakeServer) {
         return json({ enabled, granted, used, remaining: Math.max(0, granted - used) });
       }
       if (url === "/api/apartments" && method === "GET") return json([...server.apartments.values()]);
+      if (url === "/api/billing/recompute" && method === "POST") return spend() ?? json({ ok: true });
+      const reprocess = url.match(/^\/api\/apartments\/([^/]+)\/reprocess$/);
+      if (reprocess && method === "POST") {
+        const refused = spend();
+        if (refused) return refused;
+        server.charged.add(reprocess[1]);
+        return json({ ok: true });
+      }
       if (url === "/api/apartments" && method === "POST") {
-        if (server.billing.enabled) {
-          if (server.billing.used >= server.billing.granted) return json({ error: "No apartment credits left" }, 402);
-          server.billing.used += 1;
-        }
         if (server.apartments.has(body.id)) return json({ error: "Duplicate id" }, 409);
         const row: ApartmentRow = { id: body.id, version: 1, envelope: body.envelope, createdAt: now(), updatedAt: now() };
         server.apartments.set(row.id, row);
@@ -155,7 +169,14 @@ function installFetch(server: FakeServer) {
       // (a 500 with no error body), not a network-level fetch failure.
       if (url === "/api/process/geocode" || url === "/api/process/distance" || url === "/api/process/check-listing") {
         try {
-          if (url === "/api/process/geocode") return json(server.process.geocode(body.address));
+          if (url === "/api/process/geocode") {
+            if (body.apartmentId && !server.charged.has(body.apartmentId)) {
+              const refused = spend();
+              if (refused) return refused;
+              server.charged.add(body.apartmentId);
+            }
+            return json(server.process.geocode(body.address));
+          }
           if (url === "/api/process/distance") return json(server.process.distance(body.from, body.to));
           return json(server.process.checkListing(body.url));
         } catch {
@@ -360,6 +381,127 @@ describe("HouseholdDataProvider", () => {
     expect((captured as HouseholdDataContextValue).apartments[0].latitude).toBe(1);
   });
 
+  // #413: which calls name the apartment, so the server charges them.
+  it("names the apartment on its first geocode only, and not when it is retried", async () => {
+    server.process.geocode = () => {
+      throw new Error("geocoder down");
+    };
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.createApartment(A1, { ...emptyApartment("New"), address: "Street 5" });
+    });
+    await waitFor(() => expect((captured as HouseholdDataContextValue).enrichmentError[A1]).toBeTruthy());
+    const geocodes = () => server.calls.filter((c) => c.url === "/api/process/geocode").map((c) => c.body);
+    expect(geocodes()).toEqual([{ address: "Street 5", apartmentId: A1 }]);
+
+    // Processed by its PDF meanwhile (another device): a geocode is then free.
+    await seed(A2, { ...emptyApartment("PDF read"), address: "Street 6", processed: true });
+    await act(async () => {
+      await (captured as HouseholdDataContextValue).reload();
+    });
+    server.process.geocode = () => ({ lat: 1, lng: 2, postcode: "9000" });
+    await act(async () => {
+      await (captured as HouseholdDataContextValue).retryEnrichment(A2);
+    });
+    expect(geocodes().at(-1)).toEqual({ address: "Street 6" });
+  });
+
+  it("does not geocode a changed address, and hides what belonged to the old one", async () => {
+    await seedLocation(L1, { label: "Work", icon: "Briefcase", address: "Office 1", latitude: 47, longitude: 8 });
+    await seed(A1, {
+      ...emptyApartment("Flat"),
+      address: "Street 5",
+      processed: true,
+      processedAddress: "Street 5",
+      latitude: 47,
+      longitude: 8,
+      distances: { [L1]: { bikeMin: 9, transitMin: 9 } },
+    });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.updateApartment(A1, (a) => ({ ...a, address: "Street 9" }));
+    });
+    expect(server.calls.filter((c) => c.url.startsWith("/api/process/"))).toEqual([]);
+    expect((captured as HouseholdDataContextValue).apartments[0]).toMatchObject({
+      addressChanged: true,
+      latitude: null,
+      distances: {},
+    });
+
+    // Changing it back shows them again: nothing was thrown away.
+    await act(async () => {
+      await (captured as HouseholdDataContextValue).updateApartment(A1, (a) => ({ ...a, address: "Street 5" }));
+    });
+    expect((captured as HouseholdDataContextValue).apartments[0]).toMatchObject({
+      addressChanged: false,
+      latitude: 47,
+      distances: { [L1]: { bikeMin: 9, transitMin: 9 } },
+    });
+  });
+
+  it("a reprocess is charged once, then geocodes and measures again for free", async () => {
+    server.billing = { enabled: true, granted: 5, used: 1, fail: false };
+    await seedLocation(L1, { label: "Work", icon: "Briefcase", address: "Office 1", latitude: 47, longitude: 8 });
+    await seed(A1, {
+      ...emptyApartment("Flat"),
+      address: "Street 9",
+      processed: true,
+      processedAddress: "Street 5",
+      latitude: 1,
+      longitude: 1,
+      distances: { [L1]: { bikeMin: 9, transitMin: 9 } },
+    });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.chargeReprocess(A1);
+      await ctx.relocateApartment(A1, (a) => ({ ...a, summary: "From the PDF" }));
+    });
+    expect(server.billing.used).toBe(2);
+    expect(server.calls.filter((c) => c.url === "/api/process/geocode").map((c) => c.body)).toEqual([
+      { address: "Street 9" },
+    ]);
+    expect((captured as HouseholdDataContextValue).apartments[0]).toMatchObject({
+      summary: "From the PDF",
+      processedAddress: "Street 9",
+      addressChanged: false,
+      latitude: 47,
+      distances: { [L1]: { bikeMin: 12, transitMin: 20 } },
+    });
+  });
+
+  it("refuses a reprocess with no credit left, before anything is called", async () => {
+    server.billing = { enabled: true, granted: 1, used: 1, fail: false };
+    await seed(A1, { ...emptyApartment("Flat"), address: "Street 5", processed: true, processedAddress: "Street 5" });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await expect(ctx.chargeReprocess(A1)).rejects.toMatchObject({ status: 402 });
+    });
+    expect(server.calls.filter((c) => c.url.startsWith("/api/process/"))).toEqual([]);
+  });
+
+  it("runMaintenance('distances') spends one credit for the run, and stops without one", async () => {
+    server.billing = { enabled: true, granted: 1, used: 0, fail: false };
+    await seed(A1, { ...emptyApartment("Flat"), address: "Street 1", latitude: 1, longitude: 1 });
+    await seed(A2, { ...emptyApartment("Flat 2"), address: "Street 2", latitude: 1, longitude: 1 });
+    await seedLocation(L1, { label: "Work", icon: "Briefcase", address: "Office", latitude: 2, longitude: 2 });
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.runMaintenance("distances");
+    });
+    expect(server.billing.used).toBe(1);
+    expect(server.calls.filter((c) => c.url === "/api/process/distance")).toHaveLength(2);
+
+    await act(async () => {
+      await expect((captured as HouseholdDataContextValue).runMaintenance("distances")).rejects.toMatchObject({ status: 402 });
+    });
+    expect(server.calls.filter((c) => c.url === "/api/process/distance")).toHaveLength(2);
+  });
+
   it("updateApartment retries once on a stale version", async () => {
     await seed(A1, { ...emptyApartment("Flat"), shortCode: "ABC-1B-1b-WN-8000" }, 1);
     renderProvider();
@@ -480,8 +622,9 @@ describe("HouseholdDataProvider", () => {
   });
 
   it("runMaintenance('geocode') fills coordinates and reports failures per row", async () => {
-    await seed(A1, { ...emptyApartment("No coords"), address: "Street 1" });
-    await seed(A2, { ...emptyApartment("Bad"), address: "Street 2" });
+    // Processed, with an address that did not resolve: a retry (#413).
+    await seed(A1, { ...emptyApartment("No coords"), address: "Street 1", processed: true, processedAddress: "Street 1" });
+    await seed(A2, { ...emptyApartment("Bad"), address: "Street 2", processed: true, processedAddress: "Street 2" });
     server.process.geocode = (address: string) => {
       if (address === "Street 2") throw new Error("boom");
       return { lat: 5, lng: 6, postcode: "8000" };
@@ -753,31 +896,47 @@ describe("apartment credits (#305)", () => {
     expect(ctx.credits).toEqual({ granted: 40, used: 37, remaining: 3 });
   });
 
-  it("updates after an apartment is added, without a reload", async () => {
+  // #413: creating is free; the first processing spends.
+  it("creating spends nothing; the first geocode does, and the balance follows", async () => {
     server.billing = { enabled: true, granted: 40, used: 37, fail: false };
     renderProvider();
     await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 3);
 
     await act(async () => {
-      await captured!.createApartment(A1, { ...emptyApartment(), name: "New" });
+      await captured!.createApartment(A2, { ...emptyApartment(), name: "By hand" });
+    });
+    expect(server.billing.used).toBe(37);
+
+    await act(async () => {
+      await captured!.createApartment(A1, { ...emptyApartment(), name: "New", address: "Street 1" });
     });
     const ctx = await waitForContext((c) => c.credits?.remaining === 2);
     expect(ctx.credits).toEqual({ granted: 40, used: 38, remaining: 2 });
+    expect(ctx.apartments.find((a) => a.id === A1)).toMatchObject({ processed: true, processedAddress: "Street 1", latitude: 47 });
   });
 
-  it("corrects the number when the add is refused because another member spent the last credit", async () => {
-    server.billing = { enabled: true, granted: 40, used: 39, fail: false };
+  it("keeps an apartment unprocessed, and quiet, when no credit is left", async () => {
+    server.billing = { enabled: true, granted: 40, used: 40, fail: false };
     renderProvider();
-    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 1);
+    await waitForContext((c) => c.status === "ready" && c.credits?.remaining === 0);
 
-    server.billing.used = 40; // someone else, meanwhile
     await act(async () => {
-      await expect(
-        captured!.createApartment(A1, { ...emptyApartment(), name: "New" })
-      ).rejects.toThrow();
+      await captured!.createApartment(A1, { ...emptyApartment(), name: "New", address: "Street 1" });
     });
-    const ctx = await waitForContext((c) => c.credits?.remaining === 0);
-    expect(ctx.apartments).toHaveLength(0);
+    await waitFor(() => expect(server.calls.some((c) => c.url === "/api/process/geocode")).toBe(true));
+    const ctx = await waitForContext((c) => c.apartments.length === 1);
+    expect(ctx.apartments[0]).toMatchObject({ processed: false, processedAddress: null, latitude: null });
+    // Not an error to retry: the page says it is not processed, and why.
+    expect(ctx.enrichmentError).toEqual({});
+    await act(async () => {
+      await expect(captured!.processApartment(A1)).rejects.toMatchObject({ status: 402 });
+    });
+
+    server.billing.granted = 41;
+    await act(async () => {
+      await captured!.processApartment(A1);
+    });
+    expect(captured!.apartments[0]).toMatchObject({ processed: true, latitude: 47 });
   });
 
   it("picks up another member's spending on a section switch", async () => {

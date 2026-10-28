@@ -52,7 +52,11 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     deleteLocation,
     moveLocation,
     runMaintenance,
+    credits,
   } = useHouseholdData();
+  // Recompute all spends one credit for the whole run (#413); nothing is said
+  // about credits when billing is off.
+  const billing = credits ? "on" : "off";
   const storeErrorDetails = useStoreErrorDetails();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -136,6 +140,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
   }
 
   async function handleRecompute() {
+    if (credits && !window.confirm(t("recomputeConfirm"))) return;
     setRecomputing(true);
     setRecomputeProgress(null);
     setRecomputeResult(null);
@@ -312,7 +317,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
       <section className="space-y-2">
         <h2 className="title-section">{t("recomputeTitle")}</h2>
         <p className="text-sm text-muted-foreground">
-          {t("recomputeBody")}
+          {t("recomputeBody", { billing })}
         </p>
         <div className="flex items-center gap-3">
           <Button

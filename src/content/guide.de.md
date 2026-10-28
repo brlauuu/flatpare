@@ -43,6 +43,8 @@ Geh in der Navigationsleiste auf **Hochladen** und zieh ein Inserat als PDF hine
 
 Ist keine KI eingerichtet, füllst du die Felder von Hand aus. So oder so landest du auf der Seite der Wohnung, wo du prüfen und korrigieren kannst, was falsch herausgekommen ist — die Auswertung ist ein Ausgangspunkt, kein Orakel.
 
+Du kannst eine Wohnung auch von Hand hinzufügen, ohne PDF und ohne Adresse. Solange sie keins von beiden hat, ist sie **nicht verarbeitet**: Bewerte sie und trag ein, was du weisst. Sobald sie eine Adresse oder ein PDF bekommt, setzt Flatpare sie auf die Karte und misst ihre Distanzen.
+
 ### 6. Wohnungen bewerten
 
 Auf der Seite jeder Wohnung bewertest du sie in fünf Kategorien:
@@ -80,6 +82,8 @@ Die Reisezeiten werden von jeder Wohnung zu jedem deiner gespeicherten Orte geme
 
 Ist keine Distanz-API eingerichtet, kannst du die Zeiten von Hand eintragen.
 
+Änderst du später die Adresse einer Wohnung, wird nicht von selbst neu gemessen: Ihre Distanzen sind ausgeblendet, bis du auf ihrer Seite **Neu verarbeiten** drückst. In der gehosteten Version verbraucht das ein Wohnungsguthaben, und **Alle neu berechnen** auf der Haushaltsseite ebenso, einmal für den ganzen Durchgang. Einen Ort hinzuzufügen oder zu ändern kostet nichts.
+
 ### PDFs
 
 - Einzeln oder mehrere auf einmal hochladen
@@ -104,7 +108,7 @@ Unter **Einstellungen** kannst du:
 
 Weil deine Daten verschlüsselt sind, kann sie niemand für dich wiederherstellen, auch wir nicht. Auf der Seite **Haushalt** kann unter **Deine Daten** jedes Mitglied den ganzen Haushalt als ZIP-Datei **exportieren**: Wohnungen, Bewertungen, Orte und die originalen PDFs, dazu eine Tabellendatei. **Die Datei ist nicht verschlüsselt**, bewahre sie also an einem privaten Ort auf.
 
-Um einen Export zurückzuholen, öffne die Haushaltsseite eines Haushalts, der noch keine Wohnungen und keine Orte hat, und wähle **Importieren**. Bewertungen anderer Personen werden mit ihrem Namen zu deinen eigenen Kommentaren hinzugefügt. In der gehosteten Version verbraucht jede importierte Wohnung ein Wohnungsguthaben.
+Um einen Export zurückzuholen, öffne die Haushaltsseite eines Haushalts, der noch keine Wohnungen und keine Orte hat, und wähle **Importieren**. Bewertungen anderer Personen werden mit ihrem Namen zu deinen eigenen Kommentaren hinzugefügt. Ein Import ruft keinen externen Dienst auf und verbraucht kein Wohnungsguthaben.
 
 ---
 
@@ -129,7 +133,7 @@ Ein iPhone kann nichts an Flatpare teilen. Kopiere stattdessen den Link des Inse
 
 ### Links für später
 
-**Zum Hinzufügen**, oben auf der Seite Wohnungen, ist die Liste deines Haushalts mit Links, die noch keine Wohnungen sind. Alle im Haushalt sehen sie, mit dem Namen, wer welchen Link gespeichert hat. Einen Link zu speichern kostet nichts. Tippe auf **Hinzufügen**, um daraus eine Wohnung zu machen, mit oder ohne PDF; in der gehosteten Version wird erst dann ein Wohnungsguthaben verbraucht. Bis zu 20 Links können gleichzeitig warten.
+**Zum Hinzufügen**, oben auf der Seite Wohnungen, ist die Liste deines Haushalts mit Links, die noch keine Wohnungen sind. Alle im Haushalt sehen sie, mit dem Namen, wer welchen Link gespeichert hat. Einen Link zu speichern kostet nichts. Tippe auf **Hinzufügen**, um daraus eine Wohnung zu machen, mit oder ohne PDF; in der gehosteten Version wird ein Wohnungsguthaben verbraucht, sobald ihr PDF gelesen oder ihre Adresse auf der Karte gefunden wird. Bis zu 20 Links können gleichzeitig warten.
 
 ---
 
@@ -139,9 +143,9 @@ Ein iPhone kann nichts an Flatpare teilen. Kopiere stattdessen den Link des Inse
 
 Flatpare kostet **CHF 5, einmalig** — kein Abo. Das deckt bis zu 10 Personen und 40 Wohnungen in einem Haushalt ab.
 
-Die 40 zählen Wohnungen, die du **hinzufügst**, nicht Wohnungen, die du behältst: Wenn du eine löschst, wird in deinem Vergleich Platz frei, das Guthaben bekommst du aber nicht zurück. Wenn du deine 40 aufgebraucht hast, fügen weitere CHF 5 weitere 40 hinzu.
+Die 40 zählen **verarbeitete** Wohnungen, nicht Wohnungen, die du behältst: Ein Guthaben wird verbraucht, wenn das PDF einer Wohnung zum ersten Mal gelesen oder ihre Adresse zum ersten Mal auf der Karte gefunden wird. Eine Wohnung von Hand hinzufügen, beschreiben und bewerten kostet nichts. Wenn du eine löschst, wird in deinem Vergleich Platz frei, das Guthaben bekommst du aber nicht zurück. Wenn du deine 40 aufgebraucht hast, fügen weitere CHF 5 weitere 40 hinzu.
 
-Ist das Guthaben aufgebraucht, kannst du nur keine neuen Wohnungen mehr hinzufügen. Von den Wohnungen, die du schon hast, wirst du nie ausgesperrt.
+Ist das Guthaben aufgebraucht, werden nur keine neuen Wohnungen mehr verarbeitet: Du kannst sie weiterhin hinzufügen, beschreiben und bewerten und sie verarbeiten, nachdem du mehr gekauft hast. Von den Wohnungen, die du schon hast, wirst du nie ausgesperrt.
 
 Flatpare selbst zu betreiben ist kostenlos und hat überhaupt keine Grenzen.
 

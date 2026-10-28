@@ -32,7 +32,8 @@
     "rent": "CHF {amount, number}",
     "rooms": "{count, number} locali",
     "roomsShort": "{count, number} loc.",
-    "size": "{size, number} m²"
+    "size": "{size, number} m²",
+    "notProcessed": "Non elaborato"
   },
   "corrupt": {
     "title": "Non è stato possibile decifrare questo appartamento",
@@ -47,13 +48,14 @@
     "notFound": "Appartamento non trovato",
     "deleteFailed": "Non è stato possibile eliminare l'appartamento",
     "pdfOpenFailed": "Non è stato possibile aprire il PDF",
-    "reprocessConfirm": "Rielaborare questo appartamento? I campi che non hai modificato verranno aggiornati dal PDF. Quelli che hai modificato resteranno invariati.",
+    "reprocessConfirm": "{billing, select, on {Rielaborare questo appartamento per un credito appartamento? L'indirizzo viene localizzato di nuovo e ogni distanza misurata di nuovo. Con un PDF, i campi che non hai modificato vengono aggiornati da esso; quelli che hai modificato restano invariati.} other {Rielaborare questo appartamento? L'indirizzo viene localizzato di nuovo e ogni distanza misurata di nuovo. Con un PDF, i campi che non hai modificato vengono aggiornati da esso; quelli che hai modificato restano invariati.}}",
     "reprocessFailed": "Non è stato possibile rielaborare l'appartamento",
     "nameRequired": "Il nome è obbligatorio",
     "saveFailed": "Non è stato possibile salvare le modifiche",
     "ratingSaveFailed": "Non è stato possibile salvare la valutazione",
     "availableFrom": "Disponibile dal: {date}",
-    "showOnMap": "Vedi sulla mappa"
+    "showOnMap": "Vedi sulla mappa",
+    "processFailed": "Impossibile elaborare l'appartamento"
   },
   "actions": {
     "viewPdf": "Vedi PDF",
@@ -87,7 +89,9 @@
     "bike": "{minutes} min in bici",
     "bikeNone": "— in bici",
     "transit": "{minutes} min coi mezzi",
-    "transitNone": "— coi mezzi"
+    "transitNone": "— coi mezzi",
+    "addressChanged": "L'indirizzo è cambiato. Rielabora l'appartamento per misurarne di nuovo le distanze.",
+    "addressChangedHint": "Le distanze appartenevano al vecchio indirizzo, quindi sono nascoste finché l'appartamento non viene rielaborato."
   },
   "new": {
     "pdfStoreWarning": "Non è stato possibile salvare il PDF — l'appartamento verrà salvato senza",
@@ -124,7 +128,8 @@
     "size": "{size} m²",
     "rooms": "{count} locali",
     "retry": "Riprova",
-    "linkFound": "Link all'annuncio trovato con una ricerca sul web. Potrebbe portare alla pagina sbagliata: controllalo prima di salvare."
+    "linkFound": "Link all'annuncio trovato con una ricerca sul web. Potrebbe portare alla pagina sbagliata: controllalo prima di salvare.",
+    "notRead": "Non letto: nessun credito appartamento rimasto. Salvalo e valutalo ora, poi elaboralo dopo averne comprati altri."
   },
   "single": {
     "title": "Aggiungi un appartamento a mano",
@@ -175,7 +180,7 @@
     "other": "Valutazione di {name}"
   },
   "credits": {
-    "left": "Puoi ancora aggiungere <n>{count}</n> {count, plural, one {appartamento} other {appartamenti}}",
+    "left": "Puoi ancora elaborare <n>{count}</n> {count, plural, one {appartamento} other {appartamenti}}",
     "runningLow": "(stanno finendo)",
     "noneLeft": "(esauriti)",
     "buyMore": "Acquistane altri"
@@ -202,5 +207,17 @@
     "link": "Aggiungere il link condiviso?",
     "add": "Aggiungi",
     "discard": "Scarta"
+  },
+  "processing": {
+    "title": "Non ancora elaborato",
+    "empty": "{billing, select, on {Valutalo e descrivilo gratis. Aggiungi un indirizzo o un PDF per trovarlo sulla mappa e misurarne le distanze; questo usa un credito appartamento.} other {Valutalo e descrivilo come vuoi. Aggiungi un indirizzo o un PDF per trovarlo sulla mappa e misurarne le distanze.}}",
+    "pending": "{billing, select, on {Il suo indirizzo o PDF è salvato ma non ancora elaborato. L'elaborazione usa un credito appartamento.} other {Il suo indirizzo o PDF è salvato ma non ancora elaborato.}}",
+    "noneLeft": "Nessun credito appartamento rimasto.",
+    "buyMore": "Acquistane altri",
+    "process": "{billing, select, on {Elabora (1 credito)} other {Elabora}}",
+    "processing": "Elaborazione...",
+    "unplacedTitle": "Non ancora sulla mappa",
+    "unplaced": "{billing, select, on {Non è stato possibile trovare l'indirizzo sulla mappa. Riprovare non usa crediti.} other {Non è stato possibile trovare l'indirizzo sulla mappa.}}",
+    "retry": "Riprova"
   }
 }

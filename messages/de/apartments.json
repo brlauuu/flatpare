@@ -32,7 +32,8 @@
     "rent": "CHF {amount, number}",
     "rooms": "{count, number} Zimmer",
     "roomsShort": "{count, number} Zi.",
-    "size": "{size, number} m²"
+    "size": "{size, number} m²",
+    "notProcessed": "Nicht verarbeitet"
   },
   "corrupt": {
     "title": "Diese Wohnung konnte nicht entschlüsselt werden",
@@ -47,13 +48,14 @@
     "notFound": "Wohnung nicht gefunden",
     "deleteFailed": "Die Wohnung konnte nicht gelöscht werden",
     "pdfOpenFailed": "Das PDF konnte nicht geöffnet werden",
-    "reprocessConfirm": "Diese Wohnung neu verarbeiten? Felder, die du nicht bearbeitet hast, werden aus dem PDF aktualisiert. Felder, die du bearbeitet hast, bleiben, wie sie sind.",
+    "reprocessConfirm": "{billing, select, on {Diese Wohnung für ein Wohnungsguthaben neu verarbeiten? Die Adresse wird neu gesucht und jede Distanz neu gemessen. Mit einem PDF werden Felder, die du nicht bearbeitet hast, daraus aktualisiert; Felder, die du bearbeitet hast, bleiben, wie sie sind.} other {Diese Wohnung neu verarbeiten? Die Adresse wird neu gesucht und jede Distanz neu gemessen. Mit einem PDF werden Felder, die du nicht bearbeitet hast, daraus aktualisiert; Felder, die du bearbeitet hast, bleiben, wie sie sind.}}",
     "reprocessFailed": "Die Wohnung konnte nicht neu verarbeitet werden",
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Änderungen konnten nicht gespeichert werden",
     "ratingSaveFailed": "Die Bewertung konnte nicht gespeichert werden",
     "availableFrom": "Frei ab: {date}",
-    "showOnMap": "Auf der Karte ansehen"
+    "showOnMap": "Auf der Karte ansehen",
+    "processFailed": "Wohnung konnte nicht verarbeitet werden"
   },
   "actions": {
     "viewPdf": "PDF ansehen",
@@ -87,7 +89,9 @@
     "bike": "{minutes} Min. Velo",
     "bikeNone": "— Velo",
     "transit": "{minutes} Min. ÖV",
-    "transitNone": "— ÖV"
+    "transitNone": "— ÖV",
+    "addressChanged": "Die Adresse hat sich geändert. Verarbeite die Wohnung neu, um die Distanzen neu zu messen.",
+    "addressChangedHint": "Die Distanzen gehörten zur alten Adresse und sind darum ausgeblendet, bis die Wohnung neu verarbeitet ist."
   },
   "new": {
     "pdfStoreWarning": "Das PDF konnte nicht gespeichert werden — die Wohnung wird ohne PDF gespeichert",
@@ -124,7 +128,8 @@
     "size": "{size} m²",
     "rooms": "{count} Zimmer",
     "retry": "Nochmals",
-    "linkFound": "Link zum Inserat über eine Websuche gefunden. Er kann auf die falsche Seite führen: Prüfe ihn vor dem Speichern."
+    "linkFound": "Link zum Inserat über eine Websuche gefunden. Er kann auf die falsche Seite führen: Prüfe ihn vor dem Speichern.",
+    "notRead": "Nicht gelesen: kein Wohnungsguthaben mehr übrig. Speichere und bewerte sie jetzt und verarbeite sie, nachdem du mehr gekauft hast."
   },
   "single": {
     "title": "Wohnung von Hand erfassen",
@@ -175,7 +180,7 @@
     "other": "Bewertung von {name}"
   },
   "credits": {
-    "left": "Noch <n>{count}</n> {count, plural, one {Wohnung} other {Wohnungen}} hinzuzufügen",
+    "left": "Noch <n>{count}</n> {count, plural, one {Wohnung} other {Wohnungen}} zu verarbeiten",
     "runningLow": "(wird knapp)",
     "noneLeft": "(keine mehr)",
     "buyMore": "Mehr kaufen"
@@ -202,5 +207,17 @@
     "link": "Den geteilten Link hinzufügen?",
     "add": "Hinzufügen",
     "discard": "Verwerfen"
+  },
+  "processing": {
+    "title": "Noch nicht verarbeitet",
+    "empty": "{billing, select, on {Bewerten und beschreiben kostet nichts. Füge eine Adresse oder ein PDF hinzu, um die Wohnung auf der Karte zu finden und ihre Distanzen zu messen; das verbraucht ein Wohnungsguthaben.} other {Bewerte und beschreibe sie, wie du willst. Füge eine Adresse oder ein PDF hinzu, um die Wohnung auf der Karte zu finden und ihre Distanzen zu messen.}}",
+    "pending": "{billing, select, on {Die Adresse oder das PDF ist gespeichert, aber noch nicht verarbeitet. Die Verarbeitung verbraucht ein Wohnungsguthaben.} other {Die Adresse oder das PDF ist gespeichert, aber noch nicht verarbeitet.}}",
+    "noneLeft": "Kein Wohnungsguthaben mehr übrig.",
+    "buyMore": "Mehr kaufen",
+    "process": "{billing, select, on {Verarbeiten (1 Guthaben)} other {Verarbeiten}}",
+    "processing": "Wird verarbeitet...",
+    "unplacedTitle": "Noch nicht auf der Karte",
+    "unplaced": "{billing, select, on {Die Adresse konnte nicht auf der Karte gefunden werden. Ein neuer Versuch verbraucht kein Guthaben.} other {Die Adresse konnte nicht auf der Karte gefunden werden.}}",
+    "retry": "Erneut versuchen"
   }
 }

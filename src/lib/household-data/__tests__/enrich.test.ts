@@ -8,33 +8,27 @@ const loc = (id: string): LocationView => ({
 });
 
 describe("planEnrichment", () => {
-  it("does everything for a new apartment with an address", () => {
-    expect(planEnrichment(null, base)).toEqual({ geocode: true, distances: true });
+  it("geocodes and measures an address that was never geocoded", () => {
+    expect(planEnrichment(base)).toEqual({ geocode: true, distances: true });
+    // Processed by its PDF first: the address is covered by the same credit.
+    expect(planEnrichment({ ...base, processed: true })).toEqual({ geocode: true, distances: true });
   });
 
-  it("fetches nothing for a new apartment without an address", () => {
-    expect(planEnrichment(null, { ...base, address: null })).toEqual({
-      geocode: false, distances: false,
-    });
+  it("fetches nothing for an apartment without an address", () => {
+    expect(planEnrichment({ ...base, address: null })).toEqual({ geocode: false, distances: false });
+    expect(planEnrichment({ ...base, address: "  " })).toEqual({ geocode: false, distances: false });
   });
 
-  it("re-geocodes and recomputes distances when the address changes", () => {
-    expect(planEnrichment(base, { ...base, address: "B 2" })).toEqual({
-      geocode: true, distances: true,
-    });
+  // #413: changing the address does not reprocess; a reprocess is charged.
+  it("does not geocode a changed address again", () => {
+    const processed = { ...base, processed: true, processedAddress: "A 1" };
+    expect(planEnrichment({ ...processed, address: "B 2" })).toEqual({ geocode: false, distances: false });
+    expect(planEnrichment(processed)).toEqual({ geocode: false, distances: false });
   });
 
-  it("fetches nothing when rooms, baths or washing machine change; the write rebuilds the code (#410)", () => {
-    expect(planEnrichment(base, { ...base, numRooms: 4 })).toEqual({
-      geocode: false, distances: false,
-    });
-    expect(planEnrichment(base, { ...base, hasWashingMachine: null })).toEqual({
-      geocode: false, distances: false,
-    });
-  });
-
-  it("does nothing when only unrelated fields change", () => {
-    expect(planEnrichment(base, { ...base, rentChf: 999, summary: "x" })).toEqual({
+  it("fetches nothing when only other fields change; the write rebuilds the code (#410)", () => {
+    const processed = { ...base, processed: true, processedAddress: "A 1" };
+    expect(planEnrichment({ ...processed, numRooms: 4, rentChf: 999 })).toEqual({
       geocode: false, distances: false,
     });
   });

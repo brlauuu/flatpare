@@ -43,6 +43,8 @@ Go to **Upload** in the nav bar and drag in (or select) a PDF listing. If AI ext
 
 If no AI is configured, fill the fields in manually. Either way you land on the apartment's page to review and correct anything that came out wrong — the extraction is a starting point, not an oracle.
 
+You can also add an apartment by hand, without a PDF or an address. Until it has one of them it is **not processed**: rate it and fill in what you know, and as soon as it gets an address or a PDF, Flatpare places it on the map and measures its distances.
+
 ### 6. Rate apartments
 
 On each apartment's page, rate it across five categories:
@@ -80,6 +82,8 @@ Travel times are measured from each apartment to each of your saved locations:
 
 If no distance API is configured, you can enter times manually.
 
+Changing an apartment's address later does not measure again by itself: its distances are hidden until you press **Reprocess** on its page. On the hosted version a reprocess uses one apartment credit, and so does **Recompute all** on the Household page, once for the whole run. Adding or changing a location of interest is free.
+
 ### PDF handling
 
 - Single or bulk upload
@@ -104,7 +108,7 @@ Under **Settings**, you can:
 
 Because your data is encrypted, nobody can restore it for you, not even us. On the **Household** page, under **Your data**, any member can **Export** the whole household as a ZIP file: apartments, ratings, locations and the original PDFs, plus a spreadsheet file. **The file is not encrypted**, so keep it somewhere private.
 
-To bring an export back, open the Household page of a household that has no apartments and no locations yet, and use **Import**. Other people's ratings are added to your own comments, with their names. On the hosted version, each imported apartment uses one apartment credit.
+To bring an export back, open the Household page of a household that has no apartments and no locations yet, and use **Import**. Other people's ratings are added to your own comments, with their names. An import calls no outside service and uses no apartment credits.
 
 ---
 
@@ -129,7 +133,7 @@ An iPhone cannot share into Flatpare. Copy the listing's link instead, open Flat
 
 ### Links to add later
 
-**To add**, at the top of the Apartments page, is your household's list of links that are not apartments yet. Everyone in the household sees it, with who saved each link. Saving a link is free. Tap **Add** to make it an apartment, with or without its PDF; on the hosted version, that is when an apartment credit is used. Up to 20 links can wait at once.
+**To add**, at the top of the Apartments page, is your household's list of links that are not apartments yet. Everyone in the household sees it, with who saved each link. Saving a link is free. Tap **Add** to make it an apartment, with or without its PDF; on the hosted version, an apartment credit is used once its PDF is read or its address is placed on the map. Up to 20 links can wait at once.
 
 ---
 
@@ -139,9 +143,9 @@ An iPhone cannot share into Flatpare. Copy the listing's link instead, open Flat
 
 Flatpare is **CHF 5, once** — not a subscription. That covers up to 10 people and 40 apartments in one household.
 
-The 40 counts apartments you **add**, not apartments you keep: deleting one frees room in your comparison but does not give the credit back. When you have used your 40, another CHF 5 adds another 40.
+The 40 counts apartments **processed**, not apartments you keep: a credit is used the first time an apartment's PDF is read or its address is placed on the map. Adding an apartment by hand, describing it and rating it are free. Deleting one frees room in your comparison but does not give the credit back. When you have used your 40, another CHF 5 adds another 40.
 
-Running out of credits only stops you adding new apartments. It never locks you out of the ones you already have.
+Running out of credits only stops new apartments being processed: you can still add, describe and rate them, and process them after buying more. It never locks you out of the ones you already have.
 
 Running Flatpare yourself is free and has no limits at all.
 

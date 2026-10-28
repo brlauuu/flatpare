@@ -178,6 +178,29 @@ describe("HouseholdPage", () => {
     ).toBeInTheDocument();
   });
 
+  // #413: one credit for the whole run, said before the click.
+  it("names the credit and asks first when billing is on", async () => {
+    const user = userEvent.setup();
+    const { value } = setup({ credits: { granted: 40, used: 2, remaining: 38 } });
+    const confirm = vi.fn().mockReturnValue(false);
+    vi.stubGlobal("confirm", confirm);
+    expect(screen.getByText(/Uses one apartment credit for the whole run/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Recompute all/i }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("one apartment credit"));
+    expect(value.runMaintenance).not.toHaveBeenCalled();
+  });
+
+  it("neither asks nor mentions credits when billing is off", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    const confirm = vi.fn();
+    vi.stubGlobal("confirm", confirm);
+    expect(screen.queryByText(/apartment credit/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Recompute all/i }));
+    expect(confirm).not.toHaveBeenCalled();
+    await waitFor(() => expect(value.runMaintenance).toHaveBeenCalledWith("distances", expect.any(Function)));
+  });
+
   it("shows progress while recomputing", async () => {
     const user = userEvent.setup();
     const { value } = setup();

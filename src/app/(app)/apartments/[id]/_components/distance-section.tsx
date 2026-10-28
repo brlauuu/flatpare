@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { iconComponentFor } from "@/lib/location-icons";
 import type { ApartmentDistance } from "@/lib/household-data/types";
@@ -7,14 +8,31 @@ interface DistanceSectionProps {
   locations: LocationLite[];
   distances: Record<string, ApartmentDistance>;
   apartmentAddress: string | null;
+  // The address changed after it was processed (#413): the distances belong
+  // to the old one, so none are shown until a reprocess.
+  addressChanged?: boolean;
 }
 
 export function DistanceSection({
   locations,
   distances,
   apartmentAddress,
+  addressChanged = false,
 }: DistanceSectionProps) {
   const t = useTranslations("apartments.distance");
+  if (addressChanged) {
+    return (
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("title")}
+        </h2>
+        <p className="flex items-start gap-2 text-sm text-muted-foreground" title={t("addressChangedHint")}>
+          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>{t("addressChanged")}</span>
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

@@ -90,12 +90,13 @@
     "reorderError": "No se ha podido reordenar",
     "loadError": "No se han podido cargar los lugares",
     "recomputeTitle": "Recalcular distancias",
-    "recomputeBody": "Vuelve a calcular los minutos en bici y en transporte público para cada combinación de piso y lugar.",
+    "recomputeBody": "{billing, select, on {Vuelve a calcular los minutos en bici y en transporte público para cada combinación de piso y lugar. Usa un crédito de piso para todo el cálculo.} other {Vuelve a calcular los minutos en bici y en transporte público para cada combinación de piso y lugar.}}",
     "recomputeError": "No se han podido recalcular las distancias",
     "recomputingProgress": "Recalculando… {done} de {total}",
     "recomputing": "Recalculando…",
     "recompute": "Recalcular todo",
-    "recomputed": "Recalculados {updated} pisos{failed, plural, =0 {} other { (# con error)}}{skipped, plural, =0 {} other { (# omitidos: sin dirección)}}"
+    "recomputed": "Recalculados {updated} pisos{failed, plural, =0 {} other { (# con error)}}{skipped, plural, =0 {} other { (# omitidos: sin dirección)}}",
+    "recomputeConfirm": "¿Volver a calcular todas las distancias? Eso usa un crédito de piso para todo el cálculo."
   },
   "iconPicker": {
     "title": "Elige un icono",
@@ -133,8 +134,6 @@
     "importBody": "Restaura una exportación de Flatpare en este hogar. Solo es posible mientras el hogar no tenga pisos ni lugares. Las valoraciones de otras personas se añaden a tus propios comentarios, con su nombre.",
     "chooseFile": "Elegir un archivo de exportación",
     "fileSummary": "Este archivo contiene {apartments, plural, one {# piso} other {# pisos}}, {locations, plural, one {# lugar} other {# lugares}} y {ratings, plural, one {# valoración} other {# valoraciones}}, exportado el {date}.",
-    "usesCredits": "La importación usa {count, plural, one {# crédito de piso} other {# créditos de piso}}.",
-    "overCredits": "Se añadirían {count, plural, one {# piso} other {# pisos}}, pero al hogar le quedan {remaining, plural, one {# crédito} other {# créditos}}.",
     "overCap": "Se añadirían {count, plural, one {# piso} other {# pisos}}, pero un hogar puede tener como máximo {max}.",
     "import": "Importar",
     "importing": "Importando…",

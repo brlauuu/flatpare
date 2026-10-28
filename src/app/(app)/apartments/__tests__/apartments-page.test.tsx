@@ -296,6 +296,14 @@ describe("Apartments page — listing gone badge", () => {
     });
     expect(screen.getAllByText("Gone")).toHaveLength(1);
   });
+
+  // #413: added by hand or from a link, rated or not, and not processed yet.
+  it("marks an apartment that is not processed yet", () => {
+    renderPage({
+      apartments: [{ ...APARTMENTS[0], processed: false }, APARTMENTS[1], APARTMENTS[2]],
+    });
+    expect(screen.getAllByText("Not processed")).toHaveLength(1);
+  });
 });
 
 describe("Apartments page — corrupt rows", () => {
@@ -388,7 +396,7 @@ describe("apartment limit (#187)", () => {
       credits: { granted: 40, used: 0, remaining: 40 },
     });
     expect(screen.getByText("No apartments yet")).toBeInTheDocument();
-    expect(screen.getByTestId("credit-balance")).toHaveTextContent("40 apartments left to add");
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("40 apartments left to process");
   });
 
   it("shows the credit balance beside the held-at-once counter (#305)", () => {
@@ -399,7 +407,7 @@ describe("apartment limit (#187)", () => {
     });
     // Two different numbers, and they must not read as one.
     expect(screen.getByText("3 of 40")).toBeInTheDocument();
-    expect(screen.getByTestId("credit-balance")).toHaveTextContent("4 apartments left to add");
+    expect(screen.getByTestId("credit-balance")).toHaveTextContent("4 apartments left to process");
     expect(screen.getByRole("link", { name: /buy more/i })).toHaveAttribute("href", "/billing");
   });
 

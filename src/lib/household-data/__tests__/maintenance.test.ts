@@ -5,6 +5,7 @@ import { emptyApartment, type ApartmentView, type LocationView } from "../types"
 const view = (id: string, over: Partial<ApartmentView> = {}): ApartmentView => ({
   ...emptyApartment(id), id, version: 1, createdAt: "", updatedAt: "", ratings: [],
   avgKitchen: null, avgBalconies: null, avgLocation: null, avgFloorplan: null, avgOverall: null, myRating: null,
+  addressChanged: false, processed: true,
   ...over,
 });
 const loc = (id: string, latitude: number | null = 1): LocationView => ({
@@ -18,6 +19,10 @@ describe("maintenance planners", () => {
       view("b", { address: "B", latitude: 1, longitude: 1 }),
       view("c"),
       view("d", { address: "D", corrupt: true }),
+      // #413: a page visit never spends a credit, so neither an apartment
+      // that was never processed nor a changed address is geocoded here.
+      view("e", { address: "E", processed: false }),
+      view("f", { address: "F", processedAddress: "Old", addressChanged: true }),
     ]);
     expect(plan.map((a) => a.id)).toEqual(["a"]);
   });

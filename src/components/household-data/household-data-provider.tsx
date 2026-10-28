@@ -21,7 +21,7 @@ import {
 } from "@/lib/household-data/codec";
 import { mapConcurrent } from "@/lib/household-data/concurrency";
 import { deriveApartments, deriveLocations } from "@/lib/household-data/derive";
-import { planEnrichment, pruneDistances, type EnrichmentPlan } from "@/lib/household-data/enrich";
+import { hasAddress, planEnrichment, pruneDistances, type EnrichmentPlan } from "@/lib/household-data/enrich";
 import { lettersOf, postcodeFromShortCode, syncShortCode, withPostcode } from "@/lib/household-data/short-code";
 import {
   planDistanceMaintenance,
@@ -103,6 +103,16 @@ export interface HouseholdDataContextValue {
   deleteApartment(id: string): Promise<void>;
   rateApartment(id: string, rating: Rating | null): Promise<void>;
   retryEnrichment(id: string): Promise<void>;
+  // #413. Processes an apartment that has an address but was never geocoded
+  // (its first processing spends one credit); rejects with the failure, a
+  // 402 when no credit is left, where retryEnrichment only records it.
+  processApartment(id: string): Promise<void>;
+  // A reprocess (#413) is charged by explicit request, one credit, before the
+  // page reads the PDF again; then `relocateApartment` writes what the PDF
+  // gave (`mutate`), geocodes the address and measures every distance again,
+  // at no further charge.
+  chargeReprocess(id: string): Promise<void>;
+  relocateApartment(id: string, mutate?: (a: Apartment) => Apartment): Promise<void>;
   createLocation(id: string, data: Location): Promise<LocationView>;
   updateLocation(id: string, mutate: (l: Location) => Location): Promise<LocationView>;
   deleteLocation(id: string): Promise<void>;
@@ -167,6 +177,11 @@ export class StaleKeyError extends Error {
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+// The server refused a charge: the household has no credits left (#413).
+function isNoCredits(err: unknown): boolean {
+  return err instanceof ApiClientError && err.status === 402;
 }
 
 function isStale(err: unknown): err is ApiClientError {
@@ -429,19 +444,36 @@ export function HouseholdDataProvider({
   );
 
   // Runs a plan for one row and writes the result. Failures are recorded
-  // per row in enrichmentError; the row itself is already saved.
+  // per row in enrichmentError, and returned; the row itself is already
+  // saved. A refusal for want of credit (#413) is not recorded: the
+  // apartment stays unprocessed, and its page says so.
+  //
+  // The geocode names the apartment only when it is the apartment's first
+  // processing, which is what the server charges (#413). An apartment
+  // already processed (by its PDF, or before) is geocoded without it: its
+  // credit is spent, and a retry must never spend another.
   const runEnrichment = useCallback(
-    async (id: string, plan: EnrichmentPlan): Promise<void> => {
+    async (id: string, plan: EnrichmentPlan): Promise<unknown> => {
+      const row = storeRef.current.apartments.find((a) => a.id === id);
+      if (!row || row.data === null) return null;
+      const charging = plan.geocode && !row.data.processed;
       try {
-        const row = storeRef.current.apartments.find((a) => a.id === id);
-        if (!row || row.data === null) return;
-        const enriched = await enrichApartment(row.data, currentLocations(), takenLetters(id), plan);
+        const enriched = await enrichApartment(
+          row.data,
+          currentLocations(),
+          takenLetters(id),
+          plan,
+          Math.random,
+          charging ? id : undefined
+        );
         await writeApartment(id, (a) => ({
           ...a,
           latitude: enriched.latitude,
           longitude: enriched.longitude,
           shortCode: plan.geocode ? geocodedCode(id, a, enriched) : a.shortCode,
           distances: enriched.distances,
+          processed: a.processed || enriched.processed,
+          processedAddress: plan.geocode ? enriched.processedAddress : a.processedAddress,
         }));
         setEnrichmentError((prev) => {
           if (!(id in prev)) return prev;
@@ -449,25 +481,23 @@ export function HouseholdDataProvider({
           delete rest[id];
           return rest;
         });
+        return null;
       } catch (err) {
-        setEnrichmentError((prev) => ({ ...prev, [id]: messageOf(err) }));
+        if (!isNoCredits(err)) setEnrichmentError((prev) => ({ ...prev, [id]: messageOf(err) }));
+        return err;
+      } finally {
+        if (charging) void refreshCredits();
       }
     },
-    [currentLocations, geocodedCode, takenLetters, writeApartment]
+    [currentLocations, geocodedCode, refreshCredits, takenLetters, writeApartment]
   );
 
   const createApartment = useCallback(
     async (id: string, given: Apartment): Promise<ApartmentView> => {
       const data = syncShortCode(null, given, takenLetters(id));
       const envelope = await sealApartment(dataKey, householdId, id, data, keyVersion);
-      let saved: ApartmentRow;
-      try {
-        saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
-      } finally {
-        // Refused or not: a 402 means someone else spent the last credit, and
-        // the number on screen is what told this user they had one.
-        void refreshCredits();
-      }
+      // Creating spends no credit (#413); the first processing does.
+      const saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
       commit((s) => ({
         ...s,
         apartments: [
@@ -475,7 +505,9 @@ export function HouseholdDataProvider({
           { id: saved.id, version: saved.version, createdAt: saved.createdAt, updatedAt: saved.updatedAt, data },
         ],
       }));
-      void runEnrichment(id, planEnrichment(null, data));
+      // The PDF read before this create spent the credit, if there was one.
+      if (data.processed) void refreshCredits();
+      void runEnrichment(id, planEnrichment(data));
       return viewOf(id);
     },
     [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, takenLetters, viewOf]
@@ -484,20 +516,63 @@ export function HouseholdDataProvider({
   const updateApartment = useCallback(
     async (id: string, mutate: (a: Apartment) => Apartment): Promise<ApartmentView> => {
       const { previous, next } = await writeApartment(id, (a) => syncShortCode(a, mutate(a), takenLetters(id)));
-      const plan = planEnrichment(previous, next);
+      // A PDF read for this apartment just now spent its credit (#413).
+      if (next.processed && !previous.processed) void refreshCredits();
+      const plan = planEnrichment(next);
       if (plan.geocode || plan.distances) void runEnrichment(id, plan);
       return viewOf(id);
     },
-    [runEnrichment, takenLetters, viewOf, writeApartment]
+    [refreshCredits, runEnrichment, takenLetters, viewOf, writeApartment]
   );
 
   const retryEnrichment = useCallback(
     async (id: string): Promise<void> => {
       const row = storeRef.current.apartments.find((a) => a.id === id);
       if (!row || row.data === null) return;
-      await runEnrichment(id, planEnrichment(null, row.data));
+      await runEnrichment(id, planEnrichment(row.data));
     },
     [runEnrichment]
+  );
+
+  const processApartment = useCallback(
+    async (id: string): Promise<void> => {
+      const row = storeRef.current.apartments.find((a) => a.id === id);
+      if (!row || row.data === null) throw new Error("Apartment not found");
+      const err = await runEnrichment(id, planEnrichment(row.data));
+      if (err) throw err;
+    },
+    [runEnrichment]
+  );
+
+  const chargeReprocess = useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        await sendJson<{ ok: true }>("POST", `/api/apartments/${id}/reprocess`);
+      } finally {
+        void refreshCredits();
+      }
+    },
+    [refreshCredits]
+  );
+
+  // The rest of a reprocess already charged by chargeReprocess: writes what
+  // the PDF gave, then geocodes the address and measures every distance
+  // again. What belonged to the old address is dropped in the same write, so
+  // an apartment without an address keeps no coordinates or distances.
+  const relocateApartment = useCallback(
+    async (id: string, mutate: (a: Apartment) => Apartment = (a) => a): Promise<void> => {
+      const { next } = await writeApartment(id, (a) =>
+        syncShortCode(
+          a,
+          { ...mutate(a), processed: true, latitude: null, longitude: null, distances: {}, processedAddress: null },
+          takenLetters(id)
+        )
+      );
+      if (!hasAddress(next)) return;
+      const err = await runEnrichment(id, { geocode: true, distances: true });
+      if (err) throw err;
+    },
+    [runEnrichment, takenLetters, writeApartment]
   );
 
   const deleteApartment = useCallback(
@@ -696,12 +771,15 @@ export function HouseholdDataProvider({
               if (enriched.latitude === null) {
                 report.skipped++;
               } else {
+                // Planned only for processed apartments, so the geocode named
+                // no apartment and spent nothing (#413).
                 await writeApartment(apt.id, (a) => ({
                   ...a,
                   latitude: enriched.latitude,
                   longitude: enriched.longitude,
                   shortCode: geocodedCode(apt.id, a, enriched),
                   distances: enriched.distances,
+                  processedAddress: enriched.processedAddress,
                 }));
                 report.updated++;
               }
@@ -715,6 +793,14 @@ export function HouseholdDataProvider({
       }
 
       if (kind === "distances") {
+        // One credit for the whole run (#413), asked for before anything is
+        // measured. A new or moved location measures through fillDistances
+        // directly, and stays free.
+        try {
+          await sendJson<{ ok: true }>("POST", "/api/billing/recompute");
+        } finally {
+          void refreshCredits();
+        }
         return fillDistances(currentLocations(), "all", onProgress);
       }
 
@@ -741,7 +827,7 @@ export function HouseholdDataProvider({
       });
       return report;
     },
-    [currentLocations, fillDistances, geocodedCode, takenLetters, userId, writeApartment]
+    [currentLocations, fillDistances, geocodedCode, refreshCredits, takenLetters, userId, writeApartment]
   );
 
   // ---- rotation ------------------------------------------------------------
@@ -808,6 +894,9 @@ export function HouseholdDataProvider({
       deleteApartment,
       rateApartment,
       retryEnrichment,
+      processApartment,
+      chargeReprocess,
+      relocateApartment,
       createLocation,
       updateLocation,
       deleteLocation,
@@ -823,6 +912,7 @@ export function HouseholdDataProvider({
     [
       identity, limits, credits, dataKey, status, error, apartments, locations, drafts, enrichmentError, reload,
       createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
+      processApartment, chargeReprocess, relocateApartment,
       createLocation, updateLocation, deleteLocation, moveLocation, createDraft, deleteDraft, runMaintenance, rotateDataKey,
       exportHousehold, readImport, importHousehold,
     ]

@@ -73,7 +73,7 @@
       "betaKeep": "Request access below. What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.",
       "limits": "Up to 10 people and 40 apartments.",
       "more": "Need more? Another CHF 5 adds another 40 apartments.",
-      "quota": "The 40 counts apartments you add: deleting one does not give the credit back.",
+      "quota": "The 40 counts apartments processed, when their PDF is read or their address is placed on the map; adding and rating one by hand is free. Deleting one does not give the credit back.",
       "noReset": "Your key comes from your passphrase, plus a recovery code you print. There is no reset — lose both and the data is gone, to us too.",
       "createAccount": "Create your account →"
     },

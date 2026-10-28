@@ -24,6 +24,7 @@ import {
   ratings,
   locations,
   processUsage,
+  apartmentCharges,
 } from "@/lib/db/schema";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
 
@@ -110,6 +111,8 @@ async function rowCounts(): Promise<Record<string, number>> {
     ratings: (await db.select().from(ratings)).length,
     locations: (await db.select().from(locations)).length,
     processUsage: (await db.select().from(processUsage)).length,
+    // #413: written only when billing is on; these tests run with it off.
+    apartmentCharges: (await db.select().from(apartmentCharges)).length,
     users: (await db.select().from(users)).length,
     accounts: (await db.select().from(accounts)).length,
     sessions: (await db.select().from(sessions)).length,
@@ -129,6 +132,7 @@ function multipartPdf() {
   fd.set("file", new File([new TextEncoder().encode(PDF_TEXT)], "listing.pdf", {
     type: "application/pdf",
   }));
+  fd.set("apartmentId", "33333333-3333-4333-8333-333333333333");
   return new Request("http://localhost/api/process/parse-pdf", { method: "POST", body: fd });
 }
 

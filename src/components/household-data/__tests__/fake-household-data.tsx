@@ -19,6 +19,9 @@ export function makeApartmentView(over: Partial<ApartmentView> & { id: string })
     avgFloorplan: null,
     avgOverall: null,
     myRating: null,
+    addressChanged: false,
+    // Most tests are about an apartment as it was before #413: processed.
+    processed: true,
     ...over,
   };
 }
@@ -56,6 +59,9 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     deleteApartment: vi.fn(async () => {}),
     rateApartment: vi.fn(async () => {}),
     retryEnrichment: vi.fn(async () => {}),
+    processApartment: vi.fn(async () => {}),
+    chargeReprocess: vi.fn(async () => {}),
+    relocateApartment: vi.fn(async () => {}),
     createLocation: vi.fn(async (id: string) => makeLocationView({ id })),
     updateLocation: vi.fn(async (id: string) => makeLocationView({ id })),
     deleteLocation: vi.fn(async () => {}),

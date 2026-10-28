@@ -90,12 +90,13 @@
     "reorderError": "Couldn't reorder",
     "loadError": "Couldn't load locations",
     "recomputeTitle": "Recompute distances",
-    "recomputeBody": "Rebuild bike and transit minutes for every apartment × location pair.",
+    "recomputeBody": "{billing, select, on {Rebuild bike and transit minutes for every apartment × location pair. Uses one apartment credit for the whole run.} other {Rebuild bike and transit minutes for every apartment × location pair.}}",
     "recomputeError": "Couldn't recompute distances",
     "recomputingProgress": "Recomputing… {done} of {total}",
     "recomputing": "Recomputing…",
     "recompute": "Recompute all",
-    "recomputed": "Recomputed {updated} apartments{failed, plural, =0 {} other { (# failed)}}{skipped, plural, =0 {} other { (# skipped — no address)}}"
+    "recomputed": "Recomputed {updated} apartments{failed, plural, =0 {} other { (# failed)}}{skipped, plural, =0 {} other { (# skipped — no address)}}",
+    "recomputeConfirm": "Recompute every distance? This uses one apartment credit for the whole run."
   },
   "iconPicker": {
     "title": "Pick an icon",
@@ -133,8 +134,6 @@
     "importBody": "Restore a Flatpare export into this household. This is only possible while the household has no apartments and no locations. Other people's ratings are added to your own comments, with their names.",
     "chooseFile": "Choose an export file",
     "fileSummary": "This file holds {apartments, plural, one {# apartment} other {# apartments}}, {locations, plural, one {# location} other {# locations}} and {ratings, plural, one {# rating} other {# ratings}}, exported on {date}.",
-    "usesCredits": "Importing uses {count, plural, one {# apartment credit} other {# apartment credits}}.",
-    "overCredits": "This would add {count, plural, one {# apartment} other {# apartments}}, but the household has {remaining, plural, one {# credit} other {# credits}} left.",
     "overCap": "This would add {count, plural, one {# apartment} other {# apartments}}, but a household can hold {max}.",
     "import": "Import",
     "importing": "Importing…",

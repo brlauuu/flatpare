@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
-import { GoneBadge, RatedBadge } from "./apartment-badges";
+import { GoneBadge, NotProcessedBadge, RatedBadge } from "./apartment-badges";
 import { ApartmentCorruptRow } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 
@@ -34,6 +34,7 @@ export function ApartmentRow({ apt }: { apt: ApartmentView }) {
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {apt.listingGone && <GoneBadge />}
+        {!apt.processed && <NotProcessedBadge />}
         <RatedBadge myRating={apt.myRating} />
       </div>
       {apt.avgOverall !== null && (

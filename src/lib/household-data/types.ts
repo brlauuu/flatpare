@@ -38,6 +38,16 @@ export interface Apartment {
   // Keyed by location id.
   distances: Record<string, ApartmentDistance>;
   pdf: ApartmentPdf | null;
+  // #413. True once the apartment's first processing (its PDF read, or its
+  // address geocoded) has been paid for; an apartment added by hand or from
+  // a link starts false and can be rated and described for free. Envelopes
+  // written before #413 read as true: their credit was spent when they were
+  // created.
+  processed: boolean;
+  // The address the coordinates and distances belong to; null until an
+  // address has been geocoded. When the address no longer matches it the
+  // distances are stale, and the views hide them until a reprocess.
+  processedAddress: string | null;
 }
 
 export interface Rating {
@@ -104,6 +114,8 @@ export function emptyApartment(name = ""): Apartment {
     listingCheckedAt: null,
     distances: {},
     pdf: null,
+    processed: false,
+    processedAddress: null,
   };
 }
 
@@ -161,6 +173,9 @@ export interface ApartmentView extends Apartment {
   avgOverall: number | null;
   // The caller's own overallFeeling, or null when they have not rated.
   myRating: number | null;
+  // The address changed after it was processed (#413). The view then shows
+  // no coordinates and no distances, since they belong to the old address.
+  addressChanged: boolean;
   corrupt?: true;
 }
 

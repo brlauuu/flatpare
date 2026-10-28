@@ -4,6 +4,7 @@
 // File payloads, so it needs Node's own fetch/undici implementation.
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   apartments,
@@ -16,6 +17,7 @@ import {
   ratings,
   locations,
   processUsage,
+  apartmentCharges,
 } from "@/lib/db/schema";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
 import { UnauthorizedError } from "@/lib/household";
@@ -38,6 +40,8 @@ async function snapshotRowCounts(): Promise<Record<string, number>> {
     // only when PROCESS_RATE_LIMIT_PER_HOUR is set. These tests run with
     // it unset, so this count must stay at zero like every other.
     processUsage: (await db.select().from(processUsage)).length,
+    // #413: written only when billing is on; these tests run with it off.
+    apartmentCharges: (await db.select().from(apartmentCharges)).length,
     users: (await db.select().from(users)).length,
     accounts: (await db.select().from(accounts)).length,
     sessions: (await db.select().from(sessions)).length,
@@ -82,9 +86,16 @@ function json(body: unknown) {
     body: JSON.stringify(body),
   });
 }
-function multipart(file: File | null, locale?: string, searchListing?: string) {
+const PDF_APARTMENT = "33333333-3333-4333-8333-333333333333";
+function multipart(
+  file: File | null,
+  locale?: string,
+  searchListing?: string,
+  apartmentId: string | null = PDF_APARTMENT
+) {
   const fd = new FormData();
   if (file) fd.set("file", file);
+  if (apartmentId !== null) fd.set("apartmentId", apartmentId);
   if (locale !== undefined) fd.set("locale", locale);
   if (searchListing !== undefined) fd.set("searchListing", searchListing);
   return new Request("http://localhost/api/process/parse-pdf", { method: "POST", body: fd });
@@ -370,5 +381,108 @@ describe("rate limiting (#186)", () => {
       expect((await geocodePOST(json({ address: "Bahnhofstrasse 1" }))).status).toBe(200);
     }
     expect(await db.select().from(processUsage)).toHaveLength(0);
+  });
+});
+
+// #413: the first processing of an apartment spends one credit, keyed on the
+// apartment id the request names, before the outbound call.
+describe("first-processing charge (#413)", () => {
+  const APT = "44444444-4444-4444-8444-444444444444";
+  const extracted = { name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null };
+
+  async function used() {
+    const [h] = await db.select().from(households).where(eq(households.id, hid));
+    return h.apartmentsEverAdded;
+  }
+  async function grant(n: number) {
+    await db.update(households).set({ apartmentCreditsGranted: n }).where(eq(households.id, hid));
+  }
+
+  beforeEach(async () => {
+    await db.delete(apartmentCharges);
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
+    geocodeLatLngWithReason.mockResolvedValue({ result: { lat: 1, lng: 2 } });
+    extractPostcode.mockResolvedValue("8001");
+    repairListingUrl.mockImplementation(async (listingUrl: string | null) => ({ listingUrl, found: false }));
+    extractApartmentData.mockResolvedValue({ extracted, hints: HINTS });
+  });
+  afterEach(async () => {
+    await db.delete(apartmentCharges);
+  });
+
+  it("geocoding an apartment spends one credit, once", async () => {
+    await grant(1);
+    expect((await geocodePOST(json({ address: "A 1", apartmentId: APT }))).status).toBe(200);
+    expect((await geocodePOST(json({ address: "A 2", apartmentId: APT }))).status).toBe(200);
+    expect(await used()).toBe(1);
+  });
+
+  it("geocoding a location of interest (no apartment id) is free", async () => {
+    expect((await geocodePOST(json({ address: "Office" }))).status).toBe(200);
+    expect(await used()).toBe(0);
+  });
+
+  it("refuses with 402 before calling the geocoder when no credit is left", async () => {
+    const res = await geocodePOST(json({ address: "A 1", apartmentId: APT }));
+    expect(res.status).toBe(402);
+    expect(await res.json()).toEqual({ error: "No apartment credits left" });
+    expect(geocodeLatLngWithReason).not.toHaveBeenCalled();
+  });
+
+  it("a PDF read and the geocode after it share one credit", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    await grant(1);
+    expect((await parsePdfPOST(multipart(pdf(), undefined, undefined, APT))).status).toBe(200);
+    expect((await geocodePOST(json({ address: "A 1", apartmentId: APT }))).status).toBe(200);
+    expect(await used()).toBe(1);
+  });
+
+  it("refuses a PDF with 402 before the extraction when no credit is left", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    const res = await parsePdfPOST(multipart(pdf(), undefined, undefined, APT));
+    expect(res.status).toBe(402);
+    expect(extractApartmentData).not.toHaveBeenCalled();
+  });
+
+  it("charges nothing for a PDF when no AI is configured, since nothing is read", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
+    await grant(1);
+    expect((await parsePdfPOST(multipart(pdf(), undefined, undefined, APT))).status).toBe(200);
+    expect(await used()).toBe(0);
+  });
+
+  it("400s a PDF without an apartment id", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    await grant(1);
+    expect((await parsePdfPOST(multipart(pdf(), undefined, undefined, null))).status).toBe(400);
+    expect((await parsePdfPOST(multipart(pdf(), undefined, undefined, "nope"))).status).toBe(400);
+    expect(extractApartmentData).not.toHaveBeenCalled();
+    expect(await used()).toBe(0);
+  });
+
+  it("400s a geocode whose apartment id is not a uuid", async () => {
+    await grant(1);
+    expect((await geocodePOST(json({ address: "A 1", apartmentId: "nope" }))).status).toBe(400);
+    expect(await used()).toBe(0);
+  });
+
+  // Decided on #294: credits are one shared household pool. Any member may
+  // spend from it; there is no owner-only rule and no per-member budget.
+  it("lets a non-owner member spend the household's shared credits", async () => {
+    await db.insert(users).values({ id: "m", email: "m@example.com", name: "m" });
+    await db.insert(householdMembers).values({ householdId: hid, userId: "m", role: "member" });
+    await grant(2);
+    currentSession.userId = "m";
+    currentSession.role = "member";
+    expect((await geocodePOST(json({ address: "A", apartmentId: APT }))).status).toBe(200);
+    currentSession.userId = "o";
+    currentSession.role = "owner";
+    const OTHER = "55555555-5555-4555-8555-555555555555";
+    expect((await geocodePOST(json({ address: "B", apartmentId: OTHER }))).status).toBe(200);
+    expect(await used()).toBe(2);
+    currentSession.userId = "m";
+    currentSession.role = "member";
+    const THIRD = "66666666-6666-4666-8666-666666666666";
+    expect((await geocodePOST(json({ address: "C", apartmentId: THIRD }))).status).toBe(402);
   });
 });

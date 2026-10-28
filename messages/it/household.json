@@ -90,12 +90,13 @@
     "reorderError": "Non è stato possibile riordinare",
     "loadError": "Non è stato possibile caricare i luoghi",
     "recomputeTitle": "Ricalcola le distanze",
-    "recomputeBody": "Ricalcola i minuti in bici e coi mezzi per ogni coppia appartamento × luogo.",
+    "recomputeBody": "{billing, select, on {Ricalcola i minuti in bici e coi mezzi per ogni coppia appartamento × luogo. Usa un credito appartamento per l'intero calcolo.} other {Ricalcola i minuti in bici e coi mezzi per ogni coppia appartamento × luogo.}}",
     "recomputeError": "Non è stato possibile ricalcolare le distanze",
     "recomputingProgress": "Ricalcolo… {done} di {total}",
     "recomputing": "Ricalcolo…",
     "recompute": "Ricalcola tutto",
-    "recomputed": "Ricalcolati {updated} appartamenti{failed, plural, =0 {} other { (# non riusciti)}}{skipped, plural, =0 {} other { (# saltati — senza indirizzo)}}"
+    "recomputed": "Ricalcolati {updated} appartamenti{failed, plural, =0 {} other { (# non riusciti)}}{skipped, plural, =0 {} other { (# saltati — senza indirizzo)}}",
+    "recomputeConfirm": "Ricalcolare tutte le distanze? Questo usa un credito appartamento per l'intero calcolo."
   },
   "iconPicker": {
     "title": "Scegli un'icona",
@@ -133,8 +134,6 @@
     "importBody": "Ripristina un export di Flatpare in questo gruppo. È possibile solo finché non ci sono appartamenti né luoghi. Le valutazioni delle altre persone vengono aggiunte ai tuoi commenti, con il loro nome.",
     "chooseFile": "Scegli un file di export",
     "fileSummary": "Questo file contiene {apartments, plural, one {# appartamento} other {# appartamenti}}, {locations, plural, one {# luogo} other {# luoghi}} e {ratings, plural, one {# valutazione} other {# valutazioni}}, esportato il {date}.",
-    "usesCredits": "L'importazione usa {count, plural, one {# credito appartamento} other {# crediti appartamento}}.",
-    "overCredits": "Verrebbero aggiunti {count, plural, one {# appartamento} other {# appartamenti}}, ma al gruppo restano {remaining, plural, one {# credito} other {# crediti}}.",
     "overCap": "Verrebbero aggiunti {count, plural, one {# appartamento} other {# appartamenti}}, ma un gruppo può contenerne al massimo {max}.",
     "import": "Importa",
     "importing": "Importazione…",

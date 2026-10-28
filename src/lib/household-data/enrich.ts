@@ -5,23 +5,21 @@ export interface EnrichmentPlan {
   distances: boolean;
 }
 
-// Decides, from a before/after pair, what the client must fetch after a
-// write: coordinates when the address changed, distances whenever
-// coordinates will change. The short code is not here: it is rebuilt in the
-// write itself (syncShortCode), so it never waits on a network call (#410).
-export function planEnrichment(
-  previous: Apartment | null,
-  next: Apartment
-): EnrichmentPlan {
-  const hasAddress = next.address !== null && next.address.trim() !== "";
-  if (previous === null) {
-    return { geocode: hasAddress, distances: hasAddress };
-  }
-  const addressChanged = previous.address !== next.address;
-  return {
-    geocode: addressChanged && hasAddress,
-    distances: addressChanged && hasAddress,
-  };
+export function hasAddress(a: Apartment): boolean {
+  return a.address !== null && a.address.trim() !== "";
+}
+
+// Decides what the client must fetch after a write (#413): coordinates and
+// distances for an address that has never been geocoded, and nothing else.
+// Never geocoded means either the apartment's first processing (one credit)
+// or, when its PDF was read first, the address that processing already paid
+// for. A changed address is NOT geocoded again: the views hide its stale
+// distances until someone reprocesses, which is a charged request of its
+// own. The short code is not here: it is rebuilt in the write itself
+// (syncShortCode), so it never waits on a network call (#410).
+export function planEnrichment(next: Apartment): EnrichmentPlan {
+  const due = hasAddress(next) && next.processedAddress === null;
+  return { geocode: due, distances: due };
 }
 
 function located(loc: LocationView): boolean {

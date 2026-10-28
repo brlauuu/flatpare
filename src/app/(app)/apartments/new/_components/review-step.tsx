@@ -121,6 +121,9 @@ export function ReviewStep({
                           {item.pdfWarning}
                         </p>
                       )}
+                      {item.notRead && (
+                        <p className="text-xs text-warning">{t("notRead")}</p>
+                      )}
                       {item.linkFound && (
                         <p className="text-xs text-muted-foreground">
                           {t("linkFound")}
