@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.23.0 — 2026-10-28
+
 ### Added
 - Install Flatpare on your phone from the menu under your name: Android shows its install prompt, an iPhone shows how to add it to the Home Screen. On a phone, the Apartments page also shows a one-line tip until you hide it. (#190)
 - The guide has an "On your phone" section in all five languages: installing, sharing listings into Flatpare on Android, Paste link, and links to add later. (#190)
