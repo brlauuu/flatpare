@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.26.0 — 2026-10-28
+
 ### Changed
 
 - Adding an apartment no longer uses a credit. You can add one by hand, rate it and fill in everything you know for free; a credit is used the first time it is processed, when its PDF is read or its address is placed on the map, and only once for both. Reprocessing an apartment uses one credit, and so does Recompute all on the Household page, once for the whole run; both say so before you click. Adding or changing a location of interest stays free, and so does importing an export (#413).
