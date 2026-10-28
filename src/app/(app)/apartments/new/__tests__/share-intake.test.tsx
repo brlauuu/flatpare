@@ -122,6 +122,24 @@ describe("receiving a shared PDF", () => {
     expect(value.createDraft).not.toHaveBeenCalled();
   });
 
+  it("keeps the shared link over the one read from the PDF", async () => {
+    vi.mocked(parsePdf).mockResolvedValueOnce({
+      extracted: { name: "A", listingUrl: "https://other.ch/a" },
+      aiAvailable: true,
+    });
+    await put(entry("s1", { url: LINK, files: [pdf()] }));
+    search = "share=s1";
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />);
+    vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
+      makeApartmentView({ id, ...d })
+    );
+    await tap("Add", user);
+    await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].listingUrl).toBe(LINK);
+  });
+
   it("says how many non-PDF files were left out", async () => {
     await put(entry("s1", { files: [pdf()], dropped: 2 }));
     search = "share=s1";

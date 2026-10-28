@@ -66,13 +66,18 @@ export default function UploadPage() {
     };
   }, []);
 
-  // The extracted link wins; the draft's (or the share's) fills only a form
-  // that has none. Read through a ref: processFiles is memoised, and the
-  // shared link arrives after it was created.
+  // The link the person brought (a draft's, or the share's) wins over the one
+  // read from the PDF, which is often a dead or generic page. With several
+  // PDFs nobody knows which one the link belongs to, so it then fills only
+  // forms that have none. Read through a ref: processFiles is memoised, and
+  // the shared link arrives after it was created.
   const linkRef = useRef<string | null>(null);
+  const batchSizeRef = useRef(0);
   function withDraftUrl(form: ApartmentForm): ApartmentForm {
     const url = linkRef.current;
-    return url && !form.listingUrl ? { ...form, listingUrl: url } : form;
+    if (!url) return form;
+    if (batchSizeRef.current > 1 && form.listingUrl) return form;
+    return { ...form, listingUrl: url };
   }
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
@@ -184,6 +189,7 @@ export default function UploadPage() {
       itemFileRef.current.set(newItems[i].id, file);
     });
 
+    batchSizeRef.current = newItems.length;
     setItems(newItems);
     setStep("processing");
     setError(null);

@@ -116,7 +116,23 @@ describe("completing a draft", () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalled());
   });
 
-  it("PDF path: extracted URL wins, draft URL fills items without one, delete once after all saved", async () => {
+  it("PDF path, one PDF: the draft's URL wins over the extracted one", async () => {
+    vi.mocked(parsePdf).mockResolvedValue({
+      extracted: { name: "A", listingUrl: "https://other.ch/a" },
+      aiAvailable: true,
+    });
+    const user = userEvent.setup();
+    const { value } = renderWithHouseholdData(<UploadPage />, { drafts: [draft()] });
+    vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
+      makeApartmentView({ id, ...d })
+    );
+    await upload(user, [pdf("a.pdf")]);
+    await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1].listingUrl).toBe(URL_D);
+  });
+
+  it("PDF path, several PDFs: extracted URL kept, draft URL fills items without one, delete once after all saved", async () => {
     vi.mocked(parsePdf).mockImplementation(async (_b, filename) => ({
       extracted:
         filename === "a.pdf"
