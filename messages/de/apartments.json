@@ -159,7 +159,11 @@
   },
   "edit": {
     "title": "Wohnung bearbeiten",
-    "saving": "Wird gespeichert..."
+    "saving": "Wird gespeichert...",
+    "codeLabel": "Code-Buchstaben",
+    "codeHint": "Drei Buchstaben von A bis Z, die keine andere Wohnung verwendet. Der Rest des Codes folgt den Angaben unten.",
+    "codeInvalid": "Verwende genau drei Buchstaben von A bis Z.",
+    "codeTaken": "{name} verwendet bereits {letters}. Wähle andere Buchstaben."
   },
   "rating": {
     "yours": "Deine Bewertung ({name})",

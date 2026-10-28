@@ -37,6 +37,8 @@ import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { showOnMapHref } from "./_components/show-on-map";
+import { useCodeLettersError } from "./_components/use-code-letters-error";
+import { lettersOf, withLetters } from "@/lib/household-data/short-code";
 
 interface ErrorState {
   headline: string;
@@ -105,7 +107,9 @@ export default function ApartmentDetailPage() {
   const [error, setError] = useState<ErrorState | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<ApartmentForm | null>(null);
+  const [editLetters, setEditLetters] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const codeLettersError = useCodeLettersError(apartments, apartment, editLetters);
   const [reprocessing, setReprocessing] = useState(false);
 
   // My stored rating, if any. The draft is re-seeded from it whenever the
@@ -186,6 +190,7 @@ export default function ApartmentDetailPage() {
   function startEdit() {
     if (!apartment) return;
     setEditForm(formFromApartment(apartment));
+    setEditLetters(lettersOf(apartment.shortCode) ?? "");
     setEditing(true);
     setError(null);
   }
@@ -201,10 +206,15 @@ export default function ApartmentDetailPage() {
       setError({ headline: t("nameRequired") });
       return;
     }
+    if (codeLettersError !== null) return;
     setSavingEdit(true);
     const fields = formToFields(editForm);
+    const letters = editLetters;
     try {
-      await updateApartment(apartment.id, (current) => mergeUserEdit(current, fields));
+      await updateApartment(apartment.id, (current) => {
+        const edited = mergeUserEdit(current, fields);
+        return letters === "" ? edited : withLetters(edited, letters);
+      });
       setEditing(false);
       setEditForm(null);
       setSavingEdit(false);
@@ -324,6 +334,9 @@ export default function ApartmentDetailPage() {
         <ApartmentEditForm
           form={editForm}
           saving={savingEdit}
+          letters={editLetters}
+          lettersError={codeLettersError}
+          onLettersChange={setEditLetters}
           onChange={(field, value) =>
             setEditForm((prev) => (prev ? { ...prev, [field]: value } : prev))
           }
