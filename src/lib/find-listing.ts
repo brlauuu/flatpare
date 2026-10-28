@@ -61,11 +61,13 @@ function httpUrl(raw: string): URL | null {
   }
 }
 
-// The candidates in the order they are tried: the URL the model answered
-// with, then the sources the search returned.
+// The candidates in the order they are tried: the pages the search returned,
+// first result first (the issue's rule), then the URL the model answered
+// with. The model's own answer comes last because it can be invented; a
+// search result is a page that exists.
 export function candidateUrls(text: string, sources: readonly { url?: string }[]): URL[] {
-  const answered = text.match(/https?:\/\/[^\s<>"')\]]+/)?.[0];
-  const all = [answered, ...sources.map((s) => s.url)];
+  const answered = text.match(/https?:\/\/[^\s<>"')\]]+/)?.[0]?.replace(/[.,;:!?]+$/, "");
+  const all = [...sources.map((s) => s.url), answered];
   const seen = new Set<string>();
   const out: URL[] = [];
   for (const raw of all) {

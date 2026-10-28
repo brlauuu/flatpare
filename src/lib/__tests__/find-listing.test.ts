@@ -64,16 +64,22 @@ describe("listingSearchPrompt", () => {
 });
 
 describe("candidateUrls", () => {
-  it("tries the answered URL first, then the sources, each once", () => {
+  it("tries the search results first, then the answered URL, each once", () => {
     const urls = candidateUrls("Here it is: https://www.homegate.ch/rent/123.", [
-      { url: "https://www.homegate.ch/rent/123." },
       { url: "https://flatfox.ch/en/flat/9/" },
+      { url: "https://www.homegate.ch/rent/123" },
       { url: "ftp://example.com/x" },
       {},
     ]);
     expect(urls.map((u) => u.href)).toEqual([
-      "https://www.homegate.ch/rent/123.",
       "https://flatfox.ch/en/flat/9/",
+      "https://www.homegate.ch/rent/123",
+    ]);
+  });
+
+  it("falls back to the answered URL, without trailing punctuation", () => {
+    expect(candidateUrls("See https://www.homegate.ch/rent/123.", []).map((u) => u.href)).toEqual([
+      "https://www.homegate.ch/rent/123",
     ]);
   });
 
