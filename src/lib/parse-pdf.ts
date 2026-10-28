@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { aiAvailable, aiModel, aiProviderOptions, readAiConfig } from "@/lib/ai-provider";
 import { DEFAULT_LOCALE, type Locale } from "@/locales/locales";
+import type { ListingHints } from "@/lib/find-listing";
 import { z } from "zod";
 
 export const apartmentExtractionSchema = z.object({
@@ -71,6 +72,17 @@ const internalApartmentExtractionSchema = apartmentExtractionSchema.extend({
         "that supports the hasWashingMachine value (max ~120 chars). null if not mentioned. " +
         "Examples: 'Waschküche und Trockenraum zur Mitbenutzung', 'eigene Waschmaschine in der Wohnung'."
     ),
+  listingSite: z
+    .string()
+    .nullable()
+    .describe(
+      "The website the listing was published on, as its domain (e.g. homegate.ch, immoscout24.ch, flatfox.ch), " +
+        "from the document's header, footer, logo or any link. null if the document does not show it."
+    ),
+  listingLanguage: z
+    .string()
+    .nullable()
+    .describe("The language the listing itself is written in, as an ISO 639-1 code (e.g. de, fr, it). null if unclear."),
 });
 
 type InternalApartmentExtraction = z.infer<typeof internalApartmentExtractionSchema>;
@@ -99,6 +111,7 @@ The listing may be in German, French, Italian, Spanish or English. Extract all a
 For rent, prefer the gross rent if both net and gross are shown (German "Bruttomiete", French "loyer brut" / "charges comprises", Italian "pigione lorda" / "affitto lordo" / "spese incluse", Spanish "alquiler bruto" / "gastos incluidos").
 For rooms, use the Swiss convention, in which half rooms count (e.g. "3.5 Zimmer", "3.5 pièces", "3.5 locali", "3.5 habitaciones" = 3.5 rooms).
 For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "lave-linge privatif", "lave-linge dans l'appartement", "colonne de lavage", "lavatrice propria", "lavatrice nell'appartamento", "colonna lavatrice", "lavadora propia", "lavadora en el piso", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "buanderie commune", "buanderie à usage commun", "lavanderia in comune", "lavanderia condominiale", "lavandería comunitaria", "lavandería compartida", "shared laundry", or "communal laundry". null if not mentioned.
+For listingSite and listingLanguage: name the website the listing was published on (its domain) and the language the listing is written in; these are used to find the listing online when its link no longer works.
 Always populate laundryEvidence with the exact short snippet (max ~120 characters) you used to decide, in the listing's own words, or null if no laundry information was found.
 For availableFrom: parse availability phrases like "Bezugstermin: 01.05.2026", "verfügbar ab 1. Mai 2026", "disponible dès le 1er mai 2026", "entrée le 01.05.2026", "disponibile dal 1° maggio 2026", "entrata: 01.05.2026", "disponible a partir del 1 de mayo de 2026", "available from May 1, 2026" into ISO format YYYY-MM-DD. If the listing says "ab sofort", "per sofort", "de suite", "tout de suite", "immédiatement", "subito", "da subito", "inmediata", "de inmediato", "immediately", or similar (meaning available now without a specific date), return null. If no availability info is mentioned, return null.
 For summary: write a 1-2 sentence summary (~25-40 words) in ${language} of what the apartment is like, whatever language the listing is in; translate if needed. Pick out distinctive features — neighborhood character, layout, views, condition, or notable amenities — rather than just restating the metric fields. Return null only if the listing has no descriptive content.
@@ -116,10 +129,16 @@ function overrideLaundryFromEvidence(
 }
 
 
+export interface ExtractionResult {
+  extracted: ApartmentExtraction;
+  // What the search for the listing needs (#409); never sent to the browser.
+  hints: ListingHints;
+}
+
 export async function extractApartmentData(
   pdfBase64: string,
   locale: Locale = DEFAULT_LOCALE
-): Promise<ApartmentExtraction> {
+): Promise<ExtractionResult> {
   // Which backend, and whether it must keep nothing, is decided in one place
   // (#333): src/lib/ai-provider.ts.
   const config = readAiConfig();
@@ -155,8 +174,16 @@ export async function extractApartmentData(
 
   const internal = result.output as InternalApartmentExtraction;
   const withOverride = overrideLaundryFromEvidence(internal);
-  // Strip the internal-only field before returning to public callers.
+  // Strip the internal-only fields before returning to public callers.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { laundryEvidence: _evidence, ...publicResult } = withOverride;
-  return publicResult as ApartmentExtraction;
+  const { laundryEvidence: _evidence, listingSite, listingLanguage, ...publicResult } = withOverride;
+  return {
+    extracted: publicResult as ApartmentExtraction,
+    hints: {
+      name: publicResult.name,
+      address: publicResult.address,
+      site: listingSite ?? null,
+      language: listingLanguage ?? null,
+    },
+  };
 }

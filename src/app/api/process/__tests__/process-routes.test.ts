@@ -67,6 +67,8 @@ const checkListingUrl = vi.fn();
 vi.mock("@/lib/listing-status", () => ({ checkListingUrl: (...a: unknown[]) => checkListingUrl(...a) }));
 const extractApartmentData = vi.fn();
 vi.mock("@/lib/parse-pdf", () => ({ extractApartmentData: (...a: unknown[]) => extractApartmentData(...a) }));
+const repairListingUrl = vi.fn();
+vi.mock("@/lib/find-listing", () => ({ repairListingUrl: (...a: unknown[]) => repairListingUrl(...a) }));
 
 import { POST as geocodePOST } from "../geocode/route";
 import { POST as distancePOST } from "../distance/route";
@@ -80,10 +82,11 @@ function json(body: unknown) {
     body: JSON.stringify(body),
   });
 }
-function multipart(file: File | null, locale?: string) {
+function multipart(file: File | null, locale?: string, searchListing?: string) {
   const fd = new FormData();
   if (file) fd.set("file", file);
   if (locale !== undefined) fd.set("locale", locale);
+  if (searchListing !== undefined) fd.set("searchListing", searchListing);
   return new Request("http://localhost/api/process/parse-pdf", { method: "POST", body: fd });
 }
 const pdf = (bytes = 16, name = "listing.pdf", type = "application/pdf") =>
@@ -214,7 +217,13 @@ describe("POST /api/process/check-listing", () => {
   });
 });
 
+const HINTS = { name: "X", address: "A 1", site: "homegate.ch", language: "de" };
+
 describe("POST /api/process/parse-pdf", () => {
+  beforeEach(() => {
+    repairListingUrl.mockImplementation(async (listingUrl: string | null) => ({ listingUrl, found: false }));
+  });
+
   it("401s without a session", async () => {
     signedIn = false;
     expect((await parsePdfPOST(multipart(pdf()))).status).toBe(401);
@@ -233,7 +242,7 @@ describe("POST /api/process/parse-pdf", () => {
 
   it("runs extraction on the bytes when AI is configured", async () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
-    extractApartmentData.mockResolvedValue({ name: "X", address: "A 1", sizeM2: 80, numRooms: 3.5, numBathrooms: 1, numBalconies: 1, hasWashingMachine: true, rentChf: 2000, listingUrl: null, summary: null, availableFrom: null });
+    extractApartmentData.mockResolvedValue({ extracted: { name: "X", address: "A 1", sizeM2: 80, numRooms: 3.5, numBathrooms: 1, numBalconies: 1, hasWashingMachine: true, rentChf: 2000, listingUrl: null, summary: null, availableFrom: null }, hints: HINTS });
     const res = await parsePdfPOST(multipart(pdf(16)));
     expect(res.status).toBe(200);
     expect((await res.json()).extracted.name).toBe("X");
@@ -244,14 +253,14 @@ describe("POST /api/process/parse-pdf", () => {
   // #288: the summary follows the uploader's interface language.
   it("passes the uploader's language to the extraction", async () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
-    extractApartmentData.mockResolvedValue({ name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    extractApartmentData.mockResolvedValue({ extracted: { name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null }, hints: HINTS });
     expect((await parsePdfPOST(multipart(pdf(16), "fr"))).status).toBe(200);
     expect(extractApartmentData).toHaveBeenLastCalledWith(expect.any(String), "fr");
   });
 
   it("treats a language that is not one of the five as English, not as an error", async () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
-    extractApartmentData.mockResolvedValue({ name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    extractApartmentData.mockResolvedValue({ extracted: { name: "X", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null }, hints: HINTS });
     expect((await parsePdfPOST(multipart(pdf(16), "de-CH"))).status).toBe(200);
     expect(extractApartmentData).toHaveBeenLastCalledWith(expect.any(String), "en");
     expect((await parsePdfPOST(multipart(pdf(16), "xx"))).status).toBe(200);
@@ -262,11 +271,32 @@ describe("POST /api/process/parse-pdf", () => {
   it("runs extraction through the gateway without a Google key", async () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
     vi.stubEnv("AI_PROVIDER", "gateway");
-    extractApartmentData.mockResolvedValue({ name: "Y", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null });
+    extractApartmentData.mockResolvedValue({ extracted: { name: "Y", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null, hasWashingMachine: null, rentChf: null, listingUrl: null, summary: null, availableFrom: null }, hints: HINTS });
     const res = await parsePdfPOST(multipart(pdf(16)));
     expect(res.status).toBe(200);
     expect((await res.json()).aiAvailable).toBe(true);
     expect(extractApartmentData).toHaveBeenCalled();
+  });
+
+  // #409: a missing or dead link is searched for, with the PDF's hints.
+  it("searches for the listing and returns the link it found", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    extractApartmentData.mockResolvedValue({ extracted: { name: "X", listingUrl: "https://homegate.ch/expired/1" }, hints: HINTS });
+    repairListingUrl.mockResolvedValue({ listingUrl: "https://homegate.ch/rent/2", found: true });
+    const body = await (await parsePdfPOST(multipart(pdf(16)))).json();
+    expect(repairListingUrl).toHaveBeenCalledWith("https://homegate.ch/expired/1", HINTS);
+    expect(body.extracted.listingUrl).toBe("https://homegate.ch/rent/2");
+    expect(body.listingFound).toBe(true);
+    expect(body).not.toHaveProperty("hints");
+    await rowsUnchanged();
+  });
+
+  it("does not search when the person brought their own link", async () => {
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "k");
+    extractApartmentData.mockResolvedValue({ extracted: { name: "X", listingUrl: null }, hints: HINTS });
+    const body = await (await parsePdfPOST(multipart(pdf(16), "en", "0"))).json();
+    expect(repairListingUrl).not.toHaveBeenCalled();
+    expect(body).toMatchObject({ extracted: { listingUrl: null }, listingFound: false });
   });
 
   it("400s a non-PDF and 413s an oversized file", async () => {

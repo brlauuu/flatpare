@@ -46,6 +46,18 @@ describe("process-client", () => {
     expect(file.type).toBe("application/pdf");
     // #288: the summary is written in the uploader's interface language.
     expect(form.get("locale")).toBe("de");
+    // #409: the listing search runs unless the caller says otherwise.
+    expect(form.get("searchListing")).toBeNull();
+  });
+
+  it("parsePdf asks for no listing search when the person brought a link", async () => {
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+      async () => json({ extracted: { name: "Flat" }, aiAvailable: true })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await parsePdf(new Uint8Array([1]), "flat.pdf", "en", false);
+    const form = fetchMock.mock.calls[0][1]!.body as FormData;
+    expect(form.get("searchListing")).toBe("0");
   });
 
   it("parsePdf throws ParsePdfError carrying reason and retryAfterSeconds", async () => {

@@ -115,6 +115,7 @@ export default function UploadPage() {
       errorReason: undefined,
       errorRetryAfterSeconds: undefined,
       pdfWarning: undefined,
+      linkFound: undefined,
     });
     let bytes: Uint8Array<ArrayBuffer>;
     try {
@@ -128,8 +129,11 @@ export default function UploadPage() {
       return;
     }
 
+    // Read after the first await, like withDraftUrl: a shared link is in
+    // place by then. A link the person brought makes the search pointless.
+    const searchListing = !linkRef.current;
     const [parsed, uploaded] = await Promise.allSettled([
-      parsePdf(bytes, file.name, locale),
+      parsePdf(bytes, file.name, locale, searchListing),
       encryptAndUploadPdf(dataKey, identity.householdId, itemId, bytes),
     ]);
 
@@ -148,6 +152,7 @@ export default function UploadPage() {
     updateItem(itemId, {
       status: "done",
       form: withDraftUrl(formFromExtracted(parsed.value.extracted)),
+      linkFound: searchListing && parsed.value.listingFound === true,
       pdf: uploaded.status === "fulfilled" ? uploaded.value : null,
       pdfWarning: uploaded.status === "rejected" ? t("pdfStoreWarning") : undefined,
     });

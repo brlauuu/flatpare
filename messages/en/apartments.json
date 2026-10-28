@@ -123,7 +123,8 @@
     "rent": "CHF {amount}",
     "size": "{size} m²",
     "rooms": "{count} rooms",
-    "retry": "Retry"
+    "retry": "Retry",
+    "linkFound": "Listing link found by a web search. It may be the wrong page: check it before saving."
   },
   "single": {
     "title": "Add Apartment Manually",

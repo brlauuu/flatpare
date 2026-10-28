@@ -123,7 +123,8 @@
     "rent": "CHF {amount}",
     "size": "{size} m²",
     "rooms": "{count} Zimmer",
-    "retry": "Nochmals"
+    "retry": "Nochmals",
+    "linkFound": "Link zum Inserat über eine Websuche gefunden. Er kann auf die falsche Seite führen: Prüfe ihn vor dem Speichern."
   },
   "single": {
     "title": "Wohnung von Hand erfassen",

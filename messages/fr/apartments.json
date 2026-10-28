@@ -123,7 +123,8 @@
     "rent": "CHF {amount}",
     "size": "{size} m²",
     "rooms": "{count} pièces",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "linkFound": "Lien de l'annonce trouvé par une recherche sur le web. Il peut mener à la mauvaise page : vérifie-le avant d'enregistrer."
   },
   "single": {
     "title": "Ajouter un appartement manuellement",

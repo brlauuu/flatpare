@@ -53,6 +53,7 @@
     "exceptionPdf": "<b>Un PDF</b> va a un modelo de IA que extrae los datos y escribe un breve resumen. En flatpare.com solo usamos proveedores de modelos que garantizan retención de datos cero: la petición no se guarda una vez respondida. Si lo instalas tú, es Google Gemini salvo que configures otro.",
     "exceptionAddress": "<b>Una dirección</b> va sola a Google Maps: una dirección para saber dónde está, o dos (el piso y uno de tus lugares) para los tiempos en bici y en transporte público. Se envía desde nuestro servidor, sin nada que te nombre a ti o a tu hogar, y no la guardamos. En una instalación propia sin Maps, lo hace OpenRouteService.",
     "exceptionListing": "<b>El enlace de un anuncio</b> lo abre nuestro servidor solo para comprobar que el anuncio sigue en línea. No se lee ni se guarda nada de la página.",
+    "exceptionSearch": "<b>Una búsqueda del anuncio</b>: cuando un PDF no tiene enlace a su anuncio, o el enlace ya no funciona, el modelo de IA busca en la web con el título, la dirección, el sitio web y el idioma del anuncio, para encontrar un enlace que funcione. En flatpare.com esa búsqueda no guarda nada de la solicitud. En autoalojamiento es la Búsqueda de Google, con las condiciones de Google.",
     "tiles": "Las calles del mapa se cargan de OpenFreeMap, directamente desde tu navegador. OpenFreeMap ve tu dirección IP y qué zona del mapa estás mirando, nunca tus pisos ni tus valoraciones.",
     "disavowal": "Esto hace que Flatpare proteja la privacidad desde el diseño, pero no es zero-knowledge."
   },

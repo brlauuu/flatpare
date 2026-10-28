@@ -123,7 +123,8 @@
     "rent": "CHF {amount}",
     "size": "{size} m²",
     "rooms": "{count} hab.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "linkFound": "Enlace del anuncio encontrado con una búsqueda en la web. Puede llevar a la página equivocada: compruébalo antes de guardar."
   },
   "single": {
     "title": "Añadir un piso a mano",

@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/api-error";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { apiErrorResponse, requireMember } from "@/lib/api-route";
 import { extractApartmentData } from "@/lib/parse-pdf";
+import { repairListingUrl } from "@/lib/find-listing";
 import { classifyParsePdfError } from "@/lib/parse-pdf-error";
 import { emptyExtraction, parsePdfMaxBytes } from "@/lib/process-schemas";
 import { aiAvailable, readAiConfig } from "@/lib/ai-provider";
@@ -15,6 +16,12 @@ import { DEFAULT_LOCALE, isLocale } from "@/locales/locales";
 // classified reason and status only, never by the AI provider's raw error
 // message, since that text is not provably free of request-derived content
 // (a content-policy or validation error can echo a snippet of the input).
+//
+// When the PDF's listing link is missing or gone, the same request searches
+// the web for the listing with its title, address, website and language
+// (#409, src/lib/find-listing.ts) — the landing page's privacy section names
+// it. Skipped when the person brought their own link (searchListing=0),
+// which wins over anything found. Counted under the parse-pdf rate limit.
 export async function POST(req: Request) {
   let phase: "input" | "extract" = "input";
   try {
@@ -39,8 +46,12 @@ export async function POST(req: Request) {
     // else — absent, or not one of the five — is English, not an error.
     const requested = formData.get("locale");
     const locale = isLocale(requested) ? requested : DEFAULT_LOCALE;
-    const extracted = await extractApartmentData(base64, locale);
-    return NextResponse.json({ extracted, aiAvailable: true });
+    const { extracted, hints } = await extractApartmentData(base64, locale);
+    if (formData.get("searchListing") === "0") {
+      return NextResponse.json({ extracted, aiAvailable: true, listingFound: false });
+    }
+    const { listingUrl, found } = await repairListingUrl(extracted.listingUrl, hints);
+    return NextResponse.json({ extracted: { ...extracted, listingUrl }, aiAvailable: true, listingFound: found });
   } catch (error) {
     if (phase === "input") return apiErrorResponse(error, "process:parse-pdf");
     const classified = classifyParsePdfError(error);

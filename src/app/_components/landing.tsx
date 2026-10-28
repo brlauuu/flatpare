@@ -290,6 +290,7 @@ function Privacy() {
             </li>
             <li>{t.rich("exceptionAddress", { b })}</li>
             <li>{t.rich("exceptionListing", { b })}</li>
+            <li>{t.rich("exceptionSearch", { b })}</li>
           </ul>
           <p className="m-0 text-[15px] leading-relaxed text-(--lp-body)">{t("tiles")}</p>
           <p className="m-0 text-[15px] leading-relaxed font-semibold text-(--lp-ink)">{t("disavowal")}</p>

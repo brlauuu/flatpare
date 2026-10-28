@@ -121,6 +121,11 @@ export function ReviewStep({
                           {item.pdfWarning}
                         </p>
                       )}
+                      {item.linkFound && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("linkFound")}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

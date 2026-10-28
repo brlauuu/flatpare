@@ -132,6 +132,30 @@ describe("completing a draft", () => {
     expect(vi.mocked(value.createApartment).mock.calls[0][1].listingUrl).toBe(URL_D);
   });
 
+  // #409: the person's link wins, so the server is told not to search.
+  it("PDF path: asks for no listing search when the draft has a link", async () => {
+    const user = userEvent.setup();
+    renderWithHouseholdData(<UploadPage />, { drafts: [draft()] });
+    await upload(user, [pdf("a.pdf")]);
+    await screen.findByRole("button", { name: /^Save apartment$/i });
+    expect(vi.mocked(parsePdf).mock.calls[0][3]).toBe(false);
+    expect(screen.queryByText(/found by a web search/)).not.toBeInTheDocument();
+  });
+
+  it("PDF path without a draft: searches, and says when the link came from the search", async () => {
+    search = "";
+    vi.mocked(parsePdf).mockResolvedValue({
+      extracted: { name: "A", listingUrl: "https://www.homegate.ch/rent/9" },
+      aiAvailable: true,
+      listingFound: true,
+    });
+    const user = userEvent.setup();
+    renderWithHouseholdData(<UploadPage />, { drafts: [] });
+    await upload(user, [pdf("a.pdf")]);
+    expect(await screen.findByText(/Listing link found by a web search/)).toBeInTheDocument();
+    expect(vi.mocked(parsePdf).mock.calls[0][3]).toBe(true);
+  });
+
   it("PDF path, several PDFs: extracted URL kept, draft URL fills items without one, delete once after all saved", async () => {
     vi.mocked(parsePdf).mockImplementation(async (_b, filename) => ({
       extracted:
