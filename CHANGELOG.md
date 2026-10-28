@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.22.1 — 2026-10-28
+
 ### Fixed
 - A link you shared or saved to add later is kept when you add the apartment from a PDF, instead of being replaced by the link found in the PDF. With several PDFs at once, the link still fills only those that have none. (#190)
 
