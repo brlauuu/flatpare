@@ -123,7 +123,8 @@
     "rent": "CHF {amount}",
     "size": "{size} m²",
     "rooms": "{count} locali",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "linkFound": "Link all'annuncio trovato con una ricerca sul web. Potrebbe portare alla pagina sbagliata: controllalo prima di salvare."
   },
   "single": {
     "title": "Aggiungi un appartamento a mano",

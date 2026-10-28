@@ -232,9 +232,37 @@ describe("extractApartmentData", () => {
       usage: { inputTokens: 100, outputTokens: 50 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result).toEqual(mockOutput);
     expect(mockedGenerateText).toHaveBeenCalledOnce();
+  });
+
+  // #409: where the listing was published, for the search; never in the
+  // extraction the browser receives.
+  it("returns the listing's site and language as hints, not as extracted fields", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue({
+      output: {
+        name: "Sonnige Wohnung",
+        address: "Bahnhofstrasse 1, 8001 Zürich",
+        listingUrl: null,
+        laundryEvidence: null,
+        listingSite: "homegate.ch",
+        listingLanguage: "de",
+      },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+
+    const { extracted, hints } = await extractApartmentData("base64pdf");
+    expect(hints).toEqual({
+      name: "Sonnige Wohnung",
+      address: "Bahnhofstrasse 1, 8001 Zürich",
+      site: "homegate.ch",
+      language: "de",
+    });
+    expect(extracted).not.toHaveProperty("listingSite");
+    expect(extracted).not.toHaveProperty("listingLanguage");
+    expect(extracted).not.toHaveProperty("laundryEvidence");
   });
 
   it("sends the PDF as a file part with application/pdf mediaType", async () => {
@@ -309,7 +337,7 @@ describe("extractApartmentData — laundry evidence override", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(false);
     expect("laundryEvidence" in result).toBe(false);
   });
@@ -333,7 +361,7 @@ describe("extractApartmentData — laundry evidence override", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(false);
     expect("laundryEvidence" in result).toBe(false);
   });
@@ -357,7 +385,7 @@ describe("extractApartmentData — laundry evidence override", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(true);
     expect("laundryEvidence" in result).toBe(false);
   });
@@ -381,7 +409,7 @@ describe("extractApartmentData — laundry evidence override", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(false);
     expect("laundryEvidence" in result).toBe(false);
   });
@@ -405,7 +433,7 @@ describe("extractApartmentData — laundry evidence override", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.hasWashingMachine).toBe(true);
     expect("laundryEvidence" in result).toBe(false);
   });
@@ -432,7 +460,7 @@ describe("extractApartmentData — availableFrom passthrough", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.availableFrom).toBe("2026-05-01");
   });
 
@@ -456,7 +484,7 @@ describe("extractApartmentData — availableFrom passthrough", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.availableFrom).toBeNull();
   });
 });
@@ -483,7 +511,7 @@ describe("extractApartmentData — summary passthrough", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.summary).toBe(
       "Quiet 2.5-room flat in a leafy district near transit."
     );
@@ -510,7 +538,7 @@ describe("extractApartmentData — summary passthrough", () => {
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
 
-    const result = await extractApartmentData("base64pdf");
+    const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result.summary).toBeNull();
   });
 });
@@ -625,7 +653,7 @@ describe("extractApartmentData — shared laundry in French, Italian and Spanish
   ])("overrides to false on %j", async (evidence) => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
     mockedGenerateText.mockResolvedValue(output(evidence) as never);
-    expect((await extractApartmentData("base64pdf", "en")).hasWashingMachine).toBe(false);
+    expect((await extractApartmentData("base64pdf", "en")).extracted.hasWashingMachine).toBe(false);
   });
 
   it.each(["Lave-linge privatif dans l'appartement", "Colonne de lavage", "Lavatrice propria", "Lavadora propia en el piso"])(
@@ -633,7 +661,7 @@ describe("extractApartmentData — shared laundry in French, Italian and Spanish
     async (evidence) => {
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
       mockedGenerateText.mockResolvedValue(output(evidence) as never);
-      expect((await extractApartmentData("base64pdf", "en")).hasWashingMachine).toBe(true);
+      expect((await extractApartmentData("base64pdf", "en")).extracted.hasWashingMachine).toBe(true);
     }
   );
 });

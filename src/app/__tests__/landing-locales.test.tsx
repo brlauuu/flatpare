@@ -55,6 +55,7 @@ const DISCLOSURES = [
   "privacy.exceptionPdf",
   "privacy.exceptionAddress",
   "privacy.exceptionListing",
+  "privacy.exceptionSearch",
   "privacy.tiles",
   "privacy.disavowal",
   "paths.hosted.thenOnce",

@@ -90,7 +90,7 @@ If no distance API is configured, you can enter times manually.
 
 Almost nothing. Your apartments, ratings, notes and PDFs are encrypted before they leave your browser.
 
-There is one deliberate exception, and it is worth knowing about: **geocoding an address, measuring a travel time, checking whether a listing is still online, and reading a PDF** cannot be done in your browser. For those, that single item is sent in readable form: an address to Google Maps (or OpenRouteService on some self-hosted setups) for its location and travel times, a listing's URL fetched by our server from the listing site itself, and a PDF to the AI model that reads it. Our server uses it for that one call, never writes it to the database, and never logs it.
+There is one deliberate exception, and it is worth knowing about: **geocoding an address, measuring a travel time, checking whether a listing is still online, and reading a PDF** cannot be done in your browser. For those, that single item is sent in readable form: an address to Google Maps (or OpenRouteService on some self-hosted setups) for its location and travel times, a listing's URL fetched by our server from the listing site itself, and a PDF to the AI model that reads it. Our server uses it for that one call, never writes it to the database, and never logs it. When a PDF has no working link to its listing, the AI model also searches the web for it with the listing's title, address, website and language; on flatpare.com that search keeps nothing of the request. The link it finds is marked as found by a search, so you can check it before saving.
 
 ### Managing your key
 

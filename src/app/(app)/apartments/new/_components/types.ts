@@ -13,6 +13,8 @@ export type UploadItem = {
   // Set once the encrypted PDF is stored; null when the upload failed.
   pdf: ApartmentPdf | null;
   pdfWarning?: string;
+  // The listing link came from a web search and may be wrong (#409).
+  linkFound?: boolean;
   expanded: boolean;
   saved: boolean;
   discarded: boolean;

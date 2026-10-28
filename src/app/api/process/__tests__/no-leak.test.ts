@@ -60,6 +60,11 @@ vi.mock("@/lib/parse-pdf", () => ({
   extractApartmentData: (...a: unknown[]) => extractApartmentData(...a),
 }));
 
+// The listing search (#409) runs for real here, down to the AI SDK call, so
+// what it logs is what production would log.
+const generateText = vi.fn();
+vi.mock("ai", () => ({ generateText: (...a: unknown[]) => generateText(...a) }));
+
 import { POST as geocodePOST } from "../geocode/route";
 import { POST as distancePOST } from "../distance/route";
 import { POST as checkListingPOST } from "../check-listing/route";
@@ -245,9 +250,14 @@ describe("check-listing", () => {
   });
 });
 
+const extraction = {
+  extracted: { name: "Flat", listingUrl: null },
+  hints: { name: "Flat", address: ADDRESS, site: "example.com", language: "de" },
+};
+
 describe("parse-pdf", () => {
   it("leaks nothing on success", async () => {
-    extractApartmentData.mockResolvedValue({ name: "Flat" });
+    extractApartmentData.mockResolvedValue(extraction);
     const res = await parsePdfPOST(multipartPdf());
     expect(res.status).toBe(200);
     expectNoMarkers("parse-pdf success");
@@ -263,6 +273,16 @@ describe("parse-pdf", () => {
     expectNoMarkers("parse-pdf throw");
     await expectNoWrites("parse-pdf throw");
   });
+
+  it("leaks nothing when the listing search throws", async () => {
+    extractApartmentData.mockResolvedValue(extraction);
+    generateText.mockRejectedValue(new Error(`search failed for ${ADDRESS} at ${LISTING_URL}`));
+    const res = await parsePdfPOST(multipartPdf());
+    expect(res.status).toBe(200);
+    expect(generateText).toHaveBeenCalled();
+    expectNoMarkers("listing search throw");
+    await expectNoWrites("listing search throw");
+  });
 });
 
 describe("the whole surface at once", () => {
@@ -271,7 +291,7 @@ describe("the whole surface at once", () => {
     extractPostcode.mockResolvedValue("8001");
     calculateDistance.mockResolvedValue({ bikeMinutes: 1, transitMinutes: 2 });
     checkListingUrl.mockResolvedValue(false);
-    extractApartmentData.mockResolvedValue({ name: "Flat" });
+    extractApartmentData.mockResolvedValue(extraction);
 
     await geocodePOST(json({ address: ADDRESS }));
     await distancePOST(json({ from: ADDRESS, to: "X" }));
@@ -282,6 +302,7 @@ describe("the whole surface at once", () => {
     calculateDistance.mockRejectedValue(leakyFetchError());
     checkListingUrl.mockRejectedValue(leakyFetchError());
     extractApartmentData.mockRejectedValue(leakyFetchError());
+    generateText.mockRejectedValue(leakyFetchError());
 
     await geocodePOST(json({ address: ADDRESS }));
     await distancePOST(json({ from: ADDRESS, to: "X" }));

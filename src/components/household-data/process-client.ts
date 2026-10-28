@@ -44,16 +44,21 @@ export class ParsePdfError extends Error {
 export interface ParsePdfResult {
   extracted: Record<string, unknown>;
   aiAvailable: boolean;
+  // The listing link was found by a web search, not read from the PDF (#409).
+  listingFound?: boolean;
 }
 
 export async function parsePdf(
   bytes: Uint8Array<ArrayBuffer>,
   filename: string,
-  locale: Locale
+  locale: Locale,
+  // False when the person brought their own link: no search is paid for.
+  searchListing = true
 ): Promise<ParsePdfResult> {
   const form = new FormData();
   form.append("file", new File([bytes], filename, { type: "application/pdf" }));
   form.append("locale", locale);
+  if (!searchListing) form.append("searchListing", "0");
   const res = await fetch("/api/process/parse-pdf", { method: "POST", body: form });
   let body: Record<string, unknown> = {};
   try {
