@@ -56,7 +56,7 @@ async function gate(): Promise<"passed" | "redirected"> {
 /** Spends `n` credits the way POST /api/apartments does. */
 async function spend(n: number) {
   for (let i = 0; i < n; i++) {
-    const ok = await consumeApartmentCredit(hid);
+    const ok = await consumeApartmentCredit(hid, "first");
     expect(ok, "fixture tried to spend a credit the household does not have").toBe(true);
   }
 }

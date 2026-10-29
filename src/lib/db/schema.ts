@@ -315,6 +315,26 @@ export const apartmentCharges = sqliteTable(
   ]
 );
 
+// #413: what each spent credit paid for, one row per credit, so the host can
+// compare a household's paid processings with the calls it made
+// (process_usage). `kind` is "first" (an apartment's first processing),
+// "reprocess" or "recompute". Holds no content and names no member or
+// apartment: a household id, a kind and a time.
+export const creditSpends = sqliteTable(
+  "credit_spends",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    spentAt: integer("spent_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [index("credit_spends_household_idx").on(table.householdId)]
+);
+
 // E6 payment ledger. Append-only, and the primary key is the STRIPE EVENT ID
 // rather than a generated one: Stripe delivers webhooks at least once, so a
 // redelivery must be a no-op instead of granting a second 40 credits. An

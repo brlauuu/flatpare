@@ -55,7 +55,9 @@
     "ratingSaveFailed": "Die Bewertung konnte nicht gespeichert werden",
     "availableFrom": "Frei ab: {date}",
     "showOnMap": "Auf der Karte ansehen",
-    "processFailed": "Wohnung konnte nicht verarbeitet werden"
+    "processFailed": "Wohnung konnte nicht verarbeitet werden",
+    "replacePdfConfirm": "Das PDF dieser Wohnung ersetzen? Das neue wird gespeichert, aber nicht gelesen, die Angaben bleiben also, wie sie sind. Das alte PDF wird gelöscht.",
+    "attachFailed": "PDF konnte nicht angehängt werden"
   },
   "actions": {
     "viewPdf": "PDF ansehen",
@@ -65,7 +67,10 @@
     "reprocess": "Neu verarbeiten",
     "reprocessing": "Wird neu verarbeitet...",
     "delete": "Löschen",
-    "deleting": "Wird gelöscht..."
+    "deleting": "Wird gelöscht...",
+    "attachPdf": "PDF anhängen",
+    "replacePdf": "PDF ersetzen",
+    "attaching": "Wird angehängt..."
   },
   "metrics": {
     "rentPerMonth": "CHF {amount, number}/Mt.",
@@ -104,13 +109,11 @@
     "nameRequired": "Ein Name ist erforderlich",
     "saveFailed": "Die Wohnung konnte nicht gespeichert werden",
     "processing": "Wird verarbeitet ({done}/{total})",
-    "fromDraft": "Du fügst den gespeicherten Link hinzu: {host}",
     "shareUnavailable": "Diese Freigabe ist nicht bei Flatpare angekommen. Teile sie nochmals oder lade das PDF hier hoch.",
     "shareNothing": "Es wurde nichts geteilt, das Flatpare verwenden kann: kein PDF und kein Link.",
     "shareDropped": "{count, plural, one {# Datei wurde} other {# Dateien wurden}} weggelassen: Nur PDFs können hinzugefügt werden.",
     "shareConfirmPdf": "{count, plural, one {Das geteilte PDF hinzufügen?} other {Die # geteilten PDFs hinzufügen?}}",
-    "shareConfirmLink": "Den geteilten Link von {host} speichern?",
-    "shareSave": "Speichern"
+    "shareConfirmLink": "Eine Wohnung für den geteilten Link von {host} hinzufügen?"
   },
   "upload": {
     "title": "Inserate hochladen",
@@ -188,19 +191,12 @@
   "errors": {
     "staleKey": "Der Haushaltsschlüssel wurde von der Inhaberin oder dem Inhaber geändert. Deine Daten wurden neu geladen; bitte versuch es nochmals."
   },
-  "drafts": {
-    "title": "Zum Hinzufügen",
-    "sharedBy": "{name}, {date}",
-    "formerMember": "Ehemaliges Mitglied",
-    "add": "Hinzufügen",
-    "delete": "Löschen",
-    "corrupt": "Dieser Link konnte nicht gelesen werden.",
+  "pasteLink": {
     "paste": "Link einfügen",
     "pasteNoLink": "In der Zwischenablage ist kein Link.",
     "pasteField": "Füge den Link hier ein",
     "save": "Speichern",
-    "full": "Die Liste der Links zum Hinzufügen ist voll (20). Füge zuerst einige hinzu oder lösche welche.",
-    "deleteFailed": "Dieser Link konnte nicht gelöscht werden. Versuche es noch einmal."
+    "full": "Dieser Haushalt hat bereits so viele Wohnungen, wie er haben darf. Lösche zuerst eine."
   },
   "sharePrompt": {
     "pdf": "Das geteilte PDF hinzufügen?",

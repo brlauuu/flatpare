@@ -76,10 +76,10 @@ describe("GET /api/billing/status", () => {
 
   it("counts spent credits against remaining, and never below zero", async () => {
     await grantApartmentCredits(hid, 2);
-    expect(await consumeApartmentCredit(hid)).toBe(true);
-    expect(await consumeApartmentCredit(hid)).toBe(true);
+    expect(await consumeApartmentCredit(hid, "first")).toBe(true);
+    expect(await consumeApartmentCredit(hid, "first")).toBe(true);
     // A third consume fails rather than pushing used past granted.
-    expect(await consumeApartmentCredit(hid)).toBe(false);
+    expect(await consumeApartmentCredit(hid, "first")).toBe(false);
 
     const { body } = await status();
     expect(body).toMatchObject({ granted: 2, used: 2, remaining: 0 });

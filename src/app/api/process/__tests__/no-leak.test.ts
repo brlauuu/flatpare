@@ -24,6 +24,7 @@ import {
   ratings,
   locations,
   processUsage,
+  creditSpends,
   apartmentCharges,
 } from "@/lib/db/schema";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
@@ -110,9 +111,13 @@ async function rowCounts(): Promise<Record<string, number>> {
     invitations: (await db.select().from(invitations)).length,
     ratings: (await db.select().from(ratings)).length,
     locations: (await db.select().from(locations)).length,
-    processUsage: (await db.select().from(processUsage)).length,
+    // process_usage is left out: since #413 every call is counted there,
+    // limit or not. It holds a household id, an endpoint, an hour and a
+    // count (its columns are pinned in migrate.test.ts), never request
+    // content.
     // #413: written only when billing is on; these tests run with it off.
     apartmentCharges: (await db.select().from(apartmentCharges)).length,
+    creditSpends: (await db.select().from(creditSpends)).length,
     users: (await db.select().from(users)).length,
     accounts: (await db.select().from(accounts)).length,
     sessions: (await db.select().from(sessions)).length,

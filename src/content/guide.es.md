@@ -123,17 +123,17 @@ Flatpare funciona en el navegador del móvil. También puedes instalarlo: así s
 
 ### Compartir anuncios con Flatpare (Android)
 
-Cuando Flatpare está instalado en Android, aparece en el menú de compartir del móvil. Comparte un PDF desde tus archivos o tu correo: Flatpare pregunta si quieres añadirlo y luego lo lee como cualquier subida. Comparte un enlace desde el navegador o una app de anuncios: Flatpare lo guarda en **Por añadir**.
+Cuando Flatpare está instalado en Android, aparece en el menú de compartir del móvil. Comparte un PDF desde tus archivos o tu correo: Flatpare pregunta si quieres añadirlo y luego lo lee como cualquier subida. Comparte un enlace desde el navegador o una app de anuncios: Flatpare lo añade como un piso aún sin procesar y lo abre.
 
 Si al compartir no has iniciado sesión, o Flatpare está bloqueado, el elemento espera un día en tu móvil. Inicia sesión o desbloquea, y Flatpare pregunta si quieres añadirlo.
 
 ### Pegar enlace (iPhone y en cualquier otro sitio)
 
-Un iPhone no puede compartir nada con Flatpare. Copia en su lugar el enlace del anuncio, abre Flatpare y toca **Pegar enlace** en la página Pisos. El enlace se guarda en **Por añadir**.
+Un iPhone no puede compartir nada con Flatpare. Copia en su lugar el enlace del anuncio, abre Flatpare y toca **Pegar enlace** en la página Pisos. Flatpare añade un piso para el enlace y lo abre.
 
-### Enlaces para añadir más tarde
+### Pisos a partir de un enlace
 
-**Por añadir**, arriba en la página Pisos, es la lista de enlaces de tu hogar que aún no son pisos. Todo el hogar la ve, con el nombre de quién guardó cada enlace. Guardar un enlace es gratis. Toca **Añadir** para convertirlo en un piso, con o sin su PDF; en la versión alojada, se usa un crédito de piso cuando se lee su PDF o se sitúa su dirección en el mapa. Hasta 20 enlaces pueden esperar a la vez.
+Un piso añadido a partir de un enlace conserva el enlace y aparece como **Sin procesar** en la lista. Añadirlo es gratis, y todo el hogar puede puntuarlo y describirlo enseguida. En su página, **Adjuntar PDF** añade el PDF del anuncio y lo lee; con una dirección se sitúa en el mapa. En la versión alojada, lo primero de las dos cosas usa un crédito de piso, y lo otro es luego gratis. **Reemplazar PDF** cambia el PDF por uno más reciente sin leerlo, así que los datos se quedan como están; toca **Volver a procesar** si quieres que se lea. Los enlaces guardados en **Por añadir** antes de este cambio se han convertido en pisos de este tipo.
 
 ---
 

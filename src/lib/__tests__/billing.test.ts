@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { apartmentCharges, apartments, households, householdMembers } from "@/lib/db/schema";
+import { apartmentCharges, apartments, creditSpends, households, householdMembers } from "@/lib/db/schema";
 import { users } from "@/lib/db/schema-auth";
 import { createApartmentRow } from "../apartments-store";
 import {
@@ -42,6 +42,7 @@ async function activeCount() {
 }
 
 beforeEach(async () => {
+  await db.delete(creditSpends);
   await db.delete(apartmentCharges);
   await db.delete(apartments);
   await db.delete(householdMembers);
@@ -243,6 +244,26 @@ describe("chargeReprocess and chargeRecompute", () => {
       await expect(chargeRecompute(hid)).rejects.toMatchObject({ status: 402 });
       await expect(chargeReprocess(hid, newId())).rejects.toMatchObject({ status: 402 });
     });
+
+    it("logs what each spent credit paid for, and nothing for a refusal or a free call", async () => {
+      await grantApartmentCredits(hid, 3);
+      const id = newId();
+      await chargeFirstProcessing(hid, id);
+      await chargeFirstProcessing(hid, id);
+      await chargeReprocess(hid, id);
+      await chargeRecompute(hid);
+      await expect(chargeRecompute(hid)).rejects.toMatchObject({ status: 402 });
+      const rows = await db.select().from(creditSpends).where(eq(creditSpends.householdId, hid));
+      expect(rows.map((r) => r.kind).sort()).toEqual(["first", "recompute", "reprocess"]);
+      expect((await counters()).used).toBe(rows.length);
+    });
+  });
+
+  it("logs nothing when billing is off", async () => {
+    await chargeFirstProcessing(hid, newId());
+    await chargeReprocess(hid, newId());
+    await chargeRecompute(hid);
+    expect(await db.select().from(creditSpends)).toHaveLength(0);
   });
 });
 

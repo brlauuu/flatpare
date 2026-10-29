@@ -34,18 +34,17 @@ import type {
   Apartment,
   ApartmentView,
   DecodedApartment,
-  DecodedDraft,
   DecodedLocation,
   DecodedRating,
-  DraftView,
   Location,
   LocationView,
   Rating,
 } from "@/lib/household-data/types";
 import type { ApartmentRow, LocationRow, RatingRow } from "@/lib/household-data/wire";
 import { ApiClientError, getJson, sendJson } from "./api-client";
-import { fetchDrafts, postDraft, removeDraft, viewOfDraft } from "./drafts";
+import { adoptDrafts, fetchDrafts } from "./drafts";
 import { enrichApartment } from "./enrichment";
+import { deletePdfFile, encryptAndUploadPdf, pdfRevision } from "./pdf-files";
 import { checkListing, distanceBetween, geocodeAddress } from "./process-client";
 import { isStaleKey, runRotateDataKey, type RotationReport } from "./rotation";
 import {
@@ -61,7 +60,7 @@ import {
   type RatingLine,
 } from "@/lib/household-data/export-format";
 import { newRowId } from "@/lib/household-data/ids";
-import { firstHttpUrl } from "@/lib/household-data/links";
+import { apartmentFromLink, firstHttpUrl } from "@/lib/household-data/links";
 import type { Limits } from "@/lib/limits";
 
 export interface HouseholdIdentity {
@@ -94,11 +93,18 @@ export interface HouseholdDataContextValue {
   error: string | null;
   apartments: ApartmentView[];
   locations: LocationView[];
-  drafts: DraftView[];
   // Per-apartment message from the last failed enrichment; cleared on success.
   enrichmentError: Record<string, string>;
   reload(): Promise<void>;
   createApartment(id: string, data: Apartment): Promise<ApartmentView>;
+  // #413. An unprocessed apartment made from a pasted or shared link; free.
+  // Rejects with "Not a web link" before any request when the text holds no
+  // http(s) link.
+  createApartmentFromLink(text: string, title: string | null): Promise<ApartmentView>;
+  // Attaches a PDF to an apartment, or replaces the one it has: the new file
+  // is stored under a fresh name, the row is pointed at it, and only then is
+  // the old file deleted. Stores only; reading it is the caller's choice.
+  attachPdf(id: string, bytes: Uint8Array<ArrayBuffer>): Promise<void>;
   updateApartment(id: string, mutate: (a: Apartment) => Apartment): Promise<ApartmentView>;
   deleteApartment(id: string): Promise<void>;
   rateApartment(id: string, rating: Rating | null): Promise<void>;
@@ -116,8 +122,6 @@ export interface HouseholdDataContextValue {
   createLocation(id: string, data: Location): Promise<LocationView>;
   updateLocation(id: string, mutate: (l: Location) => Location): Promise<LocationView>;
   deleteLocation(id: string): Promise<void>;
-  createDraft(url: string, title: string | null): Promise<DraftView>;
-  deleteDraft(id: string): Promise<void>;
   moveLocation(id: string, direction: "up" | "down"): Promise<void>;
   runMaintenance(
     kind: MaintenanceKind,
@@ -155,10 +159,9 @@ interface Store {
   apartments: DecodedApartment[];
   ratings: DecodedRating[];
   locations: DecodedLocation[];
-  drafts: DecodedDraft[];
 }
 
-const EMPTY_STORE: Store = { apartments: [], ratings: [], locations: [], drafts: [] };
+const EMPTY_STORE: Store = { apartments: [], ratings: [], locations: [] };
 const LISTING_CONCURRENCY = 4;
 
 const STALE_KEY_MESSAGE =
@@ -216,6 +219,8 @@ export function HouseholdDataProvider({
   const [store, setStore] = useState<Store>(EMPTY_STORE);
   const [enrichmentError, setEnrichmentError] = useState<Record<string, string>>({});
   const [credits, setCredits] = useState<Credits | null>(null);
+  // Counts finished loads, so the draft conversion runs once after each.
+  const [loads, setLoads] = useState(0);
 
   // Read from the server rather than counted here: another member's add
   // spends from the same pool, and a refused or refunded create does not move
@@ -295,11 +300,10 @@ export function HouseholdDataProvider({
     // Beside the rows, not part of them: the page must not wait on it.
     void refreshCredits();
     try {
-      const [aRows, rRows, lRows, drafts] = await Promise.all([
+      const [aRows, rRows, lRows] = await Promise.all([
         getJson<ApartmentRow[]>("/api/apartments"),
         getJson<RatingRow[]>("/api/ratings"),
         getJson<LocationRow[]>("/api/locations"),
-        fetchDrafts(dataKey, householdId),
       ]);
       const [apartments, ratings, locations] = await Promise.all([
         Promise.all(aRows.map(decodeApartment)),
@@ -311,9 +315,10 @@ export function HouseholdDataProvider({
       // user's own change off the screen. Drop it; the next refresh catches
       // up.
       if (background && commits.current !== commitsAtStart) return;
-      commit(() => ({ apartments, ratings, locations, drafts }));
+      commit(() => ({ apartments, ratings, locations }));
       setError(null);
       setStatus("ready");
+      setLoads((n) => n + 1);
     } catch (err) {
       // A failed background refresh keeps what is on screen rather than
       // replacing a working page with an error.
@@ -321,7 +326,7 @@ export function HouseholdDataProvider({
       setError(messageOf(err));
       setStatus("error");
     }
-  }, [commit, dataKey, decodeApartment, decodeLocation, decodeRating, householdId, refreshCredits]);
+  }, [commit, decodeApartment, decodeLocation, decodeRating, refreshCredits]);
 
   const reload = useCallback(() => load(false), [load]);
 
@@ -351,7 +356,6 @@ export function HouseholdDataProvider({
     () => deriveApartments(store.apartments, store.ratings, userId),
     [store.apartments, store.ratings, userId]
   );
-  const drafts = useMemo(() => store.drafts.map(viewOfDraft), [store.drafts]);
   const locations = useMemo(() => deriveLocations(store.locations), [store.locations]);
 
   const viewOf = useCallback(
@@ -511,6 +515,58 @@ export function HouseholdDataProvider({
       return viewOf(id);
     },
     [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, takenLetters, viewOf]
+  );
+
+  const createApartmentFromLink = useCallback(
+    async (text: string, title: string | null): Promise<ApartmentView> => {
+      const link = firstHttpUrl(text);
+      if (link === null) throw new Error("Not a web link");
+      return createApartment(newRowId(), apartmentFromLink(link, title));
+    },
+    [createApartment]
+  );
+
+  // Drafts left from before #413 become apartments once the rows are loaded
+  // (adoptDrafts), from whichever member's device loads first. After the
+  // load, not inside it: a draft that fails to convert must not fail the
+  // page, and the conversion is a create like any other.
+  // No draft is created any more, so once none is left there is nothing to
+  // look for again while this provider is mounted.
+  const adopting = useRef(false);
+  const noDraftsLeft = useRef(false);
+  useEffect(() => {
+    if (loads === 0 || adopting.current || noDraftsLeft.current) return;
+    adopting.current = true;
+    void fetchDrafts(dataKey, householdId)
+      .then((drafts) => {
+        if (drafts.length === 0) noDraftsLeft.current = true;
+        return adoptDrafts(drafts, createApartment);
+      })
+      .catch(() => {
+        // The next load tries again.
+      })
+      .finally(() => {
+        adopting.current = false;
+      });
+    // Once per load, with that load's createApartment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loads]);
+
+  const attachPdf = useCallback(
+    async (id: string, bytes: Uint8Array<ArrayBuffer>): Promise<void> => {
+      // A fresh name every time: Blob refuses to write over a file, and the
+      // old file must stay readable until the row points at the new one.
+      const pdf = await encryptAndUploadPdf(dataKey, householdId, id, bytes, keyVersion, pdfRevision());
+      let previous: Apartment;
+      try {
+        ({ previous } = await writeApartment(id, (a) => ({ ...a, pdf })));
+      } catch (err) {
+        void deletePdfFile(pdf.path);
+        throw err;
+      }
+      if (previous.pdf && previous.pdf.path !== pdf.path) void deletePdfFile(previous.pdf.path);
+    },
+    [dataKey, householdId, keyVersion, writeApartment]
   );
 
   const updateApartment = useCallback(
@@ -711,28 +767,6 @@ export function HouseholdDataProvider({
     [commit]
   );
 
-  // ---- drafts (#190) ---------------------------------------------------------
-
-  const createDraft = useCallback(
-    async (url: string, title: string | null): Promise<DraftView> => {
-      const link = firstHttpUrl(url);
-      if (link === null) throw new Error("Not a web link");
-      const id = newRowId();
-      const saved = await postDraft(send, dataKey, householdId, keyVersion, id, { url: link, title });
-      commit((s) => ({ ...s, drafts: [...s.drafts, saved] }));
-      return viewOfDraft(saved);
-    },
-    [commit, dataKey, householdId, keyVersion, send]
-  );
-
-  const deleteDraft = useCallback(
-    async (id: string): Promise<void> => {
-      await removeDraft(id);
-      commit((s) => ({ ...s, drafts: s.drafts.filter((d) => d.id !== id) }));
-    },
-    [commit]
-  );
-
   const moveLocation = useCallback(
     async (id: string, direction: "up" | "down"): Promise<void> => {
       const rows = await sendJson<LocationRow[]>("POST", `/api/locations/${id}/move`, { direction });
@@ -885,11 +919,12 @@ export function HouseholdDataProvider({
       error,
       apartments,
       locations,
-      drafts,
       enrichmentError,
       credits,
       reload,
       createApartment,
+      createApartmentFromLink,
+      attachPdf,
       updateApartment,
       deleteApartment,
       rateApartment,
@@ -901,8 +936,6 @@ export function HouseholdDataProvider({
       updateLocation,
       deleteLocation,
       moveLocation,
-      createDraft,
-      deleteDraft,
       runMaintenance,
       rotateDataKey,
       exportHousehold,
@@ -910,10 +943,10 @@ export function HouseholdDataProvider({
       importHousehold,
     }),
     [
-      identity, limits, credits, dataKey, status, error, apartments, locations, drafts, enrichmentError, reload,
-      createApartment, updateApartment, deleteApartment, rateApartment, retryEnrichment,
+      identity, limits, credits, dataKey, status, error, apartments, locations, enrichmentError, reload,
+      createApartment, createApartmentFromLink, attachPdf, updateApartment, deleteApartment, rateApartment, retryEnrichment,
       processApartment, chargeReprocess, relocateApartment,
-      createLocation, updateLocation, deleteLocation, moveLocation, createDraft, deleteDraft, runMaintenance, rotateDataKey,
+      createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
       exportHousehold, readImport, importHousehold,
     ]
   );

@@ -51,10 +51,13 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     error: null,
     apartments: [],
     locations: [],
-    drafts: [],
     enrichmentError: {},
     reload: vi.fn(async () => {}),
     createApartment: vi.fn(async (id: string) => makeApartmentView({ id })),
+    createApartmentFromLink: vi.fn(async (url: string, title: string | null) =>
+      makeApartmentView({ id: "apt-from-link", name: title ?? url, listingUrl: url, processed: false })
+    ),
+    attachPdf: vi.fn(async () => {}),
     updateApartment: vi.fn(async (id: string) => makeApartmentView({ id })),
     deleteApartment: vi.fn(async () => {}),
     rateApartment: vi.fn(async () => {}),
@@ -66,16 +69,6 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     updateLocation: vi.fn(async (id: string) => makeLocationView({ id })),
     deleteLocation: vi.fn(async () => {}),
     moveLocation: vi.fn(async () => {}),
-    createDraft: vi.fn(async (url: string, title: string | null) => ({
-      id: "draft-1",
-      corrupt: false,
-      url,
-      title,
-      createdBy: "u-me",
-      createdByName: "Me",
-      createdAt: "2026-01-01T00:00:00.000Z",
-    })),
-    deleteDraft: vi.fn(async () => {}),
     runMaintenance: vi.fn(async () => ({ updated: 0, skipped: 0, failed: [] })),
     rotateDataKey: vi.fn(async () => ({
       recoveryCode: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEE",

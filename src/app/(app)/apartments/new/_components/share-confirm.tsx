@@ -25,7 +25,7 @@ export function ShareConfirm({ confirmation, onConfirm, onDiscard }: ShareConfir
       </p>
       <div className="flex gap-2">
         <Button className="min-h-11" onClick={onConfirm}>
-          {pdf ? tPrompt("add") : t("shareSave")}
+          {tPrompt("add")}
         </Button>
         <Button variant="outline" className="min-h-11" onClick={onDiscard}>
           {tPrompt("discard")}

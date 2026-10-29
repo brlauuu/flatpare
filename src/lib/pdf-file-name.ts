@@ -8,6 +8,14 @@
 // file intact until then: a failed rotation leaves an orphan at worst, never
 // a row pointing at bytes sealed under a key nobody holds. Version 1 keeps
 // the unversioned name every existing row already carries.
-export function pdfFileName(apartmentId: string, keyVersion = 1): string {
-  return keyVersion === 1 ? `${apartmentId}.pdf.enc` : `${apartmentId}.k${keyVersion}.pdf.enc`;
+//
+// A PDF attached or replaced on the apartment page (#413) also carries a
+// revision, so the new file never overwrites the old one: Blob refuses to,
+// and the row must keep pointing at readable bytes until it is updated.
+export const PDF_REVISION_PATTERN = /^[0-9a-f]{12}$/;
+
+export function pdfFileName(apartmentId: string, keyVersion = 1, revision?: string): string {
+  const version = keyVersion === 1 ? "" : `.k${keyVersion}`;
+  const rev = revision ? `.r${revision}` : "";
+  return `${apartmentId}${version}${rev}.pdf.enc`;
 }

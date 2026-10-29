@@ -123,17 +123,17 @@ Flatpare läuft im Browser deines Handys. Du kannst es auch installieren, dann �
 
 ### Inserate an Flatpare teilen (Android)
 
-Sobald Flatpare auf Android installiert ist, erscheint es im Teilen-Menü deines Handys. Teile ein PDF aus deinen Dateien oder einer E-Mail, und Flatpare fragt, ob es hinzugefügt werden soll, und liest es dann wie jeden Upload. Teile einen Link aus deinem Browser oder einer Inserate-App, und Flatpare speichert ihn unter **Zum Hinzufügen**.
+Sobald Flatpare auf Android installiert ist, erscheint es im Teilen-Menü deines Handys. Teile ein PDF aus deinen Dateien oder einer E-Mail, und Flatpare fragt, ob es hinzugefügt werden soll, und liest es dann wie jeden Upload. Teile einen Link aus deinem Browser oder einer Inserate-App, und Flatpare fügt ihn als Wohnung hinzu, die noch nicht verarbeitet ist, und öffnet sie.
 
 Bist du beim Teilen abgemeldet oder ist Flatpare gesperrt, wartet das Geteilte einen Tag lang auf deinem Handy. Melde dich an oder entsperre, und Flatpare fragt, ob es hinzugefügt werden soll.
 
 ### Link einfügen (iPhone und überall sonst)
 
-Ein iPhone kann nichts an Flatpare teilen. Kopiere stattdessen den Link des Inserats, öffne Flatpare und tippe auf der Seite Wohnungen auf **Link einfügen**. Der Link wird unter **Zum Hinzufügen** gespeichert.
+Ein iPhone kann nichts an Flatpare teilen. Kopiere stattdessen den Link des Inserats, öffne Flatpare und tippe auf der Seite Wohnungen auf **Link einfügen**. Flatpare fügt eine Wohnung für den Link hinzu und öffnet sie.
 
-### Links für später
+### Wohnungen aus einem Link
 
-**Zum Hinzufügen**, oben auf der Seite Wohnungen, ist die Liste deines Haushalts mit Links, die noch keine Wohnungen sind. Alle im Haushalt sehen sie, mit dem Namen, wer welchen Link gespeichert hat. Einen Link zu speichern kostet nichts. Tippe auf **Hinzufügen**, um daraus eine Wohnung zu machen, mit oder ohne PDF; in der gehosteten Version wird ein Wohnungsguthaben verbraucht, sobald ihr PDF gelesen oder ihre Adresse auf der Karte gefunden wird. Bis zu 20 Links können gleichzeitig warten.
+Eine Wohnung aus einem Link behält den Link und ist in der Liste als **Nicht verarbeitet** markiert. Sie hinzuzufügen kostet nichts, und alle im Haushalt können sie gleich bewerten und beschreiben. Auf ihrer Seite fügt **PDF anhängen** das PDF des Inserats hinzu und liest es; mit einer Adresse wird sie auf der Karte gefunden. In der gehosteten Version verbraucht das, was zuerst kommt, ein Wohnungsguthaben, und das andere ist dann gratis. **PDF ersetzen** tauscht das PDF gegen ein neueres aus, ohne es zu lesen, die Angaben bleiben also, wie sie sind; tippe auf **Neu verarbeiten**, wenn es gelesen werden soll. Links, die vor dieser Änderung unter **Zum Hinzufügen** gespeichert waren, sind zu solchen Wohnungen geworden.
 
 ---
 

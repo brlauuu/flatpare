@@ -14,6 +14,11 @@ import { readOptionalPositiveInt } from "@/lib/env-int";
 // State lives in `process_usage` (Turso), not in memory: serverless instances
 // come and go and there is no Redis in this stack, so a per-instance counter
 // would reset unpredictably and count nothing useful.
+//
+// Every call is counted, limit or not (#413): the count is also how the host
+// compares a household's calls with the credits it spent (credit_spends), to
+// spot a modified client that processes without paying. Only the comparison
+// against a limit depends on PROCESS_RATE_LIMIT_PER_HOUR.
 
 export type ProcessEndpoint = "geocode" | "distance" | "check-listing" | "parse-pdf";
 
@@ -35,13 +40,12 @@ function currentWindowStart(now: Date = new Date()): number {
 
 // Counts one call against (household, endpoint, hour) and throws
 // ApiError("Rate limit exceeded", 429) when it would exceed the ceiling.
-// Returns normally — and writes nothing at all — when no limit is configured.
+// Counts and returns normally when no limit is configured.
 export async function consumeRateLimit(
   householdId: number,
   endpoint: ProcessEndpoint
 ): Promise<void> {
   const limit = processRateLimitPerHour();
-  if (limit === null) return;
 
   const windowStart = currentWindowStart();
   // One statement: insert the first call of the window, or increment. The
@@ -56,7 +60,7 @@ export async function consumeRateLimit(
   `);
 
   const count = Number(result.rows?.[0]?.count ?? 0);
-  if (count > limit) {
+  if (limit !== null && count > limit) {
     throw new ApiError("Rate limit exceeded", 429);
   }
 }

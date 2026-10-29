@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { apartmentCharges, households, payments } from "@/lib/db/schema";
+import { apartmentCharges, creditSpends, households, payments } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api-error";
 import { isUniqueConstraintError } from "@/lib/unique-constraint";
 
@@ -67,8 +67,11 @@ export async function readCreditBalance(
   };
 }
 
-// Consumes exactly one credit, atomically. Returns false when the household
-// has none left.
+// What a spent credit paid for, recorded in credit_spends (#413).
+export type CreditSpendKind = "first" | "reprocess" | "recompute";
+
+// Consumes exactly one credit, atomically, and records what it paid for.
+// Returns false when the household has none left.
 //
 // A single guarded UPDATE rather than a read-then-write: two concurrent adds
 // at 39 of 40 would otherwise both see room and both proceed, overspending
@@ -76,7 +79,8 @@ export async function readCreditBalance(
 // transactions on libSQL abort with SQLITE_BUSY (#225), and one statement
 // needs no transaction anyway.
 export async function consumeApartmentCredit(
-  householdId: number
+  householdId: number,
+  kind: CreditSpendKind
 ): Promise<boolean> {
   if (!billingEnabled()) return true;
 
@@ -86,7 +90,12 @@ export async function consumeApartmentCredit(
      WHERE id = ${householdId}
        AND apartments_ever_added < apartment_credits_granted
   `);
-  return Number(result.rowsAffected ?? 0) > 0;
+  if (Number(result.rowsAffected ?? 0) === 0) return false;
+  // A second statement, not a transaction (#225): the log is for the host's
+  // own cross-checks, and a crash between the two leaves it one row short,
+  // never the customer.
+  await db.insert(creditSpends).values({ householdId, kind });
+  return true;
 }
 
 function noCredits(): ApiError {
@@ -132,7 +141,7 @@ export async function chargeFirstProcessing(
 ): Promise<void> {
   if (!billingEnabled()) return;
   if (!(await markCharged(householdId, apartmentId))) return;
-  if (await consumeApartmentCredit(householdId)) return;
+  if (await consumeApartmentCredit(householdId, "first")) return;
   await unmarkCharged(householdId, apartmentId);
   throw noCredits();
 }
@@ -145,7 +154,7 @@ export async function chargeReprocess(
   apartmentId: string
 ): Promise<void> {
   if (!billingEnabled()) return;
-  if (!(await consumeApartmentCredit(householdId))) throw noCredits();
+  if (!(await consumeApartmentCredit(householdId, "reprocess"))) throw noCredits();
   await markCharged(householdId, apartmentId);
 }
 
@@ -153,7 +162,7 @@ export async function chargeReprocess(
 // however many apartments it measures (decided on #413).
 export async function chargeRecompute(householdId: number): Promise<void> {
   if (!billingEnabled()) return;
-  if (!(await consumeApartmentCredit(householdId))) throw noCredits();
+  if (!(await consumeApartmentCredit(householdId, "recompute"))) throw noCredits();
 }
 
 // Adds credits to a household. The webhook will be the only caller in

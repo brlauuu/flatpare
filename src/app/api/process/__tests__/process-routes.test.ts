@@ -17,6 +17,7 @@ import {
   ratings,
   locations,
   processUsage,
+  creditSpends,
   apartmentCharges,
 } from "@/lib/db/schema";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema-auth";
@@ -36,12 +37,11 @@ async function snapshotRowCounts(): Promise<Record<string, number>> {
     invitations: (await db.select().from(invitations)).length,
     ratings: (await db.select().from(ratings)).length,
     locations: (await db.select().from(locations)).length,
-    // E4's rate limiter is the ONE table a process route may write, and
-    // only when PROCESS_RATE_LIMIT_PER_HOUR is set. These tests run with
-    // it unset, so this count must stay at zero like every other.
-    processUsage: (await db.select().from(processUsage)).length,
+    // process_usage is left out: since #413 every call is counted there,
+    // limit or not (see "counts every call" below).
     // #413: written only when billing is on; these tests run with it off.
     apartmentCharges: (await db.select().from(apartmentCharges)).length,
+    creditSpends: (await db.select().from(creditSpends)).length,
     users: (await db.select().from(users)).length,
     accounts: (await db.select().from(accounts)).length,
     sessions: (await db.select().from(sessions)).length,
@@ -370,7 +370,7 @@ describe("rate limiting (#186)", () => {
     expect(geocodeLatLngWithReason).not.toHaveBeenCalled();
   });
 
-  it("writes nothing to process_usage when no limit is configured", async () => {
+  it("counts every call even when no limit is configured, refusing none (#413)", async () => {
     delete process.env.PROCESS_RATE_LIMIT_PER_HOUR;
     currentSession.householdId = hid;
     currentSession.userId = "o";
@@ -380,7 +380,9 @@ describe("rate limiting (#186)", () => {
     for (let i = 0; i < 5; i++) {
       expect((await geocodePOST(json({ address: "Bahnhofstrasse 1" }))).status).toBe(200);
     }
-    expect(await db.select().from(processUsage)).toHaveLength(0);
+    const rows = await db.select().from(processUsage);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ householdId: hid, endpoint: "geocode", count: 5 });
   });
 });
 

@@ -11,7 +11,7 @@ vi.mock("@/lib/api-route", async (importOriginal) => {
   return { ...actual, requireMember: mockRequireMember };
 });
 
-import { POST } from "../route";
+import { DELETE, POST } from "../route";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 const APT = "11111111-1111-4111-8111-111111111111";
@@ -85,5 +85,57 @@ describe("POST /api/files with keyVersion", () => {
       );
       expect(res.status).toBe(400);
     }
+  });
+});
+
+// #413: a PDF attached or replaced on the apartment page.
+describe("POST /api/files with a revision", () => {
+  it("stores the file under a name of its own", async () => {
+    const res = await POST(
+      request({ file: new Blob([new Uint8Array([5])]), apartmentId: APT, revision: "0123456789ab" })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).path).toBe(`/api/uploads/households/7/${APT}.r0123456789ab.pdf.enc`);
+  });
+
+  it("refuses a revision that is not twelve hex characters", async () => {
+    for (const bad of ["../../x", "0123", "0123456789AB", "0123456789abc"]) {
+      const res = await POST(request({ file: new Blob([new Uint8Array([5])]), apartmentId: APT, revision: bad }));
+      expect(res.status, bad).toBe(400);
+    }
+  });
+});
+
+describe("DELETE /api/files", () => {
+  function del(body: unknown) {
+    return new Request("http://localhost/api/files", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("deletes a file of the caller's household", async () => {
+    const res = await POST(request({ file: new Blob([new Uint8Array([5])]), apartmentId: APT }));
+    const { path: stored } = await res.json();
+    expect((await DELETE(del({ path: stored }))).status).toBe(204);
+    expect(fs.existsSync(path.join(UPLOADS_DIR, "households", "7", `${APT}.pdf.enc`))).toBe(false);
+  });
+
+  it("refuses a path in another household, and leaves it alone", async () => {
+    const res = await POST(request({ file: new Blob([new Uint8Array([5])]), apartmentId: APT }));
+    const { path: stored } = await res.json();
+    mockRequireMember.mockResolvedValueOnce({ householdId: 8, userId: "u2", role: "owner" });
+    expect((await DELETE(del({ path: stored }))).status).toBe(400);
+    expect(fs.existsSync(path.join(UPLOADS_DIR, "households", "7", `${APT}.pdf.enc`))).toBe(true);
+  });
+
+  it("is a 204 for a file that is already gone", async () => {
+    expect((await DELETE(del({ path: `/api/uploads/households/7/${APT}.pdf.enc` }))).status).toBe(204);
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    mockRequireMember.mockRejectedValueOnce(new UnauthorizedError());
+    expect((await DELETE(del({ path: "/api/uploads/households/7/x" }))).status).toBe(401);
   });
 });

@@ -110,7 +110,7 @@ export default function ApartmentDetailPage() {
   const [editLetters, setEditLetters] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const codeLettersError = useCodeLettersError(apartments, apartment, editLetters);
-  const { processing, reprocessing, process, reprocess } = useApartmentProcessing(
+  const { processing, reprocessing, attaching, process, reprocess, attach } = useApartmentProcessing(
     apartment,
     () => setError(null),
     (headline, err) => setError({ headline, details: errorDetails(err) })
@@ -294,10 +294,12 @@ export default function ApartmentDetailPage() {
           mapHref={showOnMapHref(apartment)}
           editing={editing}
           reprocessing={reprocessing}
+          attaching={attaching}
           deleting={deleting}
           onEdit={startEdit}
           onViewPdf={() => void handleViewPdf()}
           onReprocess={() => void reprocess()}
+          onAttachPdf={(file) => void attach(file)}
           onDelete={() => void handleDelete()}
         />
       </div>

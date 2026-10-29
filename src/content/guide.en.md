@@ -123,17 +123,17 @@ Flatpare works in your phone's browser. You can also install it, so it opens fro
 
 ### Share listings into Flatpare (Android)
 
-Once Flatpare is installed on Android, it appears in your phone's share menu. Share a PDF from your files or your email, and Flatpare asks whether to add it, then reads it like any upload. Share a link from your browser or a listing app, and Flatpare saves it under **To add**.
+Once Flatpare is installed on Android, it appears in your phone's share menu. Share a PDF from your files or your email, and Flatpare asks whether to add it, then reads it like any upload. Share a link from your browser or a listing app, and Flatpare adds it as an apartment that is not processed yet, then opens it.
 
 If you are signed out, or Flatpare is locked, when you share, the item waits on your phone for a day. Sign in or unlock, and Flatpare asks whether to add it.
 
 ### Paste link (iPhone and everywhere else)
 
-An iPhone cannot share into Flatpare. Copy the listing's link instead, open Flatpare, and tap **Paste link** on the Apartments page. The link is saved under **To add**.
+An iPhone cannot share into Flatpare. Copy the listing's link instead, open Flatpare, and tap **Paste link** on the Apartments page. Flatpare adds an apartment for the link and opens it.
 
-### Links to add later
+### Apartments from a link
 
-**To add**, at the top of the Apartments page, is your household's list of links that are not apartments yet. Everyone in the household sees it, with who saved each link. Saving a link is free. Tap **Add** to make it an apartment, with or without its PDF; on the hosted version, an apartment credit is used once its PDF is read or its address is placed on the map. Up to 20 links can wait at once.
+An apartment added from a link keeps the link and is marked **Not processed** in the list. Adding it is free, and everyone in the household can rate and describe it straight away. On its page, **Attach PDF** adds the listing's PDF and reads it; giving it an address places it on the map. On the hosted version, whichever comes first uses one apartment credit, and the other one is then free. **Replace PDF** swaps the PDF for a newer one without reading it, so the details stay as they are; press **Reprocess** if you want it read. Links saved under **To add** before this change have become apartments like these.
 
 ---
 

@@ -16,7 +16,6 @@ import { parsePdf, ParsePdfError } from "@/components/household-data/process-cli
 import { encryptAndUploadPdf } from "@/components/household-data/pdf-files";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
 import { newRowId } from "@/lib/household-data/ids";
-import { useDraftCompletion } from "./_components/use-draft-completion";
 import { useShareIntake } from "./_components/use-share-intake";
 import { isPdfFile } from "./_components/pdf-file";
 import { ShareNotice, UploadStep } from "./_components/upload-step";
@@ -37,7 +36,6 @@ export default function UploadPage() {
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
   const { createApartment, dataKey, identity } = useHouseholdData();
-  const { prefillUrl, prefillTitle, draftHost, finishDraft } = useDraftCompletion();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -55,7 +53,7 @@ export default function UploadPage() {
   // after the component is gone, and in tests it fires against the next test's
   // router mock, which is how #227's full-flow flake actually happened.
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Awaiting the draft's deletion happens before navigating, so the page can
+  // Awaiting the share's clean-up happens before navigating, so the page can
   // be gone by then; the cleanup above only clears a timer that already exists.
   const mounted = useRef(true);
   useEffect(() => {
@@ -66,14 +64,14 @@ export default function UploadPage() {
     };
   }, []);
 
-  // The link the person brought (a draft's, or the share's) wins over the one
+  // The link the person shared wins over the one
   // read from the PDF, which is often a dead or generic page. With several
   // PDFs nobody knows which one the link belongs to, so it then fills only
   // forms that have none. Read through a ref: processFiles is memoised, and
   // the shared link arrives after it was created.
   const linkRef = useRef<string | null>(null);
   const batchSizeRef = useRef(0);
-  function withDraftUrl(form: ApartmentForm): ApartmentForm {
+  function withSharedUrl(form: ApartmentForm): ApartmentForm {
     const url = linkRef.current;
     if (!url) return form;
     if (batchSizeRef.current > 1 && form.listingUrl) return form;
@@ -131,7 +129,7 @@ export default function UploadPage() {
       return;
     }
 
-    // Read after the first await, like withDraftUrl: a shared link is in
+    // Read after the first await, like withSharedUrl: a shared link is in
     // place by then. A link the person brought makes the search pointless.
     const searchListing = !linkRef.current;
     const [parsed, uploaded] = await Promise.allSettled([
@@ -149,7 +147,7 @@ export default function UploadPage() {
       if (known?.reason === "no_credits") {
         updateItem(itemId, {
           status: "done",
-          form: withDraftUrl({ ...emptyApartmentForm, name: file.name.replace(/\.pdf$/i, "") }),
+          form: withSharedUrl({ ...emptyApartmentForm, name: file.name.replace(/\.pdf$/i, "") }),
           pdf,
           pdfWarning,
           processed: false,
@@ -168,7 +166,7 @@ export default function UploadPage() {
 
     updateItem(itemId, {
       status: "done",
-      form: withDraftUrl(formFromExtracted(parsed.value.extracted)),
+      form: withSharedUrl(formFromExtracted(parsed.value.extracted)),
       linkFound: searchListing && parsed.value.listingFound === true,
       pdf,
       pdfWarning,
@@ -237,9 +235,9 @@ export default function UploadPage() {
     onError: (headline) => setError({ headline }),
   });
   const { sharedUrl, finishShare, notice } = share;
-  const link = prefillUrl ?? sharedUrl;
+  const link = sharedUrl;
   // Runs every commit. useShareIntake hands its files to processFiles from an
-  // effect in the same commit that set sharedUrl, and withDraftUrl reads the
+  // effect in the same commit that set sharedUrl, and withSharedUrl reads the
   // ref only after parsing awaits, so the link is in place by then. Do not
   // move the hand-over out of an effect (see use-share-intake.ts).
   useEffect(() => {
@@ -294,7 +292,7 @@ export default function UploadPage() {
       await share.settleShare(done.flatMap((i) => itemFileRef.current.get(i.id) ?? []));
       return;
     }
-    await Promise.all([finishDraft(), finishShare()]);
+    await finishShare();
     if (!mounted.current) return;
     redirectTimer.current = setTimeout(() => router.push("/apartments"), 500);
   }
@@ -309,7 +307,7 @@ export default function UploadPage() {
     setError(null);
     try {
       const created = await createApartment(newRowId(), apartmentFromForm(singleForm, null));
-      await Promise.all([finishDraft(), finishShare()]);
+      await finishShare();
       if (!mounted.current) return;
       router.push(`/apartments/${created.id}`);
     } catch (err) {
@@ -328,12 +326,11 @@ export default function UploadPage() {
         onManualEntry={() => {
           setSingleForm({
             ...emptyApartmentForm,
-            name: prefillTitle ?? "",
+            name: "",
             listingUrl: link ?? "",
           });
           setStep("single");
         }}
-        draftHost={draftHost}
         notice={notice}
         shareConfirm={
           <ShareConfirm
