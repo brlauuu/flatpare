@@ -34,6 +34,7 @@ import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { ProcessingNotice } from "./_components/processing-notice";
+import { PdfTooLargeNotice } from "@/components/pdf-too-large-notice";
 import { useApartmentProcessing } from "./_components/use-apartment-processing";
 import { showOnMapHref } from "./_components/show-on-map";
 import { useCodeLettersError } from "./_components/use-code-letters-error";
@@ -96,6 +97,7 @@ export default function ApartmentDetailPage() {
     updateApartment,
     deleteApartment,
     rateApartment,
+    limits,
   } = useHouseholdData();
   const pager = useApartmentPager(id);
   const apartment = apartments.find((a) => a.id === id) ?? null;
@@ -110,7 +112,7 @@ export default function ApartmentDetailPage() {
   const [editLetters, setEditLetters] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const codeLettersError = useCodeLettersError(apartments, apartment, editLetters);
-  const { processing, reprocessing, attaching, process, reprocess, attach } = useApartmentProcessing(
+  const { processing, reprocessing, attaching, tooLarge, process, reprocess, attach } = useApartmentProcessing(
     apartment,
     () => setError(null),
     (headline, err) => setError({ headline, details: errorDetails(err) })
@@ -311,6 +313,8 @@ export default function ApartmentDetailPage() {
         processing={processing}
         onProcess={() => void process()}
       />
+
+      {tooLarge && <PdfTooLargeNotice maxBytes={limits.pdfReadMaxBytes} />}
 
       {apartment.summary && (
         <Card>

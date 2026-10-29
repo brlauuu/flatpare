@@ -214,5 +214,12 @@
     "unplacedTitle": "Aún no está en el mapa",
     "unplaced": "{billing, select, on {No se ha podido situar la dirección en el mapa. Volver a intentarlo no usa ningún crédito.} other {No se ha podido situar la dirección en el mapa.}}",
     "retry": "Volver a intentarlo"
+  },
+  "pdfTooLarge": {
+    "title": "Este PDF es demasiado grande para leerlo",
+    "body": "Se pueden leer PDF de hasta {size} MB. Este se queda con el piso, sin leer, y no se ha gastado ningún crédito. Para que se lea, hazlo más pequeño y luego usa Reemplazar PDF en la página del piso:",
+    "pages": "Quédate solo con las páginas que describen el piso: abre el PDF, elige Imprimir, selecciona esas páginas y guarda el resultado como PDF. En un iPhone, separa dos dedos sobre la vista previa de impresión y luego Compartir y Guardar en Archivos.",
+    "compress": "O reduce su tamaño: en un Mac, ábrelo en Vista Previa y elige Archivo, Exportar y el filtro Quartz Reducir tamaño de archivo. Las apps de PDF de otros dispositivos hacen lo mismo.",
+    "byHand": "O escribe los datos tú. El PDF se queda con el piso."
   }
 }

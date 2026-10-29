@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+
+- A PDF over 4.5 MB no longer fails with a bare "413". It is stored with the apartment, unread, no credit is spent, and the app explains how to make it smaller: keep only the pages about the apartment, or reduce its file size. (#438)
+
 ## 0.27.2 — 2026-10-29
 
 ### Fixed

@@ -30,8 +30,9 @@ export async function checkListing(url: string): Promise<boolean | null> {
 }
 
 // no_credits: the household has no apartment credit left for the apartment's
-// first processing (#413).
-export type ParsePdfReason = "quota" | "invalid_pdf" | "no_credits" | "unknown";
+// first processing (#413). too_large: the PDF is over what the server can be
+// sent (#438); refused here before anything is sent, or a 413 on the way.
+export type ParsePdfReason = "quota" | "invalid_pdf" | "no_credits" | "too_large" | "unknown";
 
 export class ParsePdfError extends Error {
   reason: ParsePdfReason;
@@ -62,8 +63,14 @@ export async function parsePdf(
   // (#413).
   apartmentId: string,
   // False when the person brought their own link: no search is paid for.
-  searchListing = true
+  searchListing = true,
+  // The largest PDF the deployment can be sent (Limits.pdfReadMaxBytes);
+  // a larger one is refused before the request, so nothing is charged.
+  maxBytes?: number
 ): Promise<ParsePdfResult> {
+  if (maxBytes !== undefined && bytes.byteLength > maxBytes) {
+    throw new ParsePdfError("PDF too large to read", "too_large", 413);
+  }
   const form = new FormData();
   form.append("file", new File([bytes], filename, { type: "application/pdf" }));
   form.append("locale", locale);
@@ -83,9 +90,11 @@ export async function parsePdf(
         ? body.reason
         : res.status === 402
           ? "no_credits"
-          : res.status === 413 || res.status === 400
-            ? "invalid_pdf"
-            : "unknown";
+          : res.status === 413
+            ? "too_large"
+            : res.status === 400
+              ? "invalid_pdf"
+              : "unknown";
     throw new ParsePdfError(
       message,
       reason,

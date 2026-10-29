@@ -18,9 +18,12 @@ import type { UploadItem } from "./types";
 import { StatusBadge } from "./status-badge";
 import { ShareNotice } from "./upload-step";
 import { useFormatRent } from "@/components/use-format-rent";
+import { PdfTooLargeNotice } from "@/components/pdf-too-large-notice";
 
 interface ReviewStepProps {
   items: UploadItem[];
+  // For the too-large notice (#438).
+  pdfReadMaxBytes?: number;
   saving: boolean;
   error: { headline: string; details?: ErrorDetails } | null;
   notice?: string | null;
@@ -35,6 +38,7 @@ interface ReviewStepProps {
 
 export function ReviewStep({
   items,
+  pdfReadMaxBytes,
   saving,
   error,
   notice,
@@ -123,7 +127,7 @@ export function ReviewStep({
                           {item.pdfWarning}
                         </p>
                       )}
-                      {item.notRead && (
+                      {item.notRead === "no_credits" && (
                         <p className="text-xs text-warning">{t("notRead")}</p>
                       )}
                       {item.linkFound && (
@@ -155,6 +159,12 @@ export function ReviewStep({
                   </div>
                 </div>
               </CardHeader>
+
+              {item.notRead === "too_large" && (
+                <CardContent>
+                  <PdfTooLargeNotice maxBytes={pdfReadMaxBytes} />
+                </CardContent>
+              )}
 
               {item.status === "error" && item.error && (
                 <CardContent>

@@ -214,5 +214,12 @@
     "unplacedTitle": "Pas encore sur la carte",
     "unplaced": "{billing, select, on {L’adresse n’a pas pu être placée sur la carte. Réessayer n’utilise aucun crédit.} other {L’adresse n’a pas pu être placée sur la carte.}}",
     "retry": "Réessayer"
+  },
+  "pdfTooLarge": {
+    "title": "Ce PDF est trop volumineux pour être lu",
+    "body": "Les PDF jusqu’à {size} Mo peuvent être lus. Celui-ci reste avec l’appartement, non lu, et aucun crédit n’a été utilisé. Pour qu’il soit lu, réduis sa taille, puis utilise Remplacer le PDF sur la page de l’appartement :",
+    "pages": "Garde seulement les pages qui décrivent l’appartement : ouvre le PDF, choisis Imprimer, sélectionne ces pages et enregistre le résultat en PDF. Sur un iPhone, écarte deux doigts sur l’aperçu d’impression, puis Partager et Enregistrer dans Fichiers.",
+    "compress": "Ou réduis sa taille sur un Mac en l’ouvrant dans Aperçu, puis Fichier, Exporter et le filtre Quartz Réduire la taille du fichier. Les apps PDF des autres appareils peuvent faire de même.",
+    "byHand": "Ou saisis les informations toi-même. Le PDF reste avec l’appartement."
   }
 }

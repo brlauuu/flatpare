@@ -214,5 +214,12 @@
     "unplacedTitle": "Noch nicht auf der Karte",
     "unplaced": "{billing, select, on {Die Adresse konnte nicht auf der Karte gefunden werden. Ein neuer Versuch verbraucht kein Guthaben.} other {Die Adresse konnte nicht auf der Karte gefunden werden.}}",
     "retry": "Erneut versuchen"
+  },
+  "pdfTooLarge": {
+    "title": "Dieses PDF ist zu gross zum Lesen",
+    "body": "PDFs bis {size} MB können gelesen werden. Dieses bleibt ungelesen bei der Wohnung, und es wurde kein Guthaben verbraucht. Damit es gelesen wird, mach es kleiner und nutze dann auf der Seite der Wohnung PDF ersetzen:",
+    "pages": "Behalte nur die Seiten, die die Wohnung beschreiben: Öffne das PDF, wähle Drucken, wähle diese Seiten aus und speichere das Ergebnis als PDF. Auf einem iPhone ziehst du die Druckvorschau mit zwei Fingern auf, dann Teilen und In Dateien sichern.",
+    "compress": "Oder verkleinere es: Öffne es auf einem Mac in Vorschau und wähle Ablage, Exportieren und dann den Quartz-Filter Dateigrösse reduzieren. PDF-Apps auf anderen Geräten können das auch.",
+    "byHand": "Oder gib die Angaben selbst ein. Das PDF bleibt bei der Wohnung."
   }
 }

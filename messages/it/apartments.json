@@ -214,5 +214,12 @@
     "unplacedTitle": "Non ancora sulla mappa",
     "unplaced": "{billing, select, on {Non è stato possibile trovare l'indirizzo sulla mappa. Riprovare non usa crediti.} other {Non è stato possibile trovare l'indirizzo sulla mappa.}}",
     "retry": "Riprova"
+  },
+  "pdfTooLarge": {
+    "title": "Questo PDF è troppo grande per essere letto",
+    "body": "Si possono leggere PDF fino a {size} MB. Questo resta con l’appartamento, non letto, e non è stato usato nessun credito. Per farlo leggere, riducilo e poi usa Sostituisci PDF nella pagina dell’appartamento:",
+    "pages": "Tieni solo le pagine che descrivono l’appartamento: apri il PDF, scegli Stampa, seleziona quelle pagine e salva il risultato come PDF. Su un iPhone, allarga due dita sull’anteprima di stampa, poi Condividi e Salva su File.",
+    "compress": "Oppure riducine le dimensioni: su un Mac aprilo in Anteprima e scegli File, Esporta e poi il filtro Quartz Riduci dimensione file. Le app PDF degli altri dispositivi fanno lo stesso.",
+    "byHand": "Oppure inserisci tu i dati. Il PDF resta con l’appartamento."
   }
 }

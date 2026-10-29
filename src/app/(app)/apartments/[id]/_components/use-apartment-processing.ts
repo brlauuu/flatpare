@@ -3,14 +3,16 @@ import { useLocale, useTranslations } from "next-intl";
 import { formFromExtracted, formToFields } from "@/components/apartment-form-fields";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { downloadPdf } from "@/components/household-data/pdf-files";
-import { parsePdf } from "@/components/household-data/process-client";
+import { parsePdf, ParsePdfError } from "@/components/household-data/process-client";
 import { applyExtraction, fillFromExtraction } from "@/lib/edited-fields";
 import type { ApartmentPdf, ApartmentView } from "@/lib/household-data/types";
 import { languageOf } from "@/locales/locales";
 
 // Process, Reprocess and attaching a PDF on the apartment page (#413). Each
 // calls `onStart` when it begins and reports a failure through `onError` with
-// the headline to show; the caller owns the message.
+// the headline to show; the caller owns the message. A PDF too large to send
+// (#438) is not a failure: it sets `tooLarge`, for the notice that says how
+// to make it smaller, and nothing is charged.
 export function useApartmentProcessing(
   apartment: ApartmentView | null,
   onStart: () => void,
@@ -27,15 +29,31 @@ export function useApartmentProcessing(
     chargeReprocess,
     relocateApartment,
     attachPdf,
+    limits,
   } = useHouseholdData();
   const [processing, setProcessing] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [attaching, setAttaching] = useState(false);
+  const [tooLarge, setTooLarge] = useState(false);
+
+  function start() {
+    setTooLarge(false);
+    onStart();
+  }
+
+  function fail(headline: string, err: unknown) {
+    if (err instanceof ParsePdfError && err.reason === "too_large") setTooLarge(true);
+    else onError(headline, err);
+  }
+
+  function overLimit(bytes: Uint8Array) {
+    return limits.pdfReadMaxBytes !== undefined && bytes.byteLength > limits.pdfReadMaxBytes;
+  }
 
   // Reads a PDF for the apartment. The read names the apartment, so it is
   // the first processing when nothing was charged for it yet.
   async function readBytes(id: string, bytes: Uint8Array<ArrayBuffer>) {
-    const { extracted, aiAvailable } = await parsePdf(bytes, `${id}.pdf`, locale, id);
+    const { extracted, aiAvailable } = await parsePdf(bytes, `${id}.pdf`, locale, id, true, limits.pdfReadMaxBytes);
     // Coerce through the form helpers so the extraction lands as typed
     // Apartment fields.
     return { extracted, aiAvailable, fields: formToFields(formFromExtracted(extracted)) };
@@ -61,7 +79,7 @@ export function useApartmentProcessing(
     if (!apartment) return;
     const { id } = apartment;
     setProcessing(true);
-    onStart();
+    start();
     try {
       if (apartment.pdf && apartment.rawExtractedData === null) {
         const read = await readPdf(id, apartment.pdf);
@@ -72,7 +90,7 @@ export function useApartmentProcessing(
       }
       await processApartment(id);
     } catch (err) {
-      onError(t("processFailed"), err);
+      fail(t("processFailed"), err);
     } finally {
       setProcessing(false);
     }
@@ -85,16 +103,22 @@ export function useApartmentProcessing(
     const { id } = apartment;
     if (!window.confirm(t("reprocessConfirm", { billing: credits ? "on" : "off" }))) return;
     setReprocessing(true);
-    onStart();
+    start();
     try {
+      // The size is checked before the credit is spent.
+      const bytes = apartment.pdf ? await downloadPdf(dataKey, identity.householdId, id, apartment.pdf) : null;
+      if (bytes && overLimit(bytes)) {
+        setTooLarge(true);
+        return;
+      }
       await chargeReprocess(id);
-      const read = apartment.pdf ? await readPdf(id, apartment.pdf) : null;
+      const read = bytes ? await readBytes(id, bytes) : null;
       // Keep whatever the user edited by hand.
       await relocateApartment(id, (current) =>
         read?.aiAvailable ? applyExtraction(current, read.fields, read.extracted) : current
       );
     } catch (err) {
-      onError(t("reprocessFailed"), err);
+      fail(t("reprocessFailed"), err);
     } finally {
       setReprocessing(false);
     }
@@ -112,7 +136,7 @@ export function useApartmentProcessing(
     if (replacing && !window.confirm(t("replacePdfConfirm"))) return;
     const unread = !replacing && apartment.rawExtractedData === null;
     setAttaching(true);
-    onStart();
+    start();
     let bytes: Uint8Array<ArrayBuffer>;
     try {
       bytes = new Uint8Array(await file.arrayBuffer());
@@ -127,11 +151,11 @@ export function useApartmentProcessing(
       const read = await readBytes(id, bytes);
       if (read.aiAvailable) await applyFirstRead(id, read);
     } catch (err) {
-      onError(t("processFailed"), err);
+      fail(t("processFailed"), err);
     } finally {
       setAttaching(false);
     }
   }
 
-  return { processing, reprocessing, attaching, process, reprocess, attach };
+  return { processing, reprocessing, attaching, tooLarge, process, reprocess, attach };
 }

@@ -81,9 +81,27 @@ describe("process-client", () => {
     expect(err.reason).toBe("no_credits");
   });
 
-  it("parsePdf maps a 413 to reason invalid_pdf", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "PDF too large to extract" }, 413)));
+  // #438: the route's own 413, and Vercel's, which has no JSON body.
+  it.each([
+    ["the route", () => json({ error: "PDF too large to extract" }, 413)],
+    ["Vercel", () => new Response("Request Entity Too Large", { status: 413 })],
+  ])("parsePdf maps a 413 from %s to reason too_large", async (_from, response) => {
+    vi.stubGlobal("fetch", vi.fn(async () => response()));
     const err = await parsePdf(new Uint8Array([1]), "x.pdf", "en", "11111111-1111-4111-8111-111111111111").catch((e) => e);
-    expect(err.reason).toBe("invalid_pdf");
+    expect(err.reason).toBe("too_large");
+  });
+
+  it("parsePdf refuses a PDF over the limit without sending it (#438)", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const id = "11111111-1111-4111-8111-111111111111";
+    const err = await parsePdf(new Uint8Array(11), "x.pdf", "en", id, true, 10).catch((e) => e);
+    expect(err).toBeInstanceOf(ParsePdfError);
+    expect(err.reason).toBe("too_large");
+    expect(fetchMock).not.toHaveBeenCalled();
+    // At the limit is fine.
+    fetchMock.mockResolvedValue(json({ extracted: {}, aiAvailable: true }));
+    await parsePdf(new Uint8Array(10), "x.pdf", "en", id, true, 10);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

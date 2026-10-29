@@ -79,21 +79,25 @@ describe("Apartment detail — reprocess", () => {
     const { value } = setup();
     await user.click(screen.getByRole("button", { name: /^Rielabora$|^Reprocess$/ }));
     await waitFor(() => expect(value.relocateApartment).toHaveBeenCalledTimes(1));
-    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "it", "a1");
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "it", "a1", true, undefined);
   });
 
-  it("charges, decrypts the PDF, parses it and applies the extraction to un-edited fields only", async () => {
+  it("decrypts the PDF, charges, parses it and applies the extraction to un-edited fields only", async () => {
     const user = userEvent.setup();
     const { value } = setup();
     await user.click(screen.getByRole("button", { name: /^Reprocess$/ }));
 
     await waitFor(() => expect(value.relocateApartment).toHaveBeenCalledTimes(1));
     expect(value.chargeReprocess).toHaveBeenCalledWith("a1");
+    // The PDF is opened first, so its size is known before the charge (#438).
+    expect(vi.mocked(downloadPdf).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(value.chargeReprocess).mock.invocationCallOrder[0]
+    );
     expect(vi.mocked(value.chargeReprocess).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(downloadPdf).mock.invocationCallOrder[0]
+      vi.mocked(parsePdf).mock.invocationCallOrder[0]
     );
     expect(downloadPdf).toHaveBeenCalledWith(null, 7, "a1", PDF);
-    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1");
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1", true, undefined);
     const next = vi.mocked(value.relocateApartment).mock.calls[0][1]!(A1);
     expect(next.summary).toBe("Refreshed summary after reprocess.");
     expect(next.rentChf).toBe(2200); // user-edited: kept
@@ -148,7 +152,18 @@ describe("Apartment detail — reprocess", () => {
     vi.mocked(value.chargeReprocess).mockRejectedValue(new Error("No apartment credits left"));
     await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
     expect(await screen.findByText(/Couldn't reprocess apartment/)).toBeInTheDocument();
-    expect(downloadPdf).not.toHaveBeenCalled();
+    expect(parsePdf).not.toHaveBeenCalled();
+    expect(value.relocateApartment).not.toHaveBeenCalled();
+  });
+
+  // #438: the size is known once the PDF is opened, before anything is charged.
+  it("spends nothing on a PDF too large to read, and says how to make it smaller", async () => {
+    const { value } = setupWith({ apartments: [A1], limits: { maxMembers: null, maxApartments: null, pdfReadMaxBytes: 2 } });
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
+    expect(await screen.findByText("This PDF is too large to read")).toBeInTheDocument();
+    expect(screen.getByText(/PDFs up to 0 MB can be read/)).toBeInTheDocument();
+    expect(value.chargeReprocess).not.toHaveBeenCalled();
+    expect(parsePdf).not.toHaveBeenCalled();
     expect(value.relocateApartment).not.toHaveBeenCalled();
   });
 
@@ -204,7 +219,7 @@ describe("Apartment detail — not processed yet", () => {
     vi.mocked(value.updateApartment).mockImplementation(async (id, mutate) => makeApartmentView({ ...mutate(apt), id }));
     await userEvent.setup().click(screen.getByRole("button", { name: "Process" }));
     await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
-    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1");
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1", true, undefined);
     const next = vi.mocked(value.updateApartment).mock.calls[0][1](apt);
     expect(next).toMatchObject({
       processed: true,
@@ -269,7 +284,7 @@ describe("Apartment detail — attach or replace the PDF", () => {
     await user.upload(screen.getByTestId("attach-pdf-input"), file());
     await waitFor(() => expect(value.updateApartment).toHaveBeenCalled());
     expect(value.attachPdf).toHaveBeenCalledWith("a1", expect.any(Uint8Array));
-    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1");
+    expect(parsePdf).toHaveBeenCalledWith(expect.any(Uint8Array), "a1.pdf", "en", "a1", true, undefined);
     const mutate = vi.mocked(value.updateApartment).mock.calls[0][1];
     const next = mutate({ ...apartment });
     expect(next.processed).toBe(true);
@@ -306,6 +321,20 @@ describe("Apartment detail — attach or replace the PDF", () => {
     const { value } = setup(apartment);
     await user.upload(screen.getByTestId("attach-pdf-input"), file());
     expect(await screen.findByText("Couldn't process apartment")).toBeInTheDocument();
+    expect(value.attachPdf).toHaveBeenCalled();
+    expect(value.updateApartment).not.toHaveBeenCalled();
+  });
+
+  // #438
+  it("explains how to make a PDF smaller when it is too large to read", async () => {
+    const apartment = makeApartmentView({ id: "a1", name: "From a link", processed: false, pdf: null, rawExtractedData: null });
+    vi.mocked(parsePdf).mockRejectedValue(new ParsePdfError("PDF too large to read", "too_large", 413));
+    const user = userEvent.setup();
+    const { value } = setup(apartment);
+    await user.upload(screen.getByTestId("attach-pdf-input"), file());
+    expect(await screen.findByText("This PDF is too large to read")).toBeInTheDocument();
+    expect(screen.getByText(/Keep only the pages that describe the apartment/)).toBeInTheDocument();
+    expect(screen.queryByText("Couldn't process apartment")).not.toBeInTheDocument();
     expect(value.attachPdf).toHaveBeenCalled();
     expect(value.updateApartment).not.toHaveBeenCalled();
   });
