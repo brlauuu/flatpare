@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isHttpUrl } from "./links";
+import { CURRENCY_CODE, DEFAULT_RENT_CURRENCY } from "./rent";
 import type { Apartment, Draft, Location, Rating } from "./types";
 
 const nullableNumber = z.number().nullable();
@@ -14,7 +15,9 @@ export const distanceSchema = z.object({
 // `processed` and `processedAddress` (#413) are absent from envelopes
 // written before them. Such an apartment was paid for when it was created,
 // and every address change then was geocoded at once, so its coordinates —
-// when it has any — belong to the address it holds now.
+// when it has any — belong to the address it holds now. `rentCurrency`
+// (#427) is absent from envelopes written before it, when every rent was in
+// francs.
 export const apartmentSchema: z.ZodType<Apartment> = z.object({
   name: z.string(),
   address: nullableString,
@@ -24,6 +27,7 @@ export const apartmentSchema: z.ZodType<Apartment> = z.object({
   numBalconies: nullableNumber,
   hasWashingMachine: z.boolean().nullable(),
   rentChf: nullableNumber,
+  rentCurrency: z.string().regex(CURRENCY_CODE).nullable().optional(),
   listingUrl: nullableString,
   summary: nullableString,
   availableFrom: nullableString,
@@ -40,6 +44,8 @@ export const apartmentSchema: z.ZodType<Apartment> = z.object({
   processedAddress: nullableString.optional(),
 }).transform((a) => ({
   ...a,
+  rentCurrency:
+    a.rentCurrency !== undefined ? a.rentCurrency : a.rentChf !== null ? DEFAULT_RENT_CURRENCY : null,
   processedAddress:
     a.processedAddress !== undefined
       ? a.processedAddress

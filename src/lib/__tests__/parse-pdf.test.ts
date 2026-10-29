@@ -40,6 +40,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: 1,
       hasWashingMachine: true,
       rentChf: 1800,
+      rentCurrency: "CHF",
       listingUrl: "https://www.immobilienscout24.ch/listing/123",
       summary: null,
       availableFrom: null,
@@ -58,6 +59,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       summary: null,
       availableFrom: null,
@@ -76,6 +78,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: false,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       summary: null,
       availableFrom: null,
@@ -95,6 +98,7 @@ describe("apartmentExtractionSchema", () => {
         numBalconies: null,
         hasWashingMachine: "yes",
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
       })
     ).toThrow();
@@ -116,6 +120,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       summary: null,
       availableFrom: "2026-05-01",
@@ -133,6 +138,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       summary: null,
       availableFrom: null,
@@ -151,6 +157,7 @@ describe("apartmentExtractionSchema", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: 12345,
       })
@@ -167,6 +174,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       availableFrom: null,
       summary: "Bright south-facing 2.5-room flat in a leafy district near transit.",
@@ -186,6 +194,7 @@ describe("apartmentExtractionSchema", () => {
       numBalconies: null,
       hasWashingMachine: null,
       rentChf: null,
+      rentCurrency: null,
       listingUrl: null,
       availableFrom: null,
       summary: null,
@@ -204,6 +213,7 @@ describe("apartmentExtractionSchema", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: null,
         summary: 123,
@@ -225,6 +235,7 @@ describe("extractApartmentData", () => {
       numBalconies: 0,
       hasWashingMachine: true,
       rentChf: 1500,
+      rentCurrency: "CHF",
     };
 
     mockedGenerateText.mockResolvedValue({
@@ -235,6 +246,34 @@ describe("extractApartmentData", () => {
     const { extracted: result } = await extractApartmentData("base64pdf");
     expect(result).toEqual(mockOutput);
     expect(mockedGenerateText).toHaveBeenCalledOnce();
+  });
+
+  // #427: the rent stays in the listing's currency, and the code is one the
+  // browser can format.
+  it.each([
+    ["EUR", 1200, "EUR"],
+    ["€", 1200, "EUR"],
+    ["eur", 1200, "EUR"],
+    ["Fr.", 2400, "CHF"],
+    [null, 2400, "CHF"],
+    ["euros", 2400, "CHF"],
+    ["EUR", null, null],
+  ])("reads the currency %s with a rent of %s as %s", async (currency, rent, expected) => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue({
+      output: { name: "x", rentChf: rent, rentCurrency: currency },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+    const { extracted } = await extractApartmentData("base64pdf");
+    expect(extracted.rentChf).toBe(rent);
+    expect(extracted.rentCurrency).toBe(expected);
+  });
+
+  it("asks for the rent in the listing's own currency, not converted", () => {
+    const prompt = extractionPrompt("en");
+    expect(prompt).toMatch(/currency the listing states/);
+    expect(prompt).toMatch(/never converted/);
+    expect(apartmentExtractionSchema.shape.rentChf.description).not.toMatch(/in CHF/);
   });
 
   // #409: where the listing was published, for the search; never in the
@@ -278,6 +317,7 @@ describe("extractApartmentData", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
       },
       usage: { inputTokens: 1, outputTokens: 1 },
     } as never);
@@ -331,6 +371,7 @@ describe("extractApartmentData — laundry evidence override", () => {
         numBalconies: null,
         hasWashingMachine: true,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         laundryEvidence: "Waschküche zur Mitbenutzung",
       },
@@ -355,6 +396,7 @@ describe("extractApartmentData — laundry evidence override", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         laundryEvidence: "Waschküche und Trockenraum zur Mitbenutzung",
       },
@@ -379,6 +421,7 @@ describe("extractApartmentData — laundry evidence override", () => {
         numBalconies: null,
         hasWashingMachine: true,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         laundryEvidence: "eigene Waschmaschine in der Wohnung",
       },
@@ -403,6 +446,7 @@ describe("extractApartmentData — laundry evidence override", () => {
         numBalconies: null,
         hasWashingMachine: false,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         laundryEvidence: "Gemeinschaftswaschküche im Keller",
       },
@@ -427,6 +471,7 @@ describe("extractApartmentData — laundry evidence override", () => {
         numBalconies: null,
         hasWashingMachine: true,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         laundryEvidence: null,
       },
@@ -453,6 +498,7 @@ describe("extractApartmentData — availableFrom passthrough", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: "2026-05-01",
         laundryEvidence: null,
@@ -477,6 +523,7 @@ describe("extractApartmentData — availableFrom passthrough", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: null,
         laundryEvidence: null,
@@ -503,6 +550,7 @@ describe("extractApartmentData — summary passthrough", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: null,
         summary: "Quiet 2.5-room flat in a leafy district near transit.",
@@ -530,6 +578,7 @@ describe("extractApartmentData — summary passthrough", () => {
         numBalconies: null,
         hasWashingMachine: null,
         rentChf: null,
+        rentCurrency: null,
         listingUrl: null,
         availableFrom: null,
         summary: null,
@@ -547,7 +596,7 @@ describe("extractApartmentData — summary passthrough", () => {
 // request must demand zero data retention.
 describe("extractApartmentData — AI provider", () => {
   const output = { name: "A", address: null, sizeM2: null, numRooms: null, numBathrooms: null,
-    numBalconies: null, hasWashingMachine: null, rentChf: null };
+    numBalconies: null, hasWashingMachine: null, rentChf: null, rentCurrency: null };
 
   it("sends the gateway model with zeroDataRetention on the gateway path", async () => {
     process.env.AI_PROVIDER = "gateway";

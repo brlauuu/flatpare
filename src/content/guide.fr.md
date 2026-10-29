@@ -39,7 +39,7 @@ Va sur **Ajouter** dans la barre de navigation et glisse (ou sélectionne) une a
 - Nom/titre de l’appartement
 - Adresse
 - Surface (m²), pièces, salles de bain, balcons
-- Loyer mensuel (CHF)
+- Loyer mensuel, dans la devise de l’annonce
 
 Si aucune IA n’est configurée, remplis les champs à la main. Dans les deux cas, tu arrives sur la page de l’appartement pour vérifier et corriger ce qui serait faux — l’extraction est un point de départ, pas un oracle.
 
@@ -61,7 +61,7 @@ Clique sur une étoile pour donner une note (1-5) ; clique à nouveau sur la m
 
 ### 7. Comparer
 
-Va sur **Comparer** pour voir tous les appartements dans un seul tableau. La meilleure valeur de chaque ligne est mise en évidence (loyer le plus bas, meilleure note, trajet le plus court). Fais défiler horizontalement s’il y a plus d’appartements que la largeur ne le permet.
+Va sur **Comparer** pour voir tous les appartements dans un seul tableau. La meilleure valeur de chaque ligne est mise en évidence (loyer le plus bas, meilleure note, trajet le plus court). Fais défiler horizontalement s’il y a plus d’appartements que la largeur ne le permet. Les loyers dans des devises différentes ne sont pas convertis : le plus bas est mis en évidence dans chaque devise, et le tri par prix montre d’abord les francs, puis chaque autre devise.
 
 ---
 

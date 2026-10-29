@@ -4,12 +4,19 @@ import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   emptyApartment,
   type Apartment,
   type ApartmentPdf,
 } from "@/lib/household-data/types";
+import {
+  DEFAULT_RENT_CURRENCY,
+  RENT_CURRENCIES,
+  normalizeCurrency,
+  rentCurrencyOf,
+} from "@/lib/household-data/rent";
 
 export type ApartmentForm = {
   name: string;
@@ -20,6 +27,8 @@ export type ApartmentForm = {
   numBalconies: string;
   hasWashingMachine: boolean | null;
   rentChf: string;
+  // ISO 4217 (#427); what the rent is in, whether or not one is typed.
+  rentCurrency: string;
   listingUrl: string;
   summary: string;
   availableFrom: string;
@@ -35,6 +44,7 @@ export const emptyApartmentForm: ApartmentForm = {
   numBalconies: "",
   hasWashingMachine: null,
   rentChf: "",
+  rentCurrency: DEFAULT_RENT_CURRENCY,
   listingUrl: "",
   summary: "",
   availableFrom: "",
@@ -52,6 +62,7 @@ export function formFromExtracted(extracted: Record<string, unknown>): Apartment
     hasWashingMachine:
       typeof extracted.hasWashingMachine === "boolean" ? extracted.hasWashingMachine : null,
     rentChf: extracted.rentChf != null ? String(extracted.rentChf) : "",
+    rentCurrency: normalizeCurrency(extracted.rentCurrency) ?? DEFAULT_RENT_CURRENCY,
     listingUrl: (extracted.listingUrl as string) || "",
     summary: typeof extracted.summary === "string" ? extracted.summary : "",
     availableFrom: typeof extracted.availableFrom === "string" ? extracted.availableFrom : "",
@@ -68,6 +79,7 @@ export type ApartmentLike = {
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
   rentChf: number | null;
+  rentCurrency?: string | null;
   listingUrl: string | null;
   summary: string | null;
   availableFrom: string | null;
@@ -84,6 +96,7 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
     numBalconies: numOrEmpty(apt.numBalconies),
     hasWashingMachine: apt.hasWashingMachine,
     rentChf: numOrEmpty(apt.rentChf),
+    rentCurrency: rentCurrencyOf({ rentCurrency: apt.rentCurrency ?? null }),
     listingUrl: apt.listingUrl ?? "",
     summary: apt.summary ?? "",
     availableFrom: apt.availableFrom ?? "",
@@ -101,6 +114,7 @@ export type ApartmentFieldValues = Pick<
   | "numBalconies"
   | "hasWashingMachine"
   | "rentChf"
+  | "rentCurrency"
   | "listingUrl"
   | "summary"
   | "availableFrom"
@@ -118,6 +132,7 @@ export function formToFields(form: ApartmentForm): ApartmentFieldValues {
     numBalconies: form.numBalconies ? parseInt(form.numBalconies) : null,
     hasWashingMachine: form.hasWashingMachine,
     rentChf: form.rentChf ? parseFloat(form.rentChf) : null,
+    rentCurrency: form.rentChf ? form.rentCurrency || DEFAULT_RENT_CURRENCY : null,
     listingUrl: form.listingUrl || null,
     summary: form.summary || null,
     availableFrom: form.availableFrom || null,
@@ -186,12 +201,19 @@ export function ApartmentFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={id("rent")}>{t("rent")}</Label>
-          <Input
-            id={id("rent")}
-            type="number"
-            value={form.rentChf}
-            onChange={(e) => onChange("rentChf", e.target.value)}
-          />
+          <div className="flex gap-2">
+            <Input
+              id={id("rent")}
+              type="number"
+              value={form.rentChf}
+              onChange={(e) => onChange("rentChf", e.target.value)}
+            />
+            <RentCurrencySelect
+              value={form.rentCurrency}
+              onChange={(value) => onChange("rentCurrency", value)}
+              label={t("rentCurrency")}
+            />
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor={id("size")}>{t("size")}</Label>
@@ -301,5 +323,35 @@ export function WashingMachineToggle({
         );
       })}
     </div>
+  );
+}
+
+// The usual currencies, plus the apartment's own when a listing named
+// another (#427).
+function RentCurrencySelect({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  const options: string[] = (RENT_CURRENCIES as readonly string[]).includes(value)
+    ? [...RENT_CURRENCIES]
+    : [...RENT_CURRENCIES, value];
+  return (
+    <Select value={value} onValueChange={(next) => next && onChange(next as string)}>
+      <SelectTrigger aria-label={label} className="w-[5.5rem] shrink-0">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((code) => (
+          <SelectItem key={code} value={code}>
+            {code}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import { WashingMachine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Apartment } from "@/lib/household-data/types";
+import { useFormatRent } from "@/components/use-format-rent";
 
 export function ApartmentMetricBadges({
   apartment,
@@ -10,10 +11,11 @@ export function ApartmentMetricBadges({
 }) {
   const t = useTranslations("apartments.metrics");
   const tb = useTranslations("apartments.badges");
+  const formatRent = useFormatRent();
   return (
     <div className="flex flex-wrap gap-2">
       {apartment.rentChf && (
-        <Badge variant="secondary">{t("rentPerMonth", { amount: apartment.rentChf })}</Badge>
+        <Badge variant="secondary">{t("rentPerMonth", { amount: formatRent(apartment.rentChf, apartment.rentCurrency) })}</Badge>
       )}
       {apartment.sizeM2 && (
         <Badge variant="secondary">{tb("size", { size: apartment.sizeM2 })}</Badge>

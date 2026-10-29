@@ -20,7 +20,7 @@ export function ApartmentCard({ apartment: a }: { apartment: ApartmentPoint }) {
   const format = useFormatter();
   const text = useMapText();
   const facts = [
-    a.rentChf !== null ? text.rent(a.rentChf) : null,
+    a.rentChf !== null ? text.rent(a.rentChf, a.rentCurrency) : null,
     a.sizeM2 !== null ? text.size(a.sizeM2) : null,
     a.numRooms !== null ? text.rooms(a.numRooms) : null,
   ].filter((f): f is string => f !== null);

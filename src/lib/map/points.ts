@@ -12,6 +12,7 @@ export interface ApartmentPoint {
   latitude: number;
   longitude: number;
   rentChf: number | null;
+  rentCurrency: string | null;
   sizeM2: number | null;
   numRooms: number | null;
   avgOverall: number | null;
@@ -59,6 +60,7 @@ export function toMapPoints(apartments: ApartmentView[], locations: LocationView
       latitude: apt.latitude,
       longitude: apt.longitude,
       rentChf: apt.rentChf,
+      rentCurrency: apt.rentCurrency,
       sizeM2: apt.sizeM2,
       numRooms: apt.numRooms,
       avgOverall: apt.avgOverall,
@@ -75,7 +77,7 @@ export function toMapPoints(apartments: ApartmentView[], locations: LocationView
 // language (#288). Built by useMapText in src/components/map, so this
 // module stays pure and testable without a provider.
 export interface MapText {
-  rent: (chf: number) => string;
+  rent: (amount: number, currency: string | null) => string;
   size: (m2: number) => string;
   rooms: (n: number) => string;
   opensApartment: string;
@@ -83,7 +85,7 @@ export interface MapText {
 
 export function describeApartment(a: ApartmentPoint, text: MapText): string {
   const parts = [a.label];
-  if (a.rentChf !== null) parts.push(text.rent(a.rentChf));
+  if (a.rentChf !== null) parts.push(text.rent(a.rentChf, a.rentCurrency));
   if (a.sizeM2 !== null) parts.push(text.size(a.sizeM2));
   parts.push(text.opensApartment);
   return parts.join(", ");

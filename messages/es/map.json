@@ -20,7 +20,6 @@
     }
   },
   "card": {
-    "rent": "CHF {amount}",
     "size": "{value} m²",
     "rooms": "{count, plural, one {# habitación} other {# habitaciones}}",
     "notRated": "Sin valorar",

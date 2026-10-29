@@ -19,7 +19,7 @@
   },
   "table": {
     "metric": {
-      "rentChf": "Affitto (CHF)",
+      "rentChf": "Affitto",
       "sizeM2": "Superficie (m²)",
       "numRooms": "Locali",
       "numBathrooms": "Bagni",

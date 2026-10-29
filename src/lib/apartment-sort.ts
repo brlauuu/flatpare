@@ -1,4 +1,5 @@
 import type { ApartmentDistance } from "@/lib/household-data/types";
+import { compareCurrencies, rentCurrencyOf } from "@/lib/household-data/rent";
 
 export type StaticSortField =
   | "createdAt"
@@ -32,6 +33,7 @@ export type SortDirection = "asc" | "desc";
 export interface SortableApartment {
   id: string;
   rentChf: number | null;
+  rentCurrency: string | null;
   sizeM2: number | null;
   numRooms: number | null;
   numBathrooms: number | null;
@@ -142,6 +144,12 @@ export function compareApartments(
 ): number {
   const va = extract(a, field);
   const vb = extract(b, field);
+  // Rents in different currencies are not converted (#427): they sort in
+  // groups, francs first, whichever way the amounts run within each.
+  if (field === "rentChf" && va !== null && vb !== null) {
+    const byCurrency = compareCurrencies(rentCurrencyOf(a), rentCurrencyOf(b));
+    if (byCurrency !== 0) return byCurrency;
+  }
   const primary = compareValues(va, vb);
   if (primary !== 0) {
     if (va === null || vb === null) return primary;

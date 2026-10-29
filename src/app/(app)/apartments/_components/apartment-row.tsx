@@ -6,9 +6,11 @@ import { ShortCode } from "@/components/short-code";
 import { GoneBadge, NotProcessedBadge, RatedBadge } from "./apartment-badges";
 import { ApartmentCorruptRow } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
+import { useFormatRent } from "@/components/use-format-rent";
 
 export function ApartmentRow({ apt }: { apt: ApartmentView }) {
   const t = useTranslations("apartments.badges");
+  const formatRent = useFormatRent();
   if (apt.corrupt) return <ApartmentCorruptRow apt={apt} />;
   return (
     <Link
@@ -28,7 +30,7 @@ export function ApartmentRow({ apt }: { apt: ApartmentView }) {
       </div>
       <div className="hidden flex-wrap items-center gap-2 sm:flex">
         {apt.rentChf && (
-          <Badge variant="secondary">{t("rent", { amount: apt.rentChf })}</Badge>
+          <Badge variant="secondary">{formatRent(apt.rentChf, apt.rentCurrency)}</Badge>
         )}
         {apt.numRooms && <Badge variant="secondary">{t("roomsShort", { count: apt.numRooms })}</Badge>}
       </div>

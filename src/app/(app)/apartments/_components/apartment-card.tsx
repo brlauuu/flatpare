@@ -8,9 +8,11 @@ import { AddressLink } from "@/components/address-link";
 import { GoneBadge, NotProcessedBadge, RatedBadge } from "./apartment-badges";
 import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
+import { useFormatRent } from "@/components/use-format-rent";
 
 export function ApartmentCard({ apt }: { apt: ApartmentView }) {
   const t = useTranslations("apartments.badges");
+  const formatRent = useFormatRent();
   if (apt.corrupt) return <ApartmentCorruptCard apt={apt} />;
   return (
     // Tiles are uniform (#383): the grid gives every tile the same height,
@@ -42,7 +44,7 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
           )}
           <div data-card-facts className="mt-auto flex flex-wrap gap-2">
             {apt.rentChf && (
-              <Badge variant="secondary">{t("rent", { amount: apt.rentChf })}</Badge>
+              <Badge variant="secondary">{formatRent(apt.rentChf, apt.rentCurrency)}</Badge>
             )}
             {apt.sizeM2 && <Badge variant="secondary">{t("size", { size: apt.sizeM2 })}</Badge>}
             {apt.numRooms && (

@@ -12,6 +12,7 @@ function apt(overrides: Partial<SortableApartment> = {}): SortableApartment {
   return {
     id: "a",
     rentChf: null,
+    rentCurrency: null,
     sizeM2: null,
     numRooms: null,
     numBathrooms: null,
@@ -157,5 +158,23 @@ describe("sort options", () => {
       "createdAt", "rentChf", "sizeM2", "numRooms", "numBathrooms", "numBalconies", "avgOverall", "shortCode",
     ]);
     expect(ids).toContain("transitTo:loc-2");
+  });
+});
+
+// #427: rents are not converted between currencies.
+describe("compareApartments by rent in several currencies", () => {
+  const chf = apt({ id: "chf", rentChf: 2500, rentCurrency: "CHF" });
+  const chfCheap = apt({ id: "chf-cheap", rentChf: 1500, rentCurrency: null });
+  const eur = apt({ id: "eur", rentChf: 1000, rentCurrency: "EUR" });
+  const none = apt({ id: "none", rentChf: null });
+  const ids = (direction: "asc" | "desc") =>
+    [eur, none, chf, chfCheap].sort((a, b) => compareApartments(a, b, "rentChf", direction)).map((a) => a.id);
+
+  it("groups francs first, then by amount within each currency", () => {
+    expect(ids("asc")).toEqual(["chf-cheap", "chf", "eur", "none"]);
+  });
+
+  it("keeps the groups in place when the amounts run the other way", () => {
+    expect(ids("desc")).toEqual(["chf", "chf-cheap", "eur", "none"]);
   });
 });

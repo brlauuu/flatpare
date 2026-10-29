@@ -4,7 +4,7 @@ import { describeApartment, findActive, toMapPoints, toMarks, type MapText } fro
 // The words and formats come from the catalogue in the app (useMapText);
 // here a fixed English set, so the composition is tested on its own.
 const TEXT: MapText = {
-  rent: (chf) => `CHF ${chf.toLocaleString("de-CH")}`,
+  rent: (amount, currency) => `${currency ?? "CHF"} ${amount.toLocaleString("de-CH")}`,
   size: (m2) => `${m2} m²`,
   rooms: (n) => (n === 1 ? "1 room" : `${n} rooms`),
   opensApartment: "opens apartment",
@@ -40,11 +40,11 @@ function makeLocationView(over: Partial<LocationView> & { id: string }): Locatio
 describe("toMapPoints", () => {
   it("places apartments and locations that have coordinates", () => {
     const pts = toMapPoints(
-      [makeApartmentView({ id: "a1", shortCode: "BS-01", latitude: 47.56, longitude: 7.59, rentChf: 2350, sizeM2: 78, numRooms: 3.5, avgOverall: 4.2 })],
+      [makeApartmentView({ id: "a1", shortCode: "BS-01", latitude: 47.56, longitude: 7.59, rentChf: 2350, rentCurrency: "EUR", sizeM2: 78, numRooms: 3.5, avgOverall: 4.2 })],
       [makeLocationView({ id: "l1", label: "Office", latitude: 47.57, longitude: 7.57 })]
     );
     expect(pts.apartments).toEqual([
-      { id: "a1", label: "BS-01", name: "Apartment a1", latitude: 47.56, longitude: 7.59, rentChf: 2350, sizeM2: 78, numRooms: 3.5, avgOverall: 4.2 },
+      { id: "a1", label: "BS-01", name: "Apartment a1", latitude: 47.56, longitude: 7.59, rentChf: 2350, rentCurrency: "EUR", sizeM2: 78, numRooms: 3.5, avgOverall: 4.2 },
     ]);
     expect(pts.locations).toEqual([{ id: "l1", label: "Office", address: "Somewhere 1", latitude: 47.57, longitude: 7.57 }]);
     expect(pts.missing).toEqual([]);
@@ -79,8 +79,8 @@ describe("toMapPoints", () => {
 describe("describeApartment", () => {
   it("describes an apartment for a screen reader, skipping what is unknown", () => {
     const base = { id: "a1", label: "BS-04", name: "x", latitude: 0, longitude: 0, numRooms: null, avgOverall: null };
-    expect(describeApartment({ ...base, rentChf: 3100, sizeM2: 104 }, TEXT)).toMatch(/^BS-04, CHF 3.100, 104 m², opens apartment$/);
-    expect(describeApartment({ ...base, rentChf: null, sizeM2: null }, TEXT)).toBe("BS-04, opens apartment");
+    expect(describeApartment({ ...base, rentChf: 3100, rentCurrency: "CHF", sizeM2: 104 }, TEXT)).toMatch(/^BS-04, CHF 3.100, 104 m², opens apartment$/);
+    expect(describeApartment({ ...base, rentChf: null, rentCurrency: null, sizeM2: null }, TEXT)).toBe("BS-04, opens apartment");
   });
 });
 

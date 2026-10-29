@@ -4,7 +4,7 @@ import { ApartmentCard, LocationCard } from "../map-card";
 
 afterEach(cleanup);
 
-const apt = { id: "a1", label: "BS-04", name: "Bachletten quiet street", latitude: 0, longitude: 0, rentChf: 3100, sizeM2: 104, numRooms: 4.5, avgOverall: 4.84 };
+const apt = { id: "a1", label: "BS-04", name: "Bachletten quiet street", latitude: 0, longitude: 0, rentChf: 3100, rentCurrency: "CHF", sizeM2: 104, numRooms: 4.5, avgOverall: 4.84 };
 
 describe("ApartmentCard", () => {
   it("shows code, price, area, rooms, rating and name, and opens the apartment", () => {
@@ -12,7 +12,7 @@ describe("ApartmentCard", () => {
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/apartments/a1");
     expect(link).toHaveTextContent("BS-04");
-    expect(link).toHaveTextContent(/CHF 3.100/);
+    expect(link).toHaveTextContent(/CHF\s3.100/);
     expect(link).toHaveTextContent("104 m²");
     expect(link).toHaveTextContent("4.5 rooms");
     expect(link).toHaveTextContent("★ 4.8");

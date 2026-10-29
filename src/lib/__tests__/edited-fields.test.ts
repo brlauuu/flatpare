@@ -19,6 +19,7 @@ describe("INFERABLE_FIELDS", () => {
       "numBalconies",
       "hasWashingMachine",
       "rentChf",
+      "rentCurrency",
       "listingUrl",
       "summary",
       "availableFrom",
@@ -55,7 +56,7 @@ describe("diffInferableFields", () => {
 
 describe("mergeUserEdit", () => {
   it("applies the edit and records only the fields that changed", () => {
-    const current = { ...emptyApartment("X"), rentChf: 1500, userEditedFields: ["summary"] };
+    const current = { ...emptyApartment("X"), rentChf: 1500, rentCurrency: "CHF", userEditedFields: ["summary"] };
     const next = mergeUserEdit(current, {
       name: "X",
       address: null,
@@ -65,6 +66,7 @@ describe("mergeUserEdit", () => {
       numBalconies: null,
       hasWashingMachine: true,
       rentChf: 1600,
+      rentCurrency: "CHF",
       listingUrl: null,
       summary: null,
       availableFrom: null,
@@ -124,6 +126,7 @@ describe("fillFromExtraction", () => {
       numBalconies: 0,
       hasWashingMachine: true,
       rentChf: 2100,
+      rentCurrency: "EUR",
       listingUrl: "https://example.com/x",
       summary: "From the PDF",
       availableFrom: "2026-12-01",
@@ -140,5 +143,35 @@ describe("fillFromExtraction", () => {
     expect(next.userEditedFields.sort()).toEqual(["address", "name"]);
     // A later reprocess keeps them too.
     expect(applyExtraction(next, incoming, {})).toMatchObject({ name: "Our name", address: "Typed 1" });
+  });
+});
+
+// #427: the rent and its currency are one value.
+describe("the rent and its currency", () => {
+  const pdf = {
+    name: "x", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null,
+    hasWashingMachine: null, rentChf: 1800, rentCurrency: "EUR", listingUrl: null, summary: null, availableFrom: null,
+  };
+
+  it("a reprocess keeps both when a member edited either", () => {
+    for (const edited of ["rentChf", "rentCurrency"]) {
+      const current = { ...emptyApartment("x"), rentChf: 2400, rentCurrency: "CHF", userEditedFields: [edited] };
+      const next = applyExtraction(current, pdf, {});
+      expect([next.rentChf, next.rentCurrency], edited).toEqual([2400, "CHF"]);
+    }
+  });
+
+  it("a reprocess replaces both when neither was edited", () => {
+    const current = { ...emptyApartment("x"), rentChf: 2400, rentCurrency: "CHF" };
+    const next = applyExtraction(current, pdf, {});
+    expect([next.rentChf, next.rentCurrency]).toEqual([1800, "EUR"]);
+  });
+
+  it("a first read fills both when the rent is empty, and neither when it is not", () => {
+    const empty = fillFromExtraction({ ...emptyApartment("x"), rentCurrency: "CHF" }, pdf, {});
+    expect([empty.rentChf, empty.rentCurrency]).toEqual([1800, "EUR"]);
+    const typed = fillFromExtraction({ ...emptyApartment("x"), rentChf: 2400, rentCurrency: "CHF" }, pdf, {});
+    expect([typed.rentChf, typed.rentCurrency]).toEqual([2400, "CHF"]);
+    expect(typed.userEditedFields).toEqual(expect.arrayContaining(["rentChf", "rentCurrency"]));
   });
 });

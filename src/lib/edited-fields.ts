@@ -9,12 +9,22 @@ export const INFERABLE_FIELDS = [
   "numBalconies",
   "hasWashingMachine",
   "rentChf",
+  "rentCurrency",
   "listingUrl",
   "summary",
   "availableFrom",
 ] as const;
 
 export type InferableField = (typeof INFERABLE_FIELDS)[number];
+
+// The rent and its currency (#427) move together: a PDF never puts its
+// amount beside a currency a member chose, or the other way round. An edit
+// of either keeps both, and an empty rent takes both from the PDF.
+const RENT_PAIR: readonly InferableField[] = ["rentChf", "rentCurrency"];
+
+function rentKept(current: Apartment): boolean {
+  return RENT_PAIR.some((f) => current.userEditedFields.includes(f));
+}
 export type InferableFields = Pick<Apartment, InferableField>;
 
 export function diffInferableFields(
@@ -48,8 +58,9 @@ export function applyExtraction(
 ): Apartment {
   const edited = new Set(current.userEditedFields);
   const next: Apartment = { ...current, rawExtractedData: raw };
+  const keepRent = rentKept(current);
   for (const field of INFERABLE_FIELDS) {
-    if (edited.has(field)) continue;
+    if (RENT_PAIR.includes(field) ? keepRent : edited.has(field)) continue;
     (next as Record<InferableField, unknown>)[field] = incoming[field];
   }
   return next;
@@ -70,8 +81,9 @@ export function fillFromExtraction(
 ): Apartment {
   const next: Apartment = { ...current, rawExtractedData: raw };
   const kept: InferableField[] = [];
+  const rentEmpty = isEmpty(current.rentChf);
   for (const field of INFERABLE_FIELDS) {
-    if (isEmpty(current[field])) {
+    if (RENT_PAIR.includes(field) ? rentEmpty : isEmpty(current[field])) {
       (next as Record<InferableField, unknown>)[field] = incoming[field];
     } else {
       kept.push(field);

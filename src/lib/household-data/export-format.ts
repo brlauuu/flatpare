@@ -74,7 +74,7 @@ function csvCell(value: string | number | boolean | null): string {
 }
 
 const CSV_COLUMNS = [
-  "id", "name", "address", "rentChf", "sizeM2", "numRooms", "numBathrooms", "numBalconies",
+  "id", "name", "address", "rent", "rentCurrency", "sizeM2", "numRooms", "numBathrooms", "numBalconies",
   "hasWashingMachine", "availableFrom", "listingUrl", "shortCode", "listingGone",
   "ratings", "avgOverall", "avgKitchen", "avgBalconies", "avgLocation", "avgFloorplan", "createdAt",
 ] as const;
@@ -82,7 +82,7 @@ const CSV_COLUMNS = [
 function apartmentsCsv(apartments: DecodedApartment[], ratings: DecodedRating[]): string {
   const rows = deriveApartments(apartments, ratings, "").map((a) =>
     [
-      a.id, a.name, a.address, a.rentChf, a.sizeM2, a.numRooms, a.numBathrooms, a.numBalconies,
+      a.id, a.name, a.address, a.rentChf, a.rentCurrency, a.sizeM2, a.numRooms, a.numBathrooms, a.numBalconies,
       a.hasWashingMachine, a.availableFrom, a.listingUrl, a.shortCode, a.listingGone,
       a.ratings.length, a.avgOverall, a.avgKitchen, a.avgBalconies, a.avgLocation, a.avgFloorplan, a.createdAt,
     ].map(csvCell).join(",")

@@ -19,7 +19,7 @@
   },
   "table": {
     "metric": {
-      "rentChf": "Miete (CHF)",
+      "rentChf": "Miete",
       "sizeM2": "Fläche (m²)",
       "numRooms": "Zimmer",
       "numBathrooms": "Badezimmer",

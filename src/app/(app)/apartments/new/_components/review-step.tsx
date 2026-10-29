@@ -17,6 +17,7 @@ import type { ErrorDetails } from "@/lib/fetch-error";
 import type { UploadItem } from "./types";
 import { StatusBadge } from "./status-badge";
 import { ShareNotice } from "./upload-step";
+import { useFormatRent } from "@/components/use-format-rent";
 
 interface ReviewStepProps {
   items: UploadItem[];
@@ -46,6 +47,7 @@ export function ReviewStep({
   onDiscard,
 }: ReviewStepProps) {
   const t = useTranslations("apartments.review");
+  const formatRent = useFormatRent();
   const saveable = items.filter(
     (i) =>
       i.status === "done" && !i.saved && !i.discarded && i.form.name.trim()
@@ -109,7 +111,7 @@ export function ReviewStep({
                       <p className="text-xs text-muted-foreground truncate">
                         {[
                           item.form.address,
-                          item.form.rentChf && t("rent", { amount: item.form.rentChf }),
+                          item.form.rentChf && formatRent(Number(item.form.rentChf), item.form.rentCurrency),
                           item.form.sizeM2 && t("size", { size: item.form.sizeM2 }),
                           item.form.numRooms && t("rooms", { count: item.form.numRooms }),
                         ]

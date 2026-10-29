@@ -126,7 +126,7 @@ describe("buildExportFiles", () => {
       input({ apartments: [apartment(A1, '=HYPERLINK("x"), "quoted"', { address: "Line 1\nLine 2" })], ratings: [] })
     );
     const lines = text(files, "apartments.csv").split("\r\n");
-    expect(lines[0]).toMatch(/^id,name,address,rentChf/);
+    expect(lines[0]).toMatch(/^id,name,address,rent,rentCurrency,/);
     // Formula start neutralised, quotes doubled, newline kept inside quotes.
     expect(lines[1]).toContain(`"'=HYPERLINK(""x""), ""quoted"""`);
     expect(text(files, "apartments.csv")).toContain('"Line 1\nLine 2"');

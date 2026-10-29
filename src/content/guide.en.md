@@ -39,7 +39,7 @@ Go to **Upload** in the nav bar and drag in (or select) a PDF listing. If AI ext
 - Apartment name/title
 - Address
 - Size (m²), rooms, bathrooms, balconies
-- Monthly rent (CHF)
+- Monthly rent, in the currency the listing gives
 
 If no AI is configured, fill the fields in manually. Either way you land on the apartment's page to review and correct anything that came out wrong — the extraction is a starting point, not an oracle.
 
@@ -61,7 +61,7 @@ Click a star to set a rating (1-5); click the same star again to clear it. You r
 
 ### 7. Compare
 
-Go to **Compare** for all apartments in one table. It highlights the best value in each row (lowest rent, highest rating, shortest commute). Scroll horizontally if there are more apartments than fit.
+Go to **Compare** for all apartments in one table. It highlights the best value in each row (lowest rent, highest rating, shortest commute). Scroll horizontally if there are more apartments than fit. Rents in different currencies are not converted: the lowest is highlighted within each currency, and sorting by price lists francs first, then each other currency.
 
 ---
 
