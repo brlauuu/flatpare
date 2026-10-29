@@ -24,7 +24,11 @@ export interface Apartment {
   numBathrooms: number | null;
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
+  // The monthly rent, in rentCurrency (the name predates #427).
   rentChf: number | null;
+  // ISO 4217 code (#427), null while there is no rent. Envelopes written
+  // before it read as CHF when they hold a rent.
+  rentCurrency: string | null;
   listingUrl: string | null;
   summary: string | null;
   availableFrom: string | null;
@@ -94,6 +98,7 @@ export function emptyApartment(name = ""): Apartment {
     numBalconies: null,
     hasWashingMachine: null,
     rentChf: null,
+    rentCurrency: null,
     listingUrl: null,
     summary: null,
     availableFrom: null,

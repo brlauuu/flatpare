@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import {
   ApartmentFormFields,
   WashingMachineToggle,
@@ -186,5 +187,49 @@ describe("apartment-form-fields helpers", () => {
     expect(apt.distances).toEqual({});
     expect(apt.shortCode).toBeNull();
     expect(apt.listingGone).toBe(false);
+  });
+});
+
+// #427: the rent's currency.
+describe("the rent's currency", () => {
+  it("comes from the extraction, and is francs when it names none", () => {
+    expect(formFromExtracted({ rentChf: 1200, rentCurrency: "EUR" }).rentCurrency).toBe("EUR");
+    expect(formFromExtracted({ rentChf: 1200 }).rentCurrency).toBe("CHF");
+  });
+
+  it("is saved with a rent and dropped without one", () => {
+    expect(formToFields({ ...emptyApartmentForm, rentChf: "1200", rentCurrency: "EUR" })).toMatchObject({
+      rentChf: 1200,
+      rentCurrency: "EUR",
+    });
+    expect(formToFields({ ...emptyApartmentForm, rentCurrency: "EUR" })).toMatchObject({
+      rentChf: null,
+      rentCurrency: null,
+    });
+  });
+
+  it("an apartment saved before #427 edits as francs", () => {
+    const form = formFromApartment({
+      name: "x", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null,
+      hasWashingMachine: null, rentChf: 2000, listingUrl: null, summary: null, availableFrom: null,
+    });
+    expect(form.rentCurrency).toBe("CHF");
+  });
+
+  it("offers the usual currencies and the apartment's own, and forwards a choice", async () => {
+    const onChange = vi.fn();
+    render(
+      <ApartmentFormFields
+        form={{ ...emptyApartmentForm, rentChf: "900", rentCurrency: "SEK" }}
+        onChange={onChange}
+        onWashingMachineChange={vi.fn()}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("combobox", { name: "Currency" }));
+    const options = (await screen.findAllByRole("option")).map((o) => o.textContent);
+    expect(options).toEqual(["CHF", "EUR", "USD", "GBP", "SEK"]);
+    await user.click(screen.getByRole("option", { name: "EUR" }));
+    expect(onChange).toHaveBeenCalledWith("rentCurrency", "EUR");
   });
 });

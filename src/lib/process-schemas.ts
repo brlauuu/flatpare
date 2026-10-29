@@ -47,6 +47,7 @@ export function emptyExtraction(filename: string) {
     numBalconies: null,
     hasWashingMachine: null,
     rentChf: null,
+    rentCurrency: null,
     listingUrl: null,
     summary: null,
     availableFrom: null,

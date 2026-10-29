@@ -39,6 +39,7 @@ const A1 = makeApartmentView({
   numBalconies: 1,
   hasWashingMachine: null,
   rentChf: 2200,
+  rentCurrency: "CHF",
   summary: "Quiet 2.5-room flat in a leafy district near transit.",
   availableFrom: "2026-05-01",
   userEditedFields: ["summary"],

@@ -3,6 +3,7 @@ import { aiAvailable, aiModel, aiProviderOptions, readAiConfig } from "@/lib/ai-
 import { DEFAULT_LOCALE, type Locale } from "@/locales/locales";
 import type { ListingHints } from "@/lib/find-listing";
 import { z } from "zod";
+import { DEFAULT_RENT_CURRENCY, normalizeCurrency } from "@/lib/household-data/rent";
 
 export const apartmentExtractionSchema = z.object({
   name: z.string().describe("Listing title or apartment name"),
@@ -35,7 +36,11 @@ export const apartmentExtractionSchema = z.object({
   rentChf: z
     .number()
     .nullable()
-    .describe("Monthly rent in CHF (gross/brutto if available)"),
+    .describe("Monthly rent as a number, in the currency the listing states (gross/brutto if available)"),
+  rentCurrency: z
+    .string()
+    .nullable()
+    .describe("ISO 4217 code of the currency the rent is stated in (e.g. CHF, EUR). null if no rent is given"),
   listingUrl: z
     .string()
     .nullable()
@@ -109,6 +114,7 @@ export function extractionPrompt(locale: Locale): string {
   return `You are an apartment listing data extractor. Extract structured data from this apartment listing PDF.
 The listing may be in German, French, Italian, Spanish or English. Extract all available information.
 For rent, prefer the gross rent if both net and gross are shown (German "Bruttomiete", French "loyer brut" / "charges comprises", Italian "pigione lorda" / "affitto lordo" / "spese incluse", Spanish "alquiler bruto" / "gastos incluidos").
+For rentChf and rentCurrency: give the rent in the currency the listing states it in, never converted, and that currency's ISO 4217 code ("CHF" for "CHF", "Fr." or "SFr."; "EUR" for "€" or "EUR"). The field is called rentChf for historical reasons; it holds the rent in rentCurrency.
 For rooms, use the Swiss convention, in which half rooms count (e.g. "3.5 Zimmer", "3.5 pièces", "3.5 locali", "3.5 habitaciones" = 3.5 rooms).
 For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "lave-linge privatif", "lave-linge dans l'appartement", "colonne de lavage", "lavatrice propria", "lavatrice nell'appartamento", "colonna lavatrice", "lavadora propia", "lavadora en el piso", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "buanderie commune", "buanderie à usage commun", "lavanderia in comune", "lavanderia condominiale", "lavandería comunitaria", "lavandería compartida", "shared laundry", or "communal laundry". null if not mentioned.
 For listingSite and listingLanguage: name the website the listing was published on (its domain) and the language the listing is written in; these are used to find the listing online when its link no longer works.
@@ -177,6 +183,10 @@ export async function extractApartmentData(
   // Strip the internal-only fields before returning to public callers.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { laundryEvidence: _evidence, listingSite, listingLanguage, ...publicResult } = withOverride;
+  // A rent always carries a code the browser can format (#427); a model that
+  // named none, or a symbol, gets the code it means, or francs as before.
+  publicResult.rentCurrency =
+    publicResult.rentChf == null ? null : (normalizeCurrency(publicResult.rentCurrency) ?? DEFAULT_RENT_CURRENCY);
   return {
     extracted: publicResult as ApartmentExtraction,
     hints: {

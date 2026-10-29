@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+
+- A rent listed in euros or another currency is now read from the PDF and shown in that currency, instead of being left empty. You can pick the currency next to the rent when you edit an apartment. Rents in different currencies are not converted: sorting by price lists francs first, then each other currency, and Compare highlights the lowest rent within each. An apartment whose euro rent was missed before can be reprocessed, or the rent typed in (#427).
+
 ## 0.27.0 — 2026-10-29
 
 ### Added

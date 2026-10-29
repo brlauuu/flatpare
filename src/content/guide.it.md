@@ -39,7 +39,7 @@ Vai su **Carica** nella barra di navigazione e trascina (o seleziona) un annunci
 - Nome/titolo dell'appartamento
 - Indirizzo
 - Superficie (m²), locali, bagni, balconi
-- Affitto mensile (CHF)
+- Affitto mensile, nella valuta dell'annuncio
 
 Se l'IA non è configurata, compila i campi a mano. In entrambi i casi arrivi alla pagina dell'appartamento per controllare e correggere quello che è uscito sbagliato — l'estrazione è un punto di partenza, non un oracolo.
 
@@ -61,7 +61,7 @@ Clicca una stella per dare un voto (1-5); clicca di nuovo la stessa stella per t
 
 ### 7. Confronta
 
-Vai su **Confronta** per vedere tutti gli appartamenti in un'unica tabella. Evidenzia il valore migliore in ogni riga (affitto più basso, valutazione più alta, tragitto più breve). Scorri in orizzontale se ci sono più appartamenti di quanti ne stanno sullo schermo.
+Vai su **Confronta** per vedere tutti gli appartamenti in un'unica tabella. Evidenzia il valore migliore in ogni riga (affitto più basso, valutazione più alta, tragitto più breve). Scorri in orizzontale se ci sono più appartamenti di quanti ne stanno sullo schermo. Gli affitti in valute diverse non vengono convertiti: il più basso è evidenziato all'interno di ogni valuta, e l'ordinamento per prezzo mostra prima i franchi, poi ogni altra valuta.
 
 ---
 

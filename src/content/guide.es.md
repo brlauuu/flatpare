@@ -39,7 +39,7 @@ Ve a **Subir** en la barra de navegación y arrastra (o selecciona) un anuncio e
 - Nombre o título del piso
 - Dirección
 - Superficie (m²), habitaciones, baños, balcones
-- Alquiler mensual (CHF)
+- Alquiler mensual, en la moneda del anuncio
 
 Si no hay IA configurada, rellena los campos a mano. En cualquier caso llegas a la página del piso para revisar y corregir lo que haya salido mal: la extracción es un punto de partida, no un oráculo.
 
@@ -61,7 +61,7 @@ Haz clic en una estrella para poner una valoración (1-5); vuelve a hacer clic e
 
 ### 7. Compara
 
-Ve a **Comparar** para ver todos los pisos en una sola tabla. Resalta el mejor valor de cada fila (el alquiler más bajo, la valoración más alta, el trayecto más corto). Desplázate en horizontal si hay más pisos de los que caben.
+Ve a **Comparar** para ver todos los pisos en una sola tabla. Resalta el mejor valor de cada fila (el alquiler más bajo, la valoración más alta, el trayecto más corto). Desplázate en horizontal si hay más pisos de los que caben. Los alquileres en monedas distintas no se convierten: se resalta el más bajo dentro de cada moneda, y al ordenar por precio aparecen primero los francos y después cada otra moneda.
 
 ---
 

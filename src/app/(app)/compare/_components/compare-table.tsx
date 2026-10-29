@@ -6,6 +6,8 @@ import { iconComponentFor } from "@/lib/location-icons";
 import type { ApartmentView, LocationView } from "@/lib/household-data/types";
 import { CompareColumnHeader } from "./compare-column-header";
 import { metricRows, ratingKeys } from "./compare-types";
+import { useFormatRent } from "@/components/use-format-rent";
+import { rentCurrencyOf } from "@/lib/household-data/rent";
 
 interface CompareTableProps {
   visible: ApartmentView[];
@@ -19,6 +21,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
   const t = useTranslations("compare.table");
   const tCommon = useTranslations("common.ratingCategory");
   const format = useFormatter();
+  const formatRent = useFormatRent();
   // The table's rating rows: the shared category names, except the overall
   // one, which is shortened to fit the label column.
   const ratingLabel = (key: (typeof ratingKeys)[number]) =>
@@ -36,15 +39,19 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
   }
   const allUserIds = [...userLabels.keys()];
 
-  function findBest(key: string, direction: string) {
-    const values = visible
-      .map(
-        (a) =>
-          (a as unknown as Record<string, unknown>)[key] as number | null
-      )
-      .filter((v): v is number => v != null);
-    if (values.length === 0) return null;
-    return direction === "min" ? Math.min(...values) : Math.max(...values);
+  // The best value among the apartments `group` puts together: all of them,
+  // except for rent, which is compared within each currency (#427).
+  function findBest(key: string, direction: string, group: (a: ApartmentView) => string) {
+    const values = new Map<string, number[]>();
+    for (const a of visible) {
+      const v = (a as unknown as Record<string, unknown>)[key] as number | null;
+      if (v == null) continue;
+      const g = group(a);
+      values.set(g, [...(values.get(g) ?? []), v]);
+    }
+    const best = new Map<string, number>();
+    for (const [g, vs] of values) best.set(g, direction === "min" ? Math.min(...vs) : Math.max(...vs));
+    return best;
   }
 
   return (
@@ -62,7 +69,8 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
         </thead>
         <tbody>
           {metricRows.map((metric) => {
-            const bestVal = findBest(metric.key, metric.best);
+            const group = metric.key === "rentChf" ? rentCurrencyOf : () => "";
+            const bestVal = findBest(metric.key, metric.best, group);
             return (
               <tr key={metric.key} className="border-b">
                 <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
@@ -72,7 +80,7 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                   const val = (apt as unknown as Record<string, unknown>)[
                     metric.key
                   ] as number | null;
-                  const isBest = val != null && val === bestVal;
+                  const isBest = val != null && val === bestVal.get(group(apt));
                   return (
                     <td
                       key={apt.id}
@@ -82,7 +90,11 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
                         isBest && "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
                       )}
                     >
-                      {val != null ? format.number(val) : "—"}
+                      {val == null
+                        ? "—"
+                        : metric.key === "rentChf"
+                          ? formatRent(val, apt.rentCurrency)
+                          : format.number(val)}
                     </td>
                   );
                 })}

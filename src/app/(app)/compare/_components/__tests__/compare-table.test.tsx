@@ -54,19 +54,30 @@ describe("CompareTable — metric rows", () => {
     renderTable([a, b]);
     expect(screen.getByText("Cheap")).toBeInTheDocument();
     expect(screen.getByText("Spacious")).toBeInTheDocument();
-    expect(screen.getByText("Rent (CHF)")).toBeInTheDocument();
-    expect(screen.getByText("1,500")).toBeInTheDocument();
-    expect(screen.getByText("2,500")).toBeInTheDocument();
+    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getByText(/CHF\s1,500/)).toBeInTheDocument();
+    expect(screen.getByText(/CHF\s2,500/)).toBeInTheDocument();
   });
 
   it("highlights the cheapest rent as the best value (min direction)", () => {
     const a = makeApt({ id: "a1", name: "Cheap", rentChf: 1500 });
     const b = makeApt({ id: "a2", name: "Pricey", rentChf: 2500 });
     renderTable([a, b]);
-    const cheap = screen.getByText("1,500");
-    const pricey = screen.getByText("2,500");
+    const cheap = screen.getByText(/CHF\s1,500/);
+    const pricey = screen.getByText(/CHF\s2,500/);
     expect(cheap.dataset.best).toBe("true");
     expect(pricey.dataset.best).toBeUndefined();
+  });
+
+  // #427: rents are not converted, so the cheapest is picked per currency.
+  it("highlights the cheapest rent within each currency", () => {
+    const chf = makeApt({ id: "a1", name: "Basel", rentChf: 2500, rentCurrency: "CHF" });
+    const chfDear = makeApt({ id: "a2", name: "Zurich", rentChf: 3000, rentCurrency: "CHF" });
+    const eur = makeApt({ id: "a3", name: "Lörrach", rentChf: 1800, rentCurrency: "EUR" });
+    renderTable([chf, chfDear, eur]);
+    expect(screen.getByText(/CHF\s2,500/).dataset.best).toBe("true");
+    expect(screen.getByText(/CHF\s3,000/).dataset.best).toBeUndefined();
+    expect(screen.getByText("€1,800").dataset.best).toBe("true");
   });
 
   // #324 final review: printed from dark mode, the dark: fill would print
@@ -75,7 +86,7 @@ describe("CompareTable — metric rows", () => {
     const a = makeApt({ id: "a1", name: "Cheap", rentChf: 1500 });
     const b = makeApt({ id: "a2", name: "Pricey", rentChf: 2500 });
     renderTable([a, b]);
-    const cls = screen.getByText("1,500").className;
+    const cls = screen.getByText(/CHF\s1,500/).className;
     expect(cls).toContain("print:bg-transparent");
     expect(cls).toContain("print:text-black");
   });

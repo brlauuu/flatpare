@@ -39,7 +39,7 @@ Geh in der Navigationsleiste auf **Hochladen** und zieh ein Inserat als PDF hine
 - Name/Titel der Wohnung
 - Adresse
 - Fläche (m²), Zimmer, Badezimmer, Balkone
-- Monatsmiete (CHF)
+- Monatsmiete, in der Währung des Inserats
 
 Ist keine KI eingerichtet, füllst du die Felder von Hand aus. So oder so landest du auf der Seite der Wohnung, wo du prüfen und korrigieren kannst, was falsch herausgekommen ist — die Auswertung ist ein Ausgangspunkt, kein Orakel.
 
@@ -61,7 +61,7 @@ Klick auf einen Stern, um eine Bewertung zu setzen (1–5); klick nochmals auf d
 
 ### 7. Vergleichen
 
-Geh auf **Vergleichen**, um alle Wohnungen in einer Tabelle zu sehen. Sie hebt in jeder Zeile den besten Wert hervor (tiefste Miete, höchste Bewertung, kürzester Arbeitsweg). Scroll seitwärts, wenn mehr Wohnungen da sind, als Platz haben.
+Geh auf **Vergleichen**, um alle Wohnungen in einer Tabelle zu sehen. Sie hebt in jeder Zeile den besten Wert hervor (tiefste Miete, höchste Bewertung, kürzester Arbeitsweg). Scroll seitwärts, wenn mehr Wohnungen da sind, als Platz haben. Mieten in verschiedenen Währungen werden nicht umgerechnet: Die tiefste wird je Währung hervorgehoben, und beim Sortieren nach Preis kommen zuerst die Franken, dann jede andere Währung.
 
 ---
 
