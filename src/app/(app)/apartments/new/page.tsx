@@ -35,7 +35,7 @@ export default function UploadPage() {
   const locale = languageOf(useLocale());
   const t = useTranslations("apartments.new");
   const errorDetails = useStoreErrorDetails();
-  const { createApartment, dataKey, identity } = useHouseholdData();
+  const { createApartment, dataKey, identity, limits } = useHouseholdData();
   // "upload" = drop zone, "processing" = batch in progress, "review" = edit & save, "single" = manual entry
   const [step, setStep] = useState<"upload" | "processing" | "review" | "single">("upload");
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -133,7 +133,7 @@ export default function UploadPage() {
     // place by then. A link the person brought makes the search pointless.
     const searchListing = !linkRef.current;
     const [parsed, uploaded] = await Promise.allSettled([
-      parsePdf(bytes, file.name, locale, itemId, searchListing),
+      parsePdf(bytes, file.name, locale, itemId, searchListing, limits.pdfReadMaxBytes),
       encryptAndUploadPdf(dataKey, identity.householdId, itemId, bytes),
     ]);
 
@@ -142,16 +142,16 @@ export default function UploadPage() {
     if (parsed.status === "rejected") {
       const err: unknown = parsed.reason;
       const known = err instanceof ParsePdfError ? err : null;
-      // No credit left to read it (#413): keep it, unread, so it can be
-      // saved and rated now and processed after buying more.
-      if (known?.reason === "no_credits") {
+      // No credit left to read it (#413), or too large to send (#438): keep
+      // it, unread, so it can be saved and rated now and processed later.
+      if (known?.reason === "no_credits" || known?.reason === "too_large") {
         updateItem(itemId, {
           status: "done",
           form: withSharedUrl({ ...emptyApartmentForm, name: file.name.replace(/\.pdf$/i, "") }),
           pdf,
           pdfWarning,
           processed: false,
-          notRead: true,
+          notRead: known.reason,
         });
         return;
       }
@@ -371,6 +371,7 @@ export default function UploadPage() {
     return (
       <ReviewStep
         items={items}
+        pdfReadMaxBytes={limits.pdfReadMaxBytes}
         saving={saving}
         error={error}
         notice={notice}

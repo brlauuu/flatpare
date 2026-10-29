@@ -214,5 +214,12 @@
     "unplacedTitle": "Not on the map yet",
     "unplaced": "{billing, select, on {The address could not be placed on the map. Trying again uses no credit.} other {The address could not be placed on the map.}}",
     "retry": "Try again"
+  },
+  "pdfTooLarge": {
+    "title": "This PDF is too large to read",
+    "body": "PDFs up to {size} MB can be read. This one is kept with the apartment, unread, and no credit was spent. To have it read, make it smaller, then use Replace PDF on the apartment's page:",
+    "pages": "Keep only the pages that describe the apartment: open the PDF, choose Print, pick those pages and save the result as a PDF. On an iPhone, spread two fingers on the print preview, then Share and Save to Files.",
+    "compress": "Or reduce its size: on a Mac, open it in Preview and choose File, Export, then the Quartz filter Reduce File Size. PDF apps on other devices can do the same.",
+    "byHand": "Or type the details in yourself. The PDF stays with the apartment."
   }
 }

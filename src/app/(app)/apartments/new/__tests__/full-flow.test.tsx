@@ -221,6 +221,29 @@ describe("batch review flow", () => {
     });
   });
 
+  // #438: refused in the browser before anything is sent; stored all the same.
+  it("keeps a PDF too large to read, says how to make it smaller, and saves it unprocessed", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdf).mockRejectedValue(new ParsePdfError("PDF too large to read", "too_large", 413));
+    const { value } = renderWithHouseholdData(<UploadPage />, {
+      limits: { maxMembers: null, maxApartments: null, pdfReadMaxBytes: 4_483_616 },
+    });
+    vi.mocked(value.createApartment).mockImplementation(async (id, data) => makeApartmentView({ id, ...data }));
+    await uploadFiles(user, [makePdfFile("Big flat.pdf")]);
+    expect(await screen.findByText("This PDF is too large to read")).toBeInTheDocument();
+    expect(screen.getByText(/PDFs up to 4.5 MB can be read/)).toBeInTheDocument();
+    expect(screen.queryByText(/Not read: no apartment credits left/)).not.toBeInTheDocument();
+    expect(vi.mocked(parsePdf).mock.calls[0][5]).toBe(4_483_616);
+    await user.click(screen.getByRole("button", { name: /Save apartment/i }));
+    await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createApartment).mock.calls[0][1]).toMatchObject({
+      name: "Big flat",
+      processed: false,
+      rawExtractedData: null,
+      pdf: PDF,
+    });
+  });
+
   it("saves as unprocessed when no AI is configured, since nothing was read", async () => {
     const user = userEvent.setup();
     vi.mocked(parsePdf).mockResolvedValue({ extracted: { name: "a" }, aiAvailable: false });
