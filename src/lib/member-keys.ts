@@ -606,10 +606,12 @@ export async function listRotationTargets(
   return { keyVersion, members };
 }
 
+// Both lists must be free of duplicates (#401): `[A, A]` against `{A, B}` has
+// the right length and only known ids, and would leave B behind.
 function sameSet(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const s = new Set(a);
-  return s.size === a.length && b.every((x) => s.has(x));
+  return s.size === a.length && new Set(b).size === b.length && b.every((x) => s.has(x));
 }
 
 // Commits a rotation the owner's browser prepared, all or nothing: every wrap,

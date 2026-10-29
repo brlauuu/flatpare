@@ -451,6 +451,7 @@ const A1 = "11111111-1111-4111-8111-111111111111";
 const A2 = "22222222-2222-4222-8222-222222222222";
 const L1 = "33333333-3333-4333-8333-333333333333";
 const D1 = "44444444-4444-4444-8444-444444444444";
+const L2 = "66666666-6666-4666-8666-666666666666";
 const D2 = "55555555-5555-4555-8555-555555555555";
 const sealed = (k: number, tag = "x") => ({
   v: 1 as const,
@@ -631,6 +632,50 @@ describe("rotateHouseholdKey", () => {
     expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(1);
     const d = await db.select().from(apartmentDrafts);
     expect(JSON.parse(d[0].envelope)).toEqual(sealed(1, "d"));
+  });
+
+  // #401: a request naming one row twice has the right length and only known
+  // ids, but leaves the other row sealed under the retired key.
+  it.each([
+    ["apartments", { apartments: [{ id: A1, version: 1, envelope: sealed(2) }, { id: A1, version: 1, envelope: sealed(2) }] }],
+    ["ratings", { ratings: [{ apartmentId: A1, userId: "o", envelope: sealed(2) }, { apartmentId: A1, userId: "o", envelope: sealed(2) }] }],
+    ["locations", { locations: [{ id: L1, envelope: sealed(2) }, { id: L1, envelope: sealed(2) }] }],
+    ["drafts", { drafts: [{ id: D1, envelope: sealed(2) }, { id: D1, envelope: sealed(2) }] }],
+  ])("refuses a duplicated id in %s as Stale rows", async (_label, over) => {
+    const hid = await rotatableHousehold();
+    // A second row in each table, so the duplicated list has the right length.
+    await db.insert(ratings).values({ householdId: hid, apartmentId: A2, userId: "m", envelope: JSON.stringify(sealed(1, "r2")) });
+    await db.insert(locations).values({ id: L2, householdId: hid, sortOrder: 1, envelope: JSON.stringify(sealed(1, "l2")) });
+    await db.insert(apartmentDrafts).values({ id: D2, householdId: hid, createdBy: "m", envelope: JSON.stringify(sealed(1, "d2")) });
+    const full = request({
+      ratings: [...request().ratings, { apartmentId: A2, userId: "m", envelope: sealed(2) }],
+      locations: [...request().locations, { id: L2, envelope: sealed(2) }],
+      drafts: [...request().drafts, { id: D2, envelope: sealed(2) }],
+    });
+    await expect(rotateHouseholdKey(hid, "o", { ...full, ...over })).rejects.toMatchObject({
+      status: 409,
+      message: "Stale rows",
+    });
+    expect((await getCryptoStatus(hid, "o", "owner")).keyVersion).toBe(1);
+    const envelopes = [
+      ...(await db.select().from(apartments)),
+      ...(await db.select().from(ratings)),
+      ...(await db.select().from(locations)),
+      ...(await db.select().from(apartmentDrafts)),
+    ].map((row) => JSON.parse(row.envelope).k);
+    expect(envelopes.every((k) => k === 1)).toBe(true);
+    // The full request, without the duplicate, goes through.
+    expect(await rotateHouseholdKey(hid, "o", full)).toEqual({ keyVersion: 2 });
+  });
+
+  it("refuses a wrap set that names one member twice", async () => {
+    const hid = await rotatableHousehold();
+    const o = { userId: "o", wrappedKey: "NEWO", publicKey: "PUBo" };
+    await expect(rotateHouseholdKey(hid, "o", request({ wraps: [o, o] }))).rejects.toMatchObject({
+      status: 409,
+      message: /every member/,
+    });
+    expect((await getCryptoStatus(hid, "m", "member")).wrap).toBe("WRAPM");
   });
 
   it("refuses an envelope not sealed under the new version", async () => {

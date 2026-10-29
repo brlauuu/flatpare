@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+
+- Rotating the household key now refuses a request that names the same row or member twice, which could have left one apartment, rating, location or saved link sealed under the old key, or one member without the new key. Only a faulty or modified browser could send one. (#401)
+
 ## 0.27.1 — 2026-10-29
 
 ### Fixed
