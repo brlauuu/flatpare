@@ -281,29 +281,34 @@ export default function ApartmentDetailPage() {
         total={pager.total}
         onNavigate={(nextId) => router.push(`/apartments/${nextId}`)}
       />
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <ShortCode code={apartment.shortCode} size="lg" />
+      {/* On a phone: code, title, address, then the actions. From `sm` up the
+          actions follow the code (on its row when they fit), so the title has
+          the full width instead of a narrow column beside seven buttons. */}
+      <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-3">
+        <ShortCode code={apartment.shortCode} size="lg" />
+        <div className="order-last space-y-1 sm:basis-full">
           <h1 className="title-page">{apartment.name}</h1>
           {apartment.address && (
             <AddressLink address={apartment.address} className="text-muted-foreground" />
           )}
         </div>
-        <ApartmentActions
-          hasPdf={apartment.pdf !== null}
-          canReprocess={apartment.processed && (apartment.pdf !== null || apartment.address !== null)}
-          listingUrl={apartment.listingUrl}
-          mapHref={showOnMapHref(apartment)}
-          editing={editing}
-          reprocessing={reprocessing}
-          attaching={attaching}
-          deleting={deleting}
-          onEdit={startEdit}
-          onViewPdf={() => void handleViewPdf()}
-          onReprocess={() => void reprocess()}
-          onAttachPdf={(file) => void attach(file)}
-          onDelete={() => void handleDelete()}
-        />
+        <div className="order-last mt-3 self-stretch sm:order-none sm:mt-0 sm:self-auto">
+          <ApartmentActions
+            hasPdf={apartment.pdf !== null}
+            canReprocess={apartment.processed && (apartment.pdf !== null || apartment.address !== null)}
+            listingUrl={apartment.listingUrl}
+            mapHref={showOnMapHref(apartment)}
+            editing={editing}
+            reprocessing={reprocessing}
+            attaching={attaching}
+            deleting={deleting}
+            onEdit={startEdit}
+            onViewPdf={() => void handleViewPdf()}
+            onReprocess={() => void reprocess()}
+            onAttachPdf={(file) => void attach(file)}
+            onDelete={() => void handleDelete()}
+          />
+        </div>
       </div>
 
       <ProcessingNotice
