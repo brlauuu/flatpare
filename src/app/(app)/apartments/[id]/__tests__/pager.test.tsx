@@ -98,6 +98,8 @@ describe("Apartment detail page — header row", () => {
     const code = header.querySelector("[data-apartment-code]")!;
     expect(code).toHaveTextContent("KTR-3B-1b-WY-8003");
     expect(code.querySelector("[data-rating-summary]")).toHaveTextContent("4.5 (4)");
+    // A line of its own on a phone, the ratings at its right edge.
+    expect(code).toHaveClass("basis-full", "justify-between", "sm:basis-auto", "sm:justify-start");
     const actions = screen.getByRole("button", { name: "Edit" }).closest("div.order-last")!;
     expect(actions.parentElement).toBe(header);
     expect(actions).toHaveClass("sm:order-none", "sm:ml-auto");
