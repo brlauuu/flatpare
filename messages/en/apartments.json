@@ -80,9 +80,12 @@
     "attaching": "Attaching..."
   },
   "metrics": {
-    "rentPerMonth": "{amount}/mo",
-    "bathrooms": "{count, plural, one {# bath} other {# bath}}",
-    "balconies": "{count, plural, one {# balcony} other {# balconies}}",
+    "rentLabel": "Rent per month",
+    "sizeLabel": "Size",
+    "roomsLabel": "Rooms",
+    "bathroomsLabel": "Bathrooms",
+    "balconiesLabel": "Balconies",
+    "washingLabel": "Washing machine",
     "washingYes": "Washing machine: yes",
     "washingNo": "Washing machine: no (or shared)",
     "washingUnknown": "Washing machine: unknown",
