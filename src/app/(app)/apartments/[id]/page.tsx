@@ -32,7 +32,7 @@ import type { RatingView } from "@/lib/household-data/types";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
-import { RatedIcon } from "../_components/apartment-badges";
+import { RatingSummary } from "../_components/apartment-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { ProcessingNotice } from "./_components/processing-notice";
 import { PdfTooLargeNotice } from "@/components/pdf-too-large-notice";
@@ -288,7 +288,7 @@ export default function ApartmentDetailPage() {
         />
         <div data-apartment-code className="flex items-center gap-2">
           <ShortCode code={apartment.shortCode} size="lg" />
-          <RatedIcon myRating={apartment.myRating} />
+          <RatingSummary avg={apartment.avgOverall} mine={apartment.myRating} />
         </div>
         <div className="order-last mt-1 basis-full sm:order-none sm:mt-0 sm:ml-auto sm:basis-auto">
           <ApartmentActions

@@ -11,8 +11,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ### Changed
 
-- The apartment tiles are tidier: whether you rated an apartment, whether it is processed and whether its listing is gone show as icons beside the code (hover one for its meaning), the tiles have less empty space, and price, size and rooms are larger. (#451)
-- An apartment's page puts Previous, Next, the code, whether you rated it and every action in one row above the title, as icons; hover one to see what it does. On a phone they wrap onto a few lines. (#452)
+- The apartment tiles show the household's average rating beside the code, with your own in parentheses (a dash until you rate), in place of the rated badge and the row of stars. Whether an apartment is processed and whether its listing is gone show as icons beside it (hover one for its meaning). The tiles have less empty space, price, size and rooms are larger, and the delete button sits beside them in the bottom corner. (#451)
+- An apartment's page puts Previous, Next, the code with the same ratings, and every action in one row above the title, as icons; hover one to see what it does. On a phone they wrap onto a few lines. (#452)
 
 ## 0.28.2 — 2026-10-30
 

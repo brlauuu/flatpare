@@ -32,7 +32,10 @@
     "rooms": "{count, number} hab.",
     "roomsShort": "{count, number} hab.",
     "size": "{size, number} m²",
-    "notProcessed": "Sin procesar"
+    "notProcessed": "Sin procesar",
+    "ratingSummary": "Media {avg} de 5, tu valoración {mine}",
+    "ratingSummaryNotMine": "Media {avg} de 5, aún no has valorado",
+    "noRatings": "Aún no hay valoraciones"
   },
   "corrupt": {
     "title": "No se ha podido descifrar este piso",

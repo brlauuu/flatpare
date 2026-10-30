@@ -1,6 +1,6 @@
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type React from "react";
-import { AlertTriangle, Check, CheckCircle2, Circle, Hourglass } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Hourglass, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function GoneBadge() {
@@ -77,20 +77,35 @@ export function NotProcessedIcon() {
   );
 }
 
-export function RatedIcon({ myRating }: { myRating: number | null }) {
+// Everyone's average overall rating, mine in parentheses (#451): 4.3 (5),
+// 4.3 (–) before I rate, a hollow star and a dash before anyone does. The
+// sentence is the hover title and the screen-reader text.
+export function RatingSummary({ avg, mine }: { avg: number | null; mine: number | null }) {
   const t = useTranslations("apartments.badges");
-  if (myRating === null) {
+  const format = useFormatter();
+  if (avg === null) {
+    const label = t("noRatings");
     return (
-      <StatusIcon label={t("notRated")}>
-        <Circle className="h-6 w-6 text-muted-foreground" aria-hidden />
-      </StatusIcon>
+      <span data-rating-summary title={label} className="inline-flex items-center gap-1 font-mono text-sm text-muted-foreground">
+        <Star className="h-4 w-4" aria-hidden />
+        <span aria-hidden>–</span>
+        <span className="sr-only">{label}</span>
+      </span>
     );
   }
+  const avgText = format.number(avg, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const label =
+    mine === null
+      ? t("ratingSummaryNotMine", { avg: avgText })
+      : t("ratingSummary", { avg: avgText, mine: format.number(mine) });
   return (
-    <StatusIcon label={t("rated")}>
-      <span data-rated className="flex h-6 w-6 items-center justify-center rounded-full bg-success">
-        <Check className="h-4 w-4 text-card" strokeWidth={3} aria-hidden />
+    <span data-rating-summary title={label} className="inline-flex items-center gap-1 font-mono text-sm">
+      <Star className="h-4 w-4 fill-current text-primary" aria-hidden />
+      <span aria-hidden>
+        {avgText}{" "}
+        <span className="text-muted-foreground">({mine === null ? "–" : format.number(mine)})</span>
       </span>
-    </StatusIcon>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }

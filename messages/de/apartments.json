@@ -32,7 +32,10 @@
     "rooms": "{count, number} Zimmer",
     "roomsShort": "{count, number} Zi.",
     "size": "{size, number} m²",
-    "notProcessed": "Nicht verarbeitet"
+    "notProcessed": "Nicht verarbeitet",
+    "ratingSummary": "Durchschnitt {avg} von 5, deine Bewertung {mine}",
+    "ratingSummaryNotMine": "Durchschnitt {avg} von 5, du hast noch nicht bewertet",
+    "noRatings": "Noch keine Bewertungen"
   },
   "corrupt": {
     "title": "Diese Wohnung konnte nicht entschlüsselt werden",

@@ -32,7 +32,10 @@
     "rooms": "{count, number} rooms",
     "roomsShort": "{count, number} rm",
     "size": "{size, number} m²",
-    "notProcessed": "Not processed"
+    "notProcessed": "Not processed",
+    "ratingSummary": "Average {avg} of 5, your rating {mine}",
+    "ratingSummaryNotMine": "Average {avg} of 5, you have not rated it",
+    "noRatings": "No ratings yet"
   },
   "corrupt": {
     "title": "This apartment could not be decrypted",

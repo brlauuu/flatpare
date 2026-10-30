@@ -32,7 +32,10 @@
     "rooms": "{count, number} locali",
     "roomsShort": "{count, number} loc.",
     "size": "{size, number} m²",
-    "notProcessed": "Non elaborato"
+    "notProcessed": "Non elaborato",
+    "ratingSummary": "Media {avg} su 5, il tuo voto {mine}",
+    "ratingSummaryNotMine": "Media {avg} su 5, non hai ancora votato",
+    "noRatings": "Ancora nessuna valutazione"
   },
   "corrupt": {
     "title": "Non è stato possibile decifrare questo appartamento",
