@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+
+- For the host: the usage report can be written as a page with a daily chart per household, and emailed daily, weekly or monthly by a scheduled GitHub workflow. Nothing changes for people using the app. (#431)
+
 ## 0.31.0 — 2026-10-30
 
 ### Added
