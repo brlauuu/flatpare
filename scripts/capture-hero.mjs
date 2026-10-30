@@ -152,6 +152,11 @@ function apartmentRows() {
         summary: null, listingUrl: null, rawExtractedData: null, userEditedFields: [],
         listingGone: false, listingCheckedAt: null, pdf: null,
         ...fields,
+        // The screens show the first apartment with every action its page
+        // can offer, seven on a phone (#436). The hero grid stays as it was.
+        ...(SCREENS_DIR && i === 0
+          ? { listingUrl: "https://example.com/listing", pdf: { path: `/api/uploads/x/${aptId(0)}.pdf.enc`, iv: null } }
+          : {}),
       }),
       createdAt: STAMP,
       updatedAt: STAMP,
@@ -294,14 +299,15 @@ try {
           page.off("request", note);
           console.log(`[capture-hero] wrote ${out}; outside hosts: ${[...outside].join(", ") || "none"}`);
         }
-        if (LOCALE) {
-          await page.setViewportSize(PHONE);
-          await page.goto(`${BASE}/apartments`);
+        // The phone width the layout has to hold at (#436, #440).
+        await page.setViewportSize(PHONE);
+        for (const [name, path] of [["apartments", "/apartments"], ["apartment-detail", `/apartments/${aptId(0)}`]]) {
+          await page.goto(`${BASE}${path}`);
           await page.getByRole("heading", { level: 1 }).waitFor();
           await page.waitForTimeout(800);
-          await page.screenshot({ path: `${SCREENS_DIR}/apartments-phone-${theme}.png` });
-          await page.setViewportSize(VIEWPORT);
+          await page.screenshot({ path: `${SCREENS_DIR}/${name}-phone-${theme}.png` });
         }
+        await page.setViewportSize(VIEWPORT);
       } else {
         // One grid per language (#288): the landing page shows the app in the
         // reader's language, so each gets a capture of its own.
