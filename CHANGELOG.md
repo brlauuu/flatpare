@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.28.0 — 2026-10-30
+
 ### Added
 
 - Each apartment's tile on the list has a delete button. It asks first, naming the apartment, and says so if the delete fails. (#437)
