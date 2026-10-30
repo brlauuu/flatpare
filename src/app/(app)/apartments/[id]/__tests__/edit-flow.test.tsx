@@ -69,10 +69,12 @@ describe("Apartment detail edit flow", () => {
     expect(nameInput.value).toBe("Sonnenweg 3");
     expect(rentInput.value).toBe("2200");
 
+    // Pasted, not typed: these tests are about what the form saves, and a key
+    // at a time under the loaded parallel run came close to the 10s (#442).
     await user.clear(nameInput);
-    await user.type(nameInput, "Sonnenweg 3b");
+    await user.paste("Sonnenweg 3b");
     await user.clear(rentInput);
-    await user.type(rentInput, "2400");
+    await user.paste("2400");
     await user.click(screen.getByRole("button", { name: /^Yes$/ }));
     await user.click(screen.getByRole("button", { name: /^Save$/ }));
 
@@ -145,11 +147,11 @@ describe("Apartment detail edit flow", () => {
     const summaryField = screen.getByLabelText(/Summary/i) as HTMLTextAreaElement;
     expect(summaryField.value).toBe("Quiet 2.5-room flat in a leafy district near transit.");
     await user.clear(summaryField);
-    await user.type(summaryField, "Updated description after edit.");
+    await user.paste("Updated description after edit.");
     const dateInput = screen.getByLabelText(/Available from/i) as HTMLInputElement;
     expect(dateInput.value).toBe("2026-05-01");
     await user.clear(dateInput);
-    await user.type(dateInput, "2026-07-15");
+    await user.paste("2026-07-15");
     await user.click(screen.getByRole("button", { name: /^Save$/ }));
     await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
     const next = vi.mocked(value.updateApartment).mock.calls[0][1](A1);
