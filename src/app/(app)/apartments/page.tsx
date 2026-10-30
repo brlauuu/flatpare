@@ -52,6 +52,11 @@ function isViewMode(v: string): v is ViewMode {
   return v === "grid" || v === "list";
 }
 
+// The toolbar's square buttons, and the pressed look of the view chosen (#440).
+const SQUARE = "h-11 w-11 p-0 sm:h-9 sm:w-9";
+const PRESSED =
+  "aria-pressed:translate-x-[3px] aria-pressed:translate-y-[3px] aria-pressed:bg-muted aria-pressed:shadow-pressed";
+
 export default function ApartmentsPage() {
   const t = useTranslations("apartments.list");
   const {
@@ -266,99 +271,93 @@ export default function ApartmentsPage() {
           {/* Renders nothing when billing is off. */}
           <CreditBalance />
         </div>
-        {/* Wraps on phones: the control cluster is ~390px wide and used to
-            push the document past the viewport. */}
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-          <Select
-            items={sortItems}
-            value={sortField}
-            onValueChange={(value) => setSortField(value as SortField)}
-          >
-            <SelectTrigger
-              weight="frame"
-              aria-label={t("sortBy")}
-              className="min-w-0 flex-1 data-[size=default]:h-11 sm:w-[160px] sm:flex-none sm:data-[size=default]:h-8"
+        {/* Every control has the same frame, shadow and height (#440). On a
+            phone: sort, direction and view on one row, Upload New and Paste
+            link sharing the next; from `sm` up, one row. */}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <Select
+              items={sortItems}
+              value={sortField}
+              onValueChange={(value) => setSortField(value as SortField)}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((opt) => (
-                <SelectItem key={opt.id} value={opt.id}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label={sortDirection === "asc" ? t("ascending") : t("descending")}
-            onClick={() =>
-              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-            }
-            className="h-11 w-11 p-0 sm:h-8 sm:w-8"
-          >
-            {sortDirection === "asc" ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : (
-              <ArrowDown className="h-4 w-4" />
-            )}
-          </Button>
-          <div
-            role="group"
-            aria-label={t("view")}
-            className="inline-flex rounded-md border bg-muted p-0.5"
-          >
+              <SelectTrigger
+                weight="frame"
+                aria-label={t("sortBy")}
+                className="min-w-0 flex-1 bg-card shadow-button hover:bg-muted data-[size=default]:h-11 dark:bg-card dark:hover:bg-muted sm:w-40 sm:flex-none sm:data-[size=default]:h-9"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              aria-label={t("gridView")}
-              aria-pressed={view === "grid"}
-              onClick={() => setView("grid")}
-              className={cn(
-                "h-11 w-11 gap-1 px-3 sm:h-7 sm:w-auto sm:px-2",
-                view === "grid" && "bg-background shadow-sm"
-              )}
+              variant="outline"
+              aria-label={sortDirection === "asc" ? t("ascending") : t("descending")}
+              onClick={() =>
+                setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+              }
+              className={SQUARE}
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label={t("listView")}
-              aria-pressed={view === "list"}
-              onClick={() => setView("list")}
-              className={cn(
-                "h-11 w-11 gap-1 px-3 sm:h-7 sm:w-auto sm:px-2",
-                view === "list" && "bg-background shadow-sm"
+              {sortDirection === "asc" ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
               )}
-            >
-              <ListIcon className="h-3.5 w-3.5" />
             </Button>
+            <div role="group" aria-label={t("view")} className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={t("gridView")}
+                aria-pressed={view === "grid"}
+                onClick={() => setView("grid")}
+                className={cn(SQUARE, PRESSED)}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={t("listView")}
+                aria-pressed={view === "list"}
+                onClick={() => setView("list")}
+                className={cn(SQUARE, PRESSED)}
+              >
+                <ListIcon className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          {!atApartmentLimit && <PasteLinkButton />}
-          {atApartmentLimit ? (
-            <span
-              className={cn(
-                buttonVariants({ variant: "secondary" }),
-                "h-11 w-full cursor-not-allowed opacity-60 sm:h-9 sm:w-auto"
-              )}
-              aria-disabled="true"
-              title={t("limitTitle", { max: limits.maxApartments ?? 0 })}
-            >
-              {t("limitReached")}
-            </span>
-          ) : (
-            <Link
-              href="/apartments/new"
-              className={cn(buttonVariants(), "h-11 w-full sm:h-9 sm:w-auto")}
-            >
-              {t("uploadNew")}
-            </Link>
-          )}
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+            {atApartmentLimit ? (
+              <span
+                className={cn(
+                  buttonVariants({ variant: "secondary" }),
+                  "h-11 w-full cursor-not-allowed opacity-60 sm:h-9 sm:w-auto"
+                )}
+                aria-disabled="true"
+                title={t("limitTitle", { max: limits.maxApartments ?? 0 })}
+              >
+                {t("limitReached")}
+              </span>
+            ) : (
+              <>
+                <Link
+                  href="/apartments/new"
+                  className={cn(buttonVariants(), "h-11 min-w-0 flex-1 sm:h-9 sm:flex-none")}
+                >
+                  {t("uploadNew")}
+                </Link>
+                <PasteLinkButton className="contents" buttonClassName="min-w-0 flex-1 sm:flex-none" />
+              </>
+            )}
+          </div>
         </div>
       </div>
 

@@ -15,7 +15,10 @@ type Notice = { kind: "noLink" | "full" } | { kind: "error"; text: string } | nu
 
 // Adds an unprocessed apartment for a pasted link (#413), free, and opens it:
 // the link is saved, and the address or the PDF can be added there.
-export function PasteLinkButton({ className }: { className?: string }) {
+// `className` styles the wrapper and `buttonClassName` the button. The list's
+// toolbar passes `contents`, so the button sits in its row and the field and
+// the notice wrap to a line of their own (#440).
+export function PasteLinkButton({ className, buttonClassName }: { className?: string; buttonClassName?: string }) {
   const t = useTranslations("apartments.pasteLink");
   const router = useRouter();
   const errorDetails = useStoreErrorDetails();
@@ -68,14 +71,14 @@ export function PasteLinkButton({ className }: { className?: string }) {
         variant="outline"
         disabled={busy}
         onClick={() => void paste()}
-        className="h-11 w-full sm:h-9 sm:w-auto"
+        className={cn("h-11 w-full sm:h-9 sm:w-auto", buttonClassName)}
       >
         <ClipboardPaste className="h-4 w-4" />
         {t("paste")}
       </Button>
       {showField && (
         <form
-          className="flex items-center gap-2"
+          className="flex basis-full items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             void save(text);
@@ -95,7 +98,7 @@ export function PasteLinkButton({ className }: { className?: string }) {
         </form>
       )}
       {notice !== null && (
-        <p role="status" className="text-sm text-destructive">
+        <p role="status" className="basis-full text-sm text-destructive">
           {notice.kind === "full"
             ? t("full")
             : notice.kind === "error"
