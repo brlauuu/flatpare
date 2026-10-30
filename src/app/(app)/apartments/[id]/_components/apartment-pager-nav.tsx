@@ -18,7 +18,7 @@ export function ApartmentPagerNav({
   onNavigate,
 }: PagerNavProps) {
   const t = useTranslations("apartments.pager");
-  // Arrows only on a phone (#407); the words show from `sm` up and are always
+  // Arrows only (#407, #452): the words are the hover title and are always
   // there for a screen reader.
   return (
     <div className="flex items-center gap-3">
@@ -26,7 +26,7 @@ export function ApartmentPagerNav({
         type="button"
         variant="outline"
         size="sm"
-        className="h-11 w-11 p-0 sm:h-7 sm:w-auto sm:px-2.5"
+        className="h-11 w-11 p-0 sm:h-8 sm:w-8"
         title={t("previous")}
         disabled={prevId === null}
         onClick={() => {
@@ -34,7 +34,7 @@ export function ApartmentPagerNav({
         }}
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
-        <span className="sr-only sm:not-sr-only">{t("previous")}</span>
+        <span className="sr-only">{t("previous")}</span>
       </Button>
       {position !== null && total > 0 && (
         <span className="text-sm text-muted-foreground">
@@ -45,14 +45,14 @@ export function ApartmentPagerNav({
         type="button"
         variant="outline"
         size="sm"
-        className="h-11 w-11 p-0 sm:h-7 sm:w-auto sm:px-2.5"
+        className="h-11 w-11 p-0 sm:h-8 sm:w-8"
         title={t("next")}
         disabled={nextId === null}
         onClick={() => {
           if (nextId !== null) onNavigate(nextId);
         }}
       >
-        <span className="sr-only sm:not-sr-only">{t("next")}</span>
+        <span className="sr-only">{t("next")}</span>
         <ArrowRight className="h-4 w-4" aria-hidden />
       </Button>
     </div>

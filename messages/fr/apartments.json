@@ -32,7 +32,10 @@
     "rooms": "{count, number} pièces",
     "roomsShort": "{count, number} p.",
     "size": "{size, number} m²",
-    "notProcessed": "Non traité"
+    "notProcessed": "Non traité",
+    "ratingSummary": "Moyenne {avg} sur 5, ta note {mine}",
+    "ratingSummaryNotMine": "Moyenne {avg} sur 5, tu n'as pas encore noté",
+    "noRatings": "Pas encore de notes"
   },
   "corrupt": {
     "title": "Cet appartement n’a pas pu être déchiffré",

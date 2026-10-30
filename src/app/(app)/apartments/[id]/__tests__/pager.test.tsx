@@ -82,3 +82,35 @@ describe("Apartment detail page — pager", () => {
     expect(screen.getByText("1 of 3")).toBeInTheDocument();
   });
 });
+
+// #452: the pager, the code with the ratings and the actions share one row from
+// `sm` up, and the title sits under it at full width.
+describe("Apartment detail page — header row", () => {
+  it("holds the pager, the code with my rating and the actions, then the title", () => {
+    currentParamsId = "a1";
+    renderWithHouseholdData(<ApartmentDetailPage />, {
+      apartments: [makeApartmentView({ ...LIST[0], shortCode: "KTR-3B-1b-WY-8003", avgOverall: 4.5, myRating: 4 }), ...LIST.slice(1)],
+    });
+    const header = document.querySelector("[data-apartment-header]")!;
+    expect(header).toHaveClass("flex", "flex-wrap");
+    const children = [...header.children];
+    expect(children[0]).toContainElement(screen.getByRole("button", { name: "Previous" }));
+    const code = header.querySelector("[data-apartment-code]")!;
+    expect(code).toHaveTextContent("KTR-3B-1b-WY-8003");
+    expect(code.querySelector("[data-rating-summary]")).toHaveTextContent("4.5 (4)");
+    const actions = screen.getByRole("button", { name: "Edit" }).closest("div.order-last")!;
+    expect(actions.parentElement).toBe(header);
+    expect(actions).toHaveClass("sm:order-none", "sm:ml-auto");
+    const title = screen.getByRole("heading", { level: 1 }).parentElement!;
+    expect(title.parentElement).toBe(header);
+    expect(title).toHaveClass("basis-full");
+    // Phone order: title before the actions; from `sm` up, after them.
+    expect(children.indexOf(title)).toBeGreaterThan(children.indexOf(actions));
+  });
+
+  it("shows a dash alone before anyone rated it", () => {
+    currentParamsId = "a1";
+    renderWithHouseholdData(<ApartmentDetailPage />, { apartments: LIST });
+    expect(document.querySelector("[data-apartment-code] [data-rating-summary]")).toHaveAttribute("title", "No ratings yet");
+  });
+});

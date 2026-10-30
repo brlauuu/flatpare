@@ -32,6 +32,7 @@ import type { RatingView } from "@/lib/household-data/types";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
+import { RatingSummary } from "../_components/apartment-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { ProcessingNotice } from "./_components/processing-notice";
 import { PdfTooLargeNotice } from "@/components/pdf-too-large-notice";
@@ -274,25 +275,22 @@ export default function ApartmentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <ApartmentPagerNav
-        prevId={pager.prevId}
-        nextId={pager.nextId}
-        position={pager.position}
-        total={pager.total}
-        onNavigate={(nextId) => router.push(`/apartments/${nextId}`)}
-      />
-      {/* On a phone: code, title, address, then the actions. From `sm` up the
-          actions follow the code (on its row when they fit), so the title has
-          the full width instead of a narrow column beside seven buttons. */}
-      <div className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-3">
-        <ShortCode code={apartment.shortCode} size="lg" />
-        <div className="order-last space-y-1 sm:basis-full">
-          <h1 className="title-page">{apartment.name}</h1>
-          {apartment.address && (
-            <AddressLink address={apartment.address} className="text-muted-foreground" />
-          )}
+      {/* From `sm` up one row (#452): the pager, the code and my rating, the
+          actions as icons on the right; the title under it at full width. On
+          a phone the same pieces wrap, in the order code, title, actions. */}
+      <div data-apartment-header className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-y-4">
+        <ApartmentPagerNav
+          prevId={pager.prevId}
+          nextId={pager.nextId}
+          position={pager.position}
+          total={pager.total}
+          onNavigate={(nextId) => router.push(`/apartments/${nextId}`)}
+        />
+        <div data-apartment-code className="flex items-center gap-2">
+          <ShortCode code={apartment.shortCode} size="lg" />
+          <RatingSummary avg={apartment.avgOverall} mine={apartment.myRating} />
         </div>
-        <div className="order-last mt-3 self-stretch sm:order-none sm:mt-0 sm:self-auto">
+        <div className="order-last mt-1 basis-full sm:order-none sm:mt-0 sm:ml-auto sm:basis-auto">
           <ApartmentActions
             hasPdf={apartment.pdf !== null}
             canReprocess={apartment.processed && (apartment.pdf !== null || apartment.address !== null)}
@@ -308,6 +306,12 @@ export default function ApartmentDetailPage() {
             onAttachPdf={(file) => void attach(file)}
             onDelete={() => void handleDelete()}
           />
+        </div>
+        <div className="basis-full space-y-1">
+          <h1 className="title-page">{apartment.name}</h1>
+          {apartment.address && (
+            <AddressLink address={apartment.address} className="text-muted-foreground" />
+          )}
         </div>
       </div>
 
