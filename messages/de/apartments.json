@@ -232,5 +232,10 @@
     "pages": "Behalte nur die Seiten, die die Wohnung beschreiben: Öffne das PDF, wähle Drucken, wähle diese Seiten aus und speichere das Ergebnis als PDF. Auf einem iPhone ziehst du die Druckvorschau mit zwei Fingern auf, dann Teilen und In Dateien sichern.",
     "compress": "Oder verkleinere es: Öffne es auf einem Mac in Vorschau und wähle Ablage, Exportieren und dann den Quartz-Filter Dateigrösse reduzieren. PDF-Apps auf anderen Geräten können das auch.",
     "byHand": "Oder gib die Angaben selbst ein. Das PDF bleibt bei der Wohnung."
+  },
+  "addedBy": {
+    "member": "Hinzugefügt von {name}",
+    "you": "Von dir hinzugefügt",
+    "former": "Von einem ehemaligen Mitglied hinzugefügt"
   }
 }

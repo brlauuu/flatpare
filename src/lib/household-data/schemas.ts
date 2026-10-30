@@ -17,7 +17,8 @@ export const distanceSchema = z.object({
 // and every address change then was geocoded at once, so its coordinates —
 // when it has any — belong to the address it holds now. `rentCurrency`
 // (#427) is absent from envelopes written before it, when every rent was in
-// francs.
+// francs. `addedBy` (#430) is absent from envelopes written before it, and
+// nobody knows who added those.
 export const apartmentSchema: z.ZodType<Apartment> = z.object({
   name: z.string(),
   address: nullableString,
@@ -42,6 +43,7 @@ export const apartmentSchema: z.ZodType<Apartment> = z.object({
   pdf: z.object({ path: z.string(), iv: nullableString }).nullable(),
   processed: z.boolean().default(true),
   processedAddress: nullableString.optional(),
+  addedBy: nullableString.default(null),
 }).transform((a) => ({
   ...a,
   rentCurrency:

@@ -232,5 +232,10 @@
     "pages": "Tieni solo le pagine che descrivono l’appartamento: apri il PDF, scegli Stampa, seleziona quelle pagine e salva il risultato come PDF. Su un iPhone, allarga due dita sull’anteprima di stampa, poi Condividi e Salva su File.",
     "compress": "Oppure riducine le dimensioni: su un Mac aprilo in Anteprima e scegli File, Esporta e poi il filtro Quartz Riduci dimensione file. Le app PDF degli altri dispositivi fanno lo stesso.",
     "byHand": "Oppure inserisci tu i dati. Il PDF resta con l’appartamento."
+  },
+  "addedBy": {
+    "member": "Aggiunto da {name}",
+    "you": "Aggiunto da te",
+    "former": "Aggiunto da un ex membro"
   }
 }

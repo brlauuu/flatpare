@@ -35,6 +35,9 @@
     "userRatings": "Évaluations de {name}",
     "overall": "Global",
     "comment": "Commentaire",
-    "averageRatings": "Évaluations moyennes"
+    "averageRatings": "Évaluations moyennes",
+    "addedBy": "Ajouté par",
+    "addedByYou": "Toi",
+    "addedByFormer": "Ancien membre"
   }
 }

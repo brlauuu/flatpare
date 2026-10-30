@@ -46,6 +46,7 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     limits: { maxMembers: null, maxApartments: null },
     // Billing off, the self-hoster default: no balance is shown.
     credits: null,
+    memberNames: null,
     dataKey: null,
     status: "ready",
     error: null,

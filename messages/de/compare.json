@@ -35,6 +35,9 @@
     "userRatings": "Bewertungen von {name}",
     "overall": "Gesamt",
     "comment": "Kommentar",
-    "averageRatings": "Durchschnittliche Bewertungen"
+    "averageRatings": "Durchschnittliche Bewertungen",
+    "addedBy": "Hinzugefügt von",
+    "addedByYou": "Du",
+    "addedByFormer": "Ehemaliges Mitglied"
   }
 }

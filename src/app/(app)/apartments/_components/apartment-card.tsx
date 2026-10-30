@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
+import { AddedByLine } from "@/components/added-by-line";
 import { GoneIcon, NotProcessedIcon, RatingSummary } from "./apartment-badges";
 import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
@@ -104,6 +105,7 @@ function CardLink({ apt }: { apt: ApartmentView }) {
               className="text-sm text-muted-foreground"
             />
           )}
+          <AddedByLine addedBy={apt.addedBy} className="text-xs" />
           {/* A step larger than a badge's text (#451), held clear of the
               delete button in the corner and as tall as it, so they line up. */}
           <div data-card-facts className="mt-auto flex min-h-11 flex-wrap items-center gap-1 pr-12 sm:min-h-8 sm:pr-9">

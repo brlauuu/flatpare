@@ -5,6 +5,7 @@ import { CompareTable } from "../compare-table";
 import {
   makeApartmentView,
   makeLocationView,
+  renderWithHouseholdData,
 } from "@/components/household-data/__tests__/fake-household-data";
 import type { ApartmentView } from "@/lib/household-data/types";
 
@@ -366,5 +367,36 @@ describe("CompareTable — column header PDF button", () => {
     const { onHide } = renderTable([makeApt({ id: "a1", name: "Apt" })]);
     await userEvent.setup().click(screen.getByRole("button", { name: /Hide Apt/i }));
     expect(onHide).toHaveBeenCalledWith("a1");
+  });
+});
+
+// #430: who added each apartment, a row only when anyone knows.
+describe("CompareTable — added by row", () => {
+  function renderAdded(apts: ApartmentView[]) {
+    renderWithHouseholdData(
+      <CompareTable visible={apts} sortedVisible={apts} locations={[]} onHide={vi.fn()} onViewPdf={vi.fn()} />,
+      { memberNames: { "u-me": "Me", "u-lena": "Lena" } }
+    );
+  }
+
+  it("names the member, you, a former member, or a dash per column", () => {
+    renderAdded([
+      makeApt({ id: "a1", addedBy: "u-lena" }),
+      makeApt({ id: "a2", addedBy: "u-me" }),
+      makeApt({ id: "a3", addedBy: "u-gone" }),
+      makeApt({ id: "a4", addedBy: null }),
+    ]);
+    const row = screen.getByText("Added by").closest("tr")!;
+    expect([...row.querySelectorAll("[data-added-by]")].map((c) => c.textContent)).toEqual([
+      "Lena",
+      "You",
+      "Former member",
+      "—",
+    ]);
+  });
+
+  it("leaves the row out when nobody knows who added any of them", () => {
+    renderAdded([makeApt({ id: "a1", addedBy: null })]);
+    expect(screen.queryByText("Added by")).toBeNull();
   });
 });

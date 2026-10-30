@@ -110,6 +110,17 @@ describe("Apartment detail page — header row", () => {
     expect(children.indexOf(title)).toBeGreaterThan(children.indexOf(actions));
   });
 
+  // #430: who added it, under the title and address.
+  it("says who added the apartment under its title", () => {
+    currentParamsId = "a1";
+    renderWithHouseholdData(<ApartmentDetailPage />, {
+      apartments: [makeApartmentView({ ...LIST[0], addedBy: "u-lena" }), ...LIST.slice(1)],
+      memberNames: { "u-me": "Me", "u-lena": "Lena" },
+    });
+    const title = screen.getByRole("heading", { level: 1 }).parentElement!;
+    expect(title.querySelector("[data-added-by]")).toHaveTextContent("Added by Lena");
+  });
+
   it("shows a dash alone before anyone rated it", () => {
     currentParamsId = "a1";
     renderWithHouseholdData(<ApartmentDetailPage />, { apartments: LIST });

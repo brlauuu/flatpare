@@ -53,6 +53,7 @@ function input(over: Partial<ExportInput> = {}): ExportInput {
         shortCode: "3R1B",
         distances: { [L1]: { bikeMin: 12, transitMin: 20 }, [L2]: { bikeMin: 5, transitMin: null } },
         pdf: { path: "/api/uploads/households/5/a1.pdf.enc", iv: "iv" },
+        addedBy: "u-me",
       }),
       apartment(A2, "Dark flat"),
     ],
@@ -227,6 +228,13 @@ describe("planImport", () => {
       "new-2": { bikeMin: 5, transitMin: null },
     });
     expect(sunny.pdf).toEqual(PDF);
+  });
+
+  // #430: user ids belong to the instance the export came from.
+  it("drops who added each apartment", () => {
+    expect(parsed().apartments[0].data.addedBy).toBe("u-me");
+    const plan = planImport(parsed(), "u-me", newId, line);
+    expect(plan.apartments.map((a) => a.data.addedBy)).toEqual([null, null]);
   });
 
   it("drops a distance to a location the file does not hold", () => {

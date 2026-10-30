@@ -62,6 +62,7 @@ import {
 import { newRowId } from "@/lib/household-data/ids";
 import { apartmentFromLink, firstHttpUrl } from "@/lib/household-data/links";
 import type { Limits } from "@/lib/limits";
+import { displayName } from "@/lib/display-name";
 
 export interface HouseholdIdentity {
   userId: string;
@@ -85,6 +86,11 @@ export interface HouseholdDataContextValue {
   // null when billing is off, and until the first answer arrives — "nothing
   // to show", never "zero".
   credits: Credits | null;
+  // Each current member's name by user id (#430), for "Added by". Read from
+  // the members list beside each load, so a rename shows; null until the
+  // first answer, so nothing is shown as a former member meanwhile. A user
+  // id missing from it has left the household.
+  memberNames: Record<string, string> | null;
   // The unlocked household data key (null in off mode). Pages that seal or
   // open PDFs themselves (upload, View PDF, reprocess) read it from here so
   // they never touch CryptoContext directly.
@@ -219,6 +225,7 @@ export function HouseholdDataProvider({
   const [store, setStore] = useState<Store>(EMPTY_STORE);
   const [enrichmentError, setEnrichmentError] = useState<Record<string, string>>({});
   const [credits, setCredits] = useState<Credits | null>(null);
+  const [memberNames, setMemberNames] = useState<Record<string, string> | null>(null);
   // Counts finished loads, so the draft conversion runs once after each.
   const [loads, setLoads] = useState(0);
 
@@ -230,6 +237,18 @@ export function HouseholdDataProvider({
     try {
       const b = await getJson<Credits & { enabled: boolean }>("/api/billing/status");
       setCredits(b.enabled ? { granted: b.granted, used: b.used, remaining: b.remaining } : null);
+    } catch {
+      // Keep what is on screen.
+    }
+  }, []);
+
+  // Same posture as the balance: beside the rows, never failing the page.
+  const refreshMembers = useCallback(async () => {
+    try {
+      const { members } = await getJson<{ members: { userId: string; name: string | null; email: string }[] }>(
+        "/api/household/members"
+      );
+      setMemberNames(Object.fromEntries(members.map((m) => [m.userId, displayName(m.name, m.email)])));
     } catch {
       // Keep what is on screen.
     }
@@ -299,6 +318,7 @@ export function HouseholdDataProvider({
     const commitsAtStart = commits.current;
     // Beside the rows, not part of them: the page must not wait on it.
     void refreshCredits();
+    void refreshMembers();
     try {
       const [aRows, rRows, lRows] = await Promise.all([
         getJson<ApartmentRow[]>("/api/apartments"),
@@ -326,7 +346,7 @@ export function HouseholdDataProvider({
       setError(messageOf(err));
       setStatus("error");
     }
-  }, [commit, decodeApartment, decodeLocation, decodeRating, refreshCredits]);
+  }, [commit, decodeApartment, decodeLocation, decodeRating, refreshCredits, refreshMembers]);
 
   const reload = useCallback(() => load(false), [load]);
 
@@ -497,8 +517,10 @@ export function HouseholdDataProvider({
   );
 
   const createApartment = useCallback(
-    async (id: string, given: Apartment): Promise<ApartmentView> => {
-      const data = syncShortCode(null, given, takenLetters(id));
+    async (id: string, given: Apartment, addedBy: string | null = userId): Promise<ApartmentView> => {
+      // Who added it (#430): the member creating it, unless the caller knows
+      // better (a draft records who saved it, or nobody).
+      const data = syncShortCode(null, { ...given, addedBy }, takenLetters(id));
       const envelope = await sealApartment(dataKey, householdId, id, data, keyVersion);
       // Creating spends no credit (#413); the first processing does.
       const saved = await send<ApartmentRow>("POST", "/api/apartments", { id, envelope });
@@ -514,7 +536,7 @@ export function HouseholdDataProvider({
       void runEnrichment(id, planEnrichment(data));
       return viewOf(id);
     },
-    [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, takenLetters, viewOf]
+    [commit, dataKey, householdId, keyVersion, refreshCredits, runEnrichment, send, takenLetters, userId, viewOf]
   );
 
   const createApartmentFromLink = useCallback(
@@ -921,6 +943,7 @@ export function HouseholdDataProvider({
       locations,
       enrichmentError,
       credits,
+      memberNames,
       reload,
       createApartment,
       createApartmentFromLink,
@@ -943,7 +966,7 @@ export function HouseholdDataProvider({
       importHousehold,
     }),
     [
-      identity, limits, credits, dataKey, status, error, apartments, locations, enrichmentError, reload,
+      identity, limits, credits, memberNames, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, createApartmentFromLink, attachPdf, updateApartment, deleteApartment, rateApartment, retryEnrichment,
       processApartment, chargeReprocess, relocateApartment,
       createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,

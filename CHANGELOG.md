@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+
+- Each apartment says who in the household added it, on its tile, its page and in the comparison ("Added by you", "Added by Lena"). Apartments added before this release, and imported ones, show nothing. (#430)
+
 ## 0.30.1 — 2026-10-30
 
 ### Changed

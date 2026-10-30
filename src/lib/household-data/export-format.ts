@@ -307,7 +307,8 @@ export function planImport(
         return mapped ? [[mapped, d]] : [];
       })
     );
-    return { id, data: { ...a.data, distances, pdf: null }, pdf: a.pdf };
+    // Who added it does not carry across (#430): user ids are per instance.
+    return { id, data: { ...a.data, distances, pdf: null, addedBy: null }, pdf: a.pdf };
   });
 
   const ratings: PlannedRating[] = [];

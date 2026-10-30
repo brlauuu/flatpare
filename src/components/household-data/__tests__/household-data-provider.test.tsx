@@ -40,6 +40,8 @@ interface FakeServer {
   // Stored PDFs (#413): POST /api/files paths, and the ones deleted.
   files: Set<string>;
   deletedFiles: string[];
+  // What GET /api/household/members answers (#430); null makes it fail.
+  members: { userId: string; name: string | null; email: string }[] | null;
   calls: { method: string; url: string; body?: unknown }[];
 }
 
@@ -58,6 +60,7 @@ function makeServer(): FakeServer {
     charged: new Set(),
     files: new Set(),
     deletedFiles: [],
+    members: [],
     calls: [],
   };
 }
@@ -89,6 +92,10 @@ function installFetch(server: FakeServer) {
         if (server.billing.fail) return json({ error: "boom" }, 500);
         const { enabled, granted, used } = server.billing;
         return json({ enabled, granted, used, remaining: Math.max(0, granted - used) });
+      }
+      if (url === "/api/household/members" && method === "GET") {
+        if (server.members === null) return json({ error: "boom" }, 500);
+        return json({ members: server.members, me: { userId: ME.userId, role: "owner" }, recoveryNotice: null });
       }
       if (url === "/api/apartments" && method === "GET") return json([...server.apartments.values()]);
       if (url === "/api/billing/recompute" && method === "POST") return spend() ?? json({ ok: true });
@@ -333,6 +340,8 @@ describe("HouseholdDataProvider", () => {
     });
     expect(view?.id).toBe(A1);
     expect(server.apartments.get(A1)?.envelope).toMatchObject({ v: 1 });
+    // #430: the member who added it, inside the envelope.
+    expect(view?.addedBy).toBe(ME.userId);
 
     const enriched = (
       await waitForContext((ctx) =>
@@ -666,6 +675,26 @@ describe("HouseholdDataProvider", () => {
     expect((captured as HouseholdDataContextValue).apartments[0].distances[L1]).toEqual({ bikeMin: 12, transitMin: 20 });
   });
 
+  // #430: names for "Added by", from the members list beside the rows.
+  it("reads the members' names, falling back to the email until a name is set", async () => {
+    server.members = [
+      { userId: ME.userId, name: "Me", email: "me@x.ch" },
+      { userId: "u-b", name: null, email: "b@x.ch" },
+    ];
+    renderProvider();
+    const ctx = await waitForContext((c) => c.memberNames !== null);
+    expect(ctx.memberNames).toEqual({ [ME.userId]: "Me", "u-b": "b@x.ch" });
+  });
+
+  it("keeps the page working when the members cannot be read", async () => {
+    server.members = null;
+    renderProvider();
+    await ready();
+    await waitFor(() => expect(server.calls.some((c) => c.url === "/api/household/members")).toBe(true));
+    const ctx = await ready();
+    expect(ctx.memberNames).toBeNull();
+  });
+
   it("reports a load failure as status error", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json({ error: "Not authenticated" }, 401)));
     renderProvider();
@@ -716,6 +745,8 @@ describe("drafts left from before #413", () => {
     });
     // No title: named after the site.
     expect(ctx.apartments.find((a) => a.id === D2)?.name).toBe("b.ch");
+    // Added by whoever saved the draft, not the device converting it (#430).
+    expect(ctx.apartments.find((a) => a.id === D1)?.addedBy).toBe("u-other");
     await waitFor(() => expect(server.drafts.size).toBe(0));
     // Creating calls nothing outside the app.
     expect(server.calls.some((c) => c.url.startsWith("/api/process/"))).toBe(false);
