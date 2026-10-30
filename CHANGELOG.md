@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.29.0 — 2026-10-30
+
 ### Changed
 
 - The apartment tiles show the household's average rating beside the code, with your own in parentheses (a dash until you rate), in place of the rated badge and the row of stars. Whether an apartment is processed and whether its listing is gone show as icons beside it (hover one for its meaning). The tiles have less empty space, price, size and rooms are larger, and the delete button sits beside them in the bottom corner. (#451)
