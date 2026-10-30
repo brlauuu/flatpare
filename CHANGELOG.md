@@ -11,7 +11,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ### Changed
 
-- The apartment tiles are tidier: whether you rated an apartment, whether it is processed and whether its listing is gone show as icons (hover one for its meaning), the tiles have less empty space, and price, size and rooms are larger. (#451)
+- The apartment tiles are tidier: whether you rated an apartment, whether it is processed and whether its listing is gone show as icons beside the code (hover one for its meaning), the tiles have less empty space, and price, size and rooms are larger. (#451)
+- An apartment's page puts Previous, Next, the code, whether you rated it and every action in one row above the title, as icons; hover one to see what it does. On a phone they wrap onto a few lines. (#452)
 
 ## 0.28.2 — 2026-10-30
 

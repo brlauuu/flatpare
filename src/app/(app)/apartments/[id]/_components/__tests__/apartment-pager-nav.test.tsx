@@ -33,6 +33,15 @@ describe("ApartmentPagerNav", () => {
     expect(onNavigate).toHaveBeenCalledWith("b");
   });
 
+  it("shows arrows only, named by their title at every width (#452)", () => {
+    renderNav();
+    for (const [button, name] of [[prev(), "Previous"], [next(), "Next"]] as const) {
+      expect(button).toHaveAttribute("title", name);
+      expect(button.querySelector(".sr-only")).toHaveTextContent(name);
+      expect(button.querySelector(".sm\\:not-sr-only")).toBeNull();
+    }
+  });
+
   it("shows the position within the list", () => {
     renderNav();
     expect(screen.getByText("2 of 5")).toBeInTheDocument();

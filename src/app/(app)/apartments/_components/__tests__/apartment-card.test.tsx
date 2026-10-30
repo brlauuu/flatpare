@@ -86,11 +86,20 @@ describe("ApartmentCard status icons", () => {
 
   it("holds every word inside a screen-reader-only span", () => {
     renderWithHouseholdData(<ApartmentCard apt={{ ...APT, listingGone: true, processed: false }} />);
-    for (const el of document.querySelectorAll("[data-card-badges] [title]")) {
+    for (const el of document.querySelectorAll("[data-card-status] [title]")) {
       for (const node of el.childNodes) {
         if (node.nodeType === Node.TEXT_NODE) expect(node.textContent?.trim()).toBe("");
       }
     }
+  });
+
+  it("puts the code, the status icons and the delete button on one line", () => {
+    renderWithHouseholdData(<ApartmentCard apt={{ ...APT, shortCode: "KTR-3B-1b-WY-8003", myRating: 4 }} />);
+    const top = document.querySelector("[data-card-top]")!;
+    expect(top.querySelector("[data-card-code]")).toHaveTextContent("KTR-3B-1b-WY-8003");
+    expect(top.querySelector("[data-card-status]")).toContainElement(screen.getByTitle("Rated"));
+    // Held clear of the delete button, which sits on the same line.
+    expect(top).toHaveClass("pr-14", "sm:pr-12", "min-h-11", "sm:min-h-9");
   });
 
   // The delete button's offset is the margin the padding leaves, so the two

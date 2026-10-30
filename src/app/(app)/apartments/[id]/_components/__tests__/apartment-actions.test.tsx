@@ -45,6 +45,16 @@ describe("ApartmentActions (#407)", () => {
       expect(el).toHaveAttribute("title");
     }
   });
+
+  // #452: icons at every width; the word is the title and screen-reader text.
+  it("shows no words, only icons named by their title", () => {
+    renderActions("/map?highlight=a1");
+    for (const name of ["View PDF", "Replace PDF", "Original Listing", "View on map", "Edit", "Reprocess", "Delete"]) {
+      const el = screen.getByTitle(name);
+      expect(el.querySelector(".sr-only")).toHaveTextContent(name);
+      expect(el.querySelector(".sm\\:not-sr-only")).toBeNull();
+    }
+  });
 });
 
 describe("Reprocess (#413)", () => {

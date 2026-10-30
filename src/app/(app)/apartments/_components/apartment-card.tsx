@@ -46,8 +46,8 @@ function QuickDelete({ apt }: { apt: ApartmentView }) {
         title={t("delete", { name: apt.name })}
         disabled={deleting}
         onClick={() => void handleDelete()}
-        // On the icon row: the card's 3px frame and the content's 16px above
-        // it and to the right (the card itself has no padding, #451).
+        // On the first line: the card's 3px frame and the content's 16px
+        // above it and to the right (the card itself has no padding, #451).
         className="absolute top-[19px] right-[19px] h-11 w-11 p-0 sm:h-9 sm:w-9"
       >
         <Trash2 className="h-4 w-4" aria-hidden />
@@ -78,21 +78,24 @@ function CardLink({ apt }: { apt: ApartmentView }) {
   const formatRent = useFormatRent();
   return (
     // Tiles are uniform (#383): the grid gives every tile the same height,
-    // the badges and the short code each keep their own line (held open
-    // when there is no code, so titles line up), and the facts sit on the
-    // bottom edge.
+    // the first line (code, status icons, delete button) is held open when
+    // there is no code, so titles line up, and the facts sit on the bottom
+    // edge.
     <Link href={`/apartments/${apt.id}`} className="block h-full">
       {/* No padding of its own: the content's 16px is the whole margin (#451). */}
       <Card className="h-full py-0 transition-shadow hover:shadow-md">
         <CardContent className="flex flex-1 flex-col gap-2 p-4">
-          {/* Held clear of the delete button in the corner. */}
-          <div data-card-badges className="flex min-h-11 flex-wrap items-center gap-1.5 pr-14 sm:min-h-9 sm:pr-12">
-            {apt.listingGone && <GoneIcon />}
-            {!apt.processed && <NotProcessedIcon />}
-            <RatedIcon myRating={apt.myRating} />
-          </div>
-          <div data-card-code className="flex min-h-7 items-center">
-            <ShortCode code={apt.shortCode} size="md" />
+          {/* The code and the status icons share the delete button's line
+              (#451), held clear of the button in the corner. */}
+          <div data-card-top className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 pr-14 sm:min-h-9 sm:pr-12">
+            <span data-card-code className="flex min-h-7 items-center">
+              <ShortCode code={apt.shortCode} size="md" />
+            </span>
+            <span data-card-status className="flex items-center gap-1">
+              <RatedIcon myRating={apt.myRating} />
+              {!apt.processed && <NotProcessedIcon />}
+              {apt.listingGone && <GoneIcon />}
+            </span>
           </div>
           <div className="flex items-start justify-between">
             <h3 className="font-medium leading-tight">{apt.name}</h3>
