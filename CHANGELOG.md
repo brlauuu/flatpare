@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+
+- On a wider screen, an apartment's title uses the page's full width. The action buttons sit in a row above it instead of beside it, where they squeezed the title into a narrow column.
+
 ## 0.28.0 — 2026-10-30
 
 ### Added

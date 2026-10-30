@@ -73,7 +73,7 @@ export function ApartmentActions({
   const fileInput = useRef<HTMLInputElement>(null);
   const attachLabel = attaching ? t("attaching") : hasPdf ? t("replacePdf") : t("attachPdf");
   return (
-    <div className="flex flex-nowrap items-center gap-1.5 sm:shrink-0 sm:gap-2">
+    <div className="flex flex-nowrap items-center gap-1.5 sm:flex-wrap sm:gap-2">
       {hasPdf && (
         // A button, not a link: the stored file is ciphertext, so the page
         // decrypts it and opens a blob: URL.
