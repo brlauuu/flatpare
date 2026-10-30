@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
-import { GoneBadge, NotProcessedBadge, RatedBadge } from "./apartment-badges";
+import { GoneIcon, NotProcessedIcon, RatedIcon } from "./apartment-badges";
 import { ApartmentCorruptCard } from "./apartment-corrupt-card";
 import type { ApartmentView } from "@/lib/household-data/types";
 import { useFormatRent } from "@/components/use-format-rent";
@@ -46,9 +46,9 @@ function QuickDelete({ apt }: { apt: ApartmentView }) {
         title={t("delete", { name: apt.name })}
         disabled={deleting}
         onClick={() => void handleDelete()}
-        // On the badge row: the card's 3px frame, its 16px top padding and
-        // the content's 16px above it; the frame and 16px to the right.
-        className="absolute top-[35px] right-[19px] h-11 w-11 p-0 sm:h-9 sm:w-9"
+        // On the icon row: the card's 3px frame and the content's 16px above
+        // it and to the right (the card itself has no padding, #451).
+        className="absolute top-[19px] right-[19px] h-11 w-11 p-0 sm:h-9 sm:w-9"
       >
         <Trash2 className="h-4 w-4" aria-hidden />
       </Button>
@@ -60,6 +60,8 @@ function QuickDelete({ apt }: { apt: ApartmentView }) {
     </>
   );
 }
+
+const FACT = "h-7 px-2 text-sm";
 
 export function ApartmentCard({ apt }: { apt: ApartmentView }) {
   if (apt.corrupt) return <ApartmentCorruptCard apt={apt} />;
@@ -80,13 +82,14 @@ function CardLink({ apt }: { apt: ApartmentView }) {
     // when there is no code, so titles line up), and the facts sit on the
     // bottom edge.
     <Link href={`/apartments/${apt.id}`} className="block h-full">
-      <Card className="h-full transition-shadow hover:shadow-md">
+      {/* No padding of its own: the content's 16px is the whole margin (#451). */}
+      <Card className="h-full py-0 transition-shadow hover:shadow-md">
         <CardContent className="flex flex-1 flex-col gap-2 p-4">
           {/* Held clear of the delete button in the corner. */}
           <div data-card-badges className="flex min-h-11 flex-wrap items-center gap-1.5 pr-14 sm:min-h-9 sm:pr-12">
-            {apt.listingGone && <GoneBadge />}
-            {!apt.processed && <NotProcessedBadge />}
-            <RatedBadge myRating={apt.myRating} />
+            {apt.listingGone && <GoneIcon />}
+            {!apt.processed && <NotProcessedIcon />}
+            <RatedIcon myRating={apt.myRating} />
           </div>
           <div data-card-code className="flex min-h-7 items-center">
             <ShortCode code={apt.shortCode} size="md" />
@@ -103,13 +106,14 @@ function CardLink({ apt }: { apt: ApartmentView }) {
               className="text-sm text-muted-foreground"
             />
           )}
-          <div data-card-facts className="mt-auto flex flex-wrap gap-2">
+          {/* A step larger than a badge's text (#451). */}
+          <div data-card-facts className="mt-auto flex flex-wrap gap-1.5">
             {apt.rentChf && (
-              <Badge variant="secondary">{formatRent(apt.rentChf, apt.rentCurrency)}</Badge>
+              <Badge variant="secondary" className={FACT}>{formatRent(apt.rentChf, apt.rentCurrency)}</Badge>
             )}
-            {apt.sizeM2 && <Badge variant="secondary">{t("size", { size: apt.sizeM2 })}</Badge>}
+            {apt.sizeM2 && <Badge variant="secondary" className={FACT}>{t("size", { size: apt.sizeM2 })}</Badge>}
             {apt.numRooms && (
-              <Badge variant="secondary">{t("rooms", { count: apt.numRooms })}</Badge>
+              <Badge variant="secondary" className={FACT}>{t("rooms", { count: apt.numRooms })}</Badge>
             )}
           </div>
         </CardContent>

@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- The apartment tiles are tidier: whether you rated an apartment, whether it is processed and whether its listing is gone show as icons (hover one for its meaning), the tiles have less empty space, and price, size and rooms are larger. (#451)
+
 ## 0.28.2 — 2026-10-30
 
 ### Fixed
