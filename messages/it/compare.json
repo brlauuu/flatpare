@@ -35,6 +35,9 @@
     "userRatings": "Valutazioni di {name}",
     "overall": "Generale",
     "comment": "Commento",
-    "averageRatings": "Valutazioni medie"
+    "averageRatings": "Valutazioni medie",
+    "addedBy": "Aggiunto da",
+    "addedByYou": "Tu",
+    "addedByFormer": "Ex membro"
   }
 }

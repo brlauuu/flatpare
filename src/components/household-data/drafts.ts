@@ -29,21 +29,21 @@ export async function removeDraft(id: string): Promise<void> {
   await sendJson<void>("DELETE", `/api/drafts/${id}`);
 }
 
-// Turns each draft into an unprocessed apartment with the same id, then
-// deletes the draft. A 409 "Duplicate id" means another device (or an earlier
+// Turns each draft into an unprocessed apartment with the same id, added by
+// whoever saved the draft (#430), then deletes the draft. A 409 "Duplicate id" means another device (or an earlier
 // load whose delete failed) already made the apartment: the draft just goes.
 // Any other failure, the apartment cap included, leaves the draft for the
 // next load. A draft that cannot be opened stays as it is: nothing can be
 // made from it, and rotation still re-seals it.
 export async function adoptDrafts(
   drafts: DecodedDraft[],
-  create: (id: string, data: Apartment) => Promise<unknown>
+  create: (id: string, data: Apartment, addedBy: string | null) => Promise<unknown>
 ): Promise<number> {
   let adopted = 0;
   for (const d of drafts) {
     if (d.data === null) continue;
     try {
-      await create(d.id, apartmentFromLink(d.data.url, d.data.title));
+      await create(d.id, apartmentFromLink(d.data.url, d.data.title), d.createdBy);
       adopted += 1;
     } catch (err) {
       if (!(err instanceof ApiClientError && err.status === 409 && err.message === "Duplicate id")) continue;

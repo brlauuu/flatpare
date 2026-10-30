@@ -157,6 +157,9 @@ function apartmentRows() {
         ...(SCREENS_DIR && i === 0
           ? { listingUrl: "https://example.com/listing", pdf: { path: `/api/uploads/x/${aptId(0)}.pdf.enc`, iv: null } }
           : {}),
+        // "Added by" (#430) on the screens only: Lena is the signed-in member
+        // ("you"); Jonas has no account here, so he reads as a former member.
+        ...(SCREENS_DIR ? { addedBy: i % 2 === 0 ? "hero-user-lena" : "hero-user-jonas" } : {}),
       }),
       createdAt: STAMP,
       updatedAt: STAMP,

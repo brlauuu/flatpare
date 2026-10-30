@@ -52,6 +52,10 @@ export interface Apartment {
   // address has been geocoded. When the address no longer matches it the
   // distances are stale, and the views hide them until a reprocess.
   processedAddress: string | null;
+  // #430. The user id of the member who added it, kept inside the envelope
+  // so the server does not learn who adds what. Null for apartments added
+  // before it, and for imported ones (user ids do not carry across).
+  addedBy: string | null;
 }
 
 export interface Rating {
@@ -113,6 +117,7 @@ export function emptyApartment(name = ""): Apartment {
     pdf: null,
     processed: false,
     processedAddress: null,
+    addedBy: null,
   };
 }
 

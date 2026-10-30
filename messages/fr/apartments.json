@@ -232,5 +232,10 @@
     "pages": "Garde seulement les pages qui décrivent l’appartement : ouvre le PDF, choisis Imprimer, sélectionne ces pages et enregistre le résultat en PDF. Sur un iPhone, écarte deux doigts sur l’aperçu d’impression, puis Partager et Enregistrer dans Fichiers.",
     "compress": "Ou réduis sa taille sur un Mac en l’ouvrant dans Aperçu, puis Fichier, Exporter et le filtre Quartz Réduire la taille du fichier. Les apps PDF des autres appareils peuvent faire de même.",
     "byHand": "Ou saisis les informations toi-même. Le PDF reste avec l’appartement."
+  },
+  "addedBy": {
+    "member": "Ajouté par {name}",
+    "you": "Ajouté par toi",
+    "former": "Ajouté par un ancien membre"
   }
 }

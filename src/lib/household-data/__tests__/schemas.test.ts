@@ -53,6 +53,13 @@ describe("household-data schemas", () => {
     expect(apartmentSchema.parse(fresh)).toMatchObject({ processed: false, processedAddress: "A 1" });
   });
 
+  // #430: nobody knows who added an apartment written before it.
+  it("reads who added it, and nobody for an envelope from before #430", () => {
+    const { addedBy: _b, ...old } = emptyApartment("Flat");
+    expect(apartmentSchema.parse(old).addedBy).toBeNull();
+    expect(apartmentSchema.parse({ ...emptyApartment("Flat"), addedBy: "u-1" }).addedBy).toBe("u-1");
+  });
+
   it("bounds ratings to 0..5 integers", () => {
     expect(ratingSchema.safeParse(EMPTY_RATING).success).toBe(true);
     expect(ratingSchema.safeParse({ ...EMPTY_RATING, kitchen: 6 }).success).toBe(false);

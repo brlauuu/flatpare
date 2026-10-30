@@ -8,6 +8,7 @@ import { CompareColumnHeader } from "./compare-column-header";
 import { metricRows, ratingKeys } from "./compare-types";
 import { useFormatRent } from "@/components/use-format-rent";
 import { rentCurrencyOf } from "@/lib/household-data/rent";
+import { useAddedBy } from "@/components/use-added-by";
 
 interface CompareTableProps {
   visible: ApartmentView[];
@@ -164,6 +165,16 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
             ))}
           </tr>
 
+          {/* Who added each apartment (#430); the row only when anyone knows. */}
+          {sortedVisible.some((apt) => apt.addedBy !== null) && (
+            <tr className="border-b">
+              <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">{t("addedBy")}</td>
+              {sortedVisible.map((apt) => (
+                <AddedByCell key={apt.id} addedBy={apt.addedBy} />
+              ))}
+            </tr>
+          )}
+
           {allUserIds.map((userId) => {
             const label = userLabels.get(userId);
             return (
@@ -255,5 +266,16 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
         </tbody>
       </table>
     </div>
+  );
+}
+
+// A hook per cell, so each column resolves its own member.
+function AddedByCell({ addedBy }: { addedBy: string | null }) {
+  const t = useTranslations("compare.table");
+  const who = useAddedBy(addedBy);
+  return (
+    <td data-added-by className="px-4 py-2">
+      {who === null ? "—" : who.kind === "you" ? t("addedByYou") : who.kind === "former" ? t("addedByFormer") : who.name}
+    </td>
   );
 }

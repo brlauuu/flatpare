@@ -35,6 +35,9 @@
     "userRatings": "{name}'s ratings",
     "overall": "Overall",
     "comment": "Comment",
-    "averageRatings": "Average Ratings"
+    "averageRatings": "Average Ratings",
+    "addedBy": "Added by",
+    "addedByYou": "You",
+    "addedByFormer": "Former member"
   }
 }

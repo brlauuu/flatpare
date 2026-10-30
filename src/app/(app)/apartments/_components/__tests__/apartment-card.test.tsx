@@ -125,6 +125,15 @@ describe("ApartmentCard ratings and status icons", () => {
     expect(top.querySelector("[data-card-status]")).toHaveClass("ml-auto", "sm:ml-0");
   });
 
+  // #430: who added it, under the address; nothing when nobody knows.
+  it("says who added the apartment, and nothing when nobody knows", () => {
+    renderWithHouseholdData(<ApartmentCard apt={{ ...APT, addedBy: "u-me" }} />, { memberNames: { "u-me": "Me" } });
+    expect(screen.getByRole("link")).toHaveTextContent("Added by you");
+    cleanup();
+    renderWithHouseholdData(<ApartmentCard apt={{ ...APT, addedBy: null }} />, { memberNames: { "u-me": "Me" } });
+    expect(document.querySelector("[data-added-by]")).toBeNull();
+  });
+
   // The delete button's offset is the margin the padding leaves, so the two
   // move together; the facts are held clear of it and line up with it.
   it("has no card padding, and the delete button sits in the corner beside the facts", () => {

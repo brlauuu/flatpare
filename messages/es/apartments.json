@@ -232,5 +232,10 @@
     "pages": "Quédate solo con las páginas que describen el piso: abre el PDF, elige Imprimir, selecciona esas páginas y guarda el resultado como PDF. En un iPhone, separa dos dedos sobre la vista previa de impresión y luego Compartir y Guardar en Archivos.",
     "compress": "O reduce su tamaño: en un Mac, ábrelo en Vista Previa y elige Archivo, Exportar y el filtro Quartz Reducir tamaño de archivo. Las apps de PDF de otros dispositivos hacen lo mismo.",
     "byHand": "O escribe los datos tú. El PDF se queda con el piso."
+  },
+  "addedBy": {
+    "member": "Añadido por {name}",
+    "you": "Añadido por ti",
+    "former": "Añadido por un antiguo miembro"
   }
 }

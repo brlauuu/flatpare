@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShortCode } from "@/components/short-code";
 import { AddressLink } from "@/components/address-link";
+import { AddedByLine } from "@/components/added-by-line";
 import { ErrorDisplay } from "@/components/error-display";
 import {
   formFromApartment,
@@ -313,6 +314,7 @@ export default function ApartmentDetailPage() {
           {apartment.address && (
             <AddressLink address={apartment.address} className="text-muted-foreground" />
           )}
+          <AddedByLine addedBy={apartment.addedBy} className="text-sm" />
         </div>
       </div>
 
