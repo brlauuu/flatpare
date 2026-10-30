@@ -2,7 +2,7 @@
 // public/sw.js writes them, into fake-indexeddb, and read back through the
 // real stash.
 import "fake-indexeddb/auto";
-import { StrictMode } from "react";
+import { StrictMode, type ReactElement } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -17,6 +17,8 @@ import {
   SHARE_DB_VERSION,
   SHARE_STORE,
   clearShares,
+  deleteShare,
+  keepShareFiles,
   readShare,
   type SharedItem,
 } from "@/lib/share-stash";
@@ -33,6 +35,17 @@ vi.mock("@/components/household-data/process-client", async (importOriginal) => 
   ...(await importOriginal<typeof import("@/components/household-data/process-client")>()),
   parsePdf: vi.fn(),
 }));
+// The real stash, with the page's reads and writes recorded so a test can
+// wait for them to finish (stashSettled, below).
+vi.mock("@/lib/share-stash", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/share-stash")>();
+  return {
+    ...actual,
+    readShare: vi.fn(actual.readShare),
+    deleteShare: vi.fn(actual.deleteShare),
+    keepShareFiles: vi.fn(actual.keepShareFiles),
+  };
+});
 vi.mock("@/components/household-data/pdf-files", () => ({
   encryptAndUploadPdf: vi.fn(),
   downloadPdf: vi.fn(),
@@ -82,6 +95,41 @@ function pdf(name = "listing.pdf") {
   return new File(["%PDF-1.4\n"], name, { type: "application/pdf" });
 }
 
+// Waits until every stash call made so far has settled. The page reads its
+// entry after mounting and shows nothing about the share until that read is
+// in (an entry with nothing usable is also deleted first). Under the loaded
+// parallel coverage run the read alone outlasted findByRole's 1000ms (#442),
+// so the tests wait on the read itself, not on a longer timeout.
+async function stashSettled() {
+  const pending = () =>
+    [readShare, deleteShare, keepShareFiles].flatMap((fn) =>
+      vi.mocked(fn).mock.results.map((r) => r.value)
+    );
+  await act(async () => {
+    // A settled read can start a delete, so go again until nothing new began.
+    for (let seen = -1; seen !== pending().length; ) {
+      seen = pending().length;
+      await Promise.all(pending());
+    }
+    // Let the page apply what the read answered before act flushes it.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+// Waits for the page to start a write to the stash, then for it to finish.
+// Polling readShare in a waitFor instead puts an IndexedDB read inside each
+// attempt, the same race as above.
+async function stashWritten(write: typeof deleteShare | typeof keepShareFiles) {
+  await waitFor(() => expect(write).toHaveBeenCalled());
+  await stashSettled();
+}
+
+async function renderShare(ui: ReactElement = <UploadPage />) {
+  const rendered = renderWithHouseholdData(ui);
+  await stashSettled();
+  return rendered;
+}
+
 // The confirmation every share asks before anything is processed or saved.
 async function tap(name: "Add", user = userEvent.setup()) {
   await user.click(await screen.findByRole("button", { name }));
@@ -89,6 +137,9 @@ async function tap(name: "Add", user = userEvent.setup()) {
 
 beforeEach(async () => {
   await clearShares();
+  vi.mocked(readShare).mockClear();
+  vi.mocked(deleteShare).mockClear();
+  vi.mocked(keepShareFiles).mockClear();
   search = "";
   vi.mocked(encryptAndUploadPdf).mockResolvedValue({ path: "p", iv: "AAAA" });
   vi.mocked(parsePdf).mockResolvedValue({
@@ -96,9 +147,12 @@ beforeEach(async () => {
     aiAvailable: true,
   });
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.useRealTimers();
+  // A page that saved may still be deleting its entry; finished here, it
+  // cannot land on the next test's entry of the same id.
+  await stashSettled();
   pushMock.mockReset();
   replaceMock.mockReset();
   delete (window as { launchQueue?: unknown }).launchQueue;
@@ -109,7 +163,7 @@ describe("receiving a shared PDF", () => {
     await put(entry("s1", { text: `Look at this ${LINK} nice`, files: [pdf()] }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
       makeApartmentView({ id, ...d })
     );
@@ -130,7 +184,7 @@ describe("receiving a shared PDF", () => {
     await put(entry("s1", { url: LINK, files: [pdf()] }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
       makeApartmentView({ id, ...d })
     );
@@ -143,7 +197,7 @@ describe("receiving a shared PDF", () => {
   it("says how many non-PDF files were left out", async () => {
     await put(entry("s1", { files: [pdf()], dropped: 2 }));
     search = "share=s1";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     await tap("Add");
     // The notice stays through processing; wait for the review step so the
     // assertion is not racing the step change.
@@ -155,7 +209,7 @@ describe("receiving a shared PDF", () => {
     await put(entry("s1", { files: [pdf()] }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartment).mockImplementation(async (id, d) =>
       makeApartmentView({ id, ...d })
     );
@@ -163,14 +217,15 @@ describe("receiving a shared PDF", () => {
     await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
     // Anchored on the deletion itself, not on the navigation: the page only
     // pushes after a 500ms timer, which would race the waitFor default.
-    await waitFor(async () => expect(await readShare("s1")).toBeNull());
+    await stashWritten(deleteShare);
+    expect(await readShare("s1")).toBeNull();
   });
 
   it("keeps the entry when a save fails, so a reload offers it again", async () => {
     await put(entry("s1", { files: [pdf()] }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartment).mockRejectedValue(new Error("402"));
     await tap("Add", user);
     await user.click(await screen.findByRole("button", { name: /^Save apartment$/i }));
@@ -183,7 +238,7 @@ describe("receiving a shared PDF", () => {
     const generic = new File(["%PDF-1.4\n"], "Listing.PDF", { type: "application/octet-stream" });
     await put(entry("s1", { files: [generic] }));
     search = "share=s1";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     await tap("Add");
     expect(await screen.findByRole("button", { name: /^Save apartment$/i })).toBeInTheDocument();
     expect(screen.queryByText("No PDF files selected")).not.toBeInTheDocument();
@@ -194,7 +249,7 @@ describe("confirming a shared PDF", () => {
   it("asks first, with the count, and processes nothing until Add", async () => {
     await put(entry("s1", { files: [pdf("a.pdf"), pdf("b.pdf")] }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     expect(await screen.findByText("Add the 2 PDFs you shared?")).toBeInTheDocument();
     expect(parsePdf).not.toHaveBeenCalled();
     expect(encryptAndUploadPdf).not.toHaveBeenCalled();
@@ -208,10 +263,11 @@ describe("confirming a shared PDF", () => {
     await put(entry("s1", { url: LINK, files: [pdf()] }));
     search = "share=s1";
     const user = userEvent.setup();
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     expect(await screen.findByText("Add the PDF you shared?")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Discard" }));
-    await waitFor(async () => expect(await readShare("s1")).toBeNull());
+    await stashWritten(deleteShare);
+    expect(await readShare("s1")).toBeNull();
     expect(screen.queryByText("Add the PDF you shared?")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Choose files" })).toBeInTheDocument();
     expect(parsePdf).not.toHaveBeenCalled();
@@ -220,7 +276,7 @@ describe("confirming a shared PDF", () => {
   it("acts without asking again when the pick-up prompt confirmed it", async () => {
     await put(entry("s1", { files: [pdf()] }));
     search = "share=s1&confirmed=1";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     expect(await screen.findByRole("button", { name: /^Save apartment$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
   });
@@ -229,14 +285,15 @@ describe("confirming a shared PDF", () => {
     await put(entry("s1", { files: [pdf("a.pdf"), pdf("b.pdf")] }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartment)
       .mockImplementationOnce(async (id, d) => makeApartmentView({ id, ...d }))
       .mockRejectedValueOnce(new Error("402"));
     await tap("Add", user);
     await user.click(await screen.findByRole("button", { name: /^Save all/i }));
     await waitFor(() => expect(value.createApartment).toHaveBeenCalledTimes(2));
-    await waitFor(async () => expect((await readShare("s1"))?.files).toHaveLength(1));
+    await stashWritten(keepShareFiles);
+    expect((await readShare("s1"))?.files).toHaveLength(1);
     expect(pushMock).not.toHaveBeenCalled();
 
     // Reopening it (the pick-up prompt's Add) processes only the one left.
@@ -245,7 +302,7 @@ describe("confirming a shared PDF", () => {
     cleanup();
     vi.mocked(parsePdf).mockClear();
     search = "share=s1&confirmed=1";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     await screen.findByRole("button", { name: /^Save apartment$/i });
     expect(parsePdf).toHaveBeenCalledTimes(1);
   });
@@ -255,13 +312,15 @@ describe("receiving a shared link", () => {
   it("adds it as an unprocessed apartment once, deletes the entry and opens it (#413)", async () => {
     await put(entry("s1", { url: LINK, title: "Nice flat", dropped: 1 }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(
+    const { value } = await renderShare(
       <StrictMode>
         <UploadPage />
       </StrictMode>
     );
     await tap("Add");
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    // The page opens the apartment once the entry is deleted.
+    await stashWritten(deleteShare);
+    expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link");
     expect(value.createApartmentFromLink).toHaveBeenCalledTimes(1);
     expect(value.createApartmentFromLink).toHaveBeenCalledWith(LINK, "Nice flat");
     expect(await readShare("s1")).toBeNull();
@@ -270,16 +329,18 @@ describe("receiving a shared link", () => {
   it("finds the link in the text when the url field is empty", async () => {
     await put(entry("s1", { text: `Shared from an app: ${LINK}` }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     await tap("Add");
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    // The page opens the apartment once the entry is deleted.
+    await stashWritten(deleteShare);
+    expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link");
     expect(value.createApartmentFromLink).toHaveBeenCalledWith(LINK, null);
   });
 
   it("says the household is at its apartment cap and keeps the entry", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     vi.mocked(value.createApartmentFromLink).mockRejectedValue(
       new ApiClientError(409, "Apartment limit reached", { error: "Apartment limit reached" })
     );
@@ -294,7 +355,7 @@ describe("confirming a shared link", () => {
   it("names the host and adds nothing until Add", async () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     expect(
       await screen.findByText("Add an apartment for the link you shared from www.example.ch?")
     ).toBeInTheDocument();
@@ -306,9 +367,10 @@ describe("confirming a shared link", () => {
     await put(entry("s1", { url: LINK }));
     search = "share=s1";
     const user = userEvent.setup();
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     await user.click(await screen.findByRole("button", { name: "Discard" }));
-    await waitFor(async () => expect(await readShare("s1")).toBeNull());
+    await stashWritten(deleteShare);
+    expect(await readShare("s1")).toBeNull();
     expect(value.createApartmentFromLink).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Choose files" })).toBeInTheDocument();
@@ -325,15 +387,14 @@ describe("confirming a shared link", () => {
     // The read has resolved and been applied (the share is pending, so the
     // confirmation is not shown); with the store still loading, nothing was
     // written.
-    await act(async () => {
-      await readShare("s1");
-    });
-    await act(async () => {});
+    await stashSettled();
     expect(loading.createApartmentFromLink).not.toHaveBeenCalled();
 
     const ready = { ...loading, status: "ready" as const };
     rerender(<HouseholdDataContext.Provider value={ready}>{ui}</HouseholdDataContext.Provider>);
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link"));
+    // The page opens the apartment once the entry is deleted.
+    await stashWritten(deleteShare);
+    expect(replaceMock).toHaveBeenCalledWith("/apartments/apt-from-link");
     expect(loading.createApartmentFromLink).toHaveBeenCalledTimes(1);
     expect(loading.createApartmentFromLink).toHaveBeenCalledWith(LINK, null);
   });
@@ -342,20 +403,20 @@ describe("confirming a shared link", () => {
 describe("a share that cannot be used", () => {
   it("says so when the worker could not stash it", async () => {
     search = "share=unavailable";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument();
   });
 
   it("says so for an unknown or expired id", async () => {
     search = "share=gone";
-    renderWithHouseholdData(<UploadPage />);
+    await renderShare();
     expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument();
   });
 
   it("says nothing usable was shared", async () => {
     await put(entry("s1", { text: "just words", dropped: 1 }));
     search = "share=s1";
-    const { value } = renderWithHouseholdData(<UploadPage />);
+    const { value } = await renderShare();
     expect(await screen.findByText(NOTHING)).toBeInTheDocument();
     expect(screen.getByText("1 file was left out: only PDFs can be added.")).toBeInTheDocument();
     expect(value.createApartmentFromLink).not.toHaveBeenCalled();
