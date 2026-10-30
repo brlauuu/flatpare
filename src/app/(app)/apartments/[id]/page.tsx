@@ -31,7 +31,7 @@ import { formatSwissDate } from "@/lib/iso-date";
 import type { RatingView } from "@/lib/household-data/types";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
-import { ApartmentMetricBadges } from "./_components/apartment-metric-badges";
+import { ApartmentStatTiles } from "./_components/apartment-stat-tiles";
 import { RatingSummary } from "../_components/apartment-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { ProcessingNotice } from "./_components/processing-notice";
@@ -352,7 +352,7 @@ export default function ApartmentDetailPage() {
           onCancel={cancelEdit}
         />
       ) : (
-        <ApartmentMetricBadges apartment={apartment} />
+        <ApartmentStatTiles apartment={apartment} />
       )}
 
       {apartment.availableFrom && (

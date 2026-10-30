@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- An apartment's page shows rent, size, rooms, bathrooms, balconies and the washing machine as tiles, each value large with what it is underneath, in place of the small badges. (#452)
+
 ## 0.29.0 — 2026-10-30
 
 ### Changed
