@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.27.5 — 2026-10-30
+
 ### Changed
 
 - The controls above the apartment list share one style: sort, direction, grid and list, Upload New and Paste link are all framed buttons of the same height. On a phone the sort shows its name in full and Paste link is no longer cut off. (#440)
