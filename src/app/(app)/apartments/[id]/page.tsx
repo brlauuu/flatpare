@@ -286,7 +286,8 @@ export default function ApartmentDetailPage() {
           total={pager.total}
           onNavigate={(nextId) => router.push(`/apartments/${nextId}`)}
         />
-        <div data-apartment-code className="flex items-center gap-2">
+        {/* On a phone the code has a line of its own, the ratings at its right edge. */}
+        <div data-apartment-code className="flex basis-full items-center justify-between gap-2 sm:basis-auto sm:justify-start">
           <ShortCode code={apartment.shortCode} size="lg" />
           <RatingSummary avg={apartment.avgOverall} mine={apartment.myRating} />
         </div>

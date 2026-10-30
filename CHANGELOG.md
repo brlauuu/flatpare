@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- On a phone, the rating sits at the right edge of the code's line, on the apartment tiles and on an apartment's page. (#451)
+
 ## 0.30.0 — 2026-10-30
 
 ### Changed

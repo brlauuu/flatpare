@@ -121,6 +121,8 @@ describe("ApartmentCard ratings and status icons", () => {
     expect(top.querySelector("[data-card-code]")).toHaveTextContent("KTR-3B-1b-WY-8003");
     expect(top.querySelector("[data-card-status]")).toContainElement(screen.getByTitle("Not processed"));
     expect(top).toContainElement(summary() as HTMLElement);
+    // At the right edge on a phone, beside the code from `sm` up.
+    expect(top.querySelector("[data-card-status]")).toHaveClass("ml-auto", "sm:ml-0");
   });
 
   // The delete button's offset is the margin the padding leaves, so the two
