@@ -41,6 +41,11 @@
     "delete": "Eliminar",
     "deleting": "Eliminando..."
   },
+  "card": {
+    "delete": "Eliminar {name}",
+    "deleteConfirm": "¿Eliminar «{name}»? No se puede deshacer.",
+    "deleteFailed": "No se ha podido eliminar «{name}». Inténtalo de nuevo."
+  },
   "detail": {
     "loading": "Cargando...",
     "loadError": "No se ha podido cargar el piso",
