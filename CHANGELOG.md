@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.28.2 — 2026-10-30
+
 ### Fixed
 
 - Two tests that failed now and then in the full test run, in sharing to Flatpare and in editing an apartment, now wait for what they check instead of a fixed time. (#442)
