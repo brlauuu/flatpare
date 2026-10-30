@@ -41,6 +41,11 @@
     "delete": "Supprimer",
     "deleting": "Suppression…"
   },
+  "card": {
+    "delete": "Supprimer {name}",
+    "deleteConfirm": "Supprimer « {name} » ? C’est irréversible.",
+    "deleteFailed": "Impossible de supprimer « {name} ». Réessaie."
+  },
   "detail": {
     "loading": "Chargement…",
     "loadError": "Impossible de charger l’appartement",

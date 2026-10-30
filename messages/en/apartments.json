@@ -41,6 +41,11 @@
     "delete": "Delete",
     "deleting": "Deleting..."
   },
+  "card": {
+    "delete": "Delete {name}",
+    "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
+    "deleteFailed": "Couldn't delete \"{name}\". Try again."
+  },
   "detail": {
     "loading": "Loading...",
     "loadError": "Couldn't load apartment",

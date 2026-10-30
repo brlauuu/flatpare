@@ -41,6 +41,11 @@
     "delete": "Elimina",
     "deleting": "Eliminazione…"
   },
+  "card": {
+    "delete": "Elimina {name}",
+    "deleteConfirm": "Eliminare «{name}»? L'operazione non si può annullare.",
+    "deleteFailed": "Non è stato possibile eliminare «{name}». Riprova."
+  },
   "detail": {
     "loading": "Caricamento…",
     "loadError": "Non è stato possibile caricare l'appartamento",

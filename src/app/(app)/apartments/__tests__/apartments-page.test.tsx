@@ -129,9 +129,12 @@ describe("Apartments page — view toggle", () => {
       ],
     });
     expect(document.querySelector("[data-view='grid']")).toHaveClass("sm:auto-rows-fr");
-    const links = document.querySelectorAll("[data-view='grid'] > a");
-    expect(links).toHaveLength(2);
-    for (const link of links) {
+    // Each tile is the link and, beside it, the delete button (#437).
+    const tiles = document.querySelectorAll("[data-view='grid'] > div");
+    expect(tiles).toHaveLength(2);
+    const links = [...tiles].map((tile) => tile.querySelector(":scope > a")!);
+    for (const [i, link] of links.entries()) {
+      expect(tiles[i]).toHaveClass("h-full");
       expect(link).toHaveClass("block", "h-full");
       expect(link.querySelector("[data-slot='card']")).toHaveClass("h-full");
       expect(link.querySelector("[data-card-facts]")).toHaveClass("mt-auto");

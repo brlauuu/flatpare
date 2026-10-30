@@ -41,6 +41,11 @@
     "delete": "Löschen",
     "deleting": "Wird gelöscht..."
   },
+  "card": {
+    "delete": "{name} löschen",
+    "deleteConfirm": "„{name}“ löschen? Das kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "„{name}“ konnte nicht gelöscht werden. Versuch es nochmals."
+  },
   "detail": {
     "loading": "Wird geladen...",
     "loadError": "Die Wohnung konnte nicht geladen werden",
