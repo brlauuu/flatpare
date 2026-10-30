@@ -36,10 +36,13 @@ interface ApartmentActionsProps {
   onDelete: () => void;
 }
 
-// On a phone each action is a square icon in one row (#407); from `sm` up
-// the word shows beside it. The word is always there for a screen reader,
-// and `title` names the icon on hover.
-const ACTION = "h-11 w-11 p-0 sm:h-7 sm:w-auto sm:px-2.5";
+// On a phone each action is a square icon in one row (#407): the icons share
+// the row's width, at most 44px each, so all seven fit on a narrow phone
+// instead of the last one wrapping (#436). From `sm` up the word shows
+// beside it. The word is always there for a screen reader, and `title`
+// names the icon on hover.
+const ACTION =
+  "aspect-square h-auto min-w-0 max-w-11 flex-1 basis-0 p-0 sm:aspect-auto sm:h-7 sm:max-w-none sm:flex-none sm:basis-auto sm:w-auto sm:px-2.5";
 
 function Label({ icon: Icon, text, spin = false }: { icon: LucideIcon; text: string; spin?: boolean }) {
   return (
@@ -70,7 +73,7 @@ export function ApartmentActions({
   const fileInput = useRef<HTMLInputElement>(null);
   const attachLabel = attaching ? t("attaching") : hasPdf ? t("replacePdf") : t("attachPdf");
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
+    <div className="flex flex-nowrap items-center gap-1.5 sm:shrink-0 sm:gap-2">
       {hasPdf && (
         // A button, not a link: the stored file is ciphertext, so the page
         // decrypts it and opens a blob: URL.
@@ -112,7 +115,7 @@ export function ApartmentActions({
           <Label icon={ExternalLink} text={t("originalListing")} />
         </a>
       ) : (
-        <Badge variant="secondary" title={t("urlMissing")} className="h-11 gap-1 text-muted-foreground sm:h-auto">
+        <Badge variant="secondary" title={t("urlMissing")} className={cn(ACTION, "justify-center gap-1 text-muted-foreground sm:h-auto")}>
           <Label icon={Link2Off} text={t("urlMissing")} />
         </Badge>
       )}

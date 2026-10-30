@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Fixed
+
+- On a phone, the action buttons on an apartment's page stay in one row. With seven of them (a PDF, a listing link and a place on the map), Delete used to drop to a second row. (#436)
+
 ## 0.27.3 — 2026-10-29
 
 ### Fixed
