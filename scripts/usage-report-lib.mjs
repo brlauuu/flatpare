@@ -214,57 +214,141 @@ ${sections ? `<p class="legend">Daily, last ${report.chartDays} days:<span style
 `;
 }
 
-// The email: the summary table inline (email clients drop SVG), the page
-// attached. Inline styles only, since most clients strip <style>.
-export function renderEmail(report) {
-  const flagged = report.lines.filter((l) => l.check).length;
-  const subject =
-    `Flatpare usage, last ${report.days} day(s): ${report.lines.length} active` +
-    (flagged ? `, ${flagged} to check` : "");
-  const cell = "border:1px solid #d4d4d4;padding:4px 8px;text-align:right;white-space:nowrap";
-  const rows = report.lines
+// Totals over every active household, for the email's headline.
+export function totals(lines) {
+  const t = { active: lines.length, check: 0, spends: 0, paid: 0 };
+  for (const k of ENDPOINTS) t[k] = 0;
+  for (const l of lines) {
+    if (l.check) t.check += 1;
+    t.spends += sum(l.spends);
+    t.paid += l.spends.first + l.spends.reprocess;
+    for (const k of ENDPOINTS) t[k] += l.calls[k];
+  }
+  return t;
+}
+
+// Why a household is marked, in words.
+export function checkReason(line) {
+  const paid = line.spends.first + line.spends.reprocess;
+  return `${line.calls["parse-pdf"]} PDF reads and ${line.calls.geocode} address lookups against ${paid} paid processing${paid === 1 ? "" : "s"}`;
+}
+
+// Rows shown in the email's table: the most active households by the calls
+// the mark weighs. The rest are in the attached page.
+export const EMAIL_TOP = 10;
+
+// The email is the summary: the totals, the households to check and why, and
+// the most active ones. The attached page is the full report. Inline styles
+// and tables only, since email clients strip <style> and drop SVG.
+const MUTED = "color:#555555";
+const NONE_ACTIVE = "No household made a call or spent a credit in this window.";
+const NONE_CHECK = "No household is marked to check.";
+
+function emailTiles(t) {
+  return [
+    ["Active households", t.active],
+    ["To check", t.check],
+    ["Credits spent", t.spends],
+    ["PDF reads", t["parse-pdf"]],
+    ["Address lookups", t.geocode],
+    ["Travel times", t.distance],
+    ["Link checks", t["check-listing"]],
+  ];
+}
+
+// Inline blocks, not table cells, so the tiles wrap on a phone.
+function tileHtml([label, value]) {
+  const alert = label === "To check" && value > 0;
+  return (
+    `<div style="display:inline-block;vertical-align:top;width:112px;margin:0 6px 6px 0;border:1px solid #d4d4d4;` +
+    `border-radius:6px;padding:8px 10px${alert ? ";background:#fdecee;color:#c8102e" : ""}">` +
+    `<div style="font-size:22px;font-weight:700;line-height:1.2">${value}</div>` +
+    `<div style="font-size:12px;${alert ? "" : MUTED}">${label}</div></div>`
+  );
+}
+
+function checkListHtml(flagged) {
+  if (!flagged.length) return `<p style="margin:24px 0 0">${NONE_CHECK}</p>`;
+  const items = flagged
+    .map((l) => `<li style="margin:0 0 4px"><b>Household ${l.id}</b>: ${escapeHtml(checkReason(l))}</li>`)
+    .join("");
+  return `<h2 style="font-size:16px;margin:24px 0 8px">To check</h2><ul style="margin:0;padding-left:20px">${items}</ul>`;
+}
+
+// The most active households by the calls the mark weighs, then credits.
+function mostActive(lines) {
+  const weight = (l) => l.calls["parse-pdf"] + l.calls.geocode + sum(l.spends);
+  return [...lines].sort((x, y) => weight(y) - weight(x) || x.id - y.id).slice(0, EMAIL_TOP);
+}
+
+const activeCells = (l) => [l.id, sum(l.spends), l.calls["parse-pdf"], l.calls.geocode, l.granted - l.spent];
+
+function activeTableHtml(top, total) {
+  if (!top.length) return `<p style="margin:24px 0 0">${NONE_ACTIVE}</p>`;
+  const cell = "border-bottom:1px solid #e5e5e5;padding:6px 8px;text-align:right;white-space:nowrap";
+  // Short headings so the table fits a phone; the line under it spells them out.
+  const heads = ["Household", "Spent", "PDFs", "Lookups", "Left"]
+    .map((h) => `<th style="${cell};font-weight:600">${h}</th>`)
+    .join("");
+  const rows = top
     .map((l) => {
-      const style = l.check ? `${cell};background:#fdecee;color:#c8102e;font-weight:600` : cell;
-      const cells = [
-        l.id,
-        l.held,
-        `${l.spent}/${l.granted}`,
-        KINDS.map((k) => l.spends[k]).join("/"),
-        ENDPOINTS.map((k) => l.calls[k]).join("/"),
-        l.check ? "check" : "",
-      ];
-      return `<tr>${cells.map((c) => `<td style="${style}">${escapeHtml(c)}</td>`).join("")}</tr>`;
+      const style = l.check ? `${cell};color:#c8102e;font-weight:600` : cell;
+      return `<tr>${activeCells(l).map((c) => `<td style="${style}">${c}</td>`).join("")}</tr>`;
     })
     .join("");
-  const heads = [
-    "Household",
-    "Held",
-    "Credits spent/granted",
-    "Spent first/reprocess/recompute",
-    "Calls parse-pdf/geocode/distance/check-listing",
-    "Check",
-  ];
-  const table = report.lines.length
-    ? `<table style="border-collapse:collapse;font-size:13px"><tr>${heads.map((h) => `<th style="${cell}">${h}</th>`).join("")}</tr>${rows}</table>`
-    : `<p>No household made a call or spent a credit in this window.</p>`;
+  const more =
+    total > top.length ? `<p style="margin:8px 0 0;${MUTED}">And ${total - top.length} more in the attached report.</p>` : "";
+  return (
+    `<h2 style="font-size:16px;margin:24px 0 8px">Most active</h2>` +
+    `<table style="border-collapse:collapse;font-size:13px"><tr>${heads}</tr>${rows}</table>${more}` +
+    `<p style="margin:8px 0 0;font-size:12px;${MUTED}">Spent: credits spent in this window. PDFs: PDF reads. ` +
+    `Lookups: address lookups. Left: credits left, all time.</p>`
+  );
+}
+
+function emailText(report, tiles, flagged, top) {
+  const checks = flagged.length
+    ? ["To check:", ...flagged.map((l) => `- household ${l.id}: ${checkReason(l)}`)].join("\n")
+    : NONE_CHECK;
+  const active = top.length
+    ? [
+        "Most active (household: credits spent, PDF reads, address lookups, credits left):",
+        ...top.map((l) => `- ${activeCells(l)[0]}: ${activeCells(l).slice(1).join(", ")}`),
+      ].join("\n")
+    : NONE_ACTIVE;
+  return [
+    `Flatpare usage, last ${report.days} day(s)`,
+    `${report.target}, made ${report.generatedAt}`,
+    "",
+    tiles.map(([label, value]) => `${label}: ${value}`).join("\n"),
+    "",
+    checks,
+    "",
+    active,
+    "",
+    "The attached page is the full report.",
+  ].join("\n");
+}
+
+// The email is the summary: the totals, the households to check and why, and
+// the most active ones. The attached page is the full report. Inline styles
+// only, since email clients strip <style> and drop SVG.
+export function renderEmail(report) {
+  const t = totals(report.lines);
+  const tiles = emailTiles(t);
+  const flagged = report.lines.filter((l) => l.check);
+  const top = mostActive(report.lines);
+  const subject =
+    `Flatpare usage, last ${report.days} day(s): ${t.active} active` + (t.check ? `, ${t.check} to check` : "");
   const html =
-    `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;color:#111">` +
-    `<p>Database: ${escapeHtml(report.target)}. Last ${report.days} day(s), made ${escapeHtml(report.generatedAt)}.</p>` +
-    table +
-    `<p style="color:#555">The attached page has a daily chart per household.</p></div>`;
-  const text = [
-    `Database: ${report.target}. Last ${report.days} day(s), made ${report.generatedAt}.`,
-    ...report.lines.map(
-      (l) =>
-        `household ${l.id}: held ${l.held}, credits ${l.spent}/${l.granted}, ` +
-        `spent ${KINDS.map((k) => l.spends[k]).join("/")}, calls ${ENDPOINTS.map((k) => l.calls[k]).join("/")}` +
-        (l.check ? " CHECK" : "")
-    ),
-    report.lines.length ? "" : "No household made a call or spent a credit in this window.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  return { subject, html, text };
+    `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;color:#111111;max-width:640px">` +
+    `<h1 style="font-size:20px;margin:0 0 4px">Flatpare usage, last ${report.days} day(s)</h1>` +
+    `<p style="margin:0 0 16px;${MUTED}">${escapeHtml(report.target)}, made ${escapeHtml(report.generatedAt)}</p>` +
+    `<div style="margin:0 0 8px">${tiles.map(tileHtml).join("")}</div>` +
+    checkListHtml(flagged) +
+    activeTableHtml(top, report.lines.length) +
+    `<p style="margin:24px 0 0;${MUTED}">The attached page is the full report: every household, every count, and a daily chart for each.</p></div>`;
+  return { subject, html, text: emailText(report, tiles, flagged, top) };
 }
 
 export const CADENCES = { daily: 1, weekly: 7, monthly: 30 };
