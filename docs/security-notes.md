@@ -637,6 +637,9 @@ and the report's contents with Resend. Accepted, with these limits:
   artifact, and the recipient is a secret. The workflow has no `pull_request` trigger,
   so a fork's PR never runs it with the secrets.
 
+Users are told that these counts exist and are reviewed (#468): the landing page's
+privacy section, the guide, the sign-in dialog and a one-time notice in the app.
+
 ### Accepted: any member can delete any stored file of their household (#413)
 
 Replacing an apartment's PDF uploads the new file under a fresh name and then deletes

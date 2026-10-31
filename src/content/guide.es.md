@@ -92,7 +92,7 @@ Cambiar más tarde la dirección de un piso no vuelve a medir nada por sí solo:
 
 ### Lo que ve el servidor
 
-Casi nada. Tus pisos, valoraciones, notas y PDF se cifran antes de salir de tu navegador.
+Nada de lo que contiene tu búsqueda: tus pisos, valoraciones, notas y PDF se cifran antes de salir de tu navegador. Lo que ve es lo que necesita para separar los hogares y cobrar el procesamiento: tu cuenta (dirección de correo y el nombre que elegiste), quién forma parte de tu hogar, cuántos pisos, valoraciones y lugares tienes y cuándo cambiaron, y **cuántos PDF, direcciones y enlaces de anuncios ha hecho procesar tu hogar, y qué pagó cada crédito**. Estos recuentos se llevan por hogar, nunca por persona, y nunca dicen qué se procesó. En flatpare.com los revisamos para comparar el uso con lo pagado.
 
 Hay una excepción deliberada, y conviene conocerla: **geolocalizar una dirección, medir un tiempo de trayecto, comprobar si un anuncio sigue en línea y leer un PDF** no se pueden hacer en tu navegador. Para eso, ese único elemento se envía en forma legible: una dirección a Google Maps (u OpenRouteService en algunas instalaciones propias) para obtener su ubicación y los tiempos de trayecto, la URL de un anuncio que nuestro servidor abre en la propia web del anuncio, y un PDF al modelo de IA que lo lee. Nuestro servidor lo usa para esa única llamada, nunca lo escribe en la base de datos y nunca lo registra. Cuando un PDF no tiene un enlace que funcione a su anuncio, el modelo de IA también lo busca en la web, con el título, la dirección, el sitio web y el idioma del anuncio; en flatpare.com esa búsqueda no guarda nada de la solicitud. Un enlace encontrado así aparece marcado como resultado de una búsqueda, para que puedas comprobarlo antes de guardar.
 

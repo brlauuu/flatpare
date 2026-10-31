@@ -46,6 +46,7 @@
     "seesAccount": "ton compte : ton adresse e-mail et le nom que tu as choisi ;",
     "seesMembers": "qui fait partie de ton foyer ;",
     "seesCounts": "combien d’appartements, d’évaluations et de lieux tu as, qui a évalué quoi, et quand chacun a été ajouté ou modifié ;",
+    "seesUsage": "combien de PDF, d’adresses et de liens d’annonces ton ménage a fait traiter, et ce que chaque crédit a payé : des comptes par ménage, jamais par personne, et jamais ce qui a été traité. Sur flatpare.com, nous examinons ces comptes pour vérifier l’utilisation par rapport à ce qui a été payé ;",
     "seesPdfSize": "la taille de chaque PDF enregistré.",
     "seesNever": "Jamais ce qu’est un appartement : ni son adresse, ni aucun de ses détails, notes ou commentaires. En auto-hébergement, c’est pareil, avec ton propre serveur à notre place.",
     "exceptionTitle": "L’exception, sans détour",
@@ -139,7 +140,8 @@
   },
   "signIn": {
     "title": "Se connecter",
-    "close": "Fermer"
+    "close": "Fermer",
+    "privacyNote": "Ta recherche est chiffrée avant d’être enregistrée. Le serveur compte combien chaque ménage a fait traiter, jamais quoi. <link>Ce que nous voyons et ne voyons pas</link>"
   },
   "sketch": {
     "balcony": "balcon !",

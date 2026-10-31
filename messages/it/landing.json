@@ -46,6 +46,7 @@
     "seesAccount": "il tuo account: indirizzo e-mail e il nome che hai scelto;",
     "seesMembers": "chi fa parte del tuo gruppo;",
     "seesCounts": "quanti appartamenti, valutazioni e luoghi hai, chi ha valutato cosa, e quando ognuno è stato aggiunto o modificato;",
+    "seesUsage": "quanti PDF, indirizzi e link agli annunci la tua economia domestica ha fatto elaborare, e cosa ha pagato ogni credito: conteggi per economia domestica, mai per persona, e mai cosa è stato elaborato. Su flatpare.com esaminiamo questi conteggi per confrontare l’uso con quanto è stato pagato;",
     "seesPdfSize": "la dimensione di ogni PDF salvato.",
     "seesNever": "Mai cosa sia un appartamento: né il suo indirizzo, né alcuno dei suoi dettagli, valutazioni o commenti. Se lo ospiti tu, vale lo stesso, con il tuo server al nostro posto.",
     "exceptionTitle": "L'eccezione, detta chiaramente",
@@ -139,7 +140,8 @@
   },
   "signIn": {
     "title": "Accedi",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "privacyNote": "La tua ricerca viene cifrata prima di essere salvata. Il server conta quanto ha fatto elaborare ogni economia domestica, mai cosa. <link>Cosa possiamo vedere e cosa no</link>"
   },
   "sketch": {
     "balcony": "balcone!",

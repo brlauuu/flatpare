@@ -34,5 +34,11 @@
     "install": "Installieren",
     "how": "Wie",
     "dismiss": "Tipp ausblenden"
+  },
+  "usageNotice": {
+    "title": "Was wir zählen",
+    "body": "Flatpare zählt, wie viele PDFs, Adressen und Inserat-Links jeder Haushalt verarbeiten liess und wofür jedes Guthaben verwendet wurde. Die Zahlen gelten pro Haushalt, nie pro Person, und sagen nie, was verarbeitet wurde. Auf flatpare.com prüfen wir sie, um die Nutzung mit dem Bezahlten abzugleichen.",
+    "more": "Mehr in der Anleitung",
+    "dismiss": "Verstanden"
   }
 }

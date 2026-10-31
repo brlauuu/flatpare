@@ -278,6 +278,7 @@ function Privacy() {
             <li>{t("seesAccount")}</li>
             <li>{t("seesMembers")}</li>
             <li>{t("seesCounts")}</li>
+            <li>{t("seesUsage")}</li>
             <li>{t("seesPdfSize")}</li>
           </ul>
           <p className="m-0 text-base leading-relaxed text-(--lp-body)">{t("seesNever")}</p>

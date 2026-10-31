@@ -46,6 +46,7 @@
     "seesAccount": "your account: email address, and the name you set;",
     "seesMembers": "who is in your household;",
     "seesCounts": "how many apartments, ratings and places you have, who rated what, and when each was added or changed;",
+    "seesUsage": "how many PDFs, addresses and listing links your household has had processed, and what each credit paid for: counts per household, never per person, and never what was processed. On flatpare.com we review these counts to check use against what was paid for;",
     "seesPdfSize": "the size of each stored PDF.",
     "seesNever": "Never what an apartment is: not its address, any of its details, ratings or comments. Self-hosted, the same holds with your own server in our place.",
     "exceptionTitle": "The exception, stated plainly",
@@ -139,7 +140,8 @@
   },
   "signIn": {
     "title": "Sign in",
-    "close": "Close"
+    "close": "Close",
+    "privacyNote": "Your search is encrypted before it is stored. The server counts how much each household has processed, never what. <link>What we can and can't see</link>"
   },
   "sketch": {
     "balcony": "balcony!",
