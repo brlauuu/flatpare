@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.33.0 — 2026-10-31
+
 ### Added
 
 - Send feedback from the menu under your name, with your name so we can reply, or anonymously. It is emailed to the person who runs Flatpare and stored nowhere. (#476)
