@@ -48,6 +48,13 @@ import {
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
+// A pasted secret can carry a space or a line break at either end. new URL()
+// forgives that and the database client does not (URL_INVALID), so the
+// target line would name a database the run then fails to open.
+for (const name of ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]) {
+  if (process.env[name] !== undefined) process.env[name] = process.env[name].trim();
+}
+
 function usage(code = 1) {
   console.error(
     "usage:\n" +
