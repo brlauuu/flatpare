@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.32.0 — 2026-10-31
+
 ### Added
 
 - Flatpare now says plainly that it counts how many PDFs, addresses and listing links each household has processed, and what each credit paid for, and that flatpare.com reviews those counts against what was paid for: on the landing page, in the guide, under the sign-in card, and once in the app for everyone. Counts are per household, never per person, and never say what was processed. (#468)
