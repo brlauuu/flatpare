@@ -556,6 +556,14 @@ describe("applyMigrations", () => {
     ]);
   });
 
+  it("creates feedback_days (#476) with a day and a count only", async () => {
+    // Feedback is emailed, never stored; this counter caps the sends. A
+    // column for the message, a user or a household would be a new decision.
+    const client = createClient({ url: ":memory:" });
+    await applyMigrations(client);
+    expect((await columnNames(client, "feedback_days")).sort()).toEqual(["count", "day"]);
+  });
+
   it("0026 marks every existing apartment as charged (#413)", async () => {
     // Apply up to 0025 from a copy of the folder whose journal stops there,
     // add an apartment the old way, then apply the rest.

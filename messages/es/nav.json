@@ -19,7 +19,8 @@
     "guide": "Guía",
     "signOut": "Cerrar sesión",
     "install": "Instalar la app",
-    "terms": "Condiciones y privacidad"
+    "terms": "Condiciones y privacidad",
+    "feedback": "Enviar comentarios"
   },
   "confirmSignOut": "Tienes cambios sin guardar en una valoración. ¿Cerrar sesión de todos modos? Lo que has escrito se perderá.",
   "unknownUser": "Desconocido",
@@ -41,5 +42,19 @@
     "body": "Flatpare cuenta cuántos PDF, direcciones y enlaces de anuncios ha hecho procesar cada hogar, y qué pagó cada crédito. Los recuentos son por hogar, nunca por persona, y nunca dicen qué se procesó. En flatpare.com los revisamos para comparar el uso con lo pagado.",
     "more": "Más en la guía",
     "dismiss": "Entendido"
+  },
+  "feedback": {
+    "title": "Enviar comentarios",
+    "intro": "Qué funciona, qué no, qué falta. Llega directamente a la persona que gestiona Flatpare.",
+    "message": "Tus comentarios",
+    "anonymous": "Enviar de forma anónima",
+    "namedNote": "El correo incluye tu nombre y tu dirección de correo, para que podamos responderte.",
+    "anonymousNote": "El correo no dice quién eres, y no podemos responderte. Nuestro servidor sabe que has iniciado sesión mientras lo envía, y no guarda nada.",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "thanks": "Gracias, tus comentarios están en camino.",
+    "busy": "Demasiados comentarios hoy. Vuelve a intentarlo mañana.",
+    "failed": "No se pudieron enviar. Vuelve a intentarlo.",
+    "close": "Cerrar"
   }
 }

@@ -136,3 +136,26 @@ export function betaRequestEmail(input: { requesterEmail: string; siteUrl: strin
     ),
   };
 }
+
+// Feedback from the app (#476), to the owner. English, like the beta-request
+// notice: an operator message. The message is typed by a member and escaped
+// like any other untrusted text, and kept out of the subject. Anonymous
+// feedback carries no `from` at all: no name, no address, no household.
+export function feedbackEmail(input: {
+  message: string;
+  from: { name: string; email: string } | null;
+  version: string;
+  locale: string;
+}): RenderedEmail {
+  const sender = input.from ? `From ${input.from.name} <${input.from.email}>. Reply to answer them.` : "Sent anonymously.";
+  const meta = `Flatpare ${input.version}, interface language ${input.locale}.`;
+  return {
+    subject: input.from ? "Flatpare feedback" : "Flatpare feedback (anonymous)",
+    text: [input.message, "--", sender, meta].join("\n\n"),
+    html:
+      `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;color:#111;max-width:600px;margin:0 auto;padding:24px">` +
+      `<p style="margin:0 0 24px;line-height:1.5;white-space:pre-wrap">${escapeHtml(input.message)}</p>` +
+      `<p style="margin:0;font-size:13px;color:#666;line-height:1.5">${escapeHtml(sender)}<br>${escapeHtml(meta)}</p>` +
+      `</div>`,
+  };
+}

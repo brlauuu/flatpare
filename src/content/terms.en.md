@@ -34,6 +34,7 @@ What the server does hold, and why:
 - **Usage counts**: how many PDFs, addresses and listing links each household has processed, and what each credit paid for. Per household, never per person, and never what was processed. We review them to check use against what was paid for.
 - **Payments**: which household bought how many credits and when. Card details stay with Stripe.
 - **Beta requests**: the email address you gave on the landing page, to send you an invitation.
+- **Feedback**: not stored. What you send with Send feedback reaches us by email, with your name and address unless you send it anonymously.
 
 When you read a PDF, place an address or check a listing link, that one PDF, address or link is sent through our server to the service that does the work, held in memory and not stored. The landing page's privacy section names each of them.
 

@@ -19,7 +19,8 @@
     "guide": "Guida",
     "signOut": "Esci",
     "install": "Installa l'app",
-    "terms": "Condizioni e privacy"
+    "terms": "Condizioni e privacy",
+    "feedback": "Invia un feedback"
   },
   "confirmSignOut": "Hai modifiche alle valutazioni non salvate. Vuoi uscire lo stesso? Quello che hai inserito andrà perso.",
   "unknownUser": "Sconosciuto",
@@ -41,5 +42,19 @@
     "body": "Flatpare conta quanti PDF, indirizzi e link agli annunci ogni economia domestica ha fatto elaborare, e cosa ha pagato ogni credito. I conteggi sono per economia domestica, mai per persona, e non dicono mai cosa è stato elaborato. Su flatpare.com li esaminiamo per confrontare l’uso con quanto è stato pagato.",
     "more": "Altro nella guida",
     "dismiss": "Ho capito"
+  },
+  "feedback": {
+    "title": "Invia un feedback",
+    "intro": "Cosa funziona, cosa no, cosa manca. Arriva direttamente alla persona che gestisce Flatpare.",
+    "message": "Il tuo feedback",
+    "anonymous": "Invia in forma anonima",
+    "namedNote": "L'e-mail contiene il tuo nome e il tuo indirizzo e-mail, così possiamo risponderti.",
+    "anonymousNote": "L'e-mail non dice chi sei, e non possiamo risponderti. Il nostro server sa che hai effettuato l'accesso mentre la invia, e non conserva nulla.",
+    "send": "Invia",
+    "sending": "Invio...",
+    "thanks": "Grazie, il tuo feedback è in viaggio.",
+    "busy": "Troppi feedback oggi. Riprova domani.",
+    "failed": "Non è stato possibile inviarlo. Riprova.",
+    "close": "Chiudi"
   }
 }

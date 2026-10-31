@@ -423,6 +423,14 @@ export const betaRequests = sqliteTable("beta_requests", {
   ),
 });
 
+// Feedback sent from the app (#476): a site-wide count per UTC day, which
+// caps the emails at FEEDBACK_PER_DAY. Nothing else about feedback is kept:
+// not the message, not who sent it, not which household.
+export const feedbackDays = sqliteTable("feedback_days", {
+  day: text("day").primaryKey(),
+  count: integer("count").notNull().default(0),
+});
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;

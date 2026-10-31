@@ -34,6 +34,7 @@ Cosa conserva il server, e perché:
 - **Conteggi di utilizzo**: quanti PDF, indirizzi e link di annunci ogni gruppo ha elaborato, e a cosa è servito ogni credito. Per gruppo, mai per persona, e mai cosa è stato elaborato. Li controlliamo per confrontare l'uso con quanto è stato pagato.
 - **Pagamenti**: quale gruppo ha comprato quanti crediti e quando. I dati della carta restano a Stripe.
 - **Richieste per la beta**: l'indirizzo e-mail che hai indicato nella pagina iniziale, per mandarti un invito.
+- **Feedback**: non viene salvato. Ciò che invii con Invia un feedback ci arriva per e-mail, con il tuo nome e il tuo indirizzo, a meno che tu non lo invii in forma anonima.
 
 Quando leggi un PDF, collochi un indirizzo o controlli un link di un annuncio, proprio quel PDF, quell'indirizzo o quel link passa dal nostro server al servizio che fa il lavoro, resta in memoria e non viene salvato. La sezione sulla privacy della pagina iniziale nomina ciascuno di questi servizi.
 

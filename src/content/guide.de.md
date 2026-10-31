@@ -149,6 +149,8 @@ Ist das Guthaben aufgebraucht, werden nur keine neuen Wohnungen mehr verarbeitet
 
 Flatpare selbst zu betreiben ist kostenlos und hat überhaupt keine Grenzen.
 
+**Feedback senden** im Menü unter deinem Namen schickt eine Nachricht direkt an die Person, die Flatpare betreibt, mit deinem Namen und deiner E-Mail-Adresse, damit sie antworten kann, oder anonym. Was du schickst, speichert der Server nicht. Die Seite **Bedingungen und Datenschutz** im selben Menü sagt, wer flatpare.com betreibt, nennt die Rückerstattung innert 14 Tagen und was der Server speichert.
+
 ---
 
 ## Tipps

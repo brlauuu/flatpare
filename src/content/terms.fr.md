@@ -34,6 +34,7 @@ Ce que le serveur conserve, et pourquoi :
 - **Compteurs d'utilisation** : combien de PDF, d'adresses et de liens d'annonce chaque foyer a traités, et à quoi chaque crédit a servi. Par foyer, jamais par personne, et jamais ce qui a été traité. Nous les vérifions pour comparer l'utilisation avec ce qui a été payé.
 - **Paiements** : quel foyer a acheté combien de crédits et quand. Les données de carte restent chez Stripe.
 - **Demandes de bêta** : l'adresse e-mail que tu as donnée sur la page d'accueil, pour t'envoyer une invitation.
+- **Avis** : pas enregistrés. Ce que tu envoies avec Envoyer un avis nous parvient par e-mail, avec ton nom et ton adresse, sauf si tu l'envoies anonymement.
 
 Quand tu lis un PDF, places une adresse ou vérifies un lien d'annonce, ce PDF, cette adresse ou ce lien précis passe par notre serveur vers le service qui fait le travail, est gardé en mémoire et n'est pas enregistré. La section confidentialité de la page d'accueil nomme chacun de ces services.
 

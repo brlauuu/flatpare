@@ -749,3 +749,20 @@ It runs only into a household with no apartments and no locations. That is check
 in the browser against the loaded store, not by the server; two members importing
 into the same empty household at once would both write. Accepted: it is a recovery
 action, not a race worth a server-side lock.
+
+## Feedback — reviewed 2026-10-31 (#476)
+
+### Accepted: anonymous means the email is anonymous, not the request
+
+Send feedback is for members only, so the server knows who is signed in while it
+sends. It keeps nothing: no table holds the message or the sender, and the one new
+table (`feedback_days`) is a site-wide count per day with no household or user in
+it. The anonymous email carries the message, the app version and the interface
+language. It leaves out the name, the address, the household and the page the
+person was on, because an apartment id in a path would identify the household to
+anyone holding the database. The dialog says this in so many words.
+
+Requiring sign-in is what keeps the form from being a way to mail the owner from
+our domain without limit; the daily cap (100, site-wide) bounds the sending quota
+if a member's account is misused. Feedback lands in the owner's mailbox through
+Resend, and the terms page says so.

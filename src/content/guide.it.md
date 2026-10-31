@@ -149,6 +149,8 @@ Esaurire i crediti impedisce solo di elaborare nuovi appartamenti: puoi comunque
 
 Gestire Flatpare in proprio è gratuito e non ha alcun limite.
 
+**Invia un feedback**, nel menu sotto il tuo nome, manda un messaggio direttamente alla persona che gestisce Flatpare, con il tuo nome e il tuo indirizzo e-mail perché possa risponderti, oppure in forma anonima. Il server non conserva nulla di ciò che invii. La pagina **Condizioni e privacy**, nello stesso menu, dice chi gestisce flatpare.com, il rimborso entro 14 giorni e cosa conserva il server.
+
 ---
 
 ## Consigli

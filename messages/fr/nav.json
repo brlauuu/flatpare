@@ -19,7 +19,8 @@
     "guide": "Guide",
     "signOut": "Se déconnecter",
     "install": "Installer l'app",
-    "terms": "Conditions et confidentialité"
+    "terms": "Conditions et confidentialité",
+    "feedback": "Envoyer un avis"
   },
   "confirmSignOut": "Tu as des modifications d’évaluation non enregistrées. Te déconnecter quand même ? Ta saisie sera perdue.",
   "unknownUser": "Inconnu",
@@ -41,5 +42,19 @@
     "body": "Flatpare compte combien de PDF, d’adresses et de liens d’annonces chaque ménage a fait traiter, et ce que chaque crédit a payé. Ces comptes sont par ménage, jamais par personne, et ne disent jamais ce qui a été traité. Sur flatpare.com, nous les examinons pour vérifier l’utilisation par rapport à ce qui a été payé.",
     "more": "Plus dans le guide",
     "dismiss": "Compris"
+  },
+  "feedback": {
+    "title": "Envoyer un avis",
+    "intro": "Ce qui marche, ce qui ne marche pas, ce qui manque. Ton avis va directement à la personne qui exploite Flatpare.",
+    "message": "Ton avis",
+    "anonymous": "Envoyer anonymement",
+    "namedNote": "L'e-mail contient ton nom et ton adresse e-mail, pour que nous puissions te répondre.",
+    "anonymousNote": "L'e-mail ne dit pas qui tu es, et nous ne pouvons pas te répondre. Notre serveur sait que tu es connecté pendant l'envoi, et ne conserve rien.",
+    "send": "Envoyer",
+    "sending": "Envoi...",
+    "thanks": "Merci, ton avis est en route.",
+    "busy": "Trop d'avis aujourd'hui. Réessaie demain.",
+    "failed": "L'envoi a échoué. Réessaie.",
+    "close": "Fermer"
   }
 }
