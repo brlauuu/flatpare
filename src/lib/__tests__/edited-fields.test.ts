@@ -175,3 +175,35 @@ describe("the rent and its currency", () => {
     expect(typed.userEditedFields).toEqual(expect.arrayContaining(["rentChf", "rentCurrency"]));
   });
 });
+
+// #412: an apartment made from a link is named after the site until a PDF
+// says what it is.
+describe("a name taken from the link's site", () => {
+  const link = "https://www.homegate.ch/rent/4001234567";
+  const pdf = {
+    name: "3.5 rooms in Wiedikon", address: null, sizeM2: null, numRooms: null, numBathrooms: null,
+    numBalconies: null, hasWashingMachine: null, rentChf: null, rentCurrency: null, listingUrl: null,
+    summary: null, availableFrom: null,
+  };
+  const fromLink = { ...emptyApartment("www.homegate.ch"), listingUrl: link };
+
+  it("is replaced by the first read and not marked as kept", () => {
+    const next = fillFromExtraction(fromLink, pdf, {});
+    expect(next.name).toBe("3.5 rooms in Wiedikon");
+    expect(next.userEditedFields).not.toContain("name");
+  });
+
+  it("is replaced by a reprocess, also where an earlier read marked it as kept", () => {
+    const marked = { ...fromLink, userEditedFields: ["name", "address"] };
+    const next = applyExtraction(marked, pdf, {});
+    expect(next.name).toBe("3.5 rooms in Wiedikon");
+    expect(next.userEditedFields).toEqual(["address"]);
+  });
+
+  it("stays when the PDF names nothing, and a name a member chose is never replaced", () => {
+    expect(fillFromExtraction(fromLink, { ...pdf, name: "" }, {}).name).toBe("www.homegate.ch");
+    const chosen = { ...fromLink, name: "The one near the lake", userEditedFields: ["name"] };
+    expect(applyExtraction(chosen, pdf, {}).name).toBe("The one near the lake");
+    expect(fillFromExtraction(chosen, pdf, {}).name).toBe("The one near the lake");
+  });
+});

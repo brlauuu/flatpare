@@ -255,7 +255,7 @@ try {
   for (const theme of ["light", "dark"]) {
     const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: theme });
     await context.addInitScript((t) => window.localStorage.setItem("theme", t), theme);
-    // The one-time "What we count" notice (#468) is for a first visit, not
+    // The one-time "Data we collect and why" notice (#468) is for a first visit, not
     // for the pictures.
     await context.addInitScript(() => window.localStorage.setItem("flatpare_usage_notice_seen", "1"));
     const json = (body) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });

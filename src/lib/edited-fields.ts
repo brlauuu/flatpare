@@ -1,3 +1,4 @@
+import { hostOf } from "@/lib/household-data/links";
 import type { Apartment } from "@/lib/household-data/types";
 
 export const INFERABLE_FIELDS = [
@@ -26,6 +27,18 @@ function rentKept(current: Apartment): boolean {
   return RENT_PAIR.some((f) => current.userEditedFields.includes(f));
 }
 export type InferableFields = Pick<Apartment, InferableField>;
+
+// An apartment made from a link is named after the site it is on (#413)
+// until something better is known. That name is a placeholder, not a
+// member's words: a PDF replaces it, and so does a reprocess, even where an
+// earlier read marked it as kept (#412).
+function hasPlaceholderName(current: Apartment): boolean {
+  return current.listingUrl !== null && current.name === hostOf(current.listingUrl);
+}
+
+function namesBetter(current: Apartment, incoming: InferableFields): boolean {
+  return hasPlaceholderName(current) && !isEmpty(incoming.name);
+}
 
 export function diffInferableFields(
   current: Partial<InferableFields>,
@@ -59,11 +72,17 @@ export function applyExtraction(
   const edited = new Set(current.userEditedFields);
   const next: Apartment = { ...current, rawExtractedData: raw };
   const keepRent = rentKept(current);
+  const renamed = namesBetter(current, incoming);
   for (const field of INFERABLE_FIELDS) {
+    if (field === "name" && renamed) {
+      next.name = incoming.name;
+      continue;
+    }
     if (RENT_PAIR.includes(field) ? keepRent : edited.has(field)) continue;
     (next as Record<InferableField, unknown>)[field] = incoming[field];
   }
-  return next;
+  if (!renamed) return next;
+  return { ...next, userEditedFields: next.userEditedFields.filter((f) => f !== "name") };
 }
 
 function isEmpty(value: unknown): boolean {
@@ -82,12 +101,15 @@ export function fillFromExtraction(
   const next: Apartment = { ...current, rawExtractedData: raw };
   const kept: InferableField[] = [];
   const rentEmpty = isEmpty(current.rentChf);
+  const renamed = namesBetter(current, incoming);
   for (const field of INFERABLE_FIELDS) {
-    if (RENT_PAIR.includes(field) ? rentEmpty : isEmpty(current[field])) {
+    const fill = field === "name" ? renamed || isEmpty(current.name) : isEmpty(current[field]);
+    if (RENT_PAIR.includes(field) ? rentEmpty : fill) {
       (next as Record<InferableField, unknown>)[field] = incoming[field];
     } else {
       kept.push(field);
     }
   }
-  return { ...next, userEditedFields: Array.from(new Set([...current.userEditedFields, ...kept])) };
+  const before = renamed ? current.userEditedFields.filter((f) => f !== "name") : current.userEditedFields;
+  return { ...next, userEditedFields: Array.from(new Set([...before, ...kept])) };
 }

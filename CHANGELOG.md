@@ -9,6 +9,14 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- The one-time notice in the app is now titled "Data we collect and why". (#412)
+
+### Fixed
+
+- An apartment added from a link keeps the website's name as its title only until a PDF is read: reading or reprocessing its PDF now gives it the listing's title. Apartments already affected get it on their next Reprocess. (#412)
+
 ## 0.32.0 — 2026-10-31
 
 ### Added
