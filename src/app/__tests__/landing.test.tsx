@@ -358,6 +358,27 @@ describe("Landing", () => {
       await vi.waitFor(() => expect(screen.queryByTestId("signin-card")).not.toBeInTheDocument());
     });
 
+    // #468: before an account exists, it says what the server counts, and the
+    // link closes the dialog so the privacy section behind it shows.
+    it("says what the server counts, and its link closes onto the privacy section", async () => {
+      renderLanding({ openSignIn: true });
+      const dialog = await screen.findByRole("dialog");
+      expect(dialog).toHaveTextContent(
+        "The server counts how much each household has processed, never what."
+      );
+      const link = within(dialog).getByRole("link", { name: "What we can and can't see" });
+      expect(link).toHaveAttribute("href", "#privacy");
+      await userEvent.click(link);
+      await vi.waitFor(() => expect(screen.queryByTestId("signin-card")).not.toBeInTheDocument());
+    });
+
+    it("lists the processing counts among what the server sees", () => {
+      renderLanding();
+      expect(document.querySelector("#privacy")).toHaveTextContent(
+        "how many PDFs, addresses and listing links your household has had processed"
+      );
+    });
+
     it("opens from the open-access sign-up buttons too", async () => {
       renderLanding({ access: "open" });
       await userEvent.click(screen.getByRole("button", { name: /create your account/i }));

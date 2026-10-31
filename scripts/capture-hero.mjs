@@ -255,6 +255,9 @@ try {
   for (const theme of ["light", "dark"]) {
     const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: theme });
     await context.addInitScript((t) => window.localStorage.setItem("theme", t), theme);
+    // The one-time "What we count" notice (#468) is for a first visit, not
+    // for the pictures.
+    await context.addInitScript(() => window.localStorage.setItem("flatpare_usage_notice_seen", "1"));
     const json = (body) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
     await context.route("**/api/apartments", (r) => (r.request().method() === "GET" ? r.fulfill(json(apartmentRows())) : r.continue()));
     await context.route("**/api/ratings", (r) => r.fulfill(json(ratingRows())));

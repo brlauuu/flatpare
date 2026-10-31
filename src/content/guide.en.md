@@ -92,7 +92,7 @@ Changing an apartment's address later does not measure again by itself: its dist
 
 ### What the server can see
 
-Almost nothing. Your apartments, ratings, notes and PDFs are encrypted before they leave your browser.
+Nothing of what is in your search: your apartments, ratings, notes and PDFs are encrypted before they leave your browser. What it does see is what it needs to keep households apart and to charge for processing: your account (email address and the name you set), who is in your household, how many apartments, ratings and places you have and when they changed, and **how many PDFs, addresses and listing links your household has had processed, and what each credit paid for**. Those counts are kept per household, never per person, and never say what was processed. On flatpare.com we review them to check use against what was paid for.
 
 There is one deliberate exception, and it is worth knowing about: **geocoding an address, measuring a travel time, checking whether a listing is still online, and reading a PDF** cannot be done in your browser. For those, that single item is sent in readable form: an address to Google Maps (or OpenRouteService on some self-hosted setups) for its location and travel times, a listing's URL fetched by our server from the listing site itself, and a PDF to the AI model that reads it. Our server uses it for that one call, never writes it to the database, and never logs it. When a PDF has no working link to its listing, the AI model also searches the web for it with the listing's title, address, website and language; on flatpare.com that search keeps nothing of the request. The link it finds is marked as found by a search, so you can check it before saving.
 

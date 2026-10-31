@@ -51,6 +51,7 @@ const OPEN_SOURCE: Record<Locale, RegExp> = {
 const DISCLOSURES = [
   "privacy.claim",
   "privacy.encryptedBody",
+  "privacy.seesUsage",
   "privacy.exceptionIntro",
   "privacy.exceptionPdf",
   "privacy.exceptionAddress",

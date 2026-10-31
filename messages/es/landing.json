@@ -46,6 +46,7 @@
     "seesAccount": "tu cuenta: la dirección de correo y el nombre que pongas;",
     "seesMembers": "quién forma parte de tu hogar;",
     "seesCounts": "cuántos pisos, valoraciones y lugares tienes, quién valoró qué y cuándo se añadió o cambió cada cosa;",
+    "seesUsage": "cuántos PDF, direcciones y enlaces de anuncios ha hecho procesar tu hogar, y qué pagó cada crédito: recuentos por hogar, nunca por persona, y nunca qué se procesó. En flatpare.com revisamos estos recuentos para comparar el uso con lo pagado;",
     "seesPdfSize": "el tamaño de cada PDF guardado.",
     "seesNever": "Nunca qué es un piso: ni su dirección, ni ninguno de sus detalles, valoraciones o comentarios. Si lo instalas tú, vale lo mismo, con tu propio servidor en nuestro lugar.",
     "exceptionTitle": "La excepción, sin rodeos",
@@ -139,7 +140,8 @@
   },
   "signIn": {
     "title": "Iniciar sesión",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "privacyNote": "Tu búsqueda se cifra antes de guardarse. El servidor cuenta cuánto ha procesado cada hogar, nunca qué. <link>Lo que podemos ver y lo que no</link>"
   },
   "sketch": {
     "balcony": "¡balcón!",

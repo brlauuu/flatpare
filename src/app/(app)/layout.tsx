@@ -4,6 +4,7 @@ import { NavBar } from "@/components/nav-bar";
 import { CryptoGate } from "@/components/crypto/crypto-gate";
 import { HouseholdDataProvider } from "@/components/household-data/household-data-provider";
 import { PendingSharePrompt } from "@/components/pending-share-prompt";
+import { UsageNotice } from "@/components/usage-notice";
 import { resolveHouseholdIdentity } from "@/lib/session";
 import { readLimits } from "@/lib/limits";
 import { requirePurchase } from "@/lib/billing-gate";
@@ -51,6 +52,7 @@ export default async function AppLayout({
           <CryptoGate>
             <HouseholdDataProvider identity={identity} limits={limits}>
               <PendingSharePrompt />
+              <UsageNotice />
               {children}
             </HouseholdDataProvider>
           </CryptoGate>

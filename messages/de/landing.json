@@ -46,6 +46,7 @@
     "seesAccount": "dein Konto: E-Mail-Adresse und den Namen, den du festlegst;",
     "seesMembers": "wer zu deinem Haushalt gehört;",
     "seesCounts": "wie viele Wohnungen, Bewertungen und Orte du hast, wer was bewertet hat und wann etwas hinzugefügt oder geändert wurde;",
+    "seesUsage": "wie viele PDFs, Adressen und Inserat-Links dein Haushalt verarbeiten liess und wofür jedes Guthaben verwendet wurde: Zahlen pro Haushalt, nie pro Person, und nie, was verarbeitet wurde. Auf flatpare.com prüfen wir diese Zahlen, um die Nutzung mit dem Bezahlten abzugleichen;",
     "seesPdfSize": "die Grösse jedes gespeicherten PDFs.",
     "seesNever": "Nie, was eine Wohnung ist: weder ihre Adresse noch eines ihrer Details, Bewertungen oder Kommentare. Selbst betrieben gilt dasselbe, mit deinem eigenen Server an unserer Stelle.",
     "exceptionTitle": "Die Ausnahme, klar gesagt",
@@ -139,7 +140,8 @@
   },
   "signIn": {
     "title": "Anmelden",
-    "close": "Schliessen"
+    "close": "Schliessen",
+    "privacyNote": "Deine Suche wird verschlüsselt, bevor sie gespeichert wird. Der Server zählt, wie viel jeder Haushalt verarbeiten liess, nie was. <link>Was wir sehen können und was nicht</link>"
   },
   "sketch": {
     "balcony": "Balkon!",
