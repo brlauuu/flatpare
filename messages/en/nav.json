@@ -19,7 +19,8 @@
     "guide": "Guide",
     "signOut": "Sign out",
     "install": "Install app",
-    "terms": "Terms and privacy"
+    "terms": "Terms and privacy",
+    "feedback": "Send feedback"
   },
   "confirmSignOut": "You have unsaved rating changes. Sign out anyway? Your input will be discarded.",
   "unknownUser": "Unknown",
@@ -41,5 +42,19 @@
     "body": "Flatpare counts how many PDFs, addresses and listing links each household has processed, and what each credit paid for. The counts are per household, never per person, and never say what was processed. On flatpare.com we review them to check use against what was paid for.",
     "more": "More in the guide",
     "dismiss": "Got it"
+  },
+  "feedback": {
+    "title": "Send feedback",
+    "intro": "What works, what does not, what is missing. It goes straight to the person who runs Flatpare.",
+    "message": "Your feedback",
+    "anonymous": "Send anonymously",
+    "namedNote": "The email includes your name and email address, so we can reply.",
+    "anonymousNote": "The email does not say who you are, and we cannot reply. Our server knows you are signed in while it sends it, and keeps nothing.",
+    "send": "Send",
+    "sending": "Sending...",
+    "thanks": "Thank you, your feedback is on its way.",
+    "busy": "Too much feedback today. Please try again tomorrow.",
+    "failed": "It could not be sent. Please try again.",
+    "close": "Close"
   }
 }

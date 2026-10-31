@@ -73,6 +73,19 @@ describe("NavBar user menu", () => {
     }
   });
 
+  it("offers Send feedback only where it has somewhere to go (#476)", async () => {
+    const user = userEvent.setup();
+    render(<NavBar userName="Alice" feedback />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    await user.click(await screen.findByRole("menuitem", { name: "Send feedback" }));
+    expect(await screen.findByRole("dialog", { name: "Send feedback" })).toBeInTheDocument();
+    cleanup();
+    render(<NavBar userName="Alice" />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    await screen.findByRole("menuitem", { name: "Guide" });
+    expect(screen.queryByRole("menuitem", { name: "Send feedback" })).toBeNull();
+  });
+
   it("lists the terms page only where an operator is configured (#474)", async () => {
     const user = userEvent.setup();
     render(<NavBar userName="Alice" terms />);

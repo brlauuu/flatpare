@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readOperator } from "@/lib/operator";
+import { feedbackEnabled } from "@/lib/feedback";
 import { getTranslations } from "next-intl/server";
 import { NavBar } from "@/components/nav-bar";
 import { resolveHouseholdIdentity } from "@/lib/session";
@@ -31,7 +32,7 @@ export default async function BillingPage() {
 
   return (
     <>
-      <NavBar userName={identity.userName} terms={operator} />
+      <NavBar userName={identity.userName} terms={operator} feedback={feedbackEnabled()} />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-10">
         <div className="space-y-3">
           <h1 className="title-page">

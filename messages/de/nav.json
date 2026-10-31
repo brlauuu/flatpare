@@ -19,7 +19,8 @@
     "guide": "Anleitung",
     "signOut": "Abmelden",
     "install": "App installieren",
-    "terms": "Bedingungen und Datenschutz"
+    "terms": "Bedingungen und Datenschutz",
+    "feedback": "Feedback senden"
   },
   "confirmSignOut": "Du hast ungespeicherte Änderungen an einer Bewertung. Trotzdem abmelden? Deine Eingaben gehen verloren.",
   "unknownUser": "Unbekannt",
@@ -41,5 +42,19 @@
     "body": "Flatpare zählt, wie viele PDFs, Adressen und Inserat-Links jeder Haushalt verarbeiten liess und wofür jedes Guthaben verwendet wurde. Die Zahlen gelten pro Haushalt, nie pro Person, und sagen nie, was verarbeitet wurde. Auf flatpare.com prüfen wir sie, um die Nutzung mit dem Bezahlten abzugleichen.",
     "more": "Mehr in der Anleitung",
     "dismiss": "Verstanden"
+  },
+  "feedback": {
+    "title": "Feedback senden",
+    "intro": "Was funktioniert, was nicht, was fehlt. Es geht direkt an die Person, die Flatpare betreibt.",
+    "message": "Dein Feedback",
+    "anonymous": "Anonym senden",
+    "namedNote": "Die E-Mail enthält deinen Namen und deine E-Mail-Adresse, damit wir antworten können.",
+    "anonymousNote": "Die E-Mail sagt nicht, wer du bist, und wir können nicht antworten. Unser Server weiss beim Senden, dass du angemeldet bist, und speichert nichts.",
+    "send": "Senden",
+    "sending": "Wird gesendet...",
+    "thanks": "Danke, dein Feedback ist unterwegs.",
+    "busy": "Heute ist schon zu viel Feedback eingegangen. Bitte versuche es morgen wieder.",
+    "failed": "Es konnte nicht gesendet werden. Bitte versuche es nochmals.",
+    "close": "Schliessen"
   }
 }

@@ -34,6 +34,7 @@ Was der Server speichert, und warum:
 - **Nutzungszahlen**: wie viele PDFs, Adressen und Inseratelinks jeder Haushalt verarbeitet hat, und wofür jedes Guthaben verwendet wurde. Pro Haushalt, nie pro Person, und nie, was verarbeitet wurde. Wir prüfen sie, um die Nutzung mit dem Bezahlten abzugleichen.
 - **Zahlungen**: welcher Haushalt wann wie viele Guthaben gekauft hat. Kartendaten bleiben bei Stripe.
 - **Beta-Anfragen**: die E-Mail-Adresse, die du auf der Startseite angegeben hast, um dir eine Einladung zu schicken.
+- **Feedback**: wird nicht gespeichert. Was du mit Feedback senden schickst, erreicht uns per E-Mail, mit deinem Namen und deiner Adresse, ausser du sendest es anonym.
 
 Wenn du ein PDF liest, eine Adresse platzierst oder einen Inseratelink prüfst, wird genau dieses PDF, diese Adresse oder dieser Link über unseren Server an den Dienst geschickt, der die Arbeit macht, im Arbeitsspeicher gehalten und nicht gespeichert. Der Datenschutzabschnitt der Startseite nennt jeden davon.
 

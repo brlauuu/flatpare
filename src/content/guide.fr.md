@@ -149,6 +149,8 @@ Les 40 comptent les appartements **traités**, pas ceux que tu gardes : un cr�
 
 Faire tourner Flatpare toi-même est gratuit et sans aucune limite.
 
+**Envoyer un avis**, dans le menu sous ton nom, envoie un message directement à la personne qui exploite Flatpare, avec ton nom et ton adresse e-mail pour qu'elle puisse répondre, ou anonymement. Le serveur ne conserve rien de ce que tu envoies. La page **Conditions et confidentialité**, dans le même menu, dit qui exploite flatpare.com, le remboursement sous 14 jours et ce que le serveur conserve.
+
 ---
 
 ## Astuces

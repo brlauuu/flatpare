@@ -11,6 +11,7 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ### Added
 
+- Send feedback from the menu under your name, with your name so we can reply, or anonymously. It is emailed to the person who runs Flatpare and stored nowhere. (#476)
 - A terms and privacy page: who runs flatpare.com, what you buy and who sells it, the 14-day refund, what the server holds and why, and who processes data for us. Linked from the landing page, the user menu and the billing page, in all five languages, with the English text binding. (#474)
 
 ## 0.32.1 — 2026-10-31

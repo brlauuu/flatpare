@@ -149,6 +149,8 @@ Running out of credits only stops new apartments being processed: you can still 
 
 Running Flatpare yourself is free and has no limits at all.
 
+**Send feedback** in the menu under your name sends a message straight to the person who runs Flatpare, with your name and email address so they can reply, or anonymously. Nothing you send is stored by the server. The **Terms and privacy** page, in the same menu, says who runs flatpare.com, the 14-day refund and what the server holds.
+
 ---
 
 ## Tips

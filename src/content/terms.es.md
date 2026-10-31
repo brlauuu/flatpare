@@ -34,6 +34,7 @@ Lo que el servidor sí guarda, y por qué:
 - **Recuentos de uso**: cuántos PDF, direcciones y enlaces de anuncios ha procesado cada hogar, y para qué sirvió cada crédito. Por hogar, nunca por persona, y nunca qué se procesó. Los revisamos para comparar el uso con lo pagado.
 - **Pagos**: qué hogar compró cuántos créditos y cuándo. Los datos de la tarjeta se quedan en Stripe.
 - **Solicitudes de beta**: la dirección de correo que diste en la página de inicio, para enviarte una invitación.
+- **Comentarios**: no se guardan. Lo que envías con Enviar comentarios nos llega por correo, con tu nombre y tu dirección, salvo que lo envíes de forma anónima.
 
 Cuando lees un PDF, sitúas una dirección o compruebas un enlace de un anuncio, ese PDF, esa dirección o ese enlace concreto pasa por nuestro servidor al servicio que hace el trabajo, se mantiene en memoria y no se guarda. La sección de privacidad de la página de inicio nombra cada uno de ellos.
 

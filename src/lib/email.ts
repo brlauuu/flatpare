@@ -23,6 +23,9 @@ export interface EmailMessage {
   // Resend deduplicates on this for 24 hours, so a retried request cannot
   // deliver the same invitation twice. Format: `<kind>/<id>`.
   idempotencyKey: string;
+  // Where a reply goes for this message, ahead of EMAIL_REPLY_TO: named
+  // feedback (#476) is answered to the person who sent it.
+  replyTo?: string;
 }
 
 export type EmailResult =
@@ -54,7 +57,7 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
   const from = emailFrom();
   if (!key || !from) return { sent: false, reason: "off" };
 
-  const replyTo = process.env.EMAIL_REPLY_TO?.trim();
+  const replyTo = message.replyTo ?? process.env.EMAIL_REPLY_TO?.trim();
   try {
     const res = await fetch(ENDPOINT, {
       method: "POST",

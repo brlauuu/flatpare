@@ -149,6 +149,8 @@ Quedarte sin créditos solo impide procesar pisos nuevos: puedes seguir añadié
 
 Instalar Flatpare por tu cuenta es gratis y no tiene ningún límite.
 
+**Enviar comentarios**, en el menú bajo tu nombre, manda un mensaje directamente a la persona que gestiona Flatpare, con tu nombre y tu dirección de correo para que pueda responderte, o de forma anónima. El servidor no guarda nada de lo que envías. La página **Condiciones y privacidad**, en el mismo menú, dice quién gestiona flatpare.com, el reembolso en 14 días y lo que guarda el servidor.
+
 ---
 
 ## Consejos

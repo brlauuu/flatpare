@@ -13,6 +13,7 @@ import { getUnsavedRating } from "@/lib/unsaved-changes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageMenu } from "@/components/language-menu";
 import { InstallHelpDialog } from "@/components/install/install-help-dialog";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { promptInstall, useInstallState } from "@/components/install/install-prompt";
 import {
   BookOpen,
@@ -23,6 +24,7 @@ import {
   FileText,
   LogOut,
   Map as MapIcon,
+  MessageSquare,
   Settings,
   Upload,
   Users,
@@ -76,12 +78,22 @@ function NavLabel({ children }: { children: React.ReactNode }) {
 }
 
 // `terms`: link the terms page (#474), only where an operator is configured.
-export function NavBar({ userName, terms = false }: { userName: string; terms?: boolean }) {
+// `feedback`: offer "Send feedback" (#476), only where it has somewhere to go.
+export function NavBar({
+  userName,
+  terms = false,
+  feedback = false,
+}: {
+  userName: string;
+  terms?: boolean;
+  feedback?: boolean;
+}) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const install = useInstallState();
   // Outside the menu: the menu closes, and unmounts its items, on the click.
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   async function handleSignOut() {
     if (getUnsavedRating()) {
@@ -132,6 +144,12 @@ export function NavBar({ userName, terms = false }: { userName: string; terms?: 
                 <BookOpen className="h-3.5 w-3.5" />
                 {t("menu.guide")}
               </DropdownMenuItem>
+              {feedback && (
+                <DropdownMenuItem onClick={() => setFeedbackOpen(true)}>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  {t("menu.feedback")}
+                </DropdownMenuItem>
+              )}
               {terms && (
                 <DropdownMenuItem render={<Link href="/terms" />}>
                   <FileText className="h-3.5 w-3.5" />
@@ -156,6 +174,7 @@ export function NavBar({ userName, terms = false }: { userName: string; terms?: 
             </DropdownMenuContent>
           </DropdownMenu>
           <InstallHelpDialog open={installHelpOpen} onOpenChange={setInstallHelpOpen} />
+          {feedback && <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />}
         </div>
       </div>
       {/* Mobile bottom nav */}
