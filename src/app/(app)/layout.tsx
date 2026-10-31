@@ -8,6 +8,7 @@ import { UsageNotice } from "@/components/usage-notice";
 import { resolveHouseholdIdentity } from "@/lib/session";
 import { readLimits } from "@/lib/limits";
 import { requirePurchase } from "@/lib/billing-gate";
+import { readOperator } from "@/lib/operator";
 
 // The one layout for every signed-in section (#302). `(app)` is a route
 // group, so it adds nothing to the URL.
@@ -44,7 +45,7 @@ export default async function AppLayout({
 
   return (
     <>
-      <NavBar userName={userName} />
+      <NavBar userName={userName} terms={readOperator() !== null} />
       {/* Width is set per section (see section-width.tsx): compare is a wide
           table and takes the full window, the rest are capped. */}
       <main className="flex-1 px-4 py-6 pb-20 sm:pb-6">

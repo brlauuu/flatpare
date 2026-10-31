@@ -118,7 +118,8 @@
   },
   "footer": {
     "createdBy": "flatpare.com is created by <author></author>",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "terms": "Terms and privacy"
   },
   "beta": {
     "label": "Request a beta invite",
@@ -158,5 +159,9 @@
     "viewing": "viewing Sat",
     "tape": "bring a tape measure",
     "decided": "decided: Flat B"
+  },
+  "terms": {
+    "title": "Terms and privacy",
+    "home": "Flatpare home"
   }
 }

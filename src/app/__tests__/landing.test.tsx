@@ -42,6 +42,14 @@ function renderLanding(
 const pageText = () => document.body.textContent ?? "";
 
 describe("Landing", () => {
+  it("links the terms page only where an operator is configured (#474)", () => {
+    renderLanding();
+    expect(screen.queryByRole("link", { name: "Terms and privacy" })).toBeNull();
+    cleanup();
+    render(<Landing signIn={<div />} terms now={NOW} />);
+    expect(screen.getByRole("link", { name: "Terms and privacy" })).toHaveAttribute("href", "/terms");
+  });
+
   it("leads with the headline from the design", () => {
     renderLanding();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(

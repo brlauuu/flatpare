@@ -118,7 +118,8 @@
   },
   "footer": {
     "createdBy": "flatpare.com lo ha creado <author></author>",
-    "changelog": "Novedades"
+    "changelog": "Novedades",
+    "terms": "Condiciones y privacidad"
   },
   "beta": {
     "label": "Pedir una invitación a la beta",
@@ -158,5 +159,9 @@
     "viewing": "visita el sáb",
     "tape": "llevar metro",
     "decided": "decidido: Piso B"
+  },
+  "terms": {
+    "title": "Condiciones y privacidad",
+    "home": "Inicio de Flatpare"
   }
 }

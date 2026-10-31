@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Columns3,
   Download,
+  FileText,
   LogOut,
   Map as MapIcon,
   Settings,
@@ -74,7 +75,8 @@ function NavLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function NavBar({ userName }: { userName: string }) {
+// `terms`: link the terms page (#474), only where an operator is configured.
+export function NavBar({ userName, terms = false }: { userName: string; terms?: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const install = useInstallState();
@@ -130,6 +132,12 @@ export function NavBar({ userName }: { userName: string }) {
                 <BookOpen className="h-3.5 w-3.5" />
                 {t("menu.guide")}
               </DropdownMenuItem>
+              {terms && (
+                <DropdownMenuItem render={<Link href="/terms" />}>
+                  <FileText className="h-3.5 w-3.5" />
+                  {t("menu.terms")}
+                </DropdownMenuItem>
+              )}
               {/* Only where installing is possible and not done (#190). */}
               {(install === "prompt" || install === "ios") && (
                 <DropdownMenuItem

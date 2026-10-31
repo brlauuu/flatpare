@@ -5,7 +5,8 @@
     "usage": "Has usado {used} de {granted} pisos. Otros CHF 5 añaden 40 más.",
     "pitch": "Flatpare cuesta CHF 5, una sola vez; no es una suscripción. Cubre hasta 10 personas y 40 pisos en tu hogar.",
     "quota": "Los 40 cuentan los pisos que <strong>añades</strong>, no los que conservas: eliminar uno libera espacio en tu comparación, pero no devuelve el crédito. Leer un PDF y calcular los tiempos de trayecto nos cuesta dinero por cada piso, y eso es lo que pagas.",
-    "stripe": "El pago lo gestiona Stripe. Flatpare nunca ve los datos de tu tarjeta, y Stripe nunca ve tus pisos: están cifrados en tu navegador."
+    "stripe": "El pago lo gestiona Stripe. Flatpare nunca ve los datos de tu tarjeta, y Stripe nunca ve tus pisos: están cifrados en tu navegador.",
+    "terms": "Al pagar aceptas las <link>condiciones</link>, incluido el reembolso en 14 días."
   },
   "checkout": {
     "startFailed": "No se ha podido iniciar el pago. Inténtalo de nuevo.",

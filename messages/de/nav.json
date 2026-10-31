@@ -18,7 +18,8 @@
   "menu": {
     "guide": "Anleitung",
     "signOut": "Abmelden",
-    "install": "App installieren"
+    "install": "App installieren",
+    "terms": "Bedingungen und Datenschutz"
   },
   "confirmSignOut": "Du hast ungespeicherte Änderungen an einer Bewertung. Trotzdem abmelden? Deine Eingaben gehen verloren.",
   "unknownUser": "Unbekannt",

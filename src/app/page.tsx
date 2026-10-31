@@ -1,5 +1,6 @@
 import { enabledProviderIds } from "@/auth";
 import { readPublicAccess } from "@/lib/public-access";
+import { readOperator } from "@/lib/operator";
 import type { ReleaseInfo } from "@/lib/release";
 import { LoginForm, type SignInNotice } from "./login-form";
 import { Landing } from "./_components/landing";
@@ -67,6 +68,7 @@ export default async function LandingPage({
       // lives in a dialog on the redesigned page (#301).
       openSignIn={notice !== null}
       release={latestRelease()}
+      terms={readOperator() !== null}
       signIn={<LoginForm providers={enabledProviderIds} access={access} notice={notice} />}
     />
   );

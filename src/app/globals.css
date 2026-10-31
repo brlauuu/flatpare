@@ -275,6 +275,9 @@
 .guide-prose strong {
   @apply font-semibold;
 }
+.guide-prose a {
+  @apply text-primary underline underline-offset-2;
+}
 .guide-prose code {
   @apply bg-muted px-1.5 py-0.5 rounded text-sm;
 }
