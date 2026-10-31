@@ -13,19 +13,38 @@
 //
 //   node scripts/usage-report.mjs [--days 30]
 //   node scripts/usage-report.mjs --household <id> [--days 30]
+//   node scripts/usage-report.mjs [--days 30] [--html <file>] [--email <address>]
+//   node scripts/usage-report.mjs --cadence daily|weekly|monthly --email <address> [--force]
 //
 // The first form prints one line per household with any activity in the
 // window; the second prints that household's calls and spends day by day.
+// The third writes the same summary as a page with a daily chart per
+// household (#431), and/or emails it (summary inline, page attached, through
+// Resend). It then prints nothing but the target and the outcome, because
+// the scheduled run's log is public (.github/workflows/usage-report.yml).
+// `--cadence` sets the window (1, 7 or 30 days) and sends only on a day that
+// matches it (every day, Mondays, the 1st, UTC); `--force` sends anyway.
 // Both counts start with the release that added them (0.27.0): there is no
 // history before it.
 //
 // A line is marked "check" when PDF reads exceed twice the credits spent on
 // first processings and reprocesses plus 5, or geocodes exceed three times
-// those credits plus 20. An honest household reads each PDF once per credit
-// and geocodes a few times more (locations, retries, map upkeep), so these
-// are loose on purpose: a mark is a reason to look, not a verdict.
-import { existsSync } from "node:fs";
+// those credits plus 20 (`needsCheck` in usage-report-lib.mjs, the one rule
+// every output uses).
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
+import {
+  CADENCES,
+  CHART_MIN_DAYS,
+  ENDPOINTS,
+  KINDS,
+  byDay,
+  cadenceDue,
+  renderEmail,
+  renderHtml,
+  summarize,
+} from "./usage-report-lib.mjs";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
@@ -33,19 +52,28 @@ function usage(code = 1) {
   console.error(
     "usage:\n" +
       "  node scripts/usage-report.mjs [--days N]\n" +
-      "  node scripts/usage-report.mjs --household ID [--days N]"
+      "  node scripts/usage-report.mjs --household ID [--days N]\n" +
+      "  node scripts/usage-report.mjs [--days N] [--html FILE] [--email ADDRESS]\n" +
+      "  node scripts/usage-report.mjs --cadence daily|weekly|monthly --email ADDRESS [--force]"
   );
   process.exit(code);
 }
+
+const BOOLEAN_FLAGS = new Set(["force"]);
 
 function parseFlags(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (!arg.startsWith("--")) usage();
+    const name = arg.slice(2);
+    if (BOOLEAN_FLAGS.has(name)) {
+      flags[name] = true;
+      continue;
+    }
     const value = argv[i + 1];
     if (value === undefined || value.startsWith("--")) usage();
-    flags[arg.slice(2)] = value;
+    flags[name] = value;
     i += 1;
   }
   return flags;
@@ -60,13 +88,6 @@ function positiveInt(name, raw, fallback) {
   return Number(raw);
 }
 
-const ENDPOINTS = ["parse-pdf", "geocode", "distance", "check-listing"];
-const KINDS = ["first", "reprocess", "recompute"];
-
-function needsCheck({ pdfReads, geocodes, paidProcessings }) {
-  return pdfReads > 2 * paidProcessings + 5 || geocodes > 3 * paidProcessings + 20;
-}
-
 function client() {
   return createClient(
     process.env.TURSO_DATABASE_URL
@@ -79,7 +100,7 @@ function pad(value, width) {
   return String(value).padStart(width);
 }
 
-async function summary(db, since) {
+async function summaryLines(db, since) {
   const households = await db.execute({
     sql: `SELECT h.id, h.apartment_credits_granted AS granted, h.apartments_ever_added AS spent,
                  (SELECT COUNT(*) FROM apartments a WHERE a.household_id = h.id) AS held
@@ -96,55 +117,44 @@ async function summary(db, since) {
            WHERE spent_at >= ? GROUP BY household_id, kind`,
     args: [since],
   });
+  return summarize(households.rows, calls.rows, spends.rows);
+}
 
-  const byHousehold = new Map();
-  const entry = (id) => {
-    if (!byHousehold.has(id)) byHousehold.set(id, { calls: {}, spends: {} });
-    return byHousehold.get(id);
-  };
-  for (const r of calls.rows) entry(Number(r.household_id)).calls[String(r.endpoint)] = Number(r.n);
-  for (const r of spends.rows) entry(Number(r.household_id)).spends[String(r.kind)] = Number(r.n);
-
+function printSummary(lines) {
   console.log(
     "household  held  credits(granted/spent)  window spends first/reprocess/recompute" +
       "  calls parse-pdf/geocode/distance/check-listing"
   );
-  let shown = 0;
-  for (const h of households.rows) {
-    const id = Number(h.id);
-    const e = byHousehold.get(id);
-    if (!e) continue;
-    shown += 1;
-    const s = KINDS.map((k) => e.spends[k] ?? 0);
-    const c = ENDPOINTS.map((k) => e.calls[k] ?? 0);
-    const mark = needsCheck({ pdfReads: c[0], geocodes: c[1], paidProcessings: s[0] + s[1] }) ? "  check" : "";
+  for (const l of lines) {
+    const s = KINDS.map((k) => l.spends[k]).join("/");
+    const c = ENDPOINTS.map((k) => l.calls[k]).join("/");
     console.log(
-      `${pad(id, 9)}  ${pad(Number(h.held), 4)}  ${pad(`${Number(h.granted)}/${Number(h.spent)}`, 22)}` +
-        `  ${pad(s.join("/"), 39)}  ${pad(c.join("/"), 46)}${mark}`
+      `${pad(l.id, 9)}  ${pad(l.held, 4)}  ${pad(`${l.granted}/${l.spent}`, 22)}` +
+        `  ${pad(s, 39)}  ${pad(c, 46)}${l.check ? "  check" : ""}`
     );
   }
-  if (shown === 0) console.log("(no household made a call or spent a credit in this window)");
+  if (lines.length === 0) console.log("(no household made a call or spent a credit in this window)");
 }
 
-async function detail(db, householdId, since) {
+// Day by day; every household, or one when `householdId` is given.
+async function dailyCells(db, since, householdId = null) {
+  const scope = householdId === null ? "" : "AND household_id = ?";
+  const args = householdId === null ? [since] : [since, householdId];
   const calls = await db.execute({
-    sql: `SELECT date(window_start, 'unixepoch') AS day, endpoint, SUM(count) AS n FROM process_usage
-           WHERE household_id = ? AND window_start >= ? GROUP BY day, endpoint ORDER BY day`,
-    args: [householdId, since],
+    sql: `SELECT household_id, date(window_start, 'unixepoch') AS day, endpoint, SUM(count) AS n
+            FROM process_usage WHERE window_start >= ? ${scope} GROUP BY household_id, day, endpoint`,
+    args,
   });
   const spends = await db.execute({
-    sql: `SELECT date(spent_at, 'unixepoch') AS day, kind, COUNT(*) AS n FROM credit_spends
-           WHERE household_id = ? AND spent_at >= ? GROUP BY day, kind ORDER BY day`,
-    args: [householdId, since],
+    sql: `SELECT household_id, date(spent_at, 'unixepoch') AS day, kind, COUNT(*) AS n
+            FROM credit_spends WHERE spent_at >= ? ${scope} GROUP BY household_id, day, kind`,
+    args,
   });
-  const days = new Map();
-  const day = (d) => {
-    if (!days.has(d)) days.set(d, { calls: {}, spends: {} });
-    return days.get(d);
-  };
-  for (const r of calls.rows) day(String(r.day)).calls[String(r.endpoint)] = Number(r.n);
-  for (const r of spends.rows) day(String(r.day)).spends[String(r.kind)] = Number(r.n);
+  return byDay(calls.rows, spends.rows);
+}
 
+async function printDetail(db, householdId, since) {
+  const days = (await dailyCells(db, since, householdId)).get(householdId) ?? new Map();
   console.log("day         spends first/reprocess/recompute  calls parse-pdf/geocode/distance/check-listing");
   for (const d of [...days.keys()].sort()) {
     const e = days.get(d);
@@ -155,26 +165,126 @@ async function detail(db, householdId, since) {
   if (days.size === 0) console.log("(nothing in this window)");
 }
 
-async function main() {
-  const flags = parseFlags(process.argv.slice(2));
-  const days = positiveInt("days", flags.days, 30);
-  const householdId = positiveInt("household", flags.household, null);
-  const since = Math.floor(Date.now() / 1000) - days * 86400;
+function emailFrom() {
+  const explicit = process.env.EMAIL_FROM?.trim();
+  if (explicit) return explicit;
+  const domain = process.env.RESEND_EMAIL_DOMAIN?.trim();
+  return domain ? `Flatpare <hello@${domain}>` : null;
+}
 
-  const db = client();
+// Returns null on success, or a short reason. Never prints the key, the
+// recipient or the provider's message, which can quote the request back.
+// The same plain call as scripts/beta-pass.mjs and src/lib/email.ts.
+async function sendReport(to, email, page, day) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  const from = emailFrom();
+  if (!key) return "RESEND_API_KEY is not set";
+  if (!from) return "neither EMAIL_FROM nor RESEND_EMAIL_DOMAIN is set";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+        attachments: [{ filename: `flatpare-usage-${day}.html`, content: Buffer.from(page).toString("base64") }],
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    return res.ok ? null : `Resend answered ${res.status}`;
+  } catch (err) {
+    return err instanceof Error ? err.name : "request failed";
+  }
+}
+
+// The flags, checked: which form runs and over how many days.
+function readOptions(flags) {
+  const cadence = flags.cadence;
+  if (cadence !== undefined && !(cadence in CADENCES)) {
+    console.error(`--cadence must be daily, weekly or monthly, got "${cadence}"`);
+    process.exit(1);
+  }
+  if (cadence !== undefined && flags.days !== undefined) usage();
+  const householdId = positiveInt("household", flags.household, null);
+  const quiet = flags.html !== undefined || flags.email !== undefined;
+  if (householdId !== null && (quiet || cadence)) usage();
+  if (cadence && flags.email === undefined) usage();
+  return {
+    cadence,
+    days: cadence ? CADENCES[cadence] : positiveInt("days", flags.days, 30),
+    householdId,
+    quiet,
+    html: flags.html,
+    email: flags.email,
+    force: flags.force === true,
+  };
+}
+
+// The page and/or the email. Prints only the outcome: see the top of the file.
+async function writeOutputs(opts, report) {
+  const page = renderHtml(report);
+  if (opts.html !== undefined) {
+    mkdirSync(dirname(opts.html), { recursive: true });
+    writeFileSync(opts.html, page);
+    console.log(`[usage-report] page written to ${opts.html}`);
+  }
+  if (opts.email === undefined) return;
+  const failed = await sendReport(opts.email, renderEmail(report), page, report.lastDay);
+  if (failed) {
+    console.error(`[usage-report] email not sent: ${failed}`);
+    process.exit(1);
+  }
+  console.log("[usage-report] email sent");
+}
+
+async function run(db, opts, target, now) {
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const since = nowSeconds - opts.days * 86400;
+  if (opts.householdId !== null) return printDetail(db, opts.householdId, since);
+  const lines = await summaryLines(db, since);
+  if (!opts.quiet) return printSummary(lines);
+
+  const chartDays = Math.max(opts.days, CHART_MIN_DAYS);
+  const chartSince = nowSeconds - chartDays * 86400;
+  await writeOutputs(opts, {
+    target,
+    days: opts.days,
+    chartDays,
+    generatedAt: now.toISOString().replace(/\.\d+Z$/, "Z"),
+    lines,
+    daily: await dailyCells(db, chartSince),
+    firstDay: new Date(chartSince * 1000).toISOString().slice(0, 10),
+    lastDay: now.toISOString().slice(0, 10),
+  });
+}
+
+async function main() {
+  const opts = readOptions(parseFlags(process.argv.slice(2)));
+  const now = new Date();
   const target = process.env.TURSO_DATABASE_URL
     ? `Turso (${new URL(process.env.TURSO_DATABASE_URL).host})`
     : `local file (${process.env.LOCAL_DB_URL ?? "file:./data/flatpare.db"})`;
-  console.log(`[usage-report] database: ${target}, last ${days} day(s)`);
+  console.log(`[usage-report] database: ${target}, last ${opts.days} day(s)`);
+  if (opts.cadence && !opts.force && !cadenceDue(opts.cadence, now)) {
+    console.log(`[usage-report] ${opts.cadence} report not due today, nothing sent`);
+    return;
+  }
   try {
-    if (householdId === null) await summary(db, since);
-    else await detail(db, householdId, since);
+    await run(client(), opts, target, now);
   } catch (err) {
     if (/no such table: credit_spends/.test(String(err?.message))) {
       console.error(
         `[usage-report] ${target} has no credit_spends table: migration 0027 has not run there yet. ` +
           "It runs at app boot or on a Vercel build of this release."
       );
+      process.exit(1);
+    }
+    // The scheduled log is public: name the failure, not its message.
+    if (opts.quiet) {
+      console.error(`[usage-report] failed: ${err?.code || err?.name || "error"}`);
       process.exit(1);
     }
     throw err;

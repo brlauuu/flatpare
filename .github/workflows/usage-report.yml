@@ -1,0 +1,79 @@
+name: Usage report
+
+# The host's usage report by email (#431): scripts/usage-report.mjs reads the
+# production database read-only and sends the per-household summary through
+# Resend, the page with daily charts attached. Nothing is added to
+# flatpare.com.
+#
+# It runs every day and sends only on a day that matches the repository
+# variable USAGE_REPORT_CADENCE: `daily`, `weekly` (Mondays) or `monthly`
+# (the 1st), UTC. Unset sends nothing. Run it by hand to send one now; that
+# covers the cadence's period, or 7 days when none is set.
+#
+#   gh variable set USAGE_REPORT_CADENCE --body weekly
+#   gh secret set USAGE_REPORT_EMAIL            # where it goes
+#   gh secret set USAGE_TURSO_DATABASE_URL      # production
+#   gh secret set USAGE_TURSO_AUTH_TOKEN        # turso db tokens create <db> --read-only
+#   gh secret set RESEND_API_KEY
+#   gh secret set EMAIL_FROM                    # Flatpare <hello@<verified domain>>
+#
+# THIS REPOSITORY IS PUBLIC, and so are its Actions logs and artifacts. The
+# script prints only the database host and whether the email went out, never
+# a count or a household id, and this job uploads nothing. The address is a
+# secret, not a variable, because a step's env is printed in its log. Keep
+# both of those true when changing this file.
+#
+# It cannot be started by anyone without write access: no pull_request
+# trigger, so a fork's PR never runs it with these secrets.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    env:
+      CADENCE: ${{ vars.USAGE_REPORT_CADENCE }}
+    steps:
+      - name: Cadence set?
+        id: cadence
+        run: |
+          if [ -z "$CADENCE" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "USAGE_REPORT_CADENCE is not set: no scheduled report."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cadence.outputs.run == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.cadence.outputs.run == 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - if: steps.cadence.outputs.run == 'true'
+        run: npm ci
+
+      - name: Send the report
+        if: steps.cadence.outputs.run == 'true'
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.USAGE_TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.USAGE_TURSO_AUTH_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_EMAIL: ${{ secrets.USAGE_REPORT_EMAIL }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+        run: |
+          if [ -z "$TURSO_DATABASE_URL" ] || [ -z "$REPORT_EMAIL" ]; then
+            echo "USAGE_TURSO_DATABASE_URL and USAGE_REPORT_EMAIL must be set as repository secrets."
+            exit 1
+          fi
+          node scripts/usage-report.mjs --cadence "${CADENCE:-weekly}" --email "$REPORT_EMAIL" $FORCE

@@ -623,6 +623,20 @@ household whose PDF reads or geocodes run far ahead of its credits. Neither tabl
 request content or names a member or an apartment; the migration tests pin their
 columns. It detects; it does not cap.
 
+Since #431 the same report can be emailed to the host by a scheduled GitHub workflow
+(`.github/workflows/usage-report.yml`). That puts a production database token on GitHub
+and the report's contents with Resend. Accepted, with these limits:
+
+- **The token is read-only** (`turso db tokens create <db> --read-only`), so a leak
+  could read the database but not change it. Never reuse the app's read-write token
+  there.
+- **Resend sees the report**: integer household ids and counts, nothing a user wrote and
+  nothing naming a person. It is the provider that already sends the invitations.
+- **The repository is public, and so are its Actions logs.** The script prints only the
+  database host and the outcome when it emails or writes a page, the job uploads no
+  artifact, and the recipient is a secret. The workflow has no `pull_request` trigger,
+  so a fork's PR never runs it with the secrets.
+
 ### Accepted: any member can delete any stored file of their household (#413)
 
 Replacing an apartment's PDF uploads the new file under a fresh name and then deletes
