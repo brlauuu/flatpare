@@ -315,3 +315,18 @@ describe("proxy — beta-invite requests", () => {
     expect(res.status).toBe(401);
   });
 });
+
+// The terms (#474) are read before signing up as much as after.
+describe("proxy — terms", () => {
+  it("passes /terms through signed out", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/terms"));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not widen the pass-through to neighbouring paths", async () => {
+    signedOut();
+    const res = await proxy(makeRequest("/terms/x"));
+    expect(res.status).toBe(307);
+  });
+});

@@ -73,6 +73,18 @@ describe("NavBar user menu", () => {
     }
   });
 
+  it("lists the terms page only where an operator is configured (#474)", async () => {
+    const user = userEvent.setup();
+    render(<NavBar userName="Alice" terms />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    expect(await screen.findByRole("menuitem", { name: "Terms and privacy" })).toHaveAttribute("href", "/terms");
+    cleanup();
+    render(<NavBar userName="Alice" />);
+    await user.click(screen.getByRole("button", { name: /Alice/i }));
+    await screen.findByRole("menuitem", { name: "Guide" });
+    expect(screen.queryByRole("menuitem", { name: "Terms and privacy" })).toBeNull();
+  });
+
   it("signs out when 'Sign out' is clicked", async () => {
     const user = userEvent.setup();
     render(<NavBar userName="Alice" />);

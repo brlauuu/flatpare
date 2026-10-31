@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { BarChart3, Lock, Play, Users } from "lucide-react";
 import {
@@ -423,7 +424,7 @@ function Features() {
   );
 }
 
-function Footer() {
+function Footer({ terms }: { terms: boolean }) {
   const t = useTranslations("landing.footer");
   return (
     <footer>
@@ -444,6 +445,11 @@ function Footer() {
           <a href={RELEASES_URL} className="text-(--lp-muted)">
             {t("changelog")}
           </a>
+          {terms && (
+            <Link href="/terms" className="text-(--lp-muted)">
+              {t("terms")}
+            </Link>
+          )}
         </span>
       </div>
     </footer>
@@ -455,6 +461,7 @@ export function Landing({
   access = "open",
   openSignIn = false,
   release = null,
+  terms = false,
   now = new Date(),
 }: {
   signIn: React.ReactNode;
@@ -465,6 +472,8 @@ export function Landing({
   // The newest release, from CHANGELOG.md at build time. Mentioned in the
   // nav only while it is recent.
   release?: ReleaseInfo | null;
+  // Link the terms page (#474): only where an operator is configured.
+  terms?: boolean;
   now?: Date;
 }) {
   const freshRelease = release && isReleaseFresh(release.date, now) ? release : null;
@@ -479,7 +488,7 @@ export function Landing({
           <Paths access={access} />
           <Features />
         </main>
-        <Footer />
+        <Footer terms={terms} />
       </div>
     </SignInProvider>
   );

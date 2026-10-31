@@ -5,7 +5,8 @@
     "usage": "Tu as utilisé {used} appartements sur {granted}. Pour CHF 5 de plus, tu en ajoutes 40.",
     "pitch": "Flatpare coûte CHF 5, une seule fois — ce n’est pas un abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans ton foyer.",
     "quota": "Les 40 comptent les appartements que tu <strong>ajoutes</strong>, pas ceux que tu gardes : en supprimer un libère de la place dans ta comparaison, mais ne rend pas le crédit. Lire un PDF et calculer les temps de trajet nous coûte de l’argent pour chaque appartement, et c’est cela que tu paies.",
-    "stripe": "Le paiement est géré par Stripe. Flatpare ne voit jamais les données de ta carte, et Stripe ne voit jamais tes appartements — ils sont chiffrés dans ton navigateur."
+    "stripe": "Le paiement est géré par Stripe. Flatpare ne voit jamais les données de ta carte, et Stripe ne voit jamais tes appartements — ils sont chiffrés dans ton navigateur.",
+    "terms": "En payant, tu acceptes les <link>conditions</link>, y compris le remboursement sous 14 jours."
   },
   "checkout": {
     "startFailed": "Impossible de lancer le paiement. Réessaie, s’il te plaît.",

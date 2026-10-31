@@ -5,7 +5,8 @@
     "usage": "You have used {used} of {granted} apartments. Another CHF 5 adds 40 more.",
     "pitch": "Flatpare is CHF 5, once — not a subscription. That covers up to 10 people and 40 apartments in your household.",
     "quota": "The 40 counts apartments you <strong>add</strong>, not apartments you keep: deleting one frees room in your comparison but does not give the credit back. Reading a PDF and measuring travel times costs us money per apartment, and that is what you are paying for.",
-    "stripe": "Payment is handled by Stripe. Flatpare never sees your card details, and Stripe never sees your apartments — they are encrypted in your browser."
+    "stripe": "Payment is handled by Stripe. Flatpare never sees your card details, and Stripe never sees your apartments — they are encrypted in your browser.",
+    "terms": "By paying you accept the <link>terms</link>, including the 14-day refund."
   },
   "checkout": {
     "startFailed": "Couldn't start checkout. Please try again.",

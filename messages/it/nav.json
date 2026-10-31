@@ -18,7 +18,8 @@
   "menu": {
     "guide": "Guida",
     "signOut": "Esci",
-    "install": "Installa l'app"
+    "install": "Installa l'app",
+    "terms": "Condizioni e privacy"
   },
   "confirmSignOut": "Hai modifiche alle valutazioni non salvate. Vuoi uscire lo stesso? Quello che hai inserito andrà perso.",
   "unknownUser": "Sconosciuto",

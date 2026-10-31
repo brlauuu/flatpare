@@ -18,7 +18,8 @@
   "menu": {
     "guide": "Guía",
     "signOut": "Cerrar sesión",
-    "install": "Instalar la app"
+    "install": "Instalar la app",
+    "terms": "Condiciones y privacidad"
   },
   "confirmSignOut": "Tienes cambios sin guardar en una valoración. ¿Cerrar sesión de todos modos? Lo que has escrito se perderá.",
   "unknownUser": "Desconocido",

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { readOperator } from "@/lib/operator";
 import { getTranslations } from "next-intl/server";
 import { NavBar } from "@/components/nav-bar";
 import { resolveHouseholdIdentity } from "@/lib/session";
@@ -25,10 +27,11 @@ export default async function BillingPage() {
 
   const returning = balance.granted > 0;
   const t = await getTranslations("billing.page");
+  const operator = readOperator() !== null;
 
   return (
     <>
-      <NavBar userName={identity.userName} />
+      <NavBar userName={identity.userName} terms={operator} />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-10">
         <div className="space-y-3">
           <h1 className="title-page">
@@ -51,6 +54,17 @@ export default async function BillingPage() {
         <CheckoutPanel grantedAtStart={balance.granted} />
 
         <p className="text-xs text-muted-foreground text-pretty">{t("stripe")}</p>
+        {operator && (
+          <p className="text-xs text-muted-foreground text-pretty">
+            {t.rich("terms", {
+              link: (chunks) => (
+                <Link href="/terms" className="text-primary underline underline-offset-2">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </p>
+        )}
       </main>
     </>
   );

@@ -118,7 +118,8 @@
   },
   "footer": {
     "createdBy": "flatpare.com wird erstellt von <author></author>",
-    "changelog": "Änderungen"
+    "changelog": "Änderungen",
+    "terms": "Bedingungen und Datenschutz"
   },
   "beta": {
     "label": "Beta-Einladung anfordern",
@@ -158,5 +159,9 @@
     "viewing": "Besichtigung Sa",
     "tape": "Massband mitnehmen",
     "decided": "entschieden: Wohnung B"
+  },
+  "terms": {
+    "title": "Bedingungen und Datenschutz",
+    "home": "Flatpare Startseite"
   }
 }

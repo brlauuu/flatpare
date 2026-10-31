@@ -18,7 +18,8 @@
   "menu": {
     "guide": "Guide",
     "signOut": "Sign out",
-    "install": "Install app"
+    "install": "Install app",
+    "terms": "Terms and privacy"
   },
   "confirmSignOut": "You have unsaved rating changes. Sign out anyway? Your input will be discarded.",
   "unknownUser": "Unknown",

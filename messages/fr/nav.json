@@ -18,7 +18,8 @@
   "menu": {
     "guide": "Guide",
     "signOut": "Se déconnecter",
-    "install": "Installer l'app"
+    "install": "Installer l'app",
+    "terms": "Conditions et confidentialité"
   },
   "confirmSignOut": "Tu as des modifications d’évaluation non enregistrées. Te déconnecter quand même ? Ta saisie sera perdue.",
   "unknownUser": "Inconnu",

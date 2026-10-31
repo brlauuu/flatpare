@@ -36,6 +36,9 @@ export async function proxy(request: NextRequest) {
   // repeat address.
   if (path === "/api/beta-requests") return NextResponse.next();
 
+  // The terms (#474) are for everyone, before signing up as much as after.
+  if (path === "/terms") return NextResponse.next();
+
   const session = await auth();
   const userId = session?.user?.id;
   const hasHousehold = !!userId && !!session?.householdId;
