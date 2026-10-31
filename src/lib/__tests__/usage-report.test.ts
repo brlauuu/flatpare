@@ -4,10 +4,13 @@ import {
   cadenceDue,
   dailyChart,
   dayRange,
+  checkReason,
+  EMAIL_TOP,
   needsCheck,
   renderEmail,
   renderHtml,
   summarize,
+  totals,
 } from "../../../scripts/usage-report-lib.mjs";
 
 // #431: the host's usage report as a page and an email. The pure half of
@@ -130,11 +133,46 @@ describe("renderEmail", () => {
     expect(renderEmail({ ...REPORT, lines: [] }).subject).toBe("Flatpare usage, last 7 day(s): 0 active");
   });
 
-  it("holds the table inline, with no SVG, and the same lines as text", () => {
+  it("leads with the totals over every active household", () => {
+    expect(totals(REPORT.lines)).toEqual({
+      active: 2,
+      check: 1,
+      spends: 7,
+      paid: 6,
+      "parse-pdf": 47,
+      geocode: 9,
+      distance: 4,
+      "check-listing": 0,
+    });
     const { html, text } = renderEmail(REPORT);
-    expect(html).not.toContain("<svg");
-    expect(html).toContain("<td");
-    expect(text).toContain("household 2: held 0, credits 3/40, spent 0/0/0, calls 40/0/4/0 CHECK");
+    expect(html).toContain(">47</div><div style=\"font-size:12px;color:#555555\">PDF reads</div>");
+    expect(text).toContain("Active households: 2\nTo check: 1\nCredits spent: 7\nPDF reads: 47");
+  });
+
+  it("says why each marked household is marked", () => {
+    expect(checkReason(REPORT.lines[1])).toBe("40 PDF reads and 0 address lookups against 0 paid processings");
+    const { html, text } = renderEmail(REPORT);
+    expect(html).toContain("<b>Household 2</b>: 40 PDF reads and 0 address lookups against 0 paid processings");
+    expect(text).toContain("- household 2: 40 PDF reads and 0 address lookups against 0 paid processings");
+    expect(renderEmail({ ...REPORT, lines: [REPORT.lines[0]] }).text).toContain("No household is marked to check.");
+  });
+
+  it("lists the most active households first, at most ten, and points to the page for the rest", () => {
+    const many = Array.from({ length: EMAIL_TOP + 3 }, (_, i) => ({
+      ...REPORT.lines[0],
+      id: i + 1,
+      calls: { ...REPORT.lines[0].calls, "parse-pdf": i },
+    }));
+    const { html, text } = renderEmail({ ...REPORT, lines: many });
+    expect(text).toContain(`Most active (household: credits spent, PDF reads, address lookups, credits left):\n- 13: 7, 12, 9, 28`);
+    expect(text).not.toContain("- 3: ");
+    expect(html).toContain("And 3 more in the attached report.");
+  });
+
+  it("holds no SVG and no stylesheet, which email clients drop", () => {
+    const { html } = renderEmail(REPORT);
+    expect(html).not.toMatch(/<svg|<style/);
+    expect(html).toContain("The attached page is the full report");
   });
 });
 

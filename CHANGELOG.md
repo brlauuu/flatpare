@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- For the host: the usage email leads with a summary (totals, the households to check and why, the ten most active), and the attached page is the full report. (#431)
+
 ## 0.31.1 — 2026-10-31
 
 ### Added
