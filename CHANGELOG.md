@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.32.1 — 2026-10-31
+
 ### Changed
 
 - The one-time notice in the app is now titled "Data we collect and why". (#412)
