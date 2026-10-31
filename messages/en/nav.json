@@ -36,7 +36,7 @@
     "dismiss": "Hide this tip"
   },
   "usageNotice": {
-    "title": "What we count",
+    "title": "Data we collect and why",
     "body": "Flatpare counts how many PDFs, addresses and listing links each household has processed, and what each credit paid for. The counts are per household, never per person, and never say what was processed. On flatpare.com we review them to check use against what was paid for.",
     "more": "More in the guide",
     "dismiss": "Got it"

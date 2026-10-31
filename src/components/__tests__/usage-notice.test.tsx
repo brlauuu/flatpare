@@ -21,7 +21,7 @@ afterEach(() => {
 describe("UsageNotice", () => {
   it("says what is counted, per household, and links to the guide", async () => {
     render(<UsageNotice />);
-    const notice = await screen.findByRole("region", { name: "What we count" });
+    const notice = await screen.findByRole("region", { name: "Data we collect and why" });
     expect(notice).toHaveTextContent(
       "Flatpare counts how many PDFs, addresses and listing links each household has processed"
     );
