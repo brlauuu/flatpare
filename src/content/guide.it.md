@@ -71,6 +71,8 @@ Vai su **Confronta** per vedere tutti gli appartamenti in un'unica tabella. Evid
 
 Nella pagina **Gruppo**, salva fino a **cinque** luoghi dove vai davvero — il lavoro, la palestra, tua sorella. Ogni appartamento mostra poi quanto ci vuole per raggiungerli in bici e coi mezzi pubblici.
 
+Non serve l’indirizzo completo: inizia a scrivere e scegli il luogo o l’indirizzo tra i suggerimenti, come su un sito di mappe. Scriverlo per intero funziona come prima.
+
 Sei tu a sceglierli; Flatpare non dà per scontato dove vai ogni giorno.
 
 ### Distanze

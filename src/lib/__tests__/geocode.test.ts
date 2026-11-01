@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { extractPostcode, geocodeLatLngWithReason } from "../geocode";
+import { extractPostcode, geocodeLatLngWithReason, searchAddresses } from "../geocode";
 
 beforeEach(() => {
   delete process.env.GOOGLE_MAPS_API_KEY;
@@ -154,5 +154,56 @@ describe("geocode logging (E4 privacy exception)", () => {
     const logged = JSON.stringify(spy.mock.calls);
     expect(logged).not.toContain("Bahnhofstrasse");
     expect(logged).not.toContain("test-key");
+  });
+});
+
+// #480: the matches offered when adding a location of interest.
+describe("searchAddresses", () => {
+  const reply = (body: unknown) => ({ ok: true, json: () => Promise.resolve(body) }) as Response;
+
+  it("returns Google's matches, at most five, skipping any without coordinates", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "k";
+    const results = Array.from({ length: 7 }, (_, i) => ({
+      formatted_address: `Bahnhofplatz ${i}`,
+      geometry: { location: { lat: 47 + i / 10, lng: 8 } },
+    }));
+    results.splice(1, 0, { formatted_address: "No geometry" } as never);
+    vi.spyOn(global, "fetch").mockResolvedValueOnce(reply({ results }));
+    const matches = await searchAddresses("Bahnhofplatz");
+    expect(matches).toHaveLength(5);
+    expect(matches[0]).toEqual({ address: "Bahnhofplatz 0", lat: 47, lng: 8 });
+    expect(matches.map((m) => m.address)).not.toContain("No geometry");
+  });
+
+  it("falls back to OpenRouteService when Google finds nothing", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "k";
+    process.env.OPENROUTESERVICE_API_KEY = "o";
+    const fetchSpy = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(reply({ results: [], status: "ZERO_RESULTS" }))
+      .mockResolvedValueOnce(
+        reply({ features: [{ properties: { label: "Bahnhofplatz, Bern" }, geometry: { coordinates: [7.44, 46.95] } }] })
+      );
+    expect(await searchAddresses("Bahnhofplatz")).toEqual([{ address: "Bahnhofplatz, Bern", lat: 46.95, lng: 7.44 }]);
+    expect(String(fetchSpy.mock.calls[1][0])).toContain("size=5");
+  });
+
+  it("logs only the error's class when a call throws, and returns nothing", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "SECRET-KEY";
+    vi.spyOn(global, "fetch").mockRejectedValueOnce(
+      new TypeError("fetch failed: https://maps.googleapis.com/?address=Secret%20Street&key=SECRET-KEY")
+    );
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await searchAddresses("Secret Street")).toEqual([]);
+    const logged = errors.mock.calls.flat().map(String).join("\n");
+    expect(logged).not.toContain("Secret");
+    expect(logged).not.toContain("SECRET-KEY");
+  });
+
+  it("calls nothing for an empty query or without a key", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+    expect(await searchAddresses("  ")).toEqual([]);
+    expect(await searchAddresses("Bahnhofplatz")).toEqual([]);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

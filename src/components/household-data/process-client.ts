@@ -20,6 +20,48 @@ export function geocodeAddress(address: string, apartmentId?: string): Promise<G
   return sendJson<GeocodeResult>("POST", "/api/process/geocode", apartmentId ? { address, apartmentId } : { address });
 }
 
+// #480: suggestions for a partly typed location address, and the address
+// and coordinates of the one picked. Free. `sessionToken` ties one search's
+// calls together (Google bills them as one); mint a new one per search.
+export interface Place {
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+export interface PlaceSuggestion {
+  placeId: string | null;
+  label: string;
+  detail: string | null;
+  place: Place | null;
+}
+
+export interface PlaceSession {
+  sessionToken: string;
+  language: Locale;
+}
+
+export async function suggestAddresses(
+  query: string,
+  session: PlaceSession,
+  near: { lat: number; lng: number } | null
+): Promise<PlaceSuggestion[]> {
+  const { suggestions } = await sendJson<{ suggestions: PlaceSuggestion[] }>(
+    "POST",
+    "/api/process/address-search",
+    { query, near, ...session }
+  );
+  return suggestions;
+}
+
+export async function resolveAddress(placeId: string, session: PlaceSession): Promise<Place | null> {
+  const { place } = await sendJson<{ place: Place | null }>("POST", "/api/process/address-place", {
+    placeId,
+    ...session,
+  });
+  return place;
+}
+
 export function distanceBetween(from: string, to: string): Promise<ApartmentDistance> {
   return sendJson<ApartmentDistance>("POST", "/api/process/distance", { from, to });
 }

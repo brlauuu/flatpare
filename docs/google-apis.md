@@ -11,6 +11,7 @@ silently no-op.
 | PDF data extraction | Gemini API | Google AI Studio (or Vertex) | `GOOGLE_GENERATIVE_AI_API_KEY` |
 | Postcode + lat/lng geocoding | Geocoding API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 | Bike + transit travel times | Distance Matrix API | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
+| Address suggestions for locations (#480) | Places API (New) | Google Cloud — Maps Platform | `GOOGLE_MAPS_API_KEY` |
 
 **No Google API renders a map.** The map page (`/map`) is drawn client-side
 with [MapLibre](https://maplibre.org) over OpenFreeMap vector tiles (#330); an
@@ -18,9 +19,10 @@ apartment's page links to it with that apartment highlighted (#384). The **Maps 
 enabled** — it was, until E3 deleted `src/lib/map-embed.ts`, and enabling an
 API a key does not need only widens what a leaked key can do.
 
-Google is asked for two things only: coordinates (Geocoding) and travel times
-(Distance Matrix), both at save time or during a maintenance pass — never at
-render time.
+Google is asked for three things only: coordinates (Geocoding), travel times
+(Distance Matrix), both at save time or during a maintenance pass, and address
+suggestions while a location of interest is typed (Places) — never at render
+time.
 
 All Maps Platform APIs share one key; you just need to **enable each one
 individually** in the Google Cloud Console. Enabling one does not enable the
@@ -38,7 +40,7 @@ If unset, PDF upload falls back to manual entry.
 
 ### 2. Maps Platform key — `GOOGLE_MAPS_API_KEY`
 
-One key, **two** APIs to enable:
+One key, **three** APIs to enable:
 
 1. Open [Google Cloud Console → APIs & Services → Library](https://console.cloud.google.com/apis/library).
 2. Enable each of the following:
@@ -46,8 +48,14 @@ One key, **two** APIs to enable:
      postcode extraction and the lat/lng pins the maps draw.
    - **Distance Matrix API** — used by `src/lib/distance.ts` for bike
      and transit times shown on each apartment.
+   - **Places API (New)** — used by `src/lib/places.ts` for the address
+     suggestions when adding a location of interest (#480). Not "Places API"
+     (the legacy one). Without it the suggestions fall back to Geocoding's one
+     best match. Billed as sessions: the suggestions of one search are free,
+     and picking one is one Place Details call with only `formattedAddress`
+     and `location`.
 3. Create or reuse an API key under **Credentials**. Restrict it to
-   **those two APIs and nothing else.** (HTTP-referrer restrictions break
+   **those three APIs and nothing else.** (HTTP-referrer restrictions break
    server-side calls — restrict by API instead.)
 
 If the key is unset, distances are skipped without error and apartments

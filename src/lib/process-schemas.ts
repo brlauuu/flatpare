@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOCALES } from "@/locales/locales";
 
 // `apartmentId` names the apartment being processed, which is what the
 // first-processing charge keys on (#413). A location of interest is
@@ -6,6 +7,27 @@ import { z } from "zod";
 export const geocodeRequestSchema = z.object({
   address: z.string().trim().min(1).max(500),
   apartmentId: z.uuid().optional(),
+});
+
+// #480: a partly typed address, for a location of interest's suggestions,
+// and the suggestion picked. Free: neither names an apartment. The session
+// token is the browser's, shared by one search's calls; `near` is the
+// rounded middle of the household's own places, to favour suggestions there.
+const sessionFields = {
+  sessionToken: z.uuid(),
+  language: z.enum(LOCALES),
+};
+
+export const addressSearchRequestSchema = z.object({
+  query: z.string().trim().min(1).max(500),
+  ...sessionFields,
+  near: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).nullable().default(null),
+});
+
+// A Places id is URL-safe text; anything else could change the request path.
+export const addressPlaceRequestSchema = z.object({
+  placeId: z.string().regex(/^[A-Za-z0-9_-]{1,300}$/),
+  ...sessionFields,
 });
 
 export const distanceRequestSchema = z.object({

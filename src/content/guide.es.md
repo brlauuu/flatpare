@@ -71,6 +71,8 @@ Ve a **Comparar** para ver todos los pisos en una sola tabla. Resalta el mejor v
 
 En la página **Hogar**, guarda hasta **cinco** sitios a los que vas de verdad: el trabajo, el gimnasio, tu hermana. Cada piso muestra entonces cuánto se tarda en llegar a cada uno en bici y en transporte público.
 
+No hace falta la dirección completa: empieza a escribir y elige el lugar o la dirección entre las sugerencias, como en una web de mapas. Escribirla entera sigue funcionando.
+
 Los eliges tú; Flatpare no da por hecho adónde te desplazas.
 
 ### Distancias

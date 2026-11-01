@@ -170,3 +170,71 @@ export async function extractPostcode(
 
   return null;
 }
+
+export interface AddressMatch {
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+export const ADDRESS_SEARCH_LIMIT = 5;
+
+const isCoord = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+async function searchGoogle(query: string): Promise<AddressMatch[] | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    url.searchParams.set("address", query);
+    url.searchParams.set("key", apiKey);
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    const results: unknown[] = Array.isArray(data.results) ? data.results : [];
+    return results.flatMap((r) => {
+      const hit = r as { formatted_address?: unknown; geometry?: { location?: { lat?: unknown; lng?: unknown } } };
+      const loc = hit.geometry?.location;
+      if (typeof hit.formatted_address !== "string" || !isCoord(loc?.lat) || !isCoord(loc?.lng)) return [];
+      return [{ address: hit.formatted_address, lat: loc.lat, lng: loc.lng }];
+    });
+  } catch (err) {
+    // Same posture as tryGoogleGeocodeLatLng: the message is the outbound URL.
+    console.error(`[address-search:google] fetch failed — ${scrubbedErrorLine(err)}`);
+    return null;
+  }
+}
+
+async function searchOrs(query: string): Promise<AddressMatch[] | null> {
+  const apiKey = process.env.OPENROUTESERVICE_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = new URL("https://api.openrouteservice.org/geocode/search");
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("text", query);
+    url.searchParams.set("size", String(ADDRESS_SEARCH_LIMIT));
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    const features: unknown[] = Array.isArray(data.features) ? data.features : [];
+    return features.flatMap((f) => {
+      const hit = f as { properties?: { label?: unknown }; geometry?: { coordinates?: unknown } };
+      const coords = hit.geometry?.coordinates;
+      const label = hit.properties?.label;
+      if (typeof label !== "string" || !Array.isArray(coords) || !isCoord(coords[0]) || !isCoord(coords[1])) return [];
+      return [{ address: label, lat: coords[1], lng: coords[0] }];
+    });
+  } catch (err) {
+    console.error(`[address-search:ors] fetch failed — ${scrubbedErrorLine(err)}`);
+    return null;
+  }
+}
+
+// #480: the matches for a partly typed address, for a location of interest.
+// Google first, OpenRouteService when Google is not configured, fails, or
+// finds nothing; an empty list when neither finds anything or neither is set.
+export async function searchAddresses(query: string): Promise<AddressMatch[]> {
+  if (!query.trim()) return [];
+  const google = await searchGoogle(query);
+  if (google && google.length > 0) return google.slice(0, ADDRESS_SEARCH_LIMIT);
+  const ors = await searchOrs(query);
+  return (ors ?? []).slice(0, ADDRESS_SEARCH_LIMIT);
+}

@@ -71,6 +71,8 @@ Geh auf **Vergleichen**, um alle Wohnungen in einer Tabelle zu sehen. Sie hebt i
 
 Auf der Seite **Haushalt** speicherst du bis zu **fünf** Orte, an die du tatsächlich gehst — die Arbeit, das Fitnesscenter, deine Schwester. Jede Wohnung zeigt dann, wie lange du mit dem Velo und mit dem ÖV zu jedem davon brauchst.
 
+Die ganze Adresse brauchst du nicht: Beginne zu tippen und wähle den Ort oder die Adresse aus den Vorschlägen, wie auf einer Kartenseite. Die Adresse ganz auszuschreiben geht weiterhin.
+
 Die wählst du selbst; Flatpare geht nicht davon aus, wohin du pendelst.
 
 ### Distanzen

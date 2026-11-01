@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+
+- Adding a location of interest no longer needs the full address: start typing and pick the place or address from the suggestions, as on a maps site. A picked address goes on the map straight away (#480).
+
 ## 0.33.0 — 2026-10-31
 
 ### Added
