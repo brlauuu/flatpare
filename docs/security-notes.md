@@ -317,7 +317,7 @@ they carry no version at all.
 
 ### Accepted: process endpoints see plaintext in memory
 
-`/api/process/{geocode,distance,check-listing,parse-pdf}` receive one address, one
+`/api/process/{geocode,address-search,address-place,distance,check-listing,parse-pdf}` receive one address, one
 URL or one PDF per call, forward it to Google or Gemini with the host's keys, and
 return the result. They touch no table (each has a test that asserts every row count is
 unchanged) and do not log bodies. This is the privacy exception the parent spec
@@ -613,6 +613,13 @@ Three ways a modified client can process without paying, all accepted:
    geocode any number of addresses, under that id, including an id it made up. Counting
    free reads per charge would narrow the PDF case; it is not built.
 3. Measure distances, which never charge (as before #413).
+4. Geocode through the address suggestions (#480), whose picked place comes with
+   coordinates and never charges. They are counted in `process_usage` under
+   `address-search` and `address-place`, which the usage report does not weigh against
+   credits, so heavy use there does not mark a household `check`. Same class as 1; the
+   rate limit is the bound. The suggestions also send Google the household's rough area
+   (the middle of its places, rounded to about 10 km) as a bias; Google already holds
+   those places' addresses from geocoding them.
 
 All three need a signed-in member of a household that has paid at least once (the
 purchase gate). What makes them visible is the host's own record, kept per household

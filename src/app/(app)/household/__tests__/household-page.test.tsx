@@ -13,6 +13,25 @@ vi.mock("@/components/household-settings", () => ({
   HouseholdSettings: () => <div data-testid="household-settings" />,
 }));
 
+// #480: the suggesting address field has its own tests; here it is a plain
+// field plus one suggestion to pick, so what is tested is what the form does
+// with a pick.
+vi.mock("@/components/address-search-input", () => ({
+  AddressSearchInput: (props: {
+    id: string;
+    value: string;
+    onChange: (v: string) => void;
+    onPick: (p: { address: string; lat: number; lng: number }) => void;
+  }) => (
+    <>
+      <input id={props.id} value={props.value} onChange={(e) => props.onChange(e.target.value)} />
+      <button type="button" onClick={() => props.onPick({ address: "Bahnhofplatz, 3011 Bern", lat: 46.948, lng: 7.44 })}>
+        Pick Bern
+      </button>
+    </>
+  ),
+}));
+
 import HouseholdPage from "../page";
 
 const STATION = makeLocationView({
@@ -242,5 +261,54 @@ describe("HouseholdPage", () => {
   it("shows the store's load error", () => {
     setup({ status: "error", error: "Failed to load household data", locations: [] });
     expect(screen.getByText(/Couldn't load locations/i)).toBeInTheDocument();
+  });
+  it("saves a picked suggestion with its coordinates (#480)", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    await user.click(screen.getByRole("button", { name: /Add location/i }));
+    await user.type(screen.getByLabelText(/Label/i), "Station");
+    await user.type(screen.getByLabelText("Address"), "Bahnh");
+    await user.click(screen.getByRole("button", { name: "Pick Bern" }));
+    expect(screen.getByLabelText("Address")).toHaveValue("Bahnhofplatz, 3011 Bern");
+    expect(screen.getByText(/Picked from the suggestions/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
+    await waitFor(() => expect(value.createLocation).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createLocation).mock.calls[0][1]).toEqual({
+      label: "Station",
+      icon: "Train",
+      address: "Bahnhofplatz, 3011 Bern",
+      latitude: 46.948,
+      longitude: 7.44,
+    });
+  });
+
+  it("drops a picked suggestion once the address is typed over", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    await user.click(screen.getByRole("button", { name: /Add location/i }));
+    await user.type(screen.getByLabelText(/Label/i), "Station");
+    await user.click(screen.getByRole("button", { name: "Pick Bern" }));
+    await user.type(screen.getByLabelText("Address"), " West");
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
+    await waitFor(() => expect(value.createLocation).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(value.createLocation).mock.calls[0][1]).toMatchObject({
+      address: "Bahnhofplatz, 3011 Bern West",
+      latitude: null,
+      longitude: null,
+    });
+  });
+
+  it("an edit with a picked suggestion passes its coordinates to updateLocation", async () => {
+    const user = userEvent.setup();
+    const { value } = setup();
+    await user.click(screen.getByRole("button", { name: /Edit Train Station/i }));
+    await user.click(screen.getByRole("button", { name: "Pick Bern" }));
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
+
+    await waitFor(() => expect(value.updateLocation).toHaveBeenCalledTimes(1));
+    const mutate = vi.mocked(value.updateLocation).mock.calls[0][1];
+    expect(mutate(STATION)).toMatchObject({ address: "Bahnhofplatz, 3011 Bern", latitude: 46.948, longitude: 7.44 });
   });
 });

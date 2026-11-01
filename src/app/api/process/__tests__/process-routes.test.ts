@@ -60,6 +60,12 @@ vi.mock("@/lib/session", () => ({
 }));
 
 const geocodeLatLngWithReason = vi.fn();
+const suggestPlaces = vi.fn();
+const resolvePlace = vi.fn();
+vi.mock("@/lib/places", () => ({
+  suggestPlaces: (...a: unknown[]) => suggestPlaces(...a),
+  resolvePlace: (...a: unknown[]) => resolvePlace(...a),
+}));
 const extractPostcode = vi.fn();
 vi.mock("@/lib/geocode", () => ({
   geocodeLatLngWithReason: (...a: unknown[]) => geocodeLatLngWithReason(...a),
@@ -75,6 +81,8 @@ const repairListingUrl = vi.fn();
 vi.mock("@/lib/find-listing", () => ({ repairListingUrl: (...a: unknown[]) => repairListingUrl(...a) }));
 
 import { POST as geocodePOST } from "../geocode/route";
+import { POST as addressSearchPOST } from "../address-search/route";
+import { POST as addressPlacePOST } from "../address-place/route";
 import { POST as distancePOST } from "../distance/route";
 import { POST as checkListingPOST } from "../check-listing/route";
 import { POST as parsePdfPOST } from "../parse-pdf/route";
@@ -185,6 +193,47 @@ describe("POST /api/process/geocode", () => {
 
   it("400s an empty address", async () => {
     expect((await geocodePOST(json({ address: "  " }))).status).toBe(400);
+  });
+});
+
+// #480: free, each counted under its own endpoint so the usage report's
+// geocode count stays the apartments' own.
+describe("address suggestions (#480)", () => {
+  const SESSION = { sessionToken: "44444444-4444-4444-8444-444444444444", language: "fr" };
+  afterEach(async () => {
+    await db.delete(processUsage);
+  });
+
+  it("401s without a session and 400s an empty query, a bad token or a bad place id", async () => {
+    signedIn = false;
+    expect((await addressSearchPOST(json({ query: "Bahn", ...SESSION }))).status).toBe(401);
+    signedIn = true;
+    expect((await addressSearchPOST(json({ query: "  ", ...SESSION }))).status).toBe(400);
+    expect((await addressSearchPOST(json({ query: "Bahn", ...SESSION, sessionToken: "x" }))).status).toBe(400);
+    expect((await addressSearchPOST(json({ query: "Bahn", ...SESSION, language: "pt" }))).status).toBe(400);
+    expect((await addressPlacePOST(json({ placeId: "../places/x", ...SESSION }))).status).toBe(400);
+    expect(suggestPlaces).not.toHaveBeenCalled();
+    expect(resolvePlace).not.toHaveBeenCalled();
+  });
+
+  it("suggests and resolves, writing nothing but their own usage counts", async () => {
+    currentSession.householdId = hid;
+    currentSession.userId = "o";
+    const suggestion = { placeId: "ChIJabc", label: "Bahnhofplatz", detail: "Bern", place: null };
+    suggestPlaces.mockResolvedValue([suggestion]);
+    resolvePlace.mockResolvedValue({ address: "Bahnhofplatz, 3011 Bern", lat: 46.9, lng: 7.4 });
+
+    const near = { lat: 47.4, lng: 8.5 };
+    const res = await addressSearchPOST(json({ query: "Bahnhofplatz", near, ...SESSION }));
+    expect(await res.json()).toEqual({ suggestions: [suggestion] });
+    expect(suggestPlaces).toHaveBeenCalledWith("Bahnhofplatz", { ...SESSION, near });
+    const picked = await addressPlacePOST(json({ placeId: "ChIJabc", ...SESSION }));
+    expect(await picked.json()).toEqual({ place: { address: "Bahnhofplatz, 3011 Bern", lat: 46.9, lng: 7.4 } });
+    expect(resolvePlace).toHaveBeenCalledWith("ChIJabc", SESSION);
+
+    const usage = await db.select().from(processUsage);
+    expect(usage.map((u) => [u.endpoint, u.count]).sort()).toEqual([["address-place", 1], ["address-search", 1]]);
+    await rowsUnchanged();
   });
 });
 

@@ -71,6 +71,8 @@ Va sur **Comparer** pour voir tous les appartements dans un seul tableau. La mei
 
 Sur la page **Foyer**, enregistre jusqu’à **cinq** endroits où tu vas vraiment — le travail, la salle de sport, ta sœur. Chaque appartement indique alors combien de temps il faut pour s’y rendre à vélo et en transports publics.
 
+Pas besoin de l’adresse complète : commence à taper et choisis le lieu ou l’adresse parmi les suggestions, comme sur un site de cartes. L’écrire en entier marche toujours.
+
 C’est à toi de les choisir ; Flatpare ne suppose pas où tu te déplaces.
 
 ### Distances

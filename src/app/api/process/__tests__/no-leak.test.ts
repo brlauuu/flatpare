@@ -45,6 +45,12 @@ vi.mock("@/lib/session", () => ({
 
 const geocodeLatLngWithReason = vi.fn();
 const extractPostcode = vi.fn();
+const suggestPlaces = vi.fn();
+const resolvePlace = vi.fn();
+vi.mock("@/lib/places", () => ({
+  suggestPlaces: (...a: unknown[]) => suggestPlaces(...a),
+  resolvePlace: (...a: unknown[]) => resolvePlace(...a),
+}));
 vi.mock("@/lib/geocode", () => ({
   geocodeLatLngWithReason: (...a: unknown[]) => geocodeLatLngWithReason(...a),
   extractPostcode: (...a: unknown[]) => extractPostcode(...a),
@@ -68,6 +74,8 @@ const generateText = vi.fn();
 vi.mock("ai", () => ({ generateText: (...a: unknown[]) => generateText(...a) }));
 
 import { POST as geocodePOST } from "../geocode/route";
+import { POST as addressSearchPOST } from "../address-search/route";
+import { POST as addressPlacePOST } from "../address-place/route";
 import { POST as distancePOST } from "../distance/route";
 import { POST as checkListingPOST } from "../check-listing/route";
 import { POST as parsePdfPOST } from "../parse-pdf/route";
@@ -223,6 +231,31 @@ describe("geocode", () => {
   });
 });
 
+const SESSION = { sessionToken: "44444444-4444-4444-8444-444444444444", language: "de" };
+const PLACE_ID = "ChIJsecretPlace42";
+
+describe("address suggestions (#480)", () => {
+  it("leaks nothing on success", async () => {
+    suggestPlaces.mockResolvedValue([{ placeId: PLACE_ID, label: ADDRESS, detail: null, place: null }]);
+    resolvePlace.mockResolvedValue({ address: ADDRESS, lat: 47.3, lng: 8.5 });
+    expect((await addressSearchPOST(json({ query: ADDRESS, ...SESSION }))).status).toBe(200);
+    const res = await addressPlacePOST(json({ placeId: PLACE_ID, ...SESSION }));
+    expect(await res.json()).toEqual({ place: { address: ADDRESS, lat: 47.3, lng: 8.5 } });
+    expectNoMarkers("address suggestions success");
+    expect(capturedText()).not.toContain(PLACE_ID);
+    await expectNoWrites("address suggestions success");
+  });
+
+  it("leaks nothing when the provider call throws", async () => {
+    suggestPlaces.mockRejectedValue(leakyFetchError());
+    resolvePlace.mockRejectedValue(leakyFetchError());
+    expect((await addressSearchPOST(json({ query: ADDRESS, ...SESSION }))).status).toBe(500);
+    expect((await addressPlacePOST(json({ placeId: PLACE_ID, ...SESSION }))).status).toBe(500);
+    expectNoMarkers("address suggestions throw");
+    await expectNoWrites("address suggestions throw");
+  });
+});
+
 describe("distance", () => {
   it("leaks nothing on success", async () => {
     calculateDistance.mockResolvedValue({ bikeMinutes: 12, transitMinutes: 20 });
@@ -301,8 +334,12 @@ describe("the whole surface at once", () => {
     calculateDistance.mockResolvedValue({ bikeMinutes: 1, transitMinutes: 2 });
     checkListingUrl.mockResolvedValue(false);
     extractApartmentData.mockResolvedValue(extraction);
+    suggestPlaces.mockResolvedValue([]);
+    resolvePlace.mockResolvedValue(null);
 
     await geocodePOST(json({ address: ADDRESS }));
+    await addressSearchPOST(json({ query: ADDRESS, ...SESSION }));
+    await addressPlacePOST(json({ placeId: PLACE_ID, ...SESSION }));
     await distancePOST(json({ from: ADDRESS, to: "X" }));
     await checkListingPOST(json({ url: LISTING_URL }));
     await parsePdfPOST(multipartPdf());
@@ -312,8 +349,12 @@ describe("the whole surface at once", () => {
     checkListingUrl.mockRejectedValue(leakyFetchError());
     extractApartmentData.mockRejectedValue(leakyFetchError());
     generateText.mockRejectedValue(leakyFetchError());
+    suggestPlaces.mockRejectedValue(leakyFetchError());
+    resolvePlace.mockRejectedValue(leakyFetchError());
 
     await geocodePOST(json({ address: ADDRESS }));
+    await addressSearchPOST(json({ query: ADDRESS, ...SESSION }));
+    await addressPlacePOST(json({ placeId: PLACE_ID, ...SESSION }));
     await distancePOST(json({ from: ADDRESS, to: "X" }));
     await checkListingPOST(json({ url: LISTING_URL }));
     await parsePdfPOST(multipartPdf());

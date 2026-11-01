@@ -17,20 +17,28 @@ import type { LocationView } from "@/lib/household-data/types";
 import { MAX_LOCATIONS, type LocationIconName } from "@/lib/location-icons";
 import type { ErrorDetails } from "@/lib/fetch-error";
 import { useStoreErrorDetails } from "@/components/household-data/use-store-error-details";
+import { AddressSearchInput } from "@/components/address-search-input";
+import type { Place } from "@/components/household-data/process-client";
+import { searchBias } from "@/lib/address-bias";
 
 interface ErrorState {
   headline: string;
   details?: ErrorDetails;
 }
 
+// `picked` holds the coordinates of a match chosen from the address search
+// (#480); typing in the field drops it, and the store geocodes on save.
+type Picked = { lat: number; lng: number } | null;
+
 type Editing =
-  | { kind: "create"; label: string; icon: string; address: string }
+  | { kind: "create"; label: string; icon: string; address: string; picked: Picked }
   | {
       kind: "edit";
       id: string;
       label: string;
       icon: string;
       address: string;
+      picked: Picked;
       original: { label: string; icon: string; address: string };
     };
 
@@ -47,6 +55,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     status,
     error: loadError,
     locations,
+    apartments,
     createLocation,
     updateLocation,
     deleteLocation,
@@ -67,7 +76,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
   const [error, setError] = useState<ErrorState | null>(null);
 
   function startCreate() {
-    setEditing({ kind: "create", label: "", icon: "Train", address: "" });
+    setEditing({ kind: "create", label: "", icon: "Train", address: "", picked: null });
   }
 
   function startEdit(loc: LocationView) {
@@ -77,6 +86,7 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
       label: loc.label,
       icon: loc.icon,
       address: loc.address,
+      picked: null,
       original: { label: loc.label, icon: loc.icon, address: loc.address },
     });
   }
@@ -85,11 +95,17 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     setEditing(null);
   }
 
+  function pickPlace(place: Place) {
+    if (!editing) return;
+    setEditing({ ...editing, address: place.address, picked: { lat: place.lat, lng: place.lng } });
+  }
+
   async function handleSave() {
     if (!editing) return;
     const label = editing.label.trim();
     const address = editing.address.trim();
     if (label === "" || address === "") return;
+    const picked = editing.picked;
 
     setSaving(true);
     try {
@@ -100,12 +116,18 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
           label,
           icon: editing.icon,
           address,
-          latitude: null,
-          longitude: null,
+          latitude: picked?.lat ?? null,
+          longitude: picked?.lng ?? null,
         });
       } else {
         const icon = editing.icon;
-        await updateLocation(editing.id, (current) => ({ ...current, label, icon, address }));
+        await updateLocation(editing.id, (current) => ({
+          ...current,
+          label,
+          icon,
+          address,
+          ...(picked ? { latitude: picked.lat, longitude: picked.lng } : {}),
+        }));
       }
       setEditing(null);
       setError(null);
@@ -163,6 +185,8 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
     }
   }
 
+  // Suggestions favour the area of the household's own places (#480).
+  const near = searchBias([...locations, ...apartments]);
   const loaded = status === "ready";
   const canAdd = locations.length < MAX_LOCATIONS;
   const editingDirty =
@@ -280,12 +304,18 @@ export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="loc-address">{t("addressLabel")}</Label>
-              <Input
+              <AddressSearchInput
                 id="loc-address"
                 value={editing.address}
-                onChange={(e) => setEditing({ ...editing, address: e.target.value })}
+                near={near}
                 placeholder={t("addressPlaceholder")}
+                describedBy="loc-address-hint"
+                onChange={(address) => setEditing({ ...editing, address, picked: null })}
+                onPick={pickPlace}
               />
+              <p id="loc-address-hint" className="text-xs text-muted-foreground">
+                {editing.picked ? t("searchPicked") : t("searchHint")}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>{t("iconLabel")}</Label>

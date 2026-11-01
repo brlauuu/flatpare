@@ -736,7 +736,10 @@ export function HouseholdDataProvider({
     [userId, writeApartment]
   );
 
+  // A location saved with coordinates came from the address search (#480):
+  // the match was geocoded already, so it is not looked up again.
   const geocodeLocation = useCallback(async (data: Location): Promise<Location> => {
+    if (data.latitude !== null && data.longitude !== null) return data;
     const geo = await geocodeAddress(data.address);
     return { ...data, latitude: geo.lat, longitude: geo.lng };
   }, []);
@@ -763,7 +766,11 @@ export function HouseholdDataProvider({
       if (!row || row.data === null) throw new Error("Location not found");
       let next = mutate(row.data);
       const addressChanged = next.address !== row.data.address;
-      if (addressChanged) next = await geocodeLocation(next);
+      // Coordinates kept from before the edit belong to the old address.
+      const located = next.latitude !== row.data.latitude || next.longitude !== row.data.longitude;
+      if (addressChanged) {
+        next = await geocodeLocation(located ? next : { ...next, latitude: null, longitude: null });
+      }
       const envelope = await sealLocation(dataKey, householdId, id, next, keyVersion);
       const saved = await send<LocationRow>("PUT", `/api/locations/${id}`, { envelope });
       commit((s) => ({

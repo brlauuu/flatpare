@@ -612,6 +612,26 @@ describe("HouseholdDataProvider", () => {
     expect((captured as HouseholdDataContextValue).locations[0]).toMatchObject({ label: "Job", address: "Office 2", latitude: 1 });
   });
 
+  it("a location saved with coordinates from the address search is not geocoded again (#480)", async () => {
+    renderProvider();
+    const ctx = await ready();
+    await act(async () => {
+      await ctx.createLocation(L1, { label: "Work", icon: "Briefcase", address: "Office 1, 8001 Zürich", latitude: 47.1, longitude: 8.1 });
+    });
+    expect(server.calls.filter((c) => c.url === "/api/process/geocode")).toHaveLength(0);
+    expect((captured as HouseholdDataContextValue).locations[0]).toMatchObject({ latitude: 47.1, longitude: 8.1 });
+    await act(async () => {
+      await (captured as HouseholdDataContextValue).updateLocation(L1, (l) => ({
+        ...l,
+        address: "Office 2, 8002 Zürich",
+        latitude: 47.2,
+        longitude: 8.2,
+      }));
+    });
+    expect(server.calls.filter((c) => c.url === "/api/process/geocode")).toHaveLength(0);
+    expect((captured as HouseholdDataContextValue).locations[0]).toMatchObject({ latitude: 47.2, longitude: 8.2 });
+  });
+
   it("moveLocation reorders from the server's response", async () => {
     await seedLocation(L1, { label: "A", icon: "Briefcase", address: "x", latitude: null, longitude: null }, 0);
     const L2 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";

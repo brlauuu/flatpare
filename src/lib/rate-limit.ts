@@ -20,7 +20,7 @@ import { readOptionalPositiveInt } from "@/lib/env-int";
 // spot a modified client that processes without paying. Only the comparison
 // against a limit depends on PROCESS_RATE_LIMIT_PER_HOUR.
 
-export type ProcessEndpoint = "geocode" | "distance" | "check-listing" | "parse-pdf";
+export type ProcessEndpoint = "geocode" | "distance" | "check-listing" | "parse-pdf" | "address-search" | "address-place";
 
 const WINDOW_SECONDS = 3600;
 
