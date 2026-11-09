@@ -477,13 +477,23 @@
   height: 44px;
   cursor: pointer;
 }
+/* The marks get the same halo as their labels, so they read over streets. */
+.map-mark svg {
+  filter: drop-shadow(0 0 1.5px var(--background)) drop-shadow(0 0 1.5px var(--background));
+}
+/* A place's icon (#479), centred in the mark's box. */
+.map-mark-icon {
+  position: absolute;
+  left: 18px;
+  top: 8px;
+}
 .map-mark:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
 .map-mark-label {
   position: absolute;
-  left: 50px;
+  left: 46px;
   top: -8px;
   white-space: nowrap;
   font-family: var(--font-caveat), cursive;
@@ -494,7 +504,7 @@
   /* A halo so the handwriting reads over printed streets and names. */
   text-shadow: 0 0 3px var(--background), 0 0 3px var(--background), 0 0 3px var(--background);
 }
-/* The apartment the map was opened for (#384): a heavier circle on a soft
+/* The apartment the map was opened for (#384): a heavier scribble on a soft
    fill of its own colour, and a larger label. */
 .map-mark-highlighted svg {
   border-radius: 50%;

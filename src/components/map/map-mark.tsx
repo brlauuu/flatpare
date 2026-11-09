@@ -1,8 +1,11 @@
+import { createElement } from "react";
 import { cn } from "@/lib/utils";
-import { MARK_HEIGHT, MARK_WIDTH, pencilCirclePath, starPath } from "@/lib/map/marks";
+import { MARK_HEIGHT, MARK_WIDTH, scribbleDotPath } from "@/lib/map/marks";
+import { iconComponentFor } from "@/lib/location-icons";
 
-// One hand-drawn mark on the map (#330): a pencil circle around an
-// apartment, a star on a place, the label written beside it.
+// One hand-drawn mark on the map (#330): a scribbled dot for an apartment,
+// and for a place the icon it has on the apartment page (#479), the label
+// written beside it.
 //
 // With a mouse, hovering shows the card and a click opens the apartment.
 // On a touch screen there is no hover, so a tap shows the card and the card
@@ -16,6 +19,7 @@ interface Props {
   kind: "apartment" | "location";
   label: string;
   seed: number;
+  icon?: string | null;
   ariaLabel: string;
   highlighted?: boolean;
   hoverCapable: boolean;
@@ -25,8 +29,7 @@ interface Props {
   onOpen?: () => void;
 }
 
-export function MapMark({ kind, label, seed, ariaLabel, highlighted = false, hoverCapable, onShow, onHide, onDismiss, onOpen }: Props) {
-  const path = kind === "apartment" ? pencilCirclePath(seed) : starPath();
+export function MapMark({ kind, label, seed, icon = null, ariaLabel, highlighted = false, hoverCapable, onShow, onHide, onDismiss, onOpen }: Props) {
   return (
     <div
       role="button"
@@ -47,10 +50,27 @@ export function MapMark({ kind, label, seed, ariaLabel, highlighted = false, hov
         else if (e.key === "Escape") onDismiss();
       }}
     >
-      <svg viewBox={`0 0 ${MARK_WIDTH} ${MARK_HEIGHT}`} width={MARK_WIDTH} height={MARK_HEIGHT} aria-hidden="true">
-        <path d={path} fill="none" stroke="currentColor" strokeWidth={highlighted ? 4.5 : 2.6} strokeLinecap="round" strokeLinejoin="round" />
-        {kind === "apartment" && <circle cx={MARK_WIDTH / 2} cy={MARK_HEIGHT / 2} r={3} fill="currentColor" />}
-      </svg>
+      {kind === "location" ? (
+        // By name, through createElement, as location-icon-picker.tsx does.
+        createElement(iconComponentFor(icon ?? ""), {
+          className: "map-mark-icon",
+          width: 28,
+          height: 28,
+          strokeWidth: 2.5,
+          "aria-hidden": true,
+        })
+      ) : (
+        <svg viewBox={`0 0 ${MARK_WIDTH} ${MARK_HEIGHT}`} width={MARK_WIDTH} height={MARK_HEIGHT} aria-hidden="true">
+          <path
+            d={scribbleDotPath(seed)}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={highlighted ? 3.6 : 2.6}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
       <span className="map-mark-label" aria-hidden="true">
         {label}
       </span>

@@ -31,7 +31,25 @@ describe("MapMark", () => {
     const { mark } = setup({ highlighted: true });
     expect(mark).toHaveClass("map-mark-highlighted");
     expect(mark).toHaveAttribute("aria-current", "true");
-    expect(mark.querySelector("path")).toHaveAttribute("stroke-width", "4.5");
+    expect(mark.querySelector("path")).toHaveAttribute("stroke-width", "3.6");
+  });
+
+  it("draws an apartment as a scribbled dot alone, with no circle around it (#479)", () => {
+    const { mark } = setup();
+    expect(mark.querySelectorAll("path")).toHaveLength(1);
+    expect(mark.querySelector("circle")).toBeNull();
+    expect(mark.querySelector("svg.lucide")).toBeNull();
+  });
+
+  it("draws a place with the icon it has on the apartment page (#479)", () => {
+    const { mark } = setup({ kind: "location", icon: "Train", onOpen: undefined, ariaLabel: "Station" });
+    expect(mark.querySelector("svg.lucide-train")).not.toBeNull();
+    expect(mark.querySelector("svg.lucide-train")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("draws a place with an unknown icon as a pin, as the apartment page does", () => {
+    const { mark } = setup({ kind: "location", icon: "Nope", onOpen: undefined, ariaLabel: "Somewhere" });
+    expect(mark.querySelector("svg.lucide-map-pin")).not.toBeNull();
   });
 
   it("is not current unless highlighted", () => {

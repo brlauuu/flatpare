@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- On the map, an apartment is now a dot scribbled in with a pen instead of a dot inside a circle, and each location of interest is drawn with its own icon, the one it has on the apartment page, instead of a star (#479).
+
 ## 0.35.0 — 2026-11-09
 
 ### Changed

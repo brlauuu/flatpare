@@ -46,7 +46,7 @@ describe("toMapPoints", () => {
     expect(pts.apartments).toEqual([
       { id: "a1", label: "BS-01", name: "Apartment a1", latitude: 47.56, longitude: 7.59, rentChf: 2350, rentCurrency: "EUR", sizeM2: 78, numRooms: 3.5, avgOverall: 4.2 },
     ]);
-    expect(pts.locations).toEqual([{ id: "l1", label: "Office", address: "Somewhere 1", latitude: 47.57, longitude: 7.57 }]);
+    expect(pts.locations).toEqual([{ id: "l1", label: "Office", icon: "Briefcase", address: "Somewhere 1", latitude: 47.57, longitude: 7.57 }]);
     expect(pts.missing).toEqual([]);
   });
 
@@ -95,6 +95,12 @@ describe("toMarks", () => {
     expect(apt).toMatchObject({ key: "apartment:a1", kind: "apartment", id: "a1", label: "BS-01", lngLat: [7.59, 47.56], href: "/apartments/a1" });
     expect(apt.ariaLabel).toMatch(/^BS-01, CHF 2.350, opens apartment$/);
     expect(loc).toMatchObject({ key: "location:l1", kind: "location", id: "l1", label: "Office", ariaLabel: "Office", lngLat: [7.57, 47.57], href: null });
+  });
+
+  it("gives a place the icon the household chose, and an apartment none (#479)", () => {
+    const [apt, loc] = toMarks(pts, TEXT);
+    expect(loc.icon).toBe("Briefcase");
+    expect(apt.icon).toBeNull();
   });
 
   it("seeds each mark's wobble from its id", () => {

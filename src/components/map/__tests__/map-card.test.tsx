@@ -39,7 +39,7 @@ describe("ApartmentCard", () => {
 
 describe("LocationCard", () => {
   it("shows the label and address and is not a link", () => {
-    render(<LocationCard location={{ id: "l1", label: "Office", address: "Fabrikstrasse 2", latitude: 0, longitude: 0 }} />);
+    render(<LocationCard location={{ id: "l1", label: "Office", icon: "Briefcase", address: "Fabrikstrasse 2", latitude: 0, longitude: 0 }} />);
     expect(screen.getByText("Office")).toBeInTheDocument();
     expect(screen.getByText("Fabrikstrasse 2")).toBeInTheDocument();
     expect(screen.queryByRole("link")).toBeNull();
