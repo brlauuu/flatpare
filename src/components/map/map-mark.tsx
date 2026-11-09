@@ -1,9 +1,9 @@
 import { createElement } from "react";
 import { cn } from "@/lib/utils";
-import { MARK_HEIGHT, MARK_WIDTH, scribbleDotPath } from "@/lib/map/marks";
+import { MARK_HEIGHT, MARK_WIDTH, apartmentMarkPath } from "@/lib/map/marks";
 import { iconComponentFor } from "@/lib/location-icons";
 
-// One hand-drawn mark on the map (#330): a scribbled dot for an apartment,
+// One hand-drawn mark on the map (#330): a small pen mark for an apartment,
 // and for a place the icon it has on the apartment page (#479), the label
 // written beside it.
 //
@@ -62,7 +62,7 @@ export function MapMark({ kind, label, seed, icon = null, ariaLabel, highlighted
       ) : (
         <svg viewBox={`0 0 ${MARK_WIDTH} ${MARK_HEIGHT}`} width={MARK_WIDTH} height={MARK_HEIGHT} aria-hidden="true">
           <path
-            d={scribbleDotPath(seed)}
+            d={apartmentMarkPath(seed)}
             fill="none"
             stroke="currentColor"
             strokeWidth={highlighted ? 3.6 : 2.6}
