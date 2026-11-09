@@ -57,7 +57,7 @@ describe("ThemeProvider", () => {
       </ThemeProvider>
     );
     // `attribute="class"` is what Tailwind's dark: variant keys off, and
-    // AGENTS.md ties theme_color in the manifest to these same tokens — a
+    // docs/agents/pwa.md ties theme_color in the manifest to these same tokens — a
     // change here is a visual change, not a refactor.
     expect(nextThemesProps).toHaveBeenCalledWith(
       expect.objectContaining({

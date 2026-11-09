@@ -11,7 +11,7 @@ import type { StatusResponse } from "./flows";
 // the provider imports the screens in order to render them, and each screen
 // imported `useCrypto` back from the provider. All four files sit in one
 // directory, so enola's module-level cycle gate structurally cannot see them
-// — the blind spot AGENTS.md already records as a known limit. Keeping the
+// — the blind spot docs/agents/enola.md already records as a known limit. Keeping the
 // context here means the screens depend on this leaf instead, and the
 // provider is free to import them.
 //

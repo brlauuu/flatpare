@@ -201,7 +201,7 @@ export const providers = [
 // (a) at sign-in, (b) on every request while the token has none — the user
 // is on /invitations deciding — and (c) when a route handler calls
 // `unstable_update({})` after changing membership. Otherwise the claims are
-// left alone for the token's 24h life (see AGENTS.md, session staleness).
+// left alone for the token's 24h life (see docs/agents/auth.md, session staleness).
 export const authCallbacks = {
   // The under-development gate (#239). Runs before @auth/core creates a user
   // row, so a refused sign-UP leaves nothing behind; an existing account is
