@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.35.1 — 2026-11-09
+
 ### Changed
 
 - On the map, an apartment is now a small pen mark instead of a dot inside a circle: a scribbled dot, an x, a hatched square or a triangle, each apartment keeping its own, and each location of interest is drawn with its own icon, the one it has on the apartment page, instead of a star (#479).
