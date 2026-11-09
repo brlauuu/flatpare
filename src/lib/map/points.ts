@@ -21,6 +21,8 @@ export interface ApartmentPoint {
 export interface LocationPoint {
   id: string;
   label: string;
+  // The icon the household chose for it, drawn as its mark (#479).
+  icon: string;
   address: string | null;
   latitude: number;
   longitude: number;
@@ -68,7 +70,7 @@ export function toMapPoints(apartments: ApartmentView[], locations: LocationView
   }
   for (const loc of locations) {
     if (loc.latitude === null || loc.longitude === null) continue;
-    result.locations.push({ id: loc.id, label: loc.label, address: loc.address || null, latitude: loc.latitude, longitude: loc.longitude });
+    result.locations.push({ id: loc.id, label: loc.label, icon: loc.icon, address: loc.address || null, latitude: loc.latitude, longitude: loc.longitude });
   }
   return result;
 }
@@ -99,6 +101,8 @@ export interface MarkSpec {
   id: string;
   label: string;
   seed: number;
+  // A place's icon (#479); apartments have none.
+  icon: string | null;
   ariaLabel: string;
   lngLat: [number, number];
   // Where the mark opens; places open nothing.
@@ -115,6 +119,7 @@ export function toMarks(points: MapPoints, text: MapText, highlightId: string | 
       id: a.id,
       label: a.label,
       seed: seedFromId(a.id),
+      icon: null,
       ariaLabel: describeApartment(a, text),
       lngLat: [a.longitude, a.latitude] as [number, number],
       href: `/apartments/${a.id}`,
@@ -126,6 +131,7 @@ export function toMarks(points: MapPoints, text: MapText, highlightId: string | 
       id: l.id,
       label: l.label,
       seed: seedFromId(l.id),
+      icon: l.icon,
       ariaLabel: l.label,
       lngLat: [l.longitude, l.latitude] as [number, number],
       href: null,

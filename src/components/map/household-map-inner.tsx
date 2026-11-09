@@ -178,6 +178,7 @@ export default function HouseholdMapInner({ points, highlightId, source, onError
                 kind={m.kind}
                 label={m.label}
                 seed={m.seed}
+                icon={m.icon}
                 ariaLabel={m.ariaLabel}
                 highlighted={m.highlighted}
                 hoverCapable={hoverCapable}
