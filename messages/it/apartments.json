@@ -27,8 +27,6 @@
   },
   "badges": {
     "gone": "Non più disponibile",
-    "rated": "Valutato",
-    "notRated": "Non ancora valutato",
     "rooms": "{count, number} locali",
     "roomsShort": "{count, number} loc.",
     "size": "{size, number} m²",

@@ -27,8 +27,6 @@
   },
   "badges": {
     "gone": "Gone",
-    "rated": "Rated",
-    "notRated": "Not yet rated",
     "rooms": "{count, number} rooms",
     "roomsShort": "{count, number} rm",
     "size": "{size, number} m²",

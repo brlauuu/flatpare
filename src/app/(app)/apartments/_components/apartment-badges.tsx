@@ -1,6 +1,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 import type React from "react";
-import { AlertTriangle, CheckCircle2, Circle, Hourglass, Star } from "lucide-react";
+import { AlertTriangle, Hourglass, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function GoneBadge() {
@@ -23,27 +23,6 @@ export function NotProcessedBadge() {
     <Badge variant="outline" className="gap-1 text-muted-foreground">
       <Hourglass className="h-3 w-3" />
       {t("notProcessed")}
-    </Badge>
-  );
-}
-
-export function RatedBadge({ myRating }: { myRating: number | null }) {
-  const t = useTranslations("apartments.badges");
-  if (myRating !== null) {
-    return (
-      <Badge
-        variant="secondary"
-        className="gap-1 border-success bg-card text-success"
-      >
-        <CheckCircle2 className="h-3 w-3" />
-        {t("rated")}
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="gap-1 text-muted-foreground">
-      <Circle className="h-3 w-3" />
-      {t("notRated")}
     </Badge>
   );
 }

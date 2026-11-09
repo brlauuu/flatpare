@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useHouseholdData } from "@/components/household-data/use-household-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShortCode } from "@/components/short-code";
@@ -13,54 +9,9 @@ import { AddressLink } from "@/components/address-link";
 import { AddedByLine } from "@/components/added-by-line";
 import { GoneIcon, NotProcessedIcon, RatingSummary } from "./apartment-badges";
 import { ApartmentCorruptCard } from "./apartment-corrupt-card";
+import { QuickDelete } from "./quick-delete";
 import type { ApartmentView } from "@/lib/household-data/types";
 import { useFormatRent } from "@/components/use-format-rent";
-
-// Delete straight from the list (#437), after the same confirmation the
-// apartment page asks, naming the apartment since the list shows several.
-// A button beside the link, not inside it: a link may not hold one.
-function QuickDelete({ apt }: { apt: ApartmentView }) {
-  const t = useTranslations("apartments.card");
-  const { deleteApartment } = useHouseholdData();
-  const [deleting, setDeleting] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  async function handleDelete() {
-    if (!confirm(t("deleteConfirm", { name: apt.name }))) return;
-    setDeleting(true);
-    setFailed(false);
-    try {
-      await deleteApartment(apt.id);
-    } catch {
-      setDeleting(false);
-      setFailed(true);
-    }
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="destructive"
-        aria-label={t("delete", { name: apt.name })}
-        title={t("delete", { name: apt.name })}
-        disabled={deleting}
-        onClick={() => void handleDelete()}
-        // In the corner beside the facts: the card's 3px frame and the
-        // content's 16px below it and to the right (the card itself has no
-        // padding, #451).
-        className="absolute right-[19px] bottom-[19px] h-11 w-11 p-0 sm:h-8 sm:w-8"
-      >
-        <Trash2 className="h-4 w-4" aria-hidden />
-      </Button>
-      {failed && (
-        <p role="alert" className="absolute inset-x-4 top-4 rounded-md bg-card text-sm text-destructive">
-          {t("deleteFailed", { name: apt.name })}
-        </p>
-      )}
-    </>
-  );
-}
 
 const FACT = "h-7 px-1.5 text-sm";
 
@@ -69,7 +20,14 @@ export function ApartmentCard({ apt }: { apt: ApartmentView }) {
   return (
     <div className="relative h-full">
       <CardLink apt={apt} />
-      <QuickDelete apt={apt} />
+      <QuickDelete
+        apt={apt}
+        // In the corner beside the facts: the card's 3px frame and the
+        // content's 16px below it and to the right (the card itself has no
+        // padding, #451).
+        className="absolute right-[19px] bottom-[19px]"
+        alertClassName="absolute inset-x-4 top-4"
+      />
     </div>
   );
 }

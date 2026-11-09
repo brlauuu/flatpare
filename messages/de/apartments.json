@@ -27,8 +27,6 @@
   },
   "badges": {
     "gone": "Weg",
-    "rated": "Bewertet",
-    "notRated": "Noch nicht bewertet",
     "rooms": "{count, number} Zimmer",
     "roomsShort": "{count, number} Zi.",
     "size": "{size, number} m²",
