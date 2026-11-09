@@ -1,0 +1,11 @@
+# Map page (#330)
+
+Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+
+- **`/map` (`src/app/(app)/map/page.tsx`) shows every apartment and location of interest** on a MapLibre map drawn from OpenFreeMap vector tiles (or a self-hoster's own file, see Self-hosted map data) with our own style (`mapStyle`, `src/lib/map/style.ts`): streets, water, parks, street and neighbourhood names; **no buildings, house numbers or POIs, on purpose.** No key, no env var. Design: `docs/superpowers/specs/2026-10-06-map-page-design.md`.
+- **Only two files import `maplibre-gl`**: `src/components/map/household-map-inner.tsx` and `src/components/map/map-protocols.ts`, which only the inner imports. The inner loads through `next/dynamic` (`ssr: false`) so no other page carries MapLibre. It is not unit tested (no WebGL in jsdom) and stays counted in coverage; everything it decides comes from the tested pure modules in `src/lib/map/` (style, pencil marks, points, initial view, card position).
+- The household's marks are HTML markers rendered by React through portals, so they use theme tokens (`text-primary` apartments, `text-destructive` places) and Caveat (`src/components/map/map-fonts.ts`). The map's own colours are fixed constants in `style.ts`.
+- Mouse: hover shows the card, click opens the apartment. Touch: tap shows the card, the card is the link. The page runs the geocode maintenance pass once per visit (it used to run when the apartments page's overview map opened; that map is gone).
+- **Guide is in the user menu, not the nav bar** (decided on #330): with Map added, seven items did not fit the phone bottom bar at 360px. A new section that wants a nav slot has to displace one or move to the menu too.
+- **The apartment page has no map of its own (#384).** "View on map" (shown when the apartment has coordinates) opens `/map?highlight=<id>`: the map opens on its usual view of every apartment and draws that one's mark heavier and on top (`MarkSpec.highlighted`, `.map-mark-highlighted`) and marks it `aria-current`. An unknown or unplaced id highlights nothing.
+- Tiles reveal the viewed area to the tile host when it is OpenFreeMap — see `docs/security-notes.md`.

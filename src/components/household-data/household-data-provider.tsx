@@ -68,7 +68,7 @@ export interface HouseholdIdentity {
   userId: string;
   householdId: number;
   userName: string;
-  // From the session token, so up to 24h stale (see Auth in AGENTS.md). Fine
+  // From the session token, so up to 24h stale (see docs/agents/auth.md). Fine
   // for deciding what to SHOW; every owner-only action is re-checked by its
   // route against the database.
   role: "owner" | "member";

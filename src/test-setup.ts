@@ -15,7 +15,7 @@ import "./i18n/__tests__/next-intl-stand-in";
 // should not be needed. Returned to the default deliberately, to prove that.
 //
 // If this starts flaking again, the answer is NOT to raise it: find the
-// pending work the assertion is racing and give it an anchor. See AGENTS.md,
+// pending work the assertion is racing and give it an anchor. See docs/agents/tests.md,
 // Tests, for the two shapes that caused it last time.
 
 // Give this test file its own database (#202).

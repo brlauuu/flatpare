@@ -46,7 +46,7 @@ type Editing =
 // Household page: locations belong to the household, and every member may
 // edit them. Only owners may recompute — `canRecompute` — because that
 // re-runs a paid distance call for every apartment × location pair (see
-// Apartment credits (E6) in AGENTS.md for the cost). The server does not
+// docs/agents/apartment-credits.md for the cost). The server does not
 // enforce that: the distance route serves every member's own enrichment,
 // so this is a UI decision keyed on the session's role.
 export function LocationsSettings({ canRecompute }: { canRecompute: boolean }) {

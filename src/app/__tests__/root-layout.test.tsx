@@ -96,7 +96,7 @@ describe("RootLayout metadata", () => {
 
 describe("RootLayout viewport", () => {
   it("declares light and dark theme colours", async () => {
-    // AGENTS.md ties these to --primary/--background in globals.css and the
+    // docs/agents/pwa.md ties these to --primary/--background in globals.css and the
     // manifest's theme_color; they move together or the installed app
     // flashes the wrong colour on launch.
     const { viewport } = await load();

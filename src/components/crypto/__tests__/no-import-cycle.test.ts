@@ -8,7 +8,7 @@ import path from "node:path";
 // A guard for the cycle #255 removed, because nothing else can catch it.
 //
 // enola's cycle gate works at MODULE (directory) level, so a loop entirely
-// inside src/components/crypto is structurally invisible to it — AGENTS.md
+// inside src/components/crypto is structurally invisible to it — docs/agents/enola.md
 // already records that as a known limit, measured not assumed. Which is
 // exactly how three cycles lived here unnoticed: the provider imports the
 // screens to render them, and each screen imported `useCrypto` back from the

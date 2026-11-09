@@ -152,7 +152,7 @@ describe("LandingPage provider selection", () => {
     });
   });
 
-  // AGENTS.md and docs/security-notes.md both document this as a deployment
+  // docs/agents/landing-page.md and docs/security-notes.md both document this as a deployment
   // footgun left as documentation rather than fixed in code. Pinning the
   // behaviour means the next person to read the code sees what actually
   // happens, and a silent change to it fails here.

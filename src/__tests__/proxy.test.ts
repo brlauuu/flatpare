@@ -59,7 +59,7 @@ describe("proxy — session gate", () => {
   // namespace and its endpoint set is version-dependent — enumerating an
   // allow-list would be brittle and would break sign-in on an upgrade. This
   // is a *broader* pass-through than the old exact "/api/auth" match (see
-  // AGENTS.md's note on PR #176, where a startsWith("/api/auth") prefix once
+  // docs/agents/auth.md's note on PR #176, where a startsWith("/api/auth") prefix once
   // exposed user listing and deletion). Route handlers under /api/auth/*
   // must carry their own authorization — the proxy will not do it for them.
   it("passes through any /api/auth/* sub-path unconditionally, signed out or in", async () => {

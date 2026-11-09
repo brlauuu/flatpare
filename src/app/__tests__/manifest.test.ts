@@ -18,7 +18,7 @@ describe("web app manifest", () => {
     expect(m.start_url).toBe("/");
   });
 
-  // AGENTS.md: theme_color / background_color mirror --primary / --background
+  // docs/agents/pwa.md: theme_color / background_color mirror --primary / --background
   // in globals.css. Read the real file so the two cannot drift.
   it("mirrors --primary and --background from the light theme", () => {
     const css = fs.readFileSync(path.join(__dirname, "../globals.css"), "utf8");
