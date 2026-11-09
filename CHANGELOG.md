@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.35.0 — 2026-11-09
+
 ### Changed
 
 - The Apartments list view now shows the ratings the way the tiles do, the household's average with yours in brackets, and has the tiles' delete button. On a phone, each row's name gets a line of its own again instead of being squeezed out (#483).
