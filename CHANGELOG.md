@@ -9,10 +9,6 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
-### Changed
-
-- The contributor guide `AGENTS.md` is now a short rulebook (155 KB to 28 KB); the full reference for each area moved, word for word, to `docs/agents/`.
-
 ## 0.34.0 — 2026-11-01
 
 ### Added
