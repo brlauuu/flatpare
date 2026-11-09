@@ -27,8 +27,6 @@
   },
   "badges": {
     "gone": "Retirado",
-    "rated": "Valorado",
-    "notRated": "Sin valorar",
     "rooms": "{count, number} hab.",
     "roomsShort": "{count, number} hab.",
     "size": "{size, number} m²",

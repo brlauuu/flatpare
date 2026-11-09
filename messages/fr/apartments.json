@@ -27,8 +27,6 @@
   },
   "badges": {
     "gone": "Retirée",
-    "rated": "Évalué",
-    "notRated": "Pas encore évalué",
     "rooms": "{count, number} pièces",
     "roomsShort": "{count, number} p.",
     "size": "{size, number} m²",

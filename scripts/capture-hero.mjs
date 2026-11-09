@@ -313,6 +313,16 @@ try {
           await page.waitForTimeout(800);
           await page.screenshot({ path: `${SCREENS_DIR}/${name}-phone-${theme}.png` });
         }
+        // The list view, at both widths (#483). The choice is per browser.
+        await page.evaluate(() => window.localStorage.setItem("flatpare-apartments-view", "list"));
+        for (const [suffix, size] of [["", VIEWPORT], ["-phone", PHONE]]) {
+          await page.setViewportSize(size);
+          await page.goto(`${BASE}/apartments`);
+          await page.locator("[data-view='list']").waitFor();
+          await page.waitForTimeout(800);
+          await page.screenshot({ path: `${SCREENS_DIR}/apartments-list${suffix}-${theme}.png` });
+        }
+        await page.evaluate(() => window.localStorage.removeItem("flatpare-apartments-view"));
         await page.setViewportSize(VIEWPORT);
       } else {
         // One grid per language (#288): the landing page shows the app in the
