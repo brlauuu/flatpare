@@ -12,8 +12,9 @@ vi.mock("@ai-sdk/google", () => ({
   google: vi.fn(() => "gemini-model"),
 }));
 
-import { extractApartmentData, apartmentExtractionSchema, extractionPrompt } from "../parse-pdf";
+import { extractApartmentData, apartmentExtractionSchema, extractionPrompt, FEATURE_HINTS } from "../parse-pdf";
 import { LOCALES } from "@/locales/locales";
+import { APARTMENT_FEATURES, emptyFeatures } from "@/lib/household-data/features";
 import { generateText } from "ai";
 
 const mockedGenerateText = vi.mocked(generateText);
@@ -39,6 +40,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: 1,
       numBalconies: 1,
       hasWashingMachine: true,
+      ...emptyFeatures(),
       rentChf: 1800,
       rentCurrency: "CHF",
       listingUrl: "https://www.immobilienscout24.ch/listing/123",
@@ -58,6 +60,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: null,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -77,6 +80,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: false,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -119,6 +123,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: null,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -137,6 +142,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: null,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -173,6 +179,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: null,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -193,6 +200,7 @@ describe("apartmentExtractionSchema", () => {
       numBathrooms: null,
       numBalconies: null,
       hasWashingMachine: null,
+      ...emptyFeatures(),
       rentChf: null,
       rentCurrency: null,
       listingUrl: null,
@@ -234,6 +242,7 @@ describe("extractApartmentData", () => {
       numBathrooms: 1,
       numBalconies: 0,
       hasWashingMachine: true,
+      ...emptyFeatures(),
       rentChf: 1500,
       rentCurrency: "CHF",
     };
@@ -713,4 +722,44 @@ describe("extractApartmentData — shared laundry in French, Italian and Spanish
       expect((await extractApartmentData("base64pdf", "en")).extracted.hasWashingMachine).toBe(true);
     }
   );
+});
+
+// #471: the features, read when the listing states them, in every language.
+describe("the features", () => {
+  it("asks for each feature, with what makes it a yes and a no", () => {
+    const prompt = extractionPrompt("en");
+    for (const f of APARTMENT_FEATURES) {
+      expect(prompt).toContain(`- ${f}: true for ${FEATURE_HINTS[f].yes}; false for ${FEATURE_HINTS[f].no}; null if not mentioned.`);
+      expect(apartmentExtractionSchema.shape[f].description).toMatch(/null if it does not say/);
+    }
+    expect(prompt).toMatch(/Never guess/);
+  });
+
+  it.each([
+    ["hasElevator", ["Lift", "ascenseur", "ascensore", "ascensor", "elevator"]],
+    ["hasWoodenFloor", ["Parkett", "parquet", "pavimento in legno", "suelo de madera", "wooden floor"]],
+    ["hasDishwasher", ["Geschirrspüler", "lave-vaisselle", "lavastoviglie", "lavavajillas", "dishwasher"]],
+    ["petsAllowed", ["Haustiere erlaubt", "animaux admis", "animali ammessi", "se admiten mascotas", "pets allowed"]],
+  ] as const)("names %s in German, French, Italian, Spanish and English", (f, words) => {
+    for (const w of words) expect(FEATURE_HINTS[f].yes).toContain(w);
+  });
+
+  it("names a no in every language where listings say one", () => {
+    for (const w of ["kein Lift", "sans ascenseur", "senza ascensore", "sin ascensor"]) expect(FEATURE_HINTS.hasElevator.no).toContain(w);
+    for (const w of ["keine Haustiere", "animaux non admis", "animali non ammessi", "no se admiten mascotas"]) {
+      expect(FEATURE_HINTS.petsAllowed.no).toContain(w);
+    }
+  });
+
+  it("passes the features read through to the browser", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-key";
+    mockedGenerateText.mockResolvedValue({
+      output: { name: "x", rentChf: null, rentCurrency: null, ...emptyFeatures(), hasElevator: true, petsAllowed: false },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    } as never);
+    const { extracted } = await extractApartmentData("base64pdf");
+    expect(extracted.hasElevator).toBe(true);
+    expect(extracted.petsAllowed).toBe(false);
+    expect(extracted.hasGarden).toBeNull();
+  });
 });

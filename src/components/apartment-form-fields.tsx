@@ -17,6 +17,34 @@ import {
   normalizeCurrency,
   rentCurrencyOf,
 } from "@/lib/household-data/rent";
+import {
+  APARTMENT_FEATURES,
+  type ApartmentFeature,
+  type ApartmentFeatures,
+} from "@/lib/household-data/features";
+
+// A feature (#471) in the form: "yes", "no", or "" for unknown. Strings, so
+// it goes through the form's one onChange like every other field.
+export type FeatureAnswer = "yes" | "no" | "";
+
+function answerOf(value: unknown): FeatureAnswer {
+  return value === true ? "yes" : value === false ? "no" : "";
+}
+
+function valueOf(answer: FeatureAnswer): boolean | null {
+  return answer === "yes" ? true : answer === "no" ? false : null;
+}
+
+function featureAnswers(source: Partial<Record<ApartmentFeature, unknown>>): Record<ApartmentFeature, FeatureAnswer> {
+  return Object.fromEntries(APARTMENT_FEATURES.map((f) => [f, answerOf(source[f])])) as Record<
+    ApartmentFeature,
+    FeatureAnswer
+  >;
+}
+
+function featureValues(form: Record<ApartmentFeature, FeatureAnswer>): ApartmentFeatures {
+  return Object.fromEntries(APARTMENT_FEATURES.map((f) => [f, valueOf(form[f])])) as ApartmentFeatures;
+}
 
 export type ApartmentForm = {
   name: string;
@@ -33,7 +61,7 @@ export type ApartmentForm = {
   summary: string;
   availableFrom: string;
   rawExtractedData: Record<string, unknown> | null;
-};
+} & Record<ApartmentFeature, FeatureAnswer>;
 
 export const emptyApartmentForm: ApartmentForm = {
   name: "",
@@ -49,6 +77,7 @@ export const emptyApartmentForm: ApartmentForm = {
   summary: "",
   availableFrom: "",
   rawExtractedData: null,
+  ...featureAnswers({}),
 };
 
 export function formFromExtracted(extracted: Record<string, unknown>): ApartmentForm {
@@ -67,6 +96,7 @@ export function formFromExtracted(extracted: Record<string, unknown>): Apartment
     summary: typeof extracted.summary === "string" ? extracted.summary : "",
     availableFrom: typeof extracted.availableFrom === "string" ? extracted.availableFrom : "",
     rawExtractedData: extracted,
+    ...featureAnswers(extracted),
   };
 }
 
@@ -83,7 +113,7 @@ export type ApartmentLike = {
   listingUrl: string | null;
   summary: string | null;
   availableFrom: string | null;
-};
+} & Partial<ApartmentFeatures>;
 
 export function formFromApartment(apt: ApartmentLike): ApartmentForm {
   const numOrEmpty = (v: number | null | undefined) => (v != null ? String(v) : "");
@@ -101,6 +131,7 @@ export function formFromApartment(apt: ApartmentLike): ApartmentForm {
     summary: apt.summary ?? "",
     availableFrom: apt.availableFrom ?? "",
     rawExtractedData: null,
+    ...featureAnswers(apt),
   };
 }
 
@@ -118,6 +149,7 @@ export type ApartmentFieldValues = Pick<
   | "listingUrl"
   | "summary"
   | "availableFrom"
+  | ApartmentFeature
 >;
 
 // The user-editable fields, coerced from form strings. Callers merge this
@@ -136,6 +168,7 @@ export function formToFields(form: ApartmentForm): ApartmentFieldValues {
     listingUrl: form.listingUrl || null,
     summary: form.summary || null,
     availableFrom: form.availableFrom || null,
+    ...featureValues(form),
   };
 }
 
@@ -269,8 +302,10 @@ export function ApartmentFormFields({
         <WashingMachineToggle
           value={form.hasWashingMachine}
           onChange={onWashingMachineChange}
+          label={t("washingMachine")}
         />
       </div>
+      <FeatureFields form={form} onChange={onChange} />
       <div className="space-y-2">
         <Label htmlFor={id("listing-url")}>{t("listingUrl")}</Label>
         <Input
@@ -284,12 +319,43 @@ export function ApartmentFormFields({
   );
 }
 
+// The features (#471), each yes / no / unknown, two to a row from sm up.
+function FeatureFields({
+  form,
+  onChange,
+}: {
+  form: ApartmentForm;
+  onChange: (field: keyof ApartmentForm, value: string) => void;
+}) {
+  const t = useTranslations("apartments.features");
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium">{t("heading")}</legend>
+      <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+        {APARTMENT_FEATURES.map((feature) => (
+          <div key={feature} data-feature={feature} className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm">{t(feature)}</span>
+            <WashingMachineToggle
+              value={valueOf(form[feature])}
+              onChange={(v) => onChange(feature, answerOf(v))}
+              label={t(feature)}
+            />
+          </div>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+// Yes / no / unknown. Named for its first use; the features (#471) use it too.
 export function WashingMachineToggle({
   value,
   onChange,
+  label,
 }: {
   value: boolean | null;
   onChange: (v: boolean | null) => void;
+  label?: string;
 }) {
   const t = useTranslations("apartments.form");
   const options: Array<{
@@ -301,7 +367,7 @@ export function WashingMachineToggle({
     { key: "unknown", v: null },
   ];
   return (
-    <div className="inline-flex rounded-md border">
+    <div role="group" aria-label={label} className="inline-flex rounded-md border">
       {options.map((opt, i) => {
         const selected = value === opt.v;
         return (

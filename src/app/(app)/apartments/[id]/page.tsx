@@ -33,6 +33,7 @@ import type { RatingView } from "@/lib/household-data/types";
 import { ApartmentPagerNav } from "./_components/apartment-pager-nav";
 import { ApartmentActions } from "./_components/apartment-actions";
 import { ApartmentStatTiles } from "./_components/apartment-stat-tiles";
+import { ApartmentFeatures } from "./_components/apartment-features";
 import { RatingSummary } from "../_components/apartment-badges";
 import { DistanceSection } from "./_components/distance-section";
 import { ProcessingNotice } from "./_components/processing-notice";
@@ -355,7 +356,10 @@ export default function ApartmentDetailPage() {
           onCancel={cancelEdit}
         />
       ) : (
-        <ApartmentStatTiles apartment={apartment} />
+        <>
+          <ApartmentStatTiles apartment={apartment} />
+          <ApartmentFeatures apartment={apartment} />
+        </>
       )}
 
       {apartment.availableFrom && (

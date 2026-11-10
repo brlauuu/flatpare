@@ -24,6 +24,16 @@ export interface Apartment {
   numBathrooms: number | null;
   numBalconies: number | null;
   hasWashingMachine: boolean | null;
+  // #471: yes / no / unknown each, listed in features.ts. Envelopes written
+  // before them read as unknown.
+  hasWoodenFloor: boolean | null;
+  hasGarden: boolean | null;
+  hasTerrace: boolean | null;
+  hasElevator: boolean | null;
+  hasCellar: boolean | null;
+  hasParking: boolean | null;
+  hasDishwasher: boolean | null;
+  petsAllowed: boolean | null;
   // The monthly rent, in rentCurrency (the name predates #427).
   rentChf: number | null;
   // ISO 4217 code (#427), null while there is no rent. Envelopes written
@@ -101,6 +111,14 @@ export function emptyApartment(name = ""): Apartment {
     numBathrooms: null,
     numBalconies: null,
     hasWashingMachine: null,
+    hasWoodenFloor: null,
+    hasGarden: null,
+    hasTerrace: null,
+    hasElevator: null,
+    hasCellar: null,
+    hasParking: null,
+    hasDishwasher: null,
+    petsAllowed: null,
     rentChf: null,
     rentCurrency: null,
     listingUrl: null,

@@ -400,3 +400,33 @@ describe("CompareTable — added by row", () => {
     expect(screen.queryByText("Added by")).toBeNull();
   });
 });
+
+// #471
+describe("CompareTable — feature rows", () => {
+  it("shows a row for a feature only when an apartment shown has an answer for it", () => {
+    renderTable([makeApt({ id: "a1", name: "One", hasElevator: true }), makeApt({ id: "a2", name: "Two" })]);
+    expect(screen.getByText("Elevator")).toBeInTheDocument();
+    expect(screen.queryByText("Garden")).toBeNull();
+    expect(screen.queryByText("Pets allowed")).toBeNull();
+  });
+
+  it("marks a yes as the best value, a no with a cross, and unknown with a dash", () => {
+    renderTable([
+      makeApt({ id: "a1", name: "One", hasElevator: true }),
+      makeApt({ id: "a2", name: "Two", hasElevator: false }),
+      makeApt({ id: "a3", name: "Three" }),
+    ]);
+    const cells = Array.from(screen.getByText("Elevator").closest("tr")!.querySelectorAll("td")).slice(1);
+    expect(cells.map((c) => c.textContent)).toEqual(["✓", "✕", "—"]);
+    expect(cells.map((c) => c.getAttribute("title"))).toEqual(["Yes", "No", "Unknown"]);
+    expect(cells[0]).toHaveAttribute("data-best", "true");
+    expect(cells[1]).not.toHaveAttribute("data-best");
+  });
+
+  it("lists the features in a fixed order, after the washing machine", () => {
+    renderTable([makeApt({ id: "a1", petsAllowed: false, hasWoodenFloor: true })]);
+    const labels = Array.from(document.querySelectorAll("tbody tr td:first-child")).map((td) => td.textContent);
+    const wm = labels.indexOf("Washing machine");
+    expect(labels.slice(wm, wm + 3)).toEqual(["Washing machine", "Wooden floor", "Pets allowed"]);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, waitFor, cleanup } from "@testing-library/react";
+import { screen, waitFor, cleanup, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   renderWithHouseholdData,
@@ -75,7 +75,9 @@ describe("Apartment detail edit flow", () => {
     await user.paste("Sonnenweg 3b");
     await user.clear(rentInput);
     await user.paste("2400");
-    await user.click(screen.getByRole("button", { name: /^Yes$/ }));
+    await user.click(within(screen.getByRole("group", { name: "Washing machine" })).getByRole("button", { name: /^Yes$/ }));
+    // #471: a feature is answered the same way, and kept as edited.
+    await user.click(within(screen.getByRole("group", { name: "Elevator" })).getByRole("button", { name: /^No$/ }));
     await user.click(screen.getByRole("button", { name: /^Save$/ }));
 
     await waitFor(() => expect(value.updateApartment).toHaveBeenCalledTimes(1));
@@ -85,7 +87,9 @@ describe("Apartment detail edit flow", () => {
     expect(next.name).toBe("Sonnenweg 3b");
     expect(next.rentChf).toBe(2400);
     expect(next.hasWashingMachine).toBe(true);
-    expect(next.userEditedFields.sort()).toEqual(["hasWashingMachine", "name", "rentChf", "summary"]);
+    expect(next.hasElevator).toBe(false);
+    expect(next.hasGarden).toBeNull();
+    expect(next.userEditedFields.sort()).toEqual(["hasElevator", "hasWashingMachine", "name", "rentChf", "summary"]);
     // Edit form closed again.
     await waitFor(() => expect(screen.queryByLabelText(/Rent/i)).toBeNull());
   }, 10000);

@@ -9,6 +9,7 @@ import { metricRows, ratingKeys } from "./compare-types";
 import { useFormatRent } from "@/components/use-format-rent";
 import { rentCurrencyOf } from "@/lib/household-data/rent";
 import { useAddedBy } from "@/components/use-added-by";
+import { APARTMENT_FEATURES } from "@/lib/household-data/features";
 
 interface CompareTableProps {
   visible: ApartmentView[];
@@ -21,6 +22,7 @@ interface CompareTableProps {
 export function CompareTable({ visible, sortedVisible, locations, onHide, onViewPdf }: CompareTableProps) {
   const t = useTranslations("compare.table");
   const tCommon = useTranslations("common.ratingCategory");
+  const tFeatures = useTranslations("apartments.features");
   const format = useFormatter();
   const formatRent = useFormatRent();
   // The table's rating rows: the shared category names, except the overall
@@ -135,35 +137,22 @@ export function CompareTable({ visible, sortedVisible, locations, onHide, onView
             );
           })}
 
-          <tr className="border-b">
-            <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">
-              {t("washingMachine")}
-            </td>
-            {sortedVisible.map((apt) => (
-              <td
-                key={apt.id}
-                data-best={apt.hasWashingMachine === true ? "true" : undefined}
-                className={cn(
-                  "px-4 py-2",
-                  apt.hasWashingMachine === true &&
-                    "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
-                )}
-                title={
-                  apt.hasWashingMachine === true
-                    ? t("washingYes")
-                    : apt.hasWashingMachine === false
-                      ? t("washingNo")
-                      : t("washingUnknown")
-                }
-              >
-                {apt.hasWashingMachine === true
-                  ? "✓"
-                  : apt.hasWashingMachine === false
-                    ? "✕"
-                    : "—"}
-              </td>
-            ))}
-          </tr>
+          <YesNoRow
+            label={t("washingMachine")}
+            values={sortedVisible.map((apt) => ({ id: apt.id, value: apt.hasWashingMachine }))}
+            titles={{ yes: t("washingYes"), no: t("washingNo"), unknown: t("washingUnknown") }}
+          />
+
+          {/* The features (#471), a row each, only when some apartment
+              shown has an answer for it. */}
+          {APARTMENT_FEATURES.filter((f) => sortedVisible.some((apt) => apt[f] !== null)).map((f) => (
+            <YesNoRow
+              key={f}
+              label={tFeatures(f)}
+              values={sortedVisible.map((apt) => ({ id: apt.id, value: apt[f] }))}
+              titles={{ yes: t("featureYes"), no: t("featureNo"), unknown: t("featureUnknown") }}
+            />
+          ))}
 
           {/* Who added each apartment (#430); the row only when anyone knows. */}
           {sortedVisible.some((apt) => apt.addedBy !== null) && (
@@ -277,5 +266,37 @@ function AddedByCell({ addedBy }: { addedBy: string | null }) {
     <td data-added-by className="px-4 py-2">
       {who === null ? "—" : who.kind === "you" ? t("addedByYou") : who.kind === "former" ? t("addedByFormer") : who.name}
     </td>
+  );
+}
+
+// A yes / no / unknown row: the washing machine and each feature (#471).
+// A yes is the best value, highlighted as the other rows' best.
+function YesNoRow({
+  label,
+  values,
+  titles,
+}: {
+  label: string;
+  values: { id: string; value: boolean | null }[];
+  titles: { yes: string; no: string; unknown: string };
+}) {
+  return (
+    <tr className="border-b">
+      <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium">{label}</td>
+      {values.map(({ id, value }) => (
+        <td
+          key={id}
+          data-best={value === true ? "true" : undefined}
+          className={cn(
+            "px-4 py-2",
+            value === true &&
+              "bg-secondary font-semibold dark:bg-primary dark:text-primary-foreground print:bg-transparent print:text-black print:underline"
+          )}
+          title={value === true ? titles.yes : value === false ? titles.no : titles.unknown}
+        >
+          {value === true ? "✓" : value === false ? "✕" : "—"}
+        </td>
+      ))}
+    </tr>
   );
 }

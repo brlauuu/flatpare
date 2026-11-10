@@ -38,6 +38,9 @@
     "averageRatings": "Average Ratings",
     "addedBy": "Added by",
     "addedByYou": "You",
-    "addedByFormer": "Former member"
+    "addedByFormer": "Former member",
+    "featureYes": "Yes",
+    "featureNo": "No",
+    "featureUnknown": "Unknown"
   }
 }

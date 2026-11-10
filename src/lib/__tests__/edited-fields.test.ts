@@ -7,6 +7,7 @@ import {
   applyExtraction,
 } from "@/lib/edited-fields";
 import { emptyApartment } from "@/lib/household-data/types";
+import { emptyFeatures } from "@/lib/household-data/features";
 
 describe("INFERABLE_FIELDS", () => {
   it("contains the expected AI-inferable apartment fields", () => {
@@ -23,6 +24,14 @@ describe("INFERABLE_FIELDS", () => {
       "listingUrl",
       "summary",
       "availableFrom",
+      "hasWoodenFloor",
+      "hasGarden",
+      "hasTerrace",
+      "hasElevator",
+      "hasCellar",
+      "hasParking",
+      "hasDishwasher",
+      "petsAllowed",
     ]);
   });
 });
@@ -70,6 +79,7 @@ describe("mergeUserEdit", () => {
       listingUrl: null,
       summary: null,
       availableFrom: null,
+      ...emptyFeatures(),
     });
     expect(next.rentChf).toBe(1600);
     expect(next.hasWashingMachine).toBe(true);
@@ -130,6 +140,7 @@ describe("fillFromExtraction", () => {
       listingUrl: "https://example.com/x",
       summary: "From the PDF",
       availableFrom: "2026-12-01",
+      ...emptyFeatures(),
     };
     const next = fillFromExtraction(current, incoming, { raw: true });
     expect(next).toMatchObject({
@@ -151,6 +162,7 @@ describe("the rent and its currency", () => {
   const pdf = {
     name: "x", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null,
     hasWashingMachine: null, rentChf: 1800, rentCurrency: "EUR", listingUrl: null, summary: null, availableFrom: null,
+    ...emptyFeatures(),
   };
 
   it("a reprocess keeps both when a member edited either", () => {
@@ -183,7 +195,7 @@ describe("a name taken from the link's site", () => {
   const pdf = {
     name: "3.5 rooms in Wiedikon", address: null, sizeM2: null, numRooms: null, numBathrooms: null,
     numBalconies: null, hasWashingMachine: null, rentChf: null, rentCurrency: null, listingUrl: null,
-    summary: null, availableFrom: null,
+    summary: null, availableFrom: null, ...emptyFeatures(),
   };
   const fromLink = { ...emptyApartment("www.homegate.ch"), listingUrl: link };
 
@@ -205,5 +217,37 @@ describe("a name taken from the link's site", () => {
     const chosen = { ...fromLink, name: "The one near the lake", userEditedFields: ["name"] };
     expect(applyExtraction(chosen, pdf, {}).name).toBe("The one near the lake");
     expect(fillFromExtraction(chosen, pdf, {}).name).toBe("The one near the lake");
+  });
+});
+
+// #471: each feature is its own field, so one answer kept does not keep them all.
+describe("the features", () => {
+  const pdf = {
+    name: "x", address: null, sizeM2: null, numRooms: null, numBathrooms: null, numBalconies: null,
+    hasWashingMachine: null, rentChf: null, rentCurrency: null, listingUrl: null, summary: null, availableFrom: null,
+    ...emptyFeatures(),
+    hasElevator: false,
+    hasGarden: true,
+  };
+
+  it("a member's answer on one survives a reprocess, and the PDF fills the others", () => {
+    const edited = mergeUserEdit(emptyApartment("x"), { ...pdf, hasGarden: null, hasElevator: true });
+    expect(edited.userEditedFields).toEqual(["hasElevator"]);
+    const next = applyExtraction(edited, pdf, {});
+    expect(next.hasElevator).toBe(true);
+    expect(next.hasGarden).toBe(true);
+  });
+
+  it("a first read fills only the features nobody answered", () => {
+    const next = fillFromExtraction({ ...emptyApartment("x"), hasElevator: true }, pdf, {});
+    expect(next.hasElevator).toBe(true);
+    expect(next.hasGarden).toBe(true);
+    expect(next.userEditedFields).toContain("hasElevator");
+    expect(next.userEditedFields).not.toContain("hasGarden");
+  });
+
+  it("a known 'no' is an answer, kept like a 'yes'", () => {
+    const next = fillFromExtraction({ ...emptyApartment("x"), hasGarden: false }, pdf, {});
+    expect(next.hasGarden).toBe(false);
   });
 });

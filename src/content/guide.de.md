@@ -40,6 +40,7 @@ Geh in der Navigationsleiste auf **Hochladen** und zieh ein Inserat als PDF hine
 - Adresse
 - Fläche (m²), Zimmer, Badezimmer, Balkone
 - Monatsmiete, in der Währung des Inserats
+- Ob sie eine eigene Waschmaschine hat, und die Ausstattung, die bei der Wahl zählt: Holzboden, Garten, Terrasse, Lift, Keller, Parkplatz, Geschirrspüler und ob Haustiere erlaubt sind. Jedes ist ja, nein oder unbekannt, und es zählt nur, was im Inserat steht. Die Seite der Wohnung zeigt, was bekannt ist, und **Vergleichen** gibt jedem eine eigene Zeile.
 
 Ist keine KI eingerichtet, füllst du die Felder von Hand aus. So oder so landest du auf der Seite der Wohnung, wo du prüfen und korrigieren kannst, was falsch herausgekommen ist — die Auswertung ist ein Ausgangspunkt, kein Orakel.
 

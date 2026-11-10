@@ -127,6 +127,16 @@ const PHONE = { width: 360, height: 780 };
 const SCREENS = [
   { name: "apartments", path: "/apartments", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "apartment-detail", path: `/apartments/${aptId(0)}`, ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
+  // The edit form, for its features (#471).
+  {
+    name: "apartment-edit",
+    path: `/apartments/${aptId(0)}`,
+    ready: async (p) => {
+      await p.getByRole("heading", { level: 1 }).waitFor();
+      await p.getByRole("button", { name: /^Edit$/ }).first().click();
+      await p.getByRole("group", { name: "Elevator" }).waitFor();
+    },
+  },
   // The map draws its tiles after the page renders (or, with FLATPARE_MAPS=local
   // and no file, says so instead); wait for the requests to settle.
   { name: "map", path: "/map", ready: async (p) => { await p.getByRole("heading", { level: 1 }).waitFor(); await p.waitForLoadState("networkidle"); } },
@@ -137,6 +147,15 @@ const SCREENS = [
   { name: "settings", path: "/settings", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "guide", path: "/guide", ready: (p) => p.getByRole("heading", { level: 1 }).waitFor() },
   { name: "invitations", path: "/invitations", ready: (p) => p.waitForLoadState("networkidle") },
+];
+// The features (#471), on the screens only, so the hero grid stays as it
+// was: a mix of yes, no and unknown across the apartments.
+const FEATURES = [
+  { hasWoodenFloor: true, hasElevator: true, hasCellar: true, hasDishwasher: true, petsAllowed: false },
+  { hasWoodenFloor: false, hasGarden: true, hasCellar: true, hasDishwasher: true },
+  { hasWoodenFloor: true, hasTerrace: true, hasElevator: true, hasParking: true, hasDishwasher: true, petsAllowed: true },
+  { hasElevator: false, hasCellar: true, petsAllowed: false },
+  { hasGarden: true, hasParking: true, hasDishwasher: false },
 ];
 // Encryption is off for this server, so an envelope is plaintext: { v: 0, data }.
 const plain = (data) => ({ v: 0, data });
@@ -160,6 +179,7 @@ function apartmentRows() {
         // "Added by" (#430) on the screens only: Lena is the signed-in member
         // ("you"); Jonas has no account here, so he reads as a former member.
         ...(SCREENS_DIR ? { addedBy: i % 2 === 0 ? "hero-user-lena" : "hero-user-jonas" } : {}),
+        ...(SCREENS_DIR ? FEATURES[i % FEATURES.length] : {}),
       }),
       createdAt: STAMP,
       updatedAt: STAMP,

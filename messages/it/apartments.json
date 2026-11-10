@@ -235,5 +235,18 @@
     "member": "Aggiunto da {name}",
     "you": "Aggiunto da te",
     "former": "Aggiunto da un ex membro"
+  },
+  "features": {
+    "heading": "Dotazioni",
+    "hasWoodenFloor": "Parquet",
+    "hasGarden": "Giardino",
+    "hasTerrace": "Terrazza",
+    "hasElevator": "Ascensore",
+    "hasCellar": "Cantina",
+    "hasParking": "Posteggio",
+    "hasDishwasher": "Lavastoviglie",
+    "petsAllowed": "Animali ammessi",
+    "has": "{feature}: sì",
+    "hasNot": "{feature}: no"
   }
 }
