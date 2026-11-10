@@ -142,6 +142,25 @@ describe("buildExportFiles", () => {
   });
 });
 
+// #471
+describe("the features in the CSV", () => {
+  it("has a column for each, after the washing machine", () => {
+    const files = buildExportFiles(input({ apartments: [apartment(A1, "Flat", { hasElevator: true, petsAllowed: false })], ratings: [] }));
+    const [head, row] = text(files, "apartments.csv").split("\r\n").map((l) => l.split(","));
+    expect(head.slice(head.indexOf("hasWashingMachine") + 1, head.indexOf("availableFrom"))).toEqual([
+      "hasWoodenFloor", "hasGarden", "hasTerrace", "hasElevator", "hasCellar", "hasParking", "hasDishwasher", "petsAllowed",
+    ]);
+    expect(row[head.indexOf("hasElevator")]).toBe("true");
+    expect(row[head.indexOf("petsAllowed")]).toBe("false");
+    expect(row[head.indexOf("hasGarden")]).toBe("");
+  });
+
+  it("reads back a feature from apartments.json", () => {
+    const files = buildExportFiles(input({ apartments: [apartment(A1, "Flat", { hasCellar: true })], ratings: [] }));
+    expect(parseExportFiles(files).apartments[0].data.hasCellar).toBe(true);
+  });
+});
+
 describe("parseExportFiles", () => {
   it("reads back what buildExportFiles wrote", () => {
     const parsed = parseExportFiles(buildExportFiles(input()));

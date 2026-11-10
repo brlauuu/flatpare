@@ -235,5 +235,18 @@
     "member": "Added by {name}",
     "you": "Added by you",
     "former": "Added by a former member"
+  },
+  "features": {
+    "heading": "Features",
+    "hasWoodenFloor": "Wooden floor",
+    "hasGarden": "Garden",
+    "hasTerrace": "Terrace",
+    "hasElevator": "Elevator",
+    "hasCellar": "Cellar",
+    "hasParking": "Parking",
+    "hasDishwasher": "Dishwasher",
+    "petsAllowed": "Pets allowed",
+    "has": "{feature}: yes",
+    "hasNot": "{feature}: no"
   }
 }

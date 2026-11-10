@@ -40,6 +40,7 @@ Go to **Upload** in the nav bar and drag in (or select) a PDF listing. If AI ext
 - Address
 - Size (m²), rooms, bathrooms, balconies
 - Monthly rent, in the currency the listing gives
+- Whether it has its own washing machine, and the features that matter when choosing: wooden floor, garden, terrace, elevator, cellar, parking, dishwasher, and whether pets are allowed. Each is yes, no or unknown, and only what the listing says counts. The apartment's page lists the ones known, and **Compare** gives each its own row.
 
 If no AI is configured, fill the fields in manually. Either way you land on the apartment's page to review and correct anything that came out wrong — the extraction is a starting point, not an oracle.
 

@@ -5,6 +5,8 @@ import type { Apartment, Draft, Location, Rating } from "./types";
 
 const nullableNumber = z.number().nullable();
 const nullableString = z.string().nullable();
+// A feature (#471) absent from an older envelope is unknown.
+const feature = z.boolean().nullable().default(null);
 const stars = z.number().int().min(0).max(5);
 
 export const distanceSchema = z.object({
@@ -18,7 +20,8 @@ export const distanceSchema = z.object({
 // when it has any — belong to the address it holds now. `rentCurrency`
 // (#427) is absent from envelopes written before it, when every rent was in
 // francs. `addedBy` (#430) is absent from envelopes written before it, and
-// nobody knows who added those.
+// nobody knows who added those. The features (#471) are absent from
+// envelopes written before them, and read as unknown.
 export const apartmentSchema: z.ZodType<Apartment> = z.object({
   name: z.string(),
   address: nullableString,
@@ -27,6 +30,14 @@ export const apartmentSchema: z.ZodType<Apartment> = z.object({
   numBathrooms: nullableNumber,
   numBalconies: nullableNumber,
   hasWashingMachine: z.boolean().nullable(),
+  hasWoodenFloor: feature,
+  hasGarden: feature,
+  hasTerrace: feature,
+  hasElevator: feature,
+  hasCellar: feature,
+  hasParking: feature,
+  hasDishwasher: feature,
+  petsAllowed: feature,
   rentChf: nullableNumber,
   rentCurrency: z.string().regex(CURRENCY_CODE).nullable().optional(),
   listingUrl: nullableString,

@@ -40,6 +40,7 @@ Ve a **Subir** en la barra de navegación y arrastra (o selecciona) un anuncio e
 - Dirección
 - Superficie (m²), habitaciones, baños, balcones
 - Alquiler mensual, en la moneda del anuncio
+- Si tiene lavadora propia, y las características que cuentan al elegir: suelo de madera, jardín, terraza, ascensor, trastero, aparcamiento, lavavajillas, y si se admiten mascotas. Cada una es sí, no o desconocido, y solo cuenta lo que dice el anuncio. La página del piso muestra las que se conocen, y **Comparar** da a cada una su propia fila.
 
 Si no hay IA configurada, rellena los campos a mano. En cualquier caso llegas a la página del piso para revisar y corregir lo que haya salido mal: la extracción es un punto de partida, no un oráculo.
 

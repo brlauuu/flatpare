@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { apartmentSchema, locationSchema, ratingSchema } from "../schemas";
 import { EMPTY_RATING, emptyApartment } from "../types";
+import { APARTMENT_FEATURES } from "../features";
 
 describe("household-data schemas", () => {
   it("accepts the empty apartment and rejects a missing distances map", () => {
@@ -58,6 +59,21 @@ describe("household-data schemas", () => {
     const { addedBy: _b, ...old } = emptyApartment("Flat");
     expect(apartmentSchema.parse(old).addedBy).toBeNull();
     expect(apartmentSchema.parse({ ...emptyApartment("Flat"), addedBy: "u-1" }).addedBy).toBe("u-1");
+  });
+
+  // #471: an envelope from before the features reads them as unknown.
+  it("reads the features as unknown from an envelope written before them", () => {
+    const full = emptyApartment("Flat") as unknown as Record<string, unknown>;
+    const old = Object.fromEntries(Object.entries(full).filter(([k]) => !(APARTMENT_FEATURES as readonly string[]).includes(k)));
+    const parsed = apartmentSchema.parse(old);
+    for (const f of APARTMENT_FEATURES) expect(parsed[f], f).toBeNull();
+  });
+
+  it("keeps each feature's yes and no", () => {
+    const parsed = apartmentSchema.parse({ ...emptyApartment("Flat"), hasElevator: true, petsAllowed: false });
+    expect(parsed.hasElevator).toBe(true);
+    expect(parsed.petsAllowed).toBe(false);
+    expect(parsed.hasGarden).toBeNull();
   });
 
   it("bounds ratings to 0..5 integers", () => {

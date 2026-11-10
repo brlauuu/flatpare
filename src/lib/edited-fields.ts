@@ -1,4 +1,5 @@
 import { hostOf } from "@/lib/household-data/links";
+import { APARTMENT_FEATURES } from "@/lib/household-data/features";
 import type { Apartment } from "@/lib/household-data/types";
 
 export const INFERABLE_FIELDS = [
@@ -14,6 +15,9 @@ export const INFERABLE_FIELDS = [
   "listingUrl",
   "summary",
   "availableFrom",
+  // Each feature on its own (#471): a member's answer on one survives a
+  // reprocess, and the PDF still fills the others.
+  ...APARTMENT_FEATURES,
 ] as const;
 
 export type InferableField = (typeof INFERABLE_FIELDS)[number];

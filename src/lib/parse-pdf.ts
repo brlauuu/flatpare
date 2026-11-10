@@ -4,6 +4,57 @@ import { DEFAULT_LOCALE, type Locale } from "@/locales/locales";
 import type { ListingHints } from "@/lib/find-listing";
 import { z } from "zod";
 import { DEFAULT_RENT_CURRENCY, normalizeCurrency } from "@/lib/household-data/rent";
+import { APARTMENT_FEATURES, type ApartmentFeature } from "@/lib/household-data/features";
+
+function feature(what: string) {
+  return z
+    .boolean()
+    .nullable()
+    .describe(`${what}. true if the listing says so, false only if it says the opposite, null if it does not say.`);
+}
+
+// What each feature (#471) is called in listings, in the five languages
+// Flatpare reads: what makes it true, and what makes it false.
+export const FEATURE_HINTS: Record<ApartmentFeature, { yes: string; no: string }> = {
+  hasWoodenFloor: {
+    yes: '"Parkett", "Parkettboden", "Holzboden", "Riemenboden", "parquet", "plancher en bois", "pavimento in legno", "suelo de madera", "tarima", "wooden floor", "hardwood floor"',
+    no: "a listing that names only another floor (e.g. Laminat, Plattenboden, carrelage, piastrelle, baldosas, tiles, carpet)",
+  },
+  hasGarden: {
+    yes: '"Garten", "Gartensitzplatz", "Gartenanteil", "jardin", "giardino", "jardín", "garden"',
+    no: '"kein Garten", "sans jardin", "senza giardino", "sin jardín", "no garden"',
+  },
+  hasTerrace: {
+    yes: '"Terrasse", "Dachterrasse", "Sitzplatz", "terrasse", "terrazza", "terrazzo", "terraza", "terrace", "roof terrace"',
+    no: '"keine Terrasse", "sans terrasse", "senza terrazza", "sin terraza", "no terrace"',
+  },
+  hasElevator: {
+    yes: '"Lift", "Aufzug", "Fahrstuhl", "ascenseur", "ascensore", "ascensor", "elevator", "lift"',
+    no: '"ohne Lift", "kein Lift", "sans ascenseur", "senza ascensore", "sin ascensor", "no elevator", "no lift"',
+  },
+  hasCellar: {
+    yes: '"Keller", "Kellerabteil", "Estrich", "cave", "galetas", "cantina", "solaio", "trastero", "bodega", "cellar", "storage room"',
+    no: '"kein Keller", "sans cave", "senza cantina", "sin trastero", "no cellar"',
+  },
+  hasParking: {
+    yes: '"Parkplatz", "Garage", "Tiefgarage", "Einstellhallenplatz", "Abstellplatz", "place de parc", "garage", "posteggio", "autorimessa", "box auto", "plaza de garaje", "aparcamiento", "parking space"; true also when it is rented separately',
+    no: '"kein Parkplatz", "sans place de parc", "senza posteggio", "sin aparcamiento", "no parking"',
+  },
+  hasDishwasher: {
+    yes: '"Geschirrspüler", "Geschirrspülmaschine", "Spülmaschine", "lave-vaisselle", "lavastoviglie", "lavavajillas", "dishwasher"',
+    no: '"ohne Geschirrspüler", "sans lave-vaisselle", "senza lavastoviglie", "sin lavavajillas", "no dishwasher"',
+  },
+  petsAllowed: {
+    yes: '"Haustiere erlaubt", "Haustiere willkommen", "Kleintiere erlaubt", "animaux admis", "animaux acceptés", "animali ammessi", "animali benvenuti", "se admiten mascotas", "pets allowed", "pet-friendly"',
+    no: '"keine Haustiere", "Haustiere nicht erlaubt", "Tierhaltung nicht gestattet", "animaux non admis", "pas d\'animaux", "animali non ammessi", "no se admiten mascotas", "no pets"',
+  },
+};
+
+function featureInstructions(): string {
+  return APARTMENT_FEATURES.map(
+    (f) => `- ${f}: true for ${FEATURE_HINTS[f].yes}; false for ${FEATURE_HINTS[f].no}; null if not mentioned.`
+  ).join("\n");
+}
 
 export const apartmentExtractionSchema = z.object({
   name: z.string().describe("Listing title or apartment name"),
@@ -33,6 +84,16 @@ export const apartmentExtractionSchema = z.object({
         "false if the listing describes shared / communal laundry — including phrases like 'zur Mitbenutzung', 'zur Mitnutzung', 'Gemeinschaftswaschküche', 'Gemeinschaftswaschraum', 'buanderie commune', 'lavanderia in comune', 'lavandería comunitaria', 'shared laundry', or 'communal laundry'. " +
         "null if not mentioned."
     ),
+  // #471. Each: true if the listing says so, false only if it says the
+  // apartment lacks it, null otherwise. Phrases per language in FEATURE_HINTS.
+  hasWoodenFloor: feature("Whether the living rooms have wooden or parquet floors"),
+  hasGarden: feature("Whether tenants have a garden, private or shared"),
+  hasTerrace: feature("Whether the apartment has a terrace or roof terrace (balconies are counted separately)"),
+  hasElevator: feature("Whether the building has an elevator"),
+  hasCellar: feature("Whether a cellar or storage compartment comes with the apartment"),
+  hasParking: feature("Whether a parking space or garage comes with or can be rented with the apartment"),
+  hasDishwasher: feature("Whether the kitchen has a dishwasher"),
+  petsAllowed: feature("Whether pets are allowed"),
   rentChf: z
     .number()
     .nullable()
@@ -117,6 +178,8 @@ For rent, prefer the gross rent if both net and gross are shown (German "Bruttom
 For rentChf and rentCurrency: give the rent in the currency the listing states it in, never converted, and that currency's ISO 4217 code ("CHF" for "CHF", "Fr." or "SFr."; "EUR" for "€" or "EUR"). The field is called rentChf for historical reasons; it holds the rent in rentCurrency.
 For rooms, use the Swiss convention, in which half rooms count (e.g. "3.5 Zimmer", "3.5 pièces", "3.5 locali", "3.5 habitaciones" = 3.5 rooms).
 For hasWashingMachine: true if the listing says the apartment has its own washing machine ("Waschmaschine in der Wohnung", "eigene Waschmaschine", "Waschturm", "lave-linge privatif", "lave-linge dans l'appartement", "colonne de lavage", "lavatrice propria", "lavatrice nell'appartamento", "colonna lavatrice", "lavadora propia", "lavadora en el piso", "own washing machine"). false if the listing describes shared / communal laundry — especially phrases like "zur Mitbenutzung", "zur Mitnutzung", "Gemeinschaftswaschküche", "Gemeinschaftswaschraum", "buanderie commune", "buanderie à usage commun", "lavanderia in comune", "lavanderia condominiale", "lavandería comunitaria", "lavandería compartida", "shared laundry", or "communal laundry". null if not mentioned.
+For the features below, answer true only if the listing states the apartment has it, false only if the listing states it does not, and null if the listing does not say. Never guess from the kind of building or the price.
+${featureInstructions()}
 For listingSite and listingLanguage: name the website the listing was published on (its domain) and the language the listing is written in; these are used to find the listing online when its link no longer works.
 Always populate laundryEvidence with the exact short snippet (max ~120 characters) you used to decide, in the listing's own words, or null if no laundry information was found.
 For availableFrom: parse availability phrases like "Bezugstermin: 01.05.2026", "verfügbar ab 1. Mai 2026", "disponible dès le 1er mai 2026", "entrée le 01.05.2026", "disponibile dal 1° maggio 2026", "entrata: 01.05.2026", "disponible a partir del 1 de mayo de 2026", "available from May 1, 2026" into ISO format YYYY-MM-DD. If the listing says "ab sofort", "per sofort", "de suite", "tout de suite", "immédiatement", "subito", "da subito", "inmediata", "de inmediato", "immediately", or similar (meaning available now without a specific date), return null. If no availability info is mentioned, return null.

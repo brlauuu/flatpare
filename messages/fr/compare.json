@@ -38,6 +38,9 @@
     "averageRatings": "Évaluations moyennes",
     "addedBy": "Ajouté par",
     "addedByYou": "Toi",
-    "addedByFormer": "Ancien membre"
+    "addedByFormer": "Ancien membre",
+    "featureYes": "Oui",
+    "featureNo": "Non",
+    "featureUnknown": "Inconnu"
   }
 }

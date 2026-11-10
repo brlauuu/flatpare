@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Added
+
+- Apartments now record eight features that matter when choosing: wooden floor, garden, terrace, elevator, cellar, parking, dishwasher, and whether pets are allowed. Each is yes, no or unknown, read from the PDF when the listing says so and editable by anyone in the household. The apartment's page lists the ones known, and Compare gives each one a row (#471).
+
 ## 0.35.1 — 2026-11-09
 
 ### Changed

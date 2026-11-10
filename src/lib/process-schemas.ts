@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LOCALES } from "@/locales/locales";
+import { emptyFeatures } from "@/lib/household-data/features";
 
 // `apartmentId` names the apartment being processed, which is what the
 // first-processing charge keys on (#413). A location of interest is
@@ -68,6 +69,7 @@ export function emptyExtraction(filename: string) {
     numBathrooms: null,
     numBalconies: null,
     hasWashingMachine: null,
+    ...emptyFeatures(),
     rentChf: null,
     rentCurrency: null,
     listingUrl: null,

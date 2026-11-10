@@ -40,6 +40,7 @@ Va sur **Ajouter** dans la barre de navigation et glisse (ou sélectionne) une a
 - Adresse
 - Surface (m²), pièces, salles de bain, balcons
 - Loyer mensuel, dans la devise de l’annonce
+- Si l’appartement a son propre lave-linge, et les équipements qui comptent pour choisir : parquet, jardin, terrasse, ascenseur, cave, place de parc, lave-vaisselle, et si les animaux sont admis. Chacun est oui, non ou inconnu, et seul ce que dit l’annonce compte. La page de l’appartement montre ceux qui sont connus, et **Comparer** donne une ligne à chacun.
 
 Si aucune IA n’est configurée, remplis les champs à la main. Dans les deux cas, tu arrives sur la page de l’appartement pour vérifier et corriger ce qui serait faux — l’extraction est un point de départ, pas un oracle.
 

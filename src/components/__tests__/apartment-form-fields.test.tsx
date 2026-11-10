@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   ApartmentFormFields,
@@ -231,5 +231,42 @@ describe("the rent's currency", () => {
     expect(options).toEqual(["CHF", "EUR", "USD", "GBP", "SEK"]);
     await user.click(screen.getByRole("option", { name: "EUR" }));
     expect(onChange).toHaveBeenCalledWith("rentCurrency", "EUR");
+  });
+});
+
+// #471
+describe("the features in the form", () => {
+  it("asks yes / no / unknown for each of the eight", () => {
+    render(<ApartmentFormFields form={emptyApartmentForm} onChange={() => {}} onWashingMachineChange={() => {}} />);
+    for (const name of ["Wooden floor", "Garden", "Terrace", "Elevator", "Cellar", "Parking", "Dishwasher", "Pets allowed"]) {
+      const group = screen.getByRole("group", { name });
+      expect(within(group).getByRole("button", { name: /^Unknown$/ })).toHaveAttribute("aria-pressed", "true");
+    }
+  });
+
+  it("forwards an answer through onChange as yes, no or empty", () => {
+    const onChange = vi.fn();
+    render(
+      <ApartmentFormFields form={{ ...emptyApartmentForm, hasGarden: "yes" }} onChange={onChange} onWashingMachineChange={() => {}} />
+    );
+    const garden = screen.getByRole("group", { name: "Garden" });
+    expect(within(garden).getByRole("button", { name: /^Yes$/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(garden).getByRole("button", { name: /^No$/ }));
+    expect(onChange).toHaveBeenLastCalledWith("hasGarden", "no");
+    fireEvent.click(within(garden).getByRole("button", { name: /^Unknown$/ }));
+    expect(onChange).toHaveBeenLastCalledWith("hasGarden", "");
+    fireEvent.click(within(screen.getByRole("group", { name: "Elevator" })).getByRole("button", { name: /^Yes$/ }));
+    expect(onChange).toHaveBeenLastCalledWith("hasElevator", "yes");
+  });
+
+  it("reads them from a PDF and from an apartment, and saves them as true, false or null", () => {
+    const fromPdf = formFromExtracted({ name: "x", hasElevator: true, petsAllowed: false, hasGarden: "maybe" });
+    expect([fromPdf.hasElevator, fromPdf.petsAllowed, fromPdf.hasGarden]).toEqual(["yes", "no", ""]);
+    const fields = formToFields(fromPdf);
+    expect([fields.hasElevator, fields.petsAllowed, fields.hasGarden]).toEqual([true, false, null]);
+    const back = formFromApartment({ ...formToFields(emptyApartmentForm), name: "y", hasCellar: true });
+    expect(back.hasCellar).toBe("yes");
+    expect(back.hasParking).toBe("");
+    expect(apartmentFromForm({ ...emptyApartmentForm, hasDishwasher: "yes" }, null).hasDishwasher).toBe(true);
   });
 });

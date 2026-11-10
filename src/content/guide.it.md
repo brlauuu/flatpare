@@ -40,6 +40,7 @@ Vai su **Carica** nella barra di navigazione e trascina (o seleziona) un annunci
 - Indirizzo
 - Superficie (m²), locali, bagni, balconi
 - Affitto mensile, nella valuta dell'annuncio
+- Se ha una lavatrice propria, e le dotazioni che contano nella scelta: parquet, giardino, terrazza, ascensore, cantina, posteggio, lavastoviglie, e se gli animali sono ammessi. Ognuna è sì, no o non si sa, e conta solo quello che dice l'annuncio. La pagina dell'appartamento mostra quelle note, e **Confronta** dà a ognuna una riga.
 
 Se l'IA non è configurata, compila i campi a mano. In entrambi i casi arrivi alla pagina dell'appartamento per controllare e correggere quello che è uscito sbagliato — l'estrazione è un punto di partenza, non un oracolo.
 
