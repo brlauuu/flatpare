@@ -121,8 +121,9 @@ describe("ApartmentCard ratings and status icons", () => {
     expect(top.querySelector("[data-card-code]")).toHaveTextContent("KTR-3B-1b-WY-8003");
     expect(top.querySelector("[data-card-status]")).toContainElement(screen.getByTitle("Not processed"));
     expect(top).toContainElement(summary() as HTMLElement);
-    // At the right edge on a phone, beside the code from `sm` up.
-    expect(top.querySelector("[data-card-status]")).toHaveClass("ml-auto", "sm:ml-0");
+    // At the top-right corner at every width (#489).
+    expect(top.querySelector("[data-card-status]")).toHaveClass("ml-auto");
+    expect(top.querySelector("[data-card-status]")).not.toHaveClass("sm:ml-0");
   });
 
   // #430: who added it, under the address; nothing when nobody knows.

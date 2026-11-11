@@ -45,12 +45,12 @@ function CardLink({ apt }: { apt: ApartmentView }) {
       <Card className="h-full py-0 transition-shadow hover:shadow-md">
         <CardContent className="flex flex-1 flex-col gap-2 p-4">
           {/* The code, then the ratings and the status icons (#451), at the
-              right edge on a phone. */}
+              right edge at every width (#489). */}
           <div data-card-top className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span data-card-code className="flex min-h-7 items-center">
               <ShortCode code={apt.shortCode} size="md" />
             </span>
-            <span data-card-status className="ml-auto flex items-center gap-1.5 sm:ml-0">
+            <span data-card-status className="ml-auto flex items-center gap-1.5">
               <RatingSummary avg={apt.avgOverall} mine={apt.myRating} />
               {!apt.processed && <NotProcessedIcon />}
               {apt.listingGone && <GoneIcon />}
