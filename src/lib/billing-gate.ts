@@ -15,8 +15,11 @@ import { readCreditBalance } from "@/lib/billing";
 //                   that data for them even if asked. Running out of credits
 //                   must only mean "no new apartments", never "no access".
 //
-// A self-hosted deployment has billing off, so this never fires.
+// A self-hosted deployment has billing off, so this never fires. Nor does it
+// when credits are counted without Stripe (#492): there is no checkout to
+// send anyone to, so a household without credits gets in and is offered a
+// credit code instead.
 export async function requirePurchase(householdId: number): Promise<void> {
   const balance = await readCreditBalance(householdId);
-  if (balance.enabled && balance.granted === 0) redirect("/billing");
+  if (balance.purchasable && balance.granted === 0) redirect("/billing");
 }

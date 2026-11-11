@@ -200,7 +200,7 @@ describe("HouseholdPage", () => {
   // #413: one credit for the whole run, said before the click.
   it("names the credit and asks first when billing is on", async () => {
     const user = userEvent.setup();
-    const { value } = setup({ credits: { granted: 40, used: 2, remaining: 38 } });
+    const { value } = setup({ credits: { granted: 40, used: 2, remaining: 38, purchasable: true } });
     const confirm = vi.fn().mockReturnValue(false);
     vi.stubGlobal("confirm", confirm);
     expect(screen.getByText(/Uses one apartment credit for the whole run/)).toBeInTheDocument();

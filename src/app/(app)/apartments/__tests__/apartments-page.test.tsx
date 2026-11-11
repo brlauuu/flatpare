@@ -396,7 +396,7 @@ describe("apartment limit (#187)", () => {
     // empty state is a separate branch that skips the header.
     renderWithHouseholdData(<ApartmentsPage />, {
       apartments: [],
-      credits: { granted: 40, used: 0, remaining: 40 },
+      credits: { granted: 40, used: 0, remaining: 40, purchasable: true },
     });
     expect(screen.getByText("No apartments yet")).toBeInTheDocument();
     expect(screen.getByTestId("credit-balance")).toHaveTextContent("40 apartments left to process");
@@ -406,7 +406,7 @@ describe("apartment limit (#187)", () => {
     renderWithHouseholdData(<ApartmentsPage />, {
       apartments: three,
       limits: { maxMembers: null, maxApartments: 40 },
-      credits: { granted: 40, used: 36, remaining: 4 },
+      credits: { granted: 40, used: 36, remaining: 4, purchasable: true },
     });
     // Two different numbers, and they must not read as one.
     expect(screen.getByText("3 of 40")).toBeInTheDocument();

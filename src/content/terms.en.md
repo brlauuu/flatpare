@@ -32,7 +32,7 @@ What the server does hold, and why:
 - **Your account**: your email address, your name, your language, and, if you sign in with Google, the link to your Google profile picture and the id Google gives your account. Needed to sign you in and to show your name to your household.
 - **Your household**: its name, who is a member, pending invitations (with the invited address), and the encryption keys, which are themselves encrypted.
 - **Usage counts**: how many PDFs, addresses and listing links each household has processed, and what each credit paid for. Per household, never per person, and never what was processed. We review them to check use against what was paid for.
-- **Payments**: which household bought how many credits and when. Card details stay with Stripe.
+- **Payments**: which household bought how many credits and when, and which household redeemed which credit code. Card details stay with Stripe.
 - **Beta requests**: the email address you gave on the landing page, to send you an invitation.
 - **Feedback**: not stored. What you send with Send feedback reaches us by email, with your name and address unless you send it anonymously.
 

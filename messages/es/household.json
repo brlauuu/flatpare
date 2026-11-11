@@ -165,5 +165,12 @@
     "notRated": "sin valorar",
     "ratingLine": "Valorado por {name}: impresión general {overall}, cocina {kitchen}, balcones {balconies}, ubicación {location}, plano {floorplan}",
     "ratingLineComment": "Valorado por {name}: impresión general {overall}, cocina {kitchen}, balcones {balconies}, ubicación {location}, plano {floorplan}. «{comment}»"
+  },
+  "redeem": {
+    "label": "Código de créditos",
+    "submit": "Canjear",
+    "added": "{count, plural, one {# crédito añadido} other {# créditos añadidos}}.",
+    "failed": "No se ha podido canjear el código. Inténtalo de nuevo.",
+    "hint": "¿Te has quedado sin créditos durante la beta? Pide un código con «Enviar comentarios» e introdúcelo aquí."
   }
 }

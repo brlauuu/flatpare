@@ -431,6 +431,42 @@ export const feedbackDays = sqliteTable("feedback_days", {
   count: integer("count").notNull().default(0),
 });
 
+// Credit codes (#492): the operator mints a code that adds credits to a
+// household that redeems it, which is how beta testers are topped up while
+// credits are counted without Stripe. The host's record, like `beta_passes`,
+// so plaintext. Minted with `node scripts/credit-code.mjs`; no admin UI.
+export const creditCodes = sqliteTable("credit_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  code: text("code").notNull().unique(),
+  label: text("label"),
+  credits: integer("credits").notNull(),
+  maxUses: integer("max_uses"),
+  uses: integer("uses").notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(unixepoch())`
+  ),
+});
+
+// Which household redeemed which code: once per household per code, so one
+// code can top up several households and none of them twice.
+export const creditCodeRedemptions = sqliteTable(
+  "credit_code_redemptions",
+  {
+    codeId: integer("code_id")
+      .notNull()
+      .references(() => creditCodes.id, { onDelete: "cascade" }),
+    householdId: integer("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [primaryKey({ columns: [table.codeId, table.householdId] })]
+);
+
 export type ApartmentRecord = typeof apartments.$inferSelect;
 export type RatingRecord = typeof ratings.$inferSelect;
 export type LocationRecord = typeof locations.$inferSelect;
@@ -438,5 +474,6 @@ export type DraftRecord = typeof apartmentDrafts.$inferSelect;
 export type ProcessUsageRecord = typeof processUsage.$inferSelect;
 export type PaymentRecord = typeof payments.$inferSelect;
 export type BetaPass = typeof betaPasses.$inferSelect;
+export type CreditCode = typeof creditCodes.$inferSelect;
 
 export { users, accounts, sessions, verificationTokens } from "./schema-auth";

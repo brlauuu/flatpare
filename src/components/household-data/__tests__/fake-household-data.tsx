@@ -66,6 +66,7 @@ export function makeHouseholdData(over: Partial<HouseholdDataContextValue> = {})
     processApartment: vi.fn(async () => {}),
     chargeReprocess: vi.fn(async () => {}),
     relocateApartment: vi.fn(async () => {}),
+    redeemCreditCode: vi.fn(async () => 40),
     createLocation: vi.fn(async (id: string) => makeLocationView({ id })),
     updateLocation: vi.fn(async (id: string) => makeLocationView({ id })),
     deleteLocation: vi.fn(async () => {}),

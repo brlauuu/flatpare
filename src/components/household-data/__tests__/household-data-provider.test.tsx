@@ -34,7 +34,7 @@ interface FakeServer {
     checkListing: (url: string) => unknown;
   };
   // What GET /api/billing/status answers; `credits` is granted minus used.
-  billing: { enabled: boolean; granted: number; used: number; fail: boolean };
+  billing: { enabled: boolean; granted: number; used: number; fail: boolean; purchasable?: boolean };
   // Apartment ids whose first processing was charged (#413).
   charged: Set<string>;
   // Stored PDFs (#413): POST /api/files paths, and the ones deleted.
@@ -90,8 +90,14 @@ function installFetch(server: FakeServer) {
 
       if (url === "/api/billing/status" && method === "GET") {
         if (server.billing.fail) return json({ error: "boom" }, 500);
-        const { enabled, granted, used } = server.billing;
-        return json({ enabled, granted, used, remaining: Math.max(0, granted - used) });
+        const { enabled, granted, used, purchasable = true } = server.billing;
+        return json({ enabled, granted, used, remaining: Math.max(0, granted - used), purchasable });
+      }
+      if (url === "/api/billing/redeem" && method === "POST") {
+        const { code } = body as { code: string };
+        if (code !== "good") return json({ error: "That code is not valid." }, 400);
+        server.billing.granted += 20;
+        return json({ credits: 20 });
       }
       if (url === "/api/household/members" && method === "GET") {
         if (server.members === null) return json({ error: "boom" }, 500);
@@ -1047,7 +1053,29 @@ describe("apartment credits (#305)", () => {
     server.billing = { enabled: true, granted: 40, used: 37, fail: false };
     renderProvider();
     const ctx = await waitForContext((c) => c.credits !== null);
-    expect(ctx.credits).toEqual({ granted: 40, used: 37, remaining: 3 });
+    expect(ctx.credits).toEqual({ granted: 40, used: 37, remaining: 3, purchasable: true });
+  });
+
+  // #492: counted without Stripe; a code tops the pool up.
+  it("says when credits cannot be bought, and a redeemed code refreshes the balance", async () => {
+    server.billing = { enabled: true, granted: 40, used: 40, fail: false, purchasable: false };
+    renderProvider();
+    await waitForContext((c) => c.credits?.remaining === 0);
+    expect(captured!.credits?.purchasable).toBe(false);
+
+    let added = 0;
+    await act(async () => {
+      added = await captured!.redeemCreditCode("good");
+    });
+    expect(added).toBe(20);
+    expect(captured!.credits?.remaining).toBe(20);
+  });
+
+  it("rejects with the server's message when a code is refused", async () => {
+    server.billing = { enabled: true, granted: 0, used: 0, fail: false, purchasable: false };
+    renderProvider();
+    await waitForContext((c) => c.credits !== null);
+    await expect(captured!.redeemCreditCode("bad")).rejects.toThrow("That code is not valid.");
   });
 
   // #413: creating is free; the first processing spends.
@@ -1065,7 +1093,7 @@ describe("apartment credits (#305)", () => {
       await captured!.createApartment(A1, { ...emptyApartment(), name: "New", address: "Street 1" });
     });
     const ctx = await waitForContext((c) => c.credits?.remaining === 2);
-    expect(ctx.credits).toEqual({ granted: 40, used: 38, remaining: 2 });
+    expect(ctx.credits).toEqual({ granted: 40, used: 38, remaining: 2, purchasable: true });
     expect(ctx.apartments.find((a) => a.id === A1)).toMatchObject({ processed: true, processedAddress: "Street 1", latitude: 47 });
   });
 

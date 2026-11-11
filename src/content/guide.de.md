@@ -142,7 +142,7 @@ Eine Wohnung aus einem Link behält den Link und ist in der Liste als **Nicht ve
 
 ## Wenn du die gehostete Version nutzt
 
-**Während der privaten Beta ist es gratis.** Was ein Beta-Konto bekommt, gehört dir: Weder deine Daten noch dein Guthaben werden dir weggenommen, wenn die Beta endet.
+**Während der privaten Beta ist es gratis.** Was ein Beta-Konto bekommt, gehört dir: Weder deine Daten noch dein Guthaben werden dir weggenommen, wenn die Beta endet. Das Verarbeiten braucht trotzdem Guthaben, damit du siehst, wie es funktioniert: Wenn es aufgebraucht ist, frag über **Feedback senden** nach einem Code und löse ihn auf der Seite «Haushalt» ein.
 
 Flatpare kostet **CHF 5, einmalig** — kein Abo. Das deckt bis zu 10 Personen und 40 Wohnungen in einem Haushalt ab.
 

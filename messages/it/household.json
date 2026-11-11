@@ -165,5 +165,12 @@
     "notRated": "non valutato",
     "ratingLine": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}",
     "ratingLineComment": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}. «{comment}»"
+  },
+  "redeem": {
+    "label": "Codice crediti",
+    "submit": "Riscatta",
+    "added": "{count, plural, one {# credito aggiunto} other {# crediti aggiunti}}.",
+    "failed": "Non è stato possibile riscattare il codice. Riprova.",
+    "hint": "Hai finito i crediti durante la beta? Chiedi un codice con «Invia un feedback» e inseriscilo qui."
   }
 }

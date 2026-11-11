@@ -65,7 +65,7 @@ describe("GET /api/billing/status", () => {
   it("reports zero for a household that has never purchased", async () => {
     const { status: code, body } = await status();
     expect(code).toBe(200);
-    expect(body).toEqual({ granted: 0, used: 0, remaining: 0, enabled: true });
+    expect(body).toEqual({ granted: 0, used: 0, remaining: 0, enabled: true, purchasable: true });
   });
 
   it("reports the grant after a purchase", async () => {

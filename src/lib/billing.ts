@@ -26,23 +26,48 @@ import { isUniqueConstraintError } from "@/lib/unique-constraint";
 // One $5 purchase.
 export const CREDITS_PER_PURCHASE = 40;
 
-// Billing is off unless Stripe is configured, following the same rule as
-// every other ceiling in this app: unset means unlimited. A self-hoster runs
-// with their own API keys and must never be told to buy anything, nor have an
-// apartment refused by a quota that cannot be topped up.
+// Taking money is off unless Stripe is configured, following the same rule
+// as every other ceiling in this app: unset means unlimited. A self-hoster
+// runs with their own API keys and must never be told to buy anything.
 //
-// Gated on the secret key rather than a separate flag on purpose: if the
-// deployment cannot take money, it has no business enforcing a paywall.
+// Gated on the secret key rather than a separate flag on purpose: a
+// deployment that cannot take money has no checkout to offer.
 export function billingEnabled(): boolean {
   return !!process.env.STRIPE_SECRET_KEY?.trim();
+}
+
+export class CreditsConfigError extends Error {
+  constructor(value: string) {
+    super(`FLATPARE_CREDITS must be "on", "off" or unset, got "${value}"`);
+    this.name = "CreditsConfigError";
+  }
+}
+
+// Whether credits are COUNTED (#492): on whenever Stripe is configured, and
+// also with `FLATPARE_CREDITS=on`, so beta testers spend credits the way
+// they will after launch before the deployment can take money. Unset, empty
+// or `off` leaves it to Stripe, so a self-hoster is never counted. Any other
+// value throws rather than being coerced, like every other switch.
+//
+// Counting without Stripe means running out cannot end at a checkout: the
+// app offers to redeem a credit code instead (`purchasable` below).
+export function creditsEnabled(): boolean {
+  if (billingEnabled()) return true;
+  const raw = process.env.FLATPARE_CREDITS?.trim() ?? "";
+  if (raw === "" || raw === "off") return false;
+  if (raw === "on") return true;
+  throw new CreditsConfigError(raw);
 }
 
 export interface CreditBalance {
   granted: number;
   used: number;
   remaining: number;
-  // null when billing is off — "unlimited", not "zero".
+  // Whether credits are counted at all. False means "unlimited", not "zero".
   enabled: boolean;
+  // Whether more can be bought here (Stripe configured). Counted but not
+  // purchasable is the beta (#492): more credits come from a code.
+  purchasable: boolean;
 }
 
 export async function readCreditBalance(
@@ -63,7 +88,8 @@ export async function readCreditBalance(
     granted,
     used,
     remaining: Math.max(0, granted - used),
-    enabled: billingEnabled(),
+    enabled: creditsEnabled(),
+    purchasable: billingEnabled(),
   };
 }
 
@@ -82,7 +108,7 @@ export async function consumeApartmentCredit(
   householdId: number,
   kind: CreditSpendKind
 ): Promise<boolean> {
-  if (!billingEnabled()) return true;
+  if (!creditsEnabled()) return true;
 
   const result = await db.run(sql`
     UPDATE households
@@ -139,7 +165,7 @@ export async function chargeFirstProcessing(
   householdId: number,
   apartmentId: string
 ): Promise<void> {
-  if (!billingEnabled()) return;
+  if (!creditsEnabled()) return;
   if (!(await markCharged(householdId, apartmentId))) return;
   if (await consumeApartmentCredit(householdId, "first")) return;
   await unmarkCharged(householdId, apartmentId);
@@ -153,7 +179,7 @@ export async function chargeReprocess(
   householdId: number,
   apartmentId: string
 ): Promise<void> {
-  if (!billingEnabled()) return;
+  if (!creditsEnabled()) return;
   if (!(await consumeApartmentCredit(householdId, "reprocess"))) throw noCredits();
   await markCharged(householdId, apartmentId);
 }
@@ -161,7 +187,7 @@ export async function chargeReprocess(
 // "Recompute all" on the Household page: one credit for the whole run,
 // however many apartments it measures (decided on #413).
 export async function chargeRecompute(householdId: number): Promise<void> {
-  if (!billingEnabled()) return;
+  if (!creditsEnabled()) return;
   if (!(await consumeApartmentCredit(householdId, "recompute"))) throw noCredits();
 }
 

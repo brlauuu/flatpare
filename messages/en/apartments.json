@@ -194,7 +194,8 @@
     "left": "<n>{count}</n> {count, plural, one {apartment} other {apartments}} left to process",
     "runningLow": "(running low)",
     "noneLeft": "(none left)",
-    "buyMore": "Buy more"
+    "buyMore": "Buy more",
+    "redeem": "Redeem a code"
   },
   "errors": {
     "staleKey": "The household key was changed by the owner. Your data has been reloaded; please try again."
@@ -222,7 +223,8 @@
     "processing": "Processing...",
     "unplacedTitle": "Not on the map yet",
     "unplaced": "{billing, select, on {The address could not be placed on the map. Trying again uses no credit.} other {The address could not be placed on the map.}}",
-    "retry": "Try again"
+    "retry": "Try again",
+    "redeem": "Redeem a code"
   },
   "pdfTooLarge": {
     "title": "This PDF is too large to read",

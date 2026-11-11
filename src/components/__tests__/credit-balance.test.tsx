@@ -5,7 +5,7 @@ import { renderWithHouseholdData } from "@/components/household-data/__tests__/f
 
 afterEach(cleanup);
 
-const credits = (remaining: number, granted = 40) => ({ granted, used: granted - remaining, remaining });
+const credits = (remaining: number, granted = 40) => ({ granted, used: granted - remaining, remaining, purchasable: true });
 const number = () => screen.getByTestId("credit-balance").querySelector("[data-level]") as HTMLElement;
 
 describe("CreditBalance", () => {
@@ -47,6 +47,13 @@ describe("CreditBalance", () => {
   it.each([40, 5, 0])("offers buying more with %i remaining, not only at zero", (remaining) => {
     renderWithHouseholdData(<CreditBalance />, { credits: credits(remaining) });
     expect(screen.getByRole("link", { name: /buy more/i })).toHaveAttribute("href", "/billing");
+  });
+
+  // #492: counted without Stripe, more credits come from a code.
+  it("offers redeeming a code instead of buying when nothing can be bought", () => {
+    renderWithHouseholdData(<CreditBalance />, { credits: { ...credits(0), purchasable: false } });
+    expect(screen.getByRole("link", { name: "Redeem a code" })).toHaveAttribute("href", "/household#redeem-code");
+    expect(screen.queryByRole("link", { name: /buy more/i })).toBeNull();
   });
 
   it("says it counts apartments to PROCESS, and handles the singular", () => {

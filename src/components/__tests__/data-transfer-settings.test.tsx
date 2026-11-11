@@ -173,7 +173,7 @@ describe("DataTransferSettings: import", () => {
   it("imports with billing on and no credits left", async () => {
     const user = userEvent.setup();
     renderWithHouseholdData(<DataTransferSettings />, {
-      credits: { granted: 40, used: 40, remaining: 0 },
+      credits: { granted: 40, used: 40, remaining: 0, purchasable: true },
       readImport: vi.fn(async () => parsedExport()),
     });
     await user.upload(screen.getByLabelText("Choose an export file"), zipFile());

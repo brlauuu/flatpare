@@ -194,7 +194,8 @@
     "left": "Noch <n>{count}</n> {count, plural, one {Wohnung} other {Wohnungen}} zu verarbeiten",
     "runningLow": "(wird knapp)",
     "noneLeft": "(keine mehr)",
-    "buyMore": "Mehr kaufen"
+    "buyMore": "Mehr kaufen",
+    "redeem": "Code einlösen"
   },
   "errors": {
     "staleKey": "Der Haushaltsschlüssel wurde von der Inhaberin oder dem Inhaber geändert. Deine Daten wurden neu geladen; bitte versuch es nochmals."
@@ -222,7 +223,8 @@
     "processing": "Wird verarbeitet...",
     "unplacedTitle": "Noch nicht auf der Karte",
     "unplaced": "{billing, select, on {Die Adresse konnte nicht auf der Karte gefunden werden. Ein neuer Versuch verbraucht kein Guthaben.} other {Die Adresse konnte nicht auf der Karte gefunden werden.}}",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "redeem": "Code einlösen"
   },
   "pdfTooLarge": {
     "title": "Dieses PDF ist zu gross zum Lesen",

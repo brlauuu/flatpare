@@ -142,7 +142,7 @@ Un piso añadido a partir de un enlace conserva el enlace y aparece como **Sin p
 
 ## Si usas la versión alojada
 
-**Durante la beta privada es gratis.** Lo que recibe una cuenta de la beta es tuyo: ni tus datos ni tus créditos se retiran cuando termine la beta.
+**Durante la beta privada es gratis.** Lo que recibe una cuenta de la beta es tuyo: ni tus datos ni tus créditos se retiran cuando termine la beta. Procesar sigue usando créditos, para que veas cómo funcionan: si te quedas sin ellos, pide un código con **Enviar comentarios** y canjéalo en la página Hogar.
 
 Flatpare cuesta **CHF 5, una sola vez**; no es una suscripción. Cubre hasta 10 personas y 40 pisos en un hogar.
 

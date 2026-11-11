@@ -32,7 +32,7 @@ Cosa conserva il server, e perché:
 - **Il tuo account**: il tuo indirizzo e-mail, il tuo nome, la tua lingua e, se accedi con Google, il link alla tua foto profilo Google e l'identificativo che Google dà al tuo account. Serve per farti accedere e mostrare il tuo nome al tuo gruppo.
 - **Il tuo gruppo**: il suo nome, chi ne fa parte, gli inviti in sospeso (con l'indirizzo invitato) e le chiavi di cifratura, a loro volta cifrate.
 - **Conteggi di utilizzo**: quanti PDF, indirizzi e link di annunci ogni gruppo ha elaborato, e a cosa è servito ogni credito. Per gruppo, mai per persona, e mai cosa è stato elaborato. Li controlliamo per confrontare l'uso con quanto è stato pagato.
-- **Pagamenti**: quale gruppo ha comprato quanti crediti e quando. I dati della carta restano a Stripe.
+- **Pagamenti**: quale gruppo ha comprato quanti crediti e quando, e quale gruppo ha riscattato quale codice crediti. I dati della carta restano a Stripe.
 - **Richieste per la beta**: l'indirizzo e-mail che hai indicato nella pagina iniziale, per mandarti un invito.
 - **Feedback**: non viene salvato. Ciò che invii con Invia un feedback ci arriva per e-mail, con il tuo nome e il tuo indirizzo, a meno che tu non lo invii in forma anonima.
 

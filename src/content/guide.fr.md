@@ -142,7 +142,7 @@ Un appartement ajouté à partir d'un lien garde le lien et est marqué **Non tr
 
 ## Si tu utilises la version hébergée
 
-**Pendant la bêta privée, c’est gratuit.** Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta.
+**Pendant la bêta privée, c’est gratuit.** Ce qu’un compte bêta obtient t’appartient : ni tes données ni tes crédits ne te seront repris à la fin de la bêta. Le traitement utilise quand même des crédits, pour que tu voies comment ils fonctionnent : si tu n’en as plus, demande un code avec **Envoyer un avis** et utilise-le sur la page Foyer.
 
 Flatpare coûte **CHF 5, une seule fois** — pas d’abonnement. Cela couvre jusqu’à 10 personnes et 40 appartements dans un foyer.
 

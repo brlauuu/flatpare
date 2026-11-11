@@ -67,7 +67,7 @@ function renderAs(
   me: { userId: string; role: "owner" | "member" },
   state: CryptoContextValue["state"] = "unlocked",
   limits: Limits = { maxMembers: null, maxApartments: null },
-  credits: { granted: number; used: number; remaining: number } | null = null
+  credits: { granted: number; used: number; remaining: number; purchasable: boolean } | null = null
 ) {
   householdData = makeHouseholdData({ limits, credits });
   fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
@@ -345,6 +345,7 @@ describe("member limit (#187)", () => {
         granted: 40,
         used: 40,
         remaining: 0,
+        purchasable: true,
       });
       await screen.findByText("Members");
       expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to process");

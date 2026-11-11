@@ -32,7 +32,7 @@ Ce que le serveur conserve, et pourquoi :
 - **Ton compte** : ton adresse e-mail, ton nom, ta langue et, si tu te connectes avec Google, le lien vers ta photo de profil Google et l'identifiant que Google donne à ton compte. Nécessaire pour te connecter et montrer ton nom à ton foyer.
 - **Ton foyer** : son nom, qui en est membre, les invitations en attente (avec l'adresse invitée) et les clés de chiffrement, elles-mêmes chiffrées.
 - **Compteurs d'utilisation** : combien de PDF, d'adresses et de liens d'annonce chaque foyer a traités, et à quoi chaque crédit a servi. Par foyer, jamais par personne, et jamais ce qui a été traité. Nous les vérifions pour comparer l'utilisation avec ce qui a été payé.
-- **Paiements** : quel foyer a acheté combien de crédits et quand. Les données de carte restent chez Stripe.
+- **Paiements** : quel foyer a acheté combien de crédits et quand, et quel foyer a utilisé quel code de crédits. Les données de carte restent chez Stripe.
 - **Demandes de bêta** : l'adresse e-mail que tu as donnée sur la page d'accueil, pour t'envoyer une invitation.
 - **Avis** : pas enregistrés. Ce que tu envoies avec Envoyer un avis nous parvient par e-mail, avec ton nom et ton adresse, sauf si tu l'envoies anonymement.
 

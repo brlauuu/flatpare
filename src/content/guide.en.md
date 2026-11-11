@@ -142,7 +142,7 @@ An apartment added from a link keeps the link and is marked **Not processed** in
 
 ## If you are on the hosted version
 
-**During the private beta it is free.** What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends.
+**During the private beta it is free.** What a beta account gets is yours to keep: neither your data nor your credits are taken back when the beta ends. Processing still uses credits, so you can see how they work: if you run out, ask for a code with **Send feedback** and redeem it on the Household page.
 
 Flatpare is **CHF 5, once** — not a subscription. That covers up to 10 people and 40 apartments in one household.
 
