@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.37.0 — 2026-11-11
+
 ### Added
 
 - During the beta, processing an apartment now uses credits the way it will once Flatpare can take payments, so testers see how processing and reprocessing are counted. Anyone in a household that runs out can redeem a credit code from us on the Household page; the balance and the processing notice link straight to it. The terms page lists code redemptions among what is stored (#492).
