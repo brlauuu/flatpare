@@ -165,5 +165,12 @@
     "notRated": "non évalué",
     "ratingLine": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}",
     "ratingLineComment": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}. « {comment} »"
+  },
+  "redeem": {
+    "label": "Code de crédits",
+    "submit": "Utiliser",
+    "added": "{count, plural, one {# crédit ajouté} other {# crédits ajoutés}}.",
+    "failed": "Le code n'a pas pu être utilisé. Réessaie.",
+    "hint": "Plus de crédits pendant la bêta ? Demande un code avec « Envoyer un avis » et saisis-le ici."
   }
 }

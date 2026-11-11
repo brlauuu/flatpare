@@ -194,7 +194,8 @@
     "left": "{count, plural, one {Encore <n>{count}</n> appartement à traiter} other {Encore <n>{count}</n> appartements à traiter}}",
     "runningLow": "(bientôt épuisé)",
     "noneLeft": "(plus aucun)",
-    "buyMore": "En acheter plus"
+    "buyMore": "En acheter plus",
+    "redeem": "Utiliser un code"
   },
   "errors": {
     "staleKey": "La clé du foyer a été changée par le propriétaire. Tes données ont été rechargées ; réessaie, s’il te plaît."
@@ -222,7 +223,8 @@
     "processing": "Traitement...",
     "unplacedTitle": "Pas encore sur la carte",
     "unplaced": "{billing, select, on {L’adresse n’a pas pu être placée sur la carte. Réessayer n’utilise aucun crédit.} other {L’adresse n’a pas pu être placée sur la carte.}}",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "redeem": "Utiliser un code"
   },
   "pdfTooLarge": {
     "title": "Ce PDF est trop volumineux pour être lu",

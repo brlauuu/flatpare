@@ -8,6 +8,9 @@ import { useHouseholdData } from "@/components/household-data/use-household-data
 // At or below this many credits the number turns orange; at zero, red.
 export const LOW_CREDITS = 5;
 
+// Where a credit code is redeemed (#492): the form on the Household page.
+export const REDEEM_HREF = "/household#redeem-code";
+
 // The household's remaining apartment credits, shown to every member (#305).
 //
 // Credits are one shared pool (#294), so one member's additions change what
@@ -50,8 +53,13 @@ export function CreditBalance({ className }: { className?: string }) {
       {level === "low" && <span className="sr-only"> {t("runningLow")}</span>}
       {level === "empty" && <span className="sr-only"> {t("noneLeft")}</span>}
       {" · "}
-      <Link href="/billing" className="underline underline-offset-2 hover:text-foreground">
-        {t("buyMore")}
+      {/* No checkout while credits are counted without Stripe (#492): more
+          come from a code, redeemed on the Household page. */}
+      <Link
+        href={credits.purchasable ? "/billing" : REDEEM_HREF}
+        className="underline underline-offset-2 hover:text-foreground"
+      >
+        {credits.purchasable ? t("buyMore") : t("redeem")}
       </Link>
     </p>
   );

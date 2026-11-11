@@ -194,7 +194,8 @@
     "left": "Puoi ancora elaborare <n>{count}</n> {count, plural, one {appartamento} other {appartamenti}}",
     "runningLow": "(stanno finendo)",
     "noneLeft": "(esauriti)",
-    "buyMore": "Acquistane altri"
+    "buyMore": "Acquistane altri",
+    "redeem": "Riscatta un codice"
   },
   "errors": {
     "staleKey": "Il proprietario ha cambiato la chiave del gruppo. I tuoi dati sono stati ricaricati; riprova."
@@ -222,7 +223,8 @@
     "processing": "Elaborazione...",
     "unplacedTitle": "Non ancora sulla mappa",
     "unplaced": "{billing, select, on {Non è stato possibile trovare l'indirizzo sulla mappa. Riprovare non usa crediti.} other {Non è stato possibile trovare l'indirizzo sulla mappa.}}",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "redeem": "Riscatta un codice"
   },
   "pdfTooLarge": {
     "title": "Questo PDF è troppo grande per essere letto",

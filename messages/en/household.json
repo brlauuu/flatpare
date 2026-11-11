@@ -165,5 +165,12 @@
     "notRated": "not rated",
     "ratingLine": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}",
     "ratingLineComment": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}. \"{comment}\""
+  },
+  "redeem": {
+    "label": "Credit code",
+    "submit": "Redeem",
+    "added": "{count, plural, one {# credit} other {# credits}} added.",
+    "failed": "The code could not be redeemed. Try again.",
+    "hint": "Out of credits during the beta? Ask for a code with Send feedback and enter it here."
   }
 }

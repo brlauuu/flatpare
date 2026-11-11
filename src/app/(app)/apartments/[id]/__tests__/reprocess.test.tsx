@@ -133,7 +133,7 @@ describe("Apartment detail — reprocess", () => {
   // #413: a reprocess spends one credit, and says so before the click.
   it("names the credit in the confirmation when billing is on", async () => {
     const confirm = vi.fn().mockReturnValue(false);
-    setupWith({ apartments: [A1], credits: { granted: 40, used: 1, remaining: 39 } });
+    setupWith({ apartments: [A1], credits: { granted: 40, used: 1, remaining: 39, purchasable: true } });
     vi.stubGlobal("confirm", confirm);
     await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("for one apartment credit"));
@@ -148,7 +148,7 @@ describe("Apartment detail — reprocess", () => {
   });
 
   it("stops before reading anything when the charge is refused", async () => {
-    const { value } = setupWith({ apartments: [A1], credits: { granted: 1, used: 1, remaining: 0 } });
+    const { value } = setupWith({ apartments: [A1], credits: { granted: 1, used: 1, remaining: 0, purchasable: true } });
     vi.mocked(value.chargeReprocess).mockRejectedValue(new Error("No apartment credits left"));
     await userEvent.setup().click(screen.getByRole("button", { name: /^Reprocess$/ }));
     expect(await screen.findByText(/Couldn't reprocess apartment/)).toBeInTheDocument();
@@ -181,7 +181,7 @@ describe("Apartment detail — not processed yet", () => {
   it("says it can be rated for free and how processing is paid", () => {
     setupWith({
       apartments: [makeApartmentView({ id: "a1", name: "By hand", processed: false })],
-      credits: { granted: 40, used: 0, remaining: 40 },
+      credits: { granted: 40, used: 0, remaining: 40, purchasable: true },
     });
     expect(screen.getByText("Not processed yet")).toBeInTheDocument();
     expect(screen.getByText(/Rate and describe it for free/)).toBeInTheDocument();
@@ -198,16 +198,25 @@ describe("Apartment detail — not processed yet", () => {
 
   it("offers to process an address that was saved without credit, and links to buying more", async () => {
     const apt = makeApartmentView({ id: "a1", name: "Flat", address: "Street 1", processed: false });
-    const { value } = setupWith({ apartments: [apt], credits: { granted: 40, used: 40, remaining: 0 } });
+    const { value } = setupWith({ apartments: [apt], credits: { granted: 40, used: 40, remaining: 0, purchasable: true } });
     expect(screen.getByText("No apartment credits left.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Buy more" })).toHaveAttribute("href", "/billing");
     expect(screen.getByRole("button", { name: "Process (1 credit)" })).toBeDisabled();
     expect(value.processApartment).not.toHaveBeenCalled();
   });
 
+  // #492: counted without Stripe, more credits come from a code.
+  it("links to redeeming a code instead when credits cannot be bought", async () => {
+    const apt = makeApartmentView({ id: "a1", name: "Flat", address: "Street 1", processed: false });
+    setupWith({ apartments: [apt], credits: { granted: 40, used: 40, remaining: 0, purchasable: false } });
+    expect(screen.getByRole("link", { name: "Redeem a code" })).toHaveAttribute("href", "/household#redeem-code");
+    expect(screen.queryByRole("link", { name: "Buy more" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Process (1 credit)" })).toBeDisabled();
+  });
+
   it("processes by address with a credit to spend", async () => {
     const apt = makeApartmentView({ id: "a1", name: "Flat", address: "Street 1", processed: false });
-    const { value } = setupWith({ apartments: [apt], credits: { granted: 40, used: 2, remaining: 38 } });
+    const { value } = setupWith({ apartments: [apt], credits: { granted: 40, used: 2, remaining: 38, purchasable: true } });
     await userEvent.setup().click(screen.getByRole("button", { name: "Process (1 credit)" }));
     await waitFor(() => expect(value.processApartment).toHaveBeenCalledWith("a1"));
     expect(parsePdf).not.toHaveBeenCalled();
@@ -237,7 +246,7 @@ describe("Apartment detail — not processed yet", () => {
     const { value } = setupWith({
       apartments: [apt],
       enrichmentError: { a1: "Request failed (500)" },
-      credits: { granted: 40, used: 3, remaining: 37 },
+      credits: { granted: 40, used: 3, remaining: 37, purchasable: true },
     });
     expect(screen.getByText("Not on the map yet")).toBeInTheDocument();
     expect(screen.getByText(/Trying again uses no credit/)).toBeInTheDocument();

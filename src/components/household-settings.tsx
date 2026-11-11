@@ -1,6 +1,7 @@
 "use client";
 
 import { CreditBalance } from "@/components/credit-balance";
+import { RedeemCreditCode } from "@/components/redeem-credit-code";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
@@ -275,8 +276,9 @@ export function HouseholdSettings() {
           </span>
         )}
       </div>
-      {/* Renders nothing when billing is off. */}
+      {/* Both render nothing where credits are not counted. */}
       <CreditBalance />
+      <RedeemCreditCode />
       {error && <p className="text-sm text-destructive">{error}</p>}
       {inviteNote && (
         <p role="status" className="text-sm text-muted-foreground">

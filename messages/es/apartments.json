@@ -194,7 +194,8 @@
     "left": "Te {count, plural, one {queda} other {quedan}} <n>{count}</n> {count, plural, one {piso} other {pisos}} por procesar",
     "runningLow": "(quedan pocos)",
     "noneLeft": "(no queda ninguno)",
-    "buyMore": "Comprar más"
+    "buyMore": "Comprar más",
+    "redeem": "Canjear un código"
   },
   "errors": {
     "staleKey": "Quien administra el hogar ha cambiado la clave del hogar. Tus datos se han vuelto a cargar; inténtalo de nuevo."
@@ -222,7 +223,8 @@
     "processing": "Procesando...",
     "unplacedTitle": "Aún no está en el mapa",
     "unplaced": "{billing, select, on {No se ha podido situar la dirección en el mapa. Volver a intentarlo no usa ningún crédito.} other {No se ha podido situar la dirección en el mapa.}}",
-    "retry": "Volver a intentarlo"
+    "retry": "Volver a intentarlo",
+    "redeem": "Canjear un código"
   },
   "pdfTooLarge": {
     "title": "Este PDF es demasiado grande para leerlo",

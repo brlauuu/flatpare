@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ApartmentView } from "@/lib/household-data/types";
 import type { Credits } from "@/components/household-data/household-data-provider";
+import { REDEEM_HREF } from "@/components/credit-balance";
 
 interface ProcessingNoticeProps {
   apartment: Pick<ApartmentView, "processed" | "address" | "pdf" | "rawExtractedData" | "processedAddress">;
@@ -71,8 +72,8 @@ export function ProcessingNotice({ apartment, credits, failed, processing, onPro
           {pending && noneLeft && (
             <p className="text-warning">
               {t("noneLeft")}{" "}
-              <Link href="/billing" className="underline underline-offset-2">
-                {t("buyMore")}
+              <Link href={credits?.purchasable ? "/billing" : REDEEM_HREF} className="underline underline-offset-2">
+                {credits?.purchasable ? t("buyMore") : t("redeem")}
               </Link>
             </p>
           )}

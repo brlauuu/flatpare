@@ -234,6 +234,7 @@ Every ceiling is opt-in, because a self-hoster spends their own resources. There
 | Variable | Description |
 |---|---|
 | `STRIPE_SECRET_KEY` | Enables billing. Unset (the self-host default) means no paywall, no quota enforcement, and `apartments_ever_added` is never incremented — so switching billing on later does not bill anyone for their history. |
+| `FLATPARE_CREDITS` | `on` counts credits without Stripe: processing spends them as it would with billing on, and running out offers a credit code instead of a checkout. Mint codes with `node scripts/credit-code.mjs create --credits N`; they are redeemed on the Household page. Unset leaves counting to Stripe. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Client key for embedded Checkout. |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for `POST /api/billing/webhook`. **Not** injected by the Vercel integration — create the endpoint in the Stripe dashboard and copy it. The webhook is the only thing that grants credits, so a deployment missing this takes money and grants nothing. |
 

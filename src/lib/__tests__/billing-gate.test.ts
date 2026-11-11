@@ -127,3 +127,20 @@ describe("requirePurchase", () => {
     expect(await gate()).toBe("redirected");
   });
 });
+
+// #492: credits counted without Stripe. There is no checkout to send a
+// household to, so even one without credits gets in.
+describe("requirePurchase with FLATPARE_CREDITS=on and no Stripe", () => {
+  beforeEach(() => {
+    delete process.env.STRIPE_SECRET_KEY;
+    process.env.FLATPARE_CREDITS = "on";
+  });
+  afterEach(() => {
+    delete process.env.FLATPARE_CREDITS;
+  });
+
+  it("lets a household that was never granted anything in", async () => {
+    expect(await gate()).toBe("passed");
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});

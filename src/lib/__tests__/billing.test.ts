@@ -6,6 +6,8 @@ import { users } from "@/lib/db/schema-auth";
 import { createApartmentRow } from "../apartments-store";
 import {
   CREDITS_PER_PURCHASE,
+  CreditsConfigError,
+  creditsEnabled,
   billingEnabled,
   chargeFirstProcessing,
   chargeRecompute,
@@ -52,10 +54,12 @@ beforeEach(async () => {
   const [h] = await db.insert(households).values({ name: "H", ownerId: "o" }).returning();
   hid = h.id;
   delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.FLATPARE_CREDITS;
   delete process.env.MAX_APARTMENTS;
 });
 
 afterEach(() => {
+  delete process.env.FLATPARE_CREDITS;
   if (ORIGINAL_STRIPE === undefined) delete process.env.STRIPE_SECRET_KEY;
   else process.env.STRIPE_SECRET_KEY = ORIGINAL_STRIPE;
   if (ORIGINAL_MAX === undefined) delete process.env.MAX_APARTMENTS;
@@ -293,6 +297,7 @@ describe("readCreditBalance", () => {
       used: 1,
       remaining: 4,
       enabled: true,
+      purchasable: true,
     });
   });
 
@@ -307,5 +312,62 @@ describe("readCreditBalance", () => {
       .set({ apartmentCreditsGranted: 1, apartmentsEverAdded: 5 })
       .where(eq(households.id, hid));
     expect((await readCreditBalance(hid)).remaining).toBe(0);
+  });
+});
+
+// #492: credits counted before Stripe is live, so beta testers spend them.
+describe("FLATPARE_CREDITS", () => {
+  it.each([undefined, "", "  ", "off"])("leaves counting to Stripe when it is %j", async (value) => {
+    if (value !== undefined) process.env.FLATPARE_CREDITS = value;
+    expect(creditsEnabled()).toBe(false);
+    await chargeFirstProcessing(hid, newId());
+    expect((await counters()).used).toBe(0);
+    expect(await readCreditBalance(hid)).toMatchObject({ enabled: false, purchasable: false });
+  });
+
+  it("throws on any other value rather than guessing", () => {
+    process.env.FLATPARE_CREDITS = "yes";
+    expect(() => creditsEnabled()).toThrow(CreditsConfigError);
+    expect(() => creditsEnabled()).toThrow('FLATPARE_CREDITS must be "on", "off" or unset, got "yes"');
+  });
+
+  it("is always on when Stripe is configured, whatever the switch says", () => {
+    enableBilling();
+    process.env.FLATPARE_CREDITS = "off";
+    expect(creditsEnabled()).toBe(true);
+  });
+
+  describe("on, without Stripe", () => {
+    beforeEach(() => {
+      process.env.FLATPARE_CREDITS = "on";
+    });
+
+    it("counts, but offers nothing to buy", async () => {
+      await grantApartmentCredits(hid, 40);
+      expect(await readCreditBalance(hid)).toEqual({
+        granted: 40,
+        used: 0,
+        remaining: 40,
+        enabled: true,
+        purchasable: false,
+      });
+    });
+
+    it("spends on first processing, reprocess and recompute, as after launch", async () => {
+      await grantApartmentCredits(hid, 3);
+      const id = newId();
+      await chargeFirstProcessing(hid, id);
+      await chargeFirstProcessing(hid, id); // the second call for one apartment is free
+      await chargeReprocess(hid, id);
+      await chargeRecompute(hid);
+      expect((await counters()).used).toBe(3);
+    });
+
+    it("refuses with 402 once the credits are gone", async () => {
+      await grantApartmentCredits(hid, 1);
+      await chargeFirstProcessing(hid, newId());
+      await expect(chargeFirstProcessing(hid, newId())).rejects.toMatchObject({ status: 402 });
+      await expect(chargeReprocess(hid, newId())).rejects.toMatchObject({ status: 402 });
+    });
   });
 });

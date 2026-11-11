@@ -32,7 +32,7 @@ Was der Server speichert, und warum:
 - **Dein Konto**: deine E-Mail-Adresse, dein Name, deine Sprache und, wenn du dich mit Google anmeldest, der Link zu deinem Google-Profilbild und die Kennung, die Google deinem Konto gibt. Nötig, um dich anzumelden und deinem Haushalt deinen Namen zu zeigen.
 - **Dein Haushalt**: sein Name, wer Mitglied ist, offene Einladungen (mit der eingeladenen Adresse) und die Schlüssel, die selbst verschlüsselt sind.
 - **Nutzungszahlen**: wie viele PDFs, Adressen und Inseratelinks jeder Haushalt verarbeitet hat, und wofür jedes Guthaben verwendet wurde. Pro Haushalt, nie pro Person, und nie, was verarbeitet wurde. Wir prüfen sie, um die Nutzung mit dem Bezahlten abzugleichen.
-- **Zahlungen**: welcher Haushalt wann wie viele Guthaben gekauft hat. Kartendaten bleiben bei Stripe.
+- **Zahlungen**: welcher Haushalt wann wie viele Guthaben gekauft hat und welcher Haushalt welchen Guthabencode eingelöst hat. Kartendaten bleiben bei Stripe.
 - **Beta-Anfragen**: die E-Mail-Adresse, die du auf der Startseite angegeben hast, um dir eine Einladung zu schicken.
 - **Feedback**: wird nicht gespeichert. Was du mit Feedback senden schickst, erreicht uns per E-Mail, mit deinem Namen und deiner Adresse, ausser du sendest es anonym.
 

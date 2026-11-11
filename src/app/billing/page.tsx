@@ -24,7 +24,7 @@ export default async function BillingPage() {
   const balance = await readCreditBalance(identity.householdId);
   // Nothing to sell when billing is off (self-hosted). A household that
   // already owns credits is welcome: topping up is the `returning` copy below.
-  if (!balance.enabled) redirect("/apartments");
+  if (!balance.purchasable) redirect("/apartments");
 
   const returning = balance.granted > 0;
   const t = await getTranslations("billing.page");

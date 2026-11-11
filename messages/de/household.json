@@ -165,5 +165,12 @@
     "notRated": "nicht bewertet",
     "ratingLine": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}",
     "ratingLineComment": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}. «{comment}»"
+  },
+  "redeem": {
+    "label": "Guthabencode",
+    "submit": "Einlösen",
+    "added": "{count, plural, one {# Guthaben} other {# Guthaben}} hinzugefügt.",
+    "failed": "Der Code konnte nicht eingelöst werden. Versuch es nochmals.",
+    "hint": "Während der Beta kein Guthaben mehr? Frag über «Feedback senden» nach einem Code und gib ihn hier ein."
   }
 }

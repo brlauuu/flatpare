@@ -125,6 +125,9 @@ export interface HouseholdDataContextValue {
   // at no further charge.
   chargeReprocess(id: string): Promise<void>;
   relocateApartment(id: string, mutate?: (a: Apartment) => Apartment): Promise<void>;
+  // Redeems a credit code for the household (#492) and returns the credits it
+  // added. Rejects with the server's message when the code is refused.
+  redeemCreditCode(code: string): Promise<number>;
   createLocation(id: string, data: Location): Promise<LocationView>;
   updateLocation(id: string, mutate: (l: Location) => Location): Promise<LocationView>;
   deleteLocation(id: string): Promise<void>;
@@ -155,6 +158,9 @@ export interface Credits {
   granted: number;
   used: number;
   remaining: number;
+  // More can be bought here (Stripe configured). False while credits are
+  // counted without Stripe (#492): more come from a credit code.
+  purchasable: boolean;
 }
 
 // Exported so component tests can render consumers under a hand-built value
@@ -236,7 +242,9 @@ export function HouseholdDataProvider({
   const refreshCredits = useCallback(async () => {
     try {
       const b = await getJson<Credits & { enabled: boolean }>("/api/billing/status");
-      setCredits(b.enabled ? { granted: b.granted, used: b.used, remaining: b.remaining } : null);
+      setCredits(
+        b.enabled ? { granted: b.granted, used: b.used, remaining: b.remaining, purchasable: b.purchasable } : null
+      );
     } catch {
       // Keep what is on screen.
     }
@@ -633,6 +641,15 @@ export function HouseholdDataProvider({
     [refreshCredits]
   );
 
+  const redeemCreditCode = useCallback(
+    async (code: string): Promise<number> => {
+      const { credits: added } = await sendJson<{ credits: number }>("POST", "/api/billing/redeem", { code });
+      await refreshCredits();
+      return added;
+    },
+    [refreshCredits]
+  );
+
   // The rest of a reprocess already charged by chargeReprocess: writes what
   // the PDF gave, then geocodes the address and measures every distance
   // again. What belonged to the old address is dropped in the same write, so
@@ -962,6 +979,7 @@ export function HouseholdDataProvider({
       processApartment,
       chargeReprocess,
       relocateApartment,
+      redeemCreditCode,
       createLocation,
       updateLocation,
       deleteLocation,
@@ -975,7 +993,7 @@ export function HouseholdDataProvider({
     [
       identity, limits, credits, memberNames, dataKey, status, error, apartments, locations, enrichmentError, reload,
       createApartment, createApartmentFromLink, attachPdf, updateApartment, deleteApartment, rateApartment, retryEnrichment,
-      processApartment, chargeReprocess, relocateApartment,
+      processApartment, chargeReprocess, relocateApartment, redeemCreditCode,
       createLocation, updateLocation, deleteLocation, moveLocation, runMaintenance, rotateDataKey,
       exportHousehold, readImport, importHousehold,
     ]

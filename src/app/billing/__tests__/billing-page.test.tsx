@@ -34,8 +34,8 @@ vi.mock("@/components/nav-bar", () => ({
 
 import BillingPage from "../page";
 
-function balance(over: Partial<{ granted: number; used: number; remaining: number; enabled: boolean }> = {}) {
-  return { granted: 0, used: 0, remaining: 0, enabled: true, ...over };
+function balance(over: Partial<{ granted: number; used: number; remaining: number; enabled: boolean; purchasable: boolean }> = {}) {
+  return { granted: 0, used: 0, remaining: 0, enabled: true, purchasable: true, ...over };
 }
 
 /** Renders the server component, or reports the redirect it threw instead. */
@@ -105,7 +105,14 @@ describe("BillingPage", () => {
 
   it("redirects to /apartments when billing is off", async () => {
     // Self-hosted: there is nothing to sell, so this page has no purpose.
-    readCreditBalance.mockResolvedValue(balance({ enabled: false }));
+    readCreditBalance.mockResolvedValue(balance({ enabled: false, purchasable: false }));
+    expect(await renderPage()).toBe("redirected");
+    expect(redirect).toHaveBeenCalledWith("/apartments");
+  });
+
+  it("redirects to /apartments when credits are counted but cannot be bought (#492)", async () => {
+    // FLATPARE_CREDITS=on without Stripe: no checkout to show.
+    readCreditBalance.mockResolvedValue(balance({ enabled: true, purchasable: false }));
     expect(await renderPage()).toBe("redirected");
     expect(redirect).toHaveBeenCalledWith("/apartments");
   });
