@@ -9,6 +9,8 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.36.1 — 2026-11-11
+
 ### Fixed
 
 - On a wide screen, the rating on an apartment tile now sits in the tile's top-right corner, as it already did on a phone (#489).
