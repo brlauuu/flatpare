@@ -8,12 +8,12 @@ For what Flatpare actually does now:
 
 | Question | Where the answer lives |
 |---|---|
-| How the code is organised, and which conventions are load-bearing | [`AGENTS.md`](../../AGENTS.md) |
+| How the code is organised, and which conventions are load-bearing | [`AGENTS.md`](../../AGENTS.md), the area rules in [`.claude/rules/`](../../.claude/rules/) and their detail in [`docs/agents/`](../agents/) |
 | How to run, configure or deploy it | [`README.md`](../../README.md) |
 | Threat model, accepted advisories, security decisions | [`docs/security-notes.md`](../security-notes.md) |
 | What a user sees | [`src/content/guide.en.md`](../../src/content/guide.en.md) (and one per language, #288) |
 
-**Where a plan and `AGENTS.md` disagree, `AGENTS.md` is right.** Several decisions were
+**Where a plan and the agent docs (`AGENTS.md`, `.claude/rules/`, `docs/agents/`) disagree, the agent docs are right.** Several decisions were
 reversed during implementation — E5's tier dimension was designed and then not adopted,
 E6's "40 apartments" changed meaning, and three Stripe defects (#238) were only found
 against the live API, after the design was written.

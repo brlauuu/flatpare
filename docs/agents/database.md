@@ -1,6 +1,6 @@
 # Database
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/database.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Drizzle ORM** (`drizzle-orm`, `drizzle-kit`). Schemas in `src/lib/db/schema.ts`, migrations in `drizzle/`.
 - Connection via **libSQL** (`@libsql/client`) — Turso in cloud mode, local SQLite file otherwise.

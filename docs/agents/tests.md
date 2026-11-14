@@ -1,6 +1,6 @@
 # Tests
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/tests.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Vitest, not Jest.** Don't reach for Jest patterns — they break here.
 - Config: `vitest.config.mts`. Setup: `src/test-global-setup.ts` (builds the migrated template database once) and `src/test-setup.ts` (per test file — copies the template and points `LOCAL_DB_URL` at the copy).

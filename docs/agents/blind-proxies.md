@@ -1,6 +1,6 @@
 # Blind proxies (E4)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/blind-proxies.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Rate limiting.** `consumeRateLimit(householdId, endpoint)` (`src/lib/rate-limit.ts`) runs immediately after `requireMember()` in all six `/api/process/*` handlers — **before** the outbound call, since the point is bounding spend. Fixed one-hour windows in `process_usage` (migration 0016), one atomic `INSERT ... ON CONFLICT DO UPDATE ... RETURNING count`, so concurrent requests cannot both read "4 of 5". Over the limit is `429 { error: "Rate limit exceeded" }`.
   - `PROCESS_RATE_LIMIT_PER_HOUR` **unset or empty means unlimited** — the self-hoster default, since `docker compose up` must work unconfigured and a self-hoster spends their own keys. Anything that is not a positive integer throws `EnvConfigError` (`src/lib/env-int.ts`, via the shared `readOptionalPositiveInt`) rather than being coerced.

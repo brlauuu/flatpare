@@ -1,6 +1,6 @@
 # Export and import (#191)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/export-import.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **The household's own backup.** Under E2EE the host cannot restore anything, so any member can download a plaintext ZIP of everything they can read, from the Household page (`DataTransferSettings`, `src/components/data-transfer-settings.tsx`). It is also how a household moves to a self-hosted instance or to a database in the other encryption mode. Design: `docs/superpowers/specs/2026-10-24-export-import-design.md`.
 - **All in the browser, no route, no migration.** `src/lib/household-data/export-format.ts` is pure (files map in and out, zod-validated parse, `planImport`); `src/components/household-data/export-import.ts` does the ZIP (`fflate`), the PDF download and upload and the posts; the store exposes `exportHousehold`, `readImport`, `importHousehold`.

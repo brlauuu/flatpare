@@ -1,6 +1,6 @@
 # Apartment credits (E6)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/apartment-credits.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **What shipped and what did not.** Checkout, the webhook grant, the event-id idempotency key, the credit ledger and the purchase gate are all in `main` and tested — the heading used to say "partial" without saying of what (#263). Outstanding, and each is a *decision* rather than missing code:
   - **The two spend holes the quota does not close** (measured 2026-09-09, on #188). Adding a location re-runs distances for every apartment (~$0.40 per location); `runMaintenance("distances")` and Reprocess re-run everything (~$2.00 per click at 40×5). Since #413 Reprocess costs one credit and Recompute all one credit per run, so both are bounded by what was bought; adding or changing a location stays free (decided on #413). A modified client can still skip the charge, see Processing and credits (#413).

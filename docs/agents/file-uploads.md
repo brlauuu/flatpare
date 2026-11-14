@@ -1,6 +1,6 @@
 # File uploads
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/file-uploads.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **PDFs are encrypted in the browser before upload** (`src/components/household-data/pdf-files.ts`: `encryptAndUploadPdf` / `downloadPdf`, over `sealBytes` / `openBytes` from `@/lib/crypto`). The stored object is `households/<householdId>/<apartmentId>.pdf.enc` — AES-256-GCM ciphertext with AAD `"<householdId>:pdf:<apartmentId>"` when encryption is on, the raw PDF bytes with `iv: null` when off. The server stores and serves it as `application/octet-stream` and never learns which. The apartment envelope carries `pdf: { path, iv } | null`.
 - **Transport**: `uploadEncryptedFile(bytes, apartmentId)` in `src/lib/upload-pdf.ts` probes `GET /api/files/upload-token`; when Blob is enabled (`BLOB_READ_WRITE_TOKEN`, auto-set by Vercel) it uploads client-direct to Vercel Blob with a token scoped to that path, otherwise it multipart-POSTs to `/api/files` (local-disk fallback via `src/lib/storage.ts`). Files larger than ~4.5 MB **must** take the Blob path — serverless routes hit the body limit — which is why the probe exists.

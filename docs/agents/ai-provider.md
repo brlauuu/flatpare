@@ -1,6 +1,6 @@
 # AI provider (#333)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/ai-provider.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`src/lib/ai-provider.ts` is the only place that knows which AI backend reads PDFs.** `parse-pdf.ts` asks it for the model and request options; the parse-pdf route asks it whether AI is available. Never read `GOOGLE_GENERATIVE_AI_API_KEY` or name a model anywhere else.
 - **Google is the default** so a self-hoster needs no extra account. Its terms are tier-dependent and it has no zero-retention setting, so `AI_ZERO_DATA_RETENTION` on the Google path is a config error rather than silently ignored.

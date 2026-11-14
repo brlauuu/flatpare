@@ -1,6 +1,6 @@
 # PWA
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/pwa.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - `src/app/manifest.ts` is the web app manifest (Next's `MetadataRoute.Manifest`, served at `/manifest.webmanifest`) — not a static file in `public/`.
 - Icons in `public/` are generated from `public/flatpare_logo.svg` by cropping the square mark out of the wordmark. `icon-maskable-512.png` keeps the mark inside Android's safe zone; `apple-touch-icon.png` exists because iOS ignores the manifest's icons.

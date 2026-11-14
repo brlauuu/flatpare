@@ -1,6 +1,6 @@
 # Navigation and the signed-in shell (#302)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/navigation.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Every signed-in section lives in the route group `src/app/(app)/`** — `apartments`, `compare`, `household`, `settings`, `guide` — under **one** layout, `src/app/(app)/layout.tsx`. A route group adds nothing to the URL. That layout is the only place that awaits `auth()`, runs `requirePurchase` and mounts `NavBar`, `CryptoGate` and `HouseholdDataProvider`. Anything written before #302 that says "the four signed-in layouts" means this file.
 - **Why one layout:** there used to be four near-identical ones. Next.js blocks a navigation until a layout that reads the session has rendered, and it does that again whenever a navigation crosses a layout boundary, so every section switch waited on the server with nothing on screen, then remounted both providers and re-downloaded and re-decrypted every row. A shared layout is not re-rendered on client navigation and its providers stay mounted.

@@ -1,6 +1,6 @@
 # Theme (#324)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/theme.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **One palette for the landing page and the app**, as hex tokens in `src/app/globals.css` (`:root` light, `.dark` dark). Design: `docs/superpowers/specs/2026-10-03-app-restyle-design.md`.
 - **Frame vs dense.** Frame = 3px `border-frame` + a hard shadow (`shadow-frame`, `shadow-button`, `shadow-hero`): nav edge, cards, dialogs, menus, buttons, badges (2px), and standalone fields. Dense = 1px `border` (the default for every `border` utility), no shadow: table cells, list rows, fields in multi-field forms. `Input`, `Textarea` and `SelectTrigger` take `weight="dense" | "frame"`; default dense.

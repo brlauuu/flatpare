@@ -1,6 +1,6 @@
 # Email (#300)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/email.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Email is off unless `RESEND_API_KEY` is set and a sender can be resolved** (`emailEnabled()`, `src/lib/email.ts`). Unset means nothing is sent and **nothing fails** — the self-hoster default, with tests at the leaf and at the route. **Turning email on also registers magic-link sign-in and removes the shared password** (see Auth); a self-hoster who adds a key gets both, by design. The key and `RESEND_EMAIL_DOMAIN` are set on the Vercel project by the Resend Marketplace integration.
 - **`src/lib/email.ts` is a leaf** (no app imports) and calls Resend's HTTP API with plain `fetch`, not the SDK: it is one POST, and `scripts/beta-pass.mjs` cannot import TypeScript, so it makes the identical call. If you change the request in one, change the other.

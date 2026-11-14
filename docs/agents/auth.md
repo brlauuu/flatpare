@@ -1,6 +1,6 @@
 # Auth
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/auth.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Auth.js v5** (`next-auth@5.0.0-beta`), configured in `src/auth.ts`, which exports `handlers`, `auth`, `signIn`, `signOut`. Sessions are real accounts backed by the `users`/`accounts`/`sessions` tables (`src/lib/db/schema-auth.ts`) via `@auth/drizzle-adapter` — there is no shared password gating the whole app and no display-name-as-identity model any more.
 - **Three provider paths**, decided at boot from env vars (`src/auth.ts`):

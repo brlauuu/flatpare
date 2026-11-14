@@ -1,6 +1,6 @@
 # Languages (#288)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/languages.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Five interface languages, same URLs**: English, German, French, Italian, Spanish, through `next-intl` **without i18n routing**. Nothing about routes, `src/proxy.ts`, Auth.js callbacks, `/beta/<code>` or email links knows about a locale. Design: `docs/superpowers/specs/2026-10-20-i18n-design.md`.
 - **Which language a request gets** (`resolveLocale`, `src/i18n/request.ts`): the `flatpare_locale` cookie, then (signed in, no cookie: a new device) `users.locale`, then `Accept-Language`, then English. The selector (`LanguageMenu`, in the nav bar) writes the cookie and, signed in, `PUT /api/account/locale`. `users.locale` is migration 0023 — account data in plaintext, like the display name.

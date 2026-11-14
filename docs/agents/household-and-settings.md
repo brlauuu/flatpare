@@ -1,6 +1,6 @@
 # Household page and Settings (#298)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/household-and-settings.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`/household` is about the group, `/settings` about the person.** Household: members, invitations, the credit balance, key rotation (`HouseholdSettings`, `src/components/household-settings.tsx`) and locations of interest with the distance recompute (`LocationsSettings`, `src/components/locations-settings.tsx`). Settings: `EncryptionSettings` only, plus a pointer to Household.
 - **Every member may edit locations; only the owner sees Recompute.** Recompute re-runs a paid distance call for every apartment × location pair. `canRecompute` is keyed on `identity.role`, which since #192 is read from `household_members` (`currentRole` in `src/lib/session.ts`), not the up-to-24h-old session token, so a promotion or demotion shows on the next page load. **The server does not enforce it**: the distance route serves every member's own enrichment, so an owner-only rule there would break adding an apartment. Inviting, removing and rotating are enforced by their routes.

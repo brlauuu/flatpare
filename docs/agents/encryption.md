@@ -1,6 +1,6 @@
 # Encryption (E2)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/encryption.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **Mode:** `FLATPARE_ENCRYPTION=on|off`, read once server-side by `readEncryptionMode()` (`src/lib/encryption-mode.ts`); unset is `on`, anything else fails boot. Reaches the client only as the `mode` prop of `<CryptoProvider>`, passed by the server component `src/components/crypto/crypto-gate.tsx` from the shared signed-in layout (`src/app/(app)/layout.tsx`). Never read `process.env.FLATPARE_ENCRYPTION` in a `"use client"` file.
 - **Layering rule, enforced by ESLint (`cryptoLayering` in `eslint.config.mjs`):** `crypto.subtle`, `globalThis.crypto.subtle`, `window.crypto.subtle`, `crypto.getRandomValues` and `hash-wasm` may appear only under `src/lib/crypto/**`, and submodule imports (`@/lib/crypto/kdf`, `@/lib/crypto/a/b`) are banned at every depth outside it. Everything else imports named functions from `@/lib/crypto`. Tests under `src/lib/crypto/__tests__/` are inside the allowed tree and their helpers stay importable.

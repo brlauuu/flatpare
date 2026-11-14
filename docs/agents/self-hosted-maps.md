@@ -1,6 +1,6 @@
 # Self-hosted map data (#339)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/self-hosted-maps.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`FLATPARE_MAPS=openfreemap|local` is the self-hoster's choice, made at installation.** `docker-entrypoint.sh` refuses to start the container until it is set, with a message naming both. In the app (`readMapMode`, `src/lib/map/map-config.ts`), **unset or empty means OpenFreeMap** — that is flatpare.com and a plain `npm run dev`; anything else throws `MapConfigError`. flatpare.com does not serve map data (decided after 0.18.0, which briefly did) and `scripts/vercel-build.mjs` downloads nothing.
 - **`local` never contacts an outside service.** The map reads the one `.pmtiles` file in `FLATPARE_MAP_DIR` (default `maps/`, mounted read-only at `/app/maps` by `docker-compose.yml`), through the `pmtiles://` protocol, with label fonts from `public/map-fonts/`, and stays near the file's bounds (`maxBounds`, `panBounds`). Areas it does not cover show the grid and the marks. **No file, several files, or an unreadable one is said on the map page** (`NoLocalMap` in `household-map.tsx`, five languages), never a fallback to OpenFreeMap.
