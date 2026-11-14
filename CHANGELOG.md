@@ -9,9 +9,11 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.37.1 — 2026-11-14
+
 ### Changed
 
-- The number of apartments your household has left to process now comes with a proper Buy more button, on the Apartments page and in a new Credits section of the Household page, which also holds the credit code form. Every member can buy more, as before.
+- The number of apartments your household has left to process now comes with a proper Buy more button, on the Apartments page and in a new Credits section of the Household page, which also holds the credit code form. Every member can buy more, as before (#498).
 
 ## 0.37.0 — 2026-11-11
 
