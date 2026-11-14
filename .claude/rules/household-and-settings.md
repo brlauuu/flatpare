@@ -5,6 +5,7 @@ paths:
   - "src/components/{household-settings,locations-settings,account-name-settings,data-transfer-settings}.tsx"
   - "src/app/api/household/**"
   - "src/app/api/locations/**"
+  - "src/components/household-credits.tsx"
 ---
 
 # Household page and Settings (#298)

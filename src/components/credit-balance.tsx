@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { useHouseholdData } from "@/components/household-data/use-household-data";
 
 // At or below this many credits the number turns orange; at zero, red.
@@ -32,35 +33,39 @@ export function CreditBalance({ className }: { className?: string }) {
   const level = remaining === 0 ? "empty" : remaining <= LOW_CREDITS ? "low" : "ok";
 
   return (
-    <p className={cn("text-sm text-muted-foreground", className)} data-testid="credit-balance">
-      {t.rich("left", {
-        count: remaining,
-        n: (chunks) => (
-          <span
-            data-level={level}
-            className={cn(
-              "font-mono font-medium tabular-nums",
-              level === "ok" && "text-foreground",
-              level === "low" && "text-warning",
-              level === "empty" && "text-destructive"
-            )}
-          >
-            {chunks}
-          </span>
-        ),
-      })}
-      {/* Colour alone does not reach everyone. */}
-      {level === "low" && <span className="sr-only"> {t("runningLow")}</span>}
-      {level === "empty" && <span className="sr-only"> {t("noneLeft")}</span>}
-      {" · "}
+    <div
+      className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground", className)}
+      data-testid="credit-balance"
+    >
+      <span>
+        {t.rich("left", {
+          count: remaining,
+          n: (chunks) => (
+            <span
+              data-level={level}
+              className={cn(
+                "font-mono font-medium tabular-nums",
+                level === "ok" && "text-foreground",
+                level === "low" && "text-warning",
+                level === "empty" && "text-destructive"
+              )}
+            >
+              {chunks}
+            </span>
+          ),
+        })}
+        {/* Colour alone does not reach everyone. */}
+        {level === "low" && <span className="sr-only"> {t("runningLow")}</span>}
+        {level === "empty" && <span className="sr-only"> {t("noneLeft")}</span>}
+      </span>
       {/* No checkout while credits are counted without Stripe (#492): more
           come from a code, redeemed on the Household page. */}
       <Link
         href={credits.purchasable ? "/billing" : REDEEM_HREF}
-        className="underline underline-offset-2 hover:text-foreground"
+        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
       >
         {credits.purchasable ? t("buyMore") : t("redeem")}
       </Link>
-    </p>
+    </div>
   );
 }

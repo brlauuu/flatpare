@@ -166,6 +166,9 @@
     "ratingLine": "Valorado por {name}: impresión general {overall}, cocina {kitchen}, balcones {balconies}, ubicación {location}, plano {floorplan}",
     "ratingLineComment": "Valorado por {name}: impresión general {overall}, cocina {kitchen}, balcones {balconies}, ubicación {location}, plano {floorplan}. «{comment}»"
   },
+  "credits": {
+    "title": "Créditos"
+  },
   "redeem": {
     "label": "Código de créditos",
     "submit": "Canjear",
