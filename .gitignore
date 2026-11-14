@@ -54,7 +54,9 @@ next-env.d.ts
 
 # git worktrees (local isolated workspaces)
 /.worktrees/
-.claude/
+# .claude/ is local (settings, skills) except the path-scoped agent rules
+.claude/*
+!.claude/rules/
 
 # enola architectural snapshots (local, regenerated on demand)
 /.enola/

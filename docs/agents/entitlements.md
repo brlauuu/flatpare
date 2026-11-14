@@ -1,6 +1,6 @@
 # Entitlements (E5)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/entitlements.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`MAX_MEMBERS` and `MAX_APARTMENTS`**, read by `readLimits()` (`src/lib/limits.ts`) via the shared `readOptionalPositiveInt` (`src/lib/env-int.ts`). **Unset or empty means unlimited** — the self-hoster default, called out in #187 as a must-not-regress and covered by dedicated tests at every layer. A value that is not a positive integer throws `EnvConfigError` rather than being coerced.
 - **There is no tier dimension, and `households.tier` is NOT read by E5.** The hosted deployment has no free tier (everyone pays from day one) and self-hosters set their own values, so the spec's "5 and 20, lifted to 10 and 100 for a paid account" describes a model that was not adopted — the spec's E5 section carries a superseded note. `households.tier` is read by **nothing** — not E5, not E6 — and is kept only so the column need not be added later. If you find yourself adding a `householdId` argument to `readLimits()`, that is the decision being reversed; make it deliberately.

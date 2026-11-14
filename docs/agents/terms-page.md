@@ -1,6 +1,6 @@
 # Terms page (#474)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/terms-page.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`/terms` is the terms and privacy page for flatpare.com**: who runs it, what is sold, who sells it (Stripe as merchant of record, #241), refunds, the data the server holds and why, who processes data, account deletion, use, liability, changes, Swiss law. Text in `src/content/terms.<locale>.md`, rendered like the guide; **English is binding**, and each translation says so. Decided by the owner on #474: a full refund within 14 days, no questions asked.
 - **The operator is configuration** (`readOperator`, `src/lib/operator.ts`, a leaf): `FLATPARE_OPERATOR_NAME`, `FLATPARE_OPERATOR_CITY`, `FLATPARE_CONTACT_EMAIL`, so nothing personal is in the public repository. **With any of them unset there is no page (404) and no link**: a self-hosted copy must not name the flatpare.com operator or promise its refunds. `fillOperator` puts them into the text, Markdown and HTML taken literally.

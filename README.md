@@ -271,7 +271,7 @@ Optional, and entirely absent unless `STRIPE_SECRET_KEY` is set.
 src/
   app/
     page.tsx                      # Landing page (marketing + sign-in)
-    _components/landing.tsx       # Landing copy — see AGENTS.md before editing
+    _components/landing.tsx       # Landing copy — see .claude/rules/landing-page.md before editing
     login-form.tsx                # Client-side sign-in form
     apartments/                   # List view, [id] detail, new/ upload+parse+review
     compare/                      # Side-by-side comparison grid
@@ -392,7 +392,7 @@ The map's streets come from where `FLATPARE_MAPS` says, and the container will n
 2. Make changes; keep tests green (`npm test`), lint clean (`npm run lint`) and types clean (`npm run typecheck`).
 3. Open a pull request; `main` is protected and all PRs run the test workflow.
 
-The repo uses Vitest, Drizzle, and Next 16-specific conventions, and several of them are load-bearing in ways a linter will not tell you about — read [`AGENTS.md`](./AGENTS.md) before touching the proxy, instrumentation, migration, crypto or billing paths. It is terse on purpose and worth the 5-minute scan.
+The repo uses Vitest, Drizzle, and Next 16-specific conventions, and several of them are load-bearing in ways a linter will not tell you about — read [`AGENTS.md`](./AGENTS.md) first (the rules that apply everywhere), then the area's rule file in [`.claude/rules/`](./.claude/rules/) before touching it (the proxy, instrumentation, migrations, crypto and billing especially). The reasoning behind each area's rules is in [`docs/agents/`](./docs/agents/).
 
 ## License
 

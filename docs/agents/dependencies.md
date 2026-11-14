@@ -1,6 +1,6 @@
 # Dependency maintenance
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/dependencies.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`npm outdated` lies about two of these; do not "fix" them** (#264):
   - **`next-auth` shows `latest: 4.24.15`** while we run `5.0.0-beta.32`. v5 is published under the `beta` dist-tag, so npm's `latest` points at the old v4 line. Current == wanted; there is nothing to bump. Downgrading to the "latest" would remove the entire auth model.

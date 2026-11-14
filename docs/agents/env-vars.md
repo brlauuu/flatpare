@@ -1,6 +1,6 @@
 # Cloud-mode env vars
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/env-vars.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 Beyond auth + Turso, the following keys gate cloud features. If any is unset, the feature degrades cleanly to manual entry / no-op:
 

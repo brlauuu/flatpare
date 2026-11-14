@@ -1,6 +1,6 @@
 # Map page (#330)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in `.claude/rules/map-page.md` (loaded when working on its files), with anything cross-cutting in AGENTS.md; this file holds the detail, the measurements and the history behind them.
 
 - **`/map` (`src/app/(app)/map/page.tsx`) shows every apartment and location of interest** on a MapLibre map drawn from OpenFreeMap vector tiles (or a self-hoster's own file, see Self-hosted map data) with our own style (`mapStyle`, `src/lib/map/style.ts`): streets, water, parks, street and neighbourhood names; **no buildings, house numbers or POIs, on purpose.** No key, no env var. Design: `docs/superpowers/specs/2026-10-06-map-page-design.md`.
 - **Only two files import `maplibre-gl`**: `src/components/map/household-map-inner.tsx` and `src/components/map/map-protocols.ts`, which only the inner imports. The inner loads through `next/dynamic` (`ssr: false`) so no other page carries MapLibre. It is not unit tested (no WebGL in jsdom) and stays counted in coverage; everything it decides comes from the tested pure modules in `src/lib/map/` (style, marks, points, initial view, card position).

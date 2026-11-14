@@ -1,6 +1,6 @@
 # Versioning and releases
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in AGENTS.md (always loaded); this file holds the detail, the measurements and the history behind them.
 
 - **The version lives in `package.json` only** (`package-lock.json` mirrors it in its two root `version` fields — edit those by hand; `npm install --package-lock-only` on a local npm 10 rewrites unrelated entries, see Dependency maintenance). No other file quotes it. There were no tags or releases before 0.2.0 (2026-10-02); everything earlier shipped untagged.
 - **`CHANGELOG.md` is the release notes.** Every merged PR adds a line under `## Unreleased`, grouped Added / Changed / Fixed, ending with the issue or PR number. Write for the person using the app, not the person reading the diff.

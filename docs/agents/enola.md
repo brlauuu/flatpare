@@ -1,6 +1,6 @@
 # Architecture checks (enola)
 
-Full reference, moved verbatim from AGENTS.md. The always-on rules for this area are summarised in AGENTS.md; this file holds the detail, the measurements and the history behind them.
+Full reference. The rules for this area are in AGENTS.md (always loaded); this file holds the detail, the measurements and the history behind them.
 
 - The baseline is pinned at the E1 merge (`dad02e1`), which **accepts one module
   cycle**: `src/auth.ts` imports `@/lib/household`, and `src/lib/session.ts`
