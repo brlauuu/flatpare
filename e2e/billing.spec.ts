@@ -1,6 +1,6 @@
 import { createClient } from "@libsql/client";
 import Stripe from "stripe";
-import { expect, test } from "playwright/test";
+import { expect, test, type Page } from "playwright/test";
 
 // The committed version of the hand-run checkout that found three shipped
 // defects the unit tests could not (#238). All three lived in
@@ -73,13 +73,23 @@ async function deliverWebhook(
   });
 }
 
+// Each test gets a fresh browser context, so each signs in. The shared
+// password is one account, so all three act on the same household.
+async function signIn(page: Page): Promise<void> {
+  await page.goto("/");
+  // Sign-in lives in a dialog on the landing page, opened from the header.
+  await page.getByRole("button", { name: "Sign in", exact: true }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Password").fill(PASSWORD);
+  await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.waitForURL((url) => url.pathname !== "/", { timeout: 30_000 });
+}
+
 test.describe("billing", () => {
   test("a household that has never purchased is gated to /billing", async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.getByLabel("Password").fill(PASSWORD);
-    await page.getByRole("button", { name: /sign in|continue/i }).click();
+    await signIn(page);
 
     // The gate lives in the four signed-in layouts, so landing anywhere inside
     // the app has to bounce here.
@@ -92,6 +102,7 @@ test.describe("billing", () => {
   test("the live Stripe API accepts the session, at CHF 5 inclusive", async ({
     page,
   }) => {
+    await signIn(page);
     await page.goto("/billing");
 
     // Capture what our own route handed back, then ask Stripe what it actually
@@ -154,6 +165,7 @@ test.describe("billing", () => {
       ],
     });
 
+    await signIn(page);
     await page.goto("/billing");
     await page.getByRole("button", { name: /buy 40 apartments/i }).click();
     await expect(page.locator("#checkout iframe")).toBeVisible();

@@ -166,6 +166,9 @@
     "ratingLine": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}",
     "ratingLineComment": "Évalué par {name} : impression générale {overall}, cuisine {kitchen}, balcons {balconies}, situation {location}, plan {floorplan}. « {comment} »"
   },
+  "credits": {
+    "title": "Crédits"
+  },
   "redeem": {
     "label": "Code de crédits",
     "submit": "Utiliser",

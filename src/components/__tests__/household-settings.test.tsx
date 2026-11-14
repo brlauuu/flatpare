@@ -330,28 +330,17 @@ describe("member limit (#187)", () => {
     expect(screen.queryByText(/ of \d+$/)).not.toBeInTheDocument();
   });
 
-  it("shows no credit balance when billing is off (#305)", async () => {
-    renderAs({ userId: "o", role: "owner" });
+  it("leaves the credits to their own section (HouseholdCredits)", async () => {
+    renderAs({ userId: "o", role: "owner" }, "unlocked", undefined, {
+      granted: 40,
+      used: 0,
+      remaining: 40,
+      purchasable: true,
+    });
     await screen.findByText("Members");
     expect(screen.queryByTestId("credit-balance")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Credit code")).not.toBeInTheDocument();
   });
-
-  it.each(["owner", "member"] as const)(
-    "shows the credit balance to the %s (#305)",
-    async (role) => {
-      // One shared pool (#294): everyone sees what is left, not only the
-      // person who paid.
-      renderAs({ userId: role === "owner" ? "o" : "m", role }, "unlocked", undefined, {
-        granted: 40,
-        used: 40,
-        remaining: 0,
-        purchasable: true,
-      });
-      await screen.findByText("Members");
-      expect(screen.getByTestId("credit-balance")).toHaveTextContent("0 apartments left to process");
-      expect(screen.getByRole("link", { name: /buy more/i })).toBeInTheDocument();
-    }
-  );
 
   it("counts members plus pending invitations against the cap", async () => {
     // The fixture has 2 members and 1 pending invitation.

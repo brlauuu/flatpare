@@ -166,6 +166,9 @@
     "ratingLine": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}",
     "ratingLineComment": "Valutato da {name}: impressione generale {overall}, cucina {kitchen}, balconi {balconies}, posizione {location}, pianta {floorplan}. «{comment}»"
   },
+  "credits": {
+    "title": "Crediti"
+  },
   "redeem": {
     "label": "Codice crediti",
     "submit": "Riscatta",

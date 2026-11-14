@@ -5,6 +5,7 @@ paths:
   - "src/app/billing/**"
   - "scripts/credit-code.mjs"
   - "src/components/{credit-balance,redeem-credit-code}.tsx"
+  - "src/components/household-credits.tsx"
 ---
 
 # Apartment credits (E6)

@@ -166,6 +166,9 @@
     "ratingLine": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}",
     "ratingLineComment": "Rated by {name}: overall feeling {overall}, kitchen {kitchen}, balconies {balconies}, location {location}, floorplan {floorplan}. \"{comment}\""
   },
+  "credits": {
+    "title": "Credits"
+  },
   "redeem": {
     "label": "Credit code",
     "submit": "Redeem",

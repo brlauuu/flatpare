@@ -166,6 +166,9 @@
     "ratingLine": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}",
     "ratingLineComment": "Bewertet von {name}: Gesamteindruck {overall}, Küche {kitchen}, Balkone {balconies}, Lage {location}, Grundriss {floorplan}. «{comment}»"
   },
+  "credits": {
+    "title": "Guthaben"
+  },
   "redeem": {
     "label": "Guthabencode",
     "submit": "Einlösen",
