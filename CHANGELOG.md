@@ -9,9 +9,11 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+## 0.37.2 — 2026-11-17
+
 ### Changed
 
-- For the host: the usage report now also shows the emails sent this month and today against Resend's free plan, and the AI credit left for reading PDFs, and its subject says when one of them is close to the limit. Nothing changes for people using the app.
+- For the host: the usage report now also shows the emails sent this month and today against Resend's free plan, and the AI credit left for reading PDFs, and its subject says when one of them is close to the limit. Nothing changes for people using the app (#500).
 
 ## 0.37.1 — 2026-11-14
 
