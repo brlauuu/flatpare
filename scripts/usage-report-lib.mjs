@@ -154,8 +154,17 @@ function summaryTable(lines) {
   return `<div class="scroll"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
 }
 
+function pageServices(services) {
+  const lines = serviceLines(services);
+  if (!lines.length) return "";
+  const items = lines
+    .map((l) => `<li${l.warn ? ` class="warn"` : ""}>${escapeHtml(l.label)}: ${escapeHtml(l.value)}</li>`)
+    .join("");
+  return `<h2>Limits</h2><ul class="limits">${items}</ul>\n`;
+}
+
 // One self-contained page: no script, no outside request.
-// report: { target, days, chartDays, generatedAt (ISO), lines, daily, firstDay, lastDay }
+// report: { target, days, chartDays, generatedAt (ISO), lines, daily, firstDay, lastDay, services? }
 export function renderHtml(report) {
   const chartRange = dayRange(report.firstDay, report.lastDay);
   const sections = report.lines
@@ -193,6 +202,8 @@ th { font-weight: 600; }
 tr.check td { background: var(--check); color: var(--check-fg); font-weight: 600; }
 section { border-top: 1px solid var(--line); padding: 16px 0; }
 .badge { color: var(--check-fg); font-size: 13px; }
+.limits { margin: 4px 0 16px; padding-left: 20px; }
+.limits .warn { color: var(--check-fg); font-weight: 600; }
 .chart { width: 100%; max-width: 640px; height: auto; display: block; }
 .chart text { fill: var(--muted); font-size: 10px; }
 .chart .axis { stroke: var(--line); }
@@ -206,7 +217,7 @@ section { border-top: 1px solid var(--line); padding: 16px 0; }
 <h1>Flatpare usage</h1>
 <p class="meta">Database: ${escapeHtml(report.target)}. Last ${report.days} day(s), made ${escapeHtml(report.generatedAt)}.</p>
 <p class="note">A household is marked "check" when PDF reads exceed twice the credits spent on first processings and reprocesses plus 5, or geocodes exceed three times those credits plus 20. A mark is a reason to look, not a verdict.</p>
-${summaryTable(report.lines)}
+${pageServices(report.services)}${summaryTable(report.lines)}
 ${sections ? `<p class="legend">Daily, last ${report.chartDays} days:<span style="background:var(--calls)"></span>PDF reads and geocodes<span style="background:var(--spends)"></span>credits spent</p>${sections}` : ""}
 </main>
 </body>
@@ -322,6 +333,7 @@ function emailText(report, tiles, flagged, top) {
     "",
     tiles.map(([label, value]) => `${label}: ${value}`).join("\n"),
     "",
+    ...servicesText(report.services),
     checks,
     "",
     active,
@@ -330,21 +342,42 @@ function emailText(report, tiles, flagged, top) {
   ].join("\n");
 }
 
-// The email is the summary: the totals, the households to check and why, and
-// the most active ones. The attached page is the full report. Inline styles
-// only, since email clients strip <style> and drop SVG.
+function servicesHtml(services) {
+  const lines = serviceLines(services);
+  if (!lines.length) return "";
+  const items = lines
+    .map(
+      (l) =>
+        `<li style="margin:0 0 4px${l.warn ? ";color:#c8102e;font-weight:600" : ""}">${escapeHtml(l.label)}: ${escapeHtml(l.value)}</li>`
+    )
+    .join("");
+  return `<h2 style="font-size:16px;margin:24px 0 8px">Limits</h2><ul style="margin:0;padding-left:20px">${items}</ul>`;
+}
+
+function servicesText(services) {
+  const lines = serviceLines(services);
+  if (!lines.length) return [];
+  return ["Limits:", ...lines.map((l) => `- ${l.label}: ${l.value}${l.warn ? " (close to the limit)" : ""}`), ""];
+}
+
+// The email is the summary: the totals, the limits, the households to check
+// and why, and the most active ones. The attached page is the full report.
+// Inline styles only, since email clients strip <style> and drop SVG.
 export function renderEmail(report) {
   const t = totals(report.lines);
   const tiles = emailTiles(t);
   const flagged = report.lines.filter((l) => l.check);
   const top = mostActive(report.lines);
   const subject =
-    `Flatpare usage, last ${report.days} day(s): ${t.active} active` + (t.check ? `, ${t.check} to check` : "");
+    `Flatpare usage, last ${report.days} day(s): ${t.active} active` +
+    (t.check ? `, ${t.check} to check` : "") +
+    (serviceLines(report.services).some((l) => l.warn) ? ", a limit is close" : "");
   const html =
     `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;color:#111111;max-width:640px">` +
     `<h1 style="font-size:20px;margin:0 0 4px">Flatpare usage, last ${report.days} day(s)</h1>` +
     `<p style="margin:0 0 16px;${MUTED}">${escapeHtml(report.target)}, made ${escapeHtml(report.generatedAt)}</p>` +
     `<div style="margin:0 0 8px">${tiles.map(tileHtml).join("")}</div>` +
+    servicesHtml(report.services) +
     checkListHtml(flagged) +
     activeTableHtml(top, report.lines.length) +
     `<p style="margin:24px 0 0;${MUTED}">The attached page is the full report: every household, every count, and a daily chart for each.</p></div>`;
@@ -359,4 +392,70 @@ export function cadenceDue(cadence, date) {
   if (cadence === "weekly") return date.getUTCDay() === 1;
   if (cadence === "monthly") return date.getUTCDate() === 1;
   return false;
+}
+
+// The two outside limits the host watches (2026-11-17): Resend's sending quota
+// and the AI Gateway's prepaid balance, which pays for every PDF read. Neither
+// is in the database; scripts/usage-report.mjs fetches them and passes
+// `services` in the report. Each part is either the numbers or
+// { unavailable: reason }, so a missing key or a failed call never stops the
+// report. These numbers go into the email and the page only, never the log.
+
+// Resend's free plan: 3,000 emails a month and 100 a day (UTC), counting
+// magic links, invitations, feedback, beta invites and this report.
+export const RESEND_FREE_LIMITS = { month: 3000, day: 100 };
+// A share of a limit worth a warning.
+export const WARN_SHARE = 0.8;
+// Below this prepaid balance (USD) PDF reading is close to stopping.
+export const LOW_GATEWAY_USD = 5;
+
+// rows: Resend's list of sent emails ({ created_at: "YYYY-MM-DD hh:mm:ss…+00" },
+// UTC). Counts those sent in the UTC month and on the UTC day of `now`.
+export function emailCounts(rows, now) {
+  const month = now.toISOString().slice(0, 7);
+  const day = now.toISOString().slice(0, 10);
+  let inMonth = 0;
+  let today = 0;
+  for (const r of rows) {
+    const at = String(r.created_at ?? "");
+    if (at.startsWith(month)) inMonth += 1;
+    if (at.startsWith(day)) today += 1;
+  }
+  return { month: inMonth, today };
+}
+
+const usd = (n) => `$${n.toFixed(2)}`;
+
+// The services as label / value / warn lines: the one shape the email, its
+// text part and the page all render, so they cannot disagree.
+export function serviceLines(services) {
+  if (!services) return [];
+  const lines = [];
+  const e = services.emails;
+  if (!e || "unavailable" in e) {
+    lines.push({ label: "Emails sent (Resend)", value: `not available: ${e?.unavailable ?? "not checked"}`, warn: false });
+  } else {
+    const { month, day } = RESEND_FREE_LIMITS;
+    lines.push({
+      label: "Emails sent this month (Resend)",
+      value: `${e.month} of ${month.toLocaleString("en-US")} on the free plan`,
+      warn: e.month >= WARN_SHARE * month,
+    });
+    lines.push({
+      label: "Emails sent today (UTC)",
+      value: `${e.today} of ${day}`,
+      warn: e.today >= WARN_SHARE * day,
+    });
+  }
+  const g = services.gateway;
+  if (!g || "unavailable" in g) {
+    lines.push({ label: "AI credit left (AI Gateway)", value: `not available: ${g?.unavailable ?? "not checked"}`, warn: false });
+  } else {
+    lines.push({
+      label: "AI credit left (AI Gateway)",
+      value: `${usd(g.balance)} (${usd(g.used)} used to date)`,
+      warn: g.balance < LOW_GATEWAY_USD,
+    });
+  }
+  return lines;
 }

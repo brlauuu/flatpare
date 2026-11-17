@@ -27,6 +27,11 @@
 // Both counts start with the release that added them (0.27.0): there is no
 // history before it.
 //
+// The page and the email also carry a "Limits" part: emails sent this month
+// and today (counted from Resend's list of sent emails) and the AI Gateway's
+// prepaid balance (AI_GATEWAY_API_KEY). Either reads "not available" when its
+// key is missing or the call fails; the report still goes out.
+//
 // A line is marked "check" when PDF reads exceed twice the credits spent on
 // first processings and reprocesses plus 5, or geocodes exceed three times
 // those credits plus 20 (`needsCheck` in usage-report-lib.mjs, the one rule
@@ -41,6 +46,7 @@ import {
   KINDS,
   byDay,
   cadenceDue,
+  emailCounts,
   renderEmail,
   renderHtml,
   summarize,
@@ -207,6 +213,66 @@ async function sendReport(to, email, page, day) {
   }
 }
 
+// The outside limits for the "Limits" part of the email and page (2026-11-17).
+// Each returns the numbers or { unavailable: reason }; none throws, and none
+// prints anything, because the numbers belong in the email, not the public log.
+
+// Resend has no usage endpoint, and its quota headers come only on a send, so
+// this counts the account's sent emails (newest first) back to the start of
+// the UTC month. It needs a full-access key: a sending-only key cannot list.
+const RESEND_PAGE = 100;
+const RESEND_MAX_PAGES = 40; // 4,000 emails, past the free plan's 3,000 a month
+async function emailUsage(now) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) return { unavailable: "RESEND_API_KEY is not set" };
+  const month = now.toISOString().slice(0, 7);
+  const rows = [];
+  let after = null;
+  try {
+    for (let page = 0; page < RESEND_MAX_PAGES; page += 1) {
+      const url = `https://api.resend.com/emails?limit=${RESEND_PAGE}${after ? `&after=${encodeURIComponent(after)}` : ""}`;
+      const res = await fetch(url, {
+        headers: { authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.status === 401 || res.status === 403) {
+        return { unavailable: "the Resend key can only send (a full-access key can list emails)" };
+      }
+      if (!res.ok) return { unavailable: `Resend answered ${res.status}` };
+      const body = await res.json();
+      const data = Array.isArray(body?.data) ? body.data : [];
+      rows.push(...data);
+      const oldest = String(data.at(-1)?.created_at ?? "");
+      if (!body.has_more || data.length === 0 || oldest.slice(0, 7) < month) break;
+      after = data.at(-1).id;
+    }
+  } catch (err) {
+    return { unavailable: err instanceof Error ? err.name : "request failed" };
+  }
+  return emailCounts(rows, now);
+}
+
+// The AI Gateway's prepaid balance (GET /v1/credits). Production authenticates
+// through Vercel's OIDC token; a run outside Vercel needs AI_GATEWAY_API_KEY.
+async function gatewayCredits() {
+  const key = process.env.AI_GATEWAY_API_KEY?.trim();
+  if (!key) return { unavailable: "AI_GATEWAY_API_KEY is not set" };
+  try {
+    const res = await fetch("https://ai-gateway.vercel.sh/v1/credits", {
+      headers: { authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return { unavailable: `AI Gateway answered ${res.status}` };
+    const body = await res.json();
+    const balance = Number(body?.balance);
+    const used = Number(body?.total_used);
+    if (!Number.isFinite(balance) || !Number.isFinite(used)) return { unavailable: "unexpected answer" };
+    return { balance, used };
+  } catch (err) {
+    return { unavailable: err instanceof Error ? err.name : "request failed" };
+  }
+}
+
 // The flags, checked: which form runs and over how many days.
 function readOptions(flags) {
   const cadence = flags.cadence;
@@ -265,6 +331,7 @@ async function run(db, opts, target, now) {
     daily: await dailyCells(db, chartSince),
     firstDay: new Date(chartSince * 1000).toISOString().slice(0, 10),
     lastDay: now.toISOString().slice(0, 10),
+    services: { emails: await emailUsage(now), gateway: await gatewayCredits() },
   });
 }
 
