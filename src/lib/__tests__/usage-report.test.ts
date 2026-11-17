@@ -5,6 +5,8 @@ import {
   dailyChart,
   dayRange,
   checkReason,
+  emailCounts,
+  serviceLines,
   EMAIL_TOP,
   needsCheck,
   renderEmail,
@@ -191,5 +193,76 @@ describe("cadenceDue", () => {
   it("never sends for an unset or unknown cadence", () => {
     expect(cadenceDue(undefined, new Date("2026-11-02T06:00:00Z"))).toBe(false);
     expect(cadenceDue("hourly", new Date("2026-11-02T06:00:00Z"))).toBe(false);
+  });
+});
+
+// 2026-11-17: the two outside limits, Resend's quota and the AI Gateway's
+// prepaid balance, in the email and the page.
+describe("emailCounts", () => {
+  it("counts this UTC month's and today's sends from Resend's timestamps", () => {
+    const now = new Date("2026-11-17T06:00:00Z");
+    const rows = [
+      { created_at: "2026-11-17 05:59:00.000000+00" },
+      { created_at: "2026-11-17 00:00:01.000000+00" },
+      { created_at: "2026-11-16 23:59:59.000000+00" },
+      { created_at: "2026-11-01 00:00:00.000000+00" },
+      { created_at: "2026-10-31 23:59:59.000000+00" },
+      {},
+    ];
+    expect(emailCounts(rows, now)).toEqual({ month: 4, today: 2 });
+  });
+});
+
+describe("serviceLines", () => {
+  const ok = { emails: { month: 120, today: 9 }, gateway: { balance: 42.5, used: 7.25 } };
+
+  it("shows nothing when the report carries no services (the terminal forms)", () => {
+    expect(serviceLines(undefined)).toEqual([]);
+  });
+
+  it("states the counts against the free plan and the balance in dollars", () => {
+    expect(serviceLines(ok)).toEqual([
+      { label: "Emails sent this month (Resend)", value: "120 of 3,000 on the free plan", warn: false },
+      { label: "Emails sent today (UTC)", value: "9 of 100", warn: false },
+      { label: "AI credit left (AI Gateway)", value: "$42.50 ($7.25 used to date)", warn: false },
+    ]);
+  });
+
+  it("warns from 80% of either email limit and below $5 of AI credit", () => {
+    const warns = serviceLines({ emails: { month: 2400, today: 80 }, gateway: { balance: 4.99, used: 1 } });
+    expect(warns.map((l) => l.warn)).toEqual([true, true, true]);
+    const under = serviceLines({ emails: { month: 2399, today: 79 }, gateway: { balance: 5, used: 1 } });
+    expect(under.map((l) => l.warn)).toEqual([false, false, false]);
+  });
+
+  it("says why a number is missing instead of failing", () => {
+    const lines = serviceLines({
+      emails: { unavailable: "RESEND_API_KEY is not set" },
+      gateway: { unavailable: "AI_GATEWAY_API_KEY is not set" },
+    });
+    expect(lines.map((l) => l.value)).toEqual([
+      "not available: RESEND_API_KEY is not set",
+      "not available: AI_GATEWAY_API_KEY is not set",
+    ]);
+    expect(lines.every((l) => !l.warn)).toBe(true);
+  });
+
+  it("puts the limits in the email, its text part and the page, and flags a close one in the subject", () => {
+    const { html, text, subject } = renderEmail({ ...REPORT, services: ok });
+    expect(html).toContain("Limits");
+    expect(html).toContain("120 of 3,000 on the free plan");
+    expect(text).toContain("- AI credit left (AI Gateway): $42.50 ($7.25 used to date)");
+    expect(subject).not.toContain("a limit is close");
+    expect(renderHtml({ ...REPORT, services: ok })).toContain("9 of 100");
+
+    const close = renderEmail({ ...REPORT, services: { ...ok, gateway: { balance: 1, used: 50 } } });
+    expect(close.subject).toBe("Flatpare usage, last 7 day(s): 2 active, 1 to check, a limit is close");
+    expect(close.text).toContain("$1.00 ($50.00 used to date) (close to the limit)");
+    expect(close.html).toMatch(/color:#c8102e;font-weight:600">AI credit left/);
+  });
+
+  it("leaves the email as it was when no services are passed", () => {
+    expect(renderEmail(REPORT).html).not.toContain("Limits");
+    expect(renderHtml(REPORT)).not.toContain("Limits");
   });
 });
