@@ -9,6 +9,10 @@ leaves the beta. See "Versioning and releases" in `AGENTS.md`.
 
 ## Unreleased
 
+### Changed
+
+- While sign-ups are closed, the sign-in dialog says so in one line and lets you request access without leaving it. Someone turned away at sign-in now lands on a single "no account for this address yet" screen with the request form, filled in with the address they tried by email, instead of two stacked warnings that pointed at a form hidden behind the dialog.
+
 ## 0.37.2 — 2026-11-17
 
 ### Changed

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { ThemedLogo } from "@/components/themed-logo";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ErrorDisplay } from "@/components/error-display";
 import type { PublicAccess } from "@/lib/public-access";
+import { RequestAccess } from "./request-access";
+import { useSetSignInDialogTitle } from "./_components/sign-in-dialog";
 
 type ProviderId = "google" | "github" | "resend" | "credentials";
 
@@ -28,48 +30,24 @@ export type SignInNotice =
   | "sign-in-failed"
   | null;
 
-// The holding notice while FLATPARE_PUBLIC_ACCESS=closed. Honest and short,
-// per #239: what is happening, roughly when it opens, and a way to ask for
-// a place — no countdown, no invented waitlist numbers. Since #301 the way
-// to ask is the landing page's beta-invite form, which sits behind this card
-// (it opens in a dialog there), so this points at it instead of a link. Existing accounts
-// and beta invitations still sign in, so the buttons stay.
-function ClosedNotice() {
-  const t = useTranslations("auth.closed");
-  return (
-    <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground space-y-2">
-      <p>
-        {t.rich("lead", {
-          strong: (chunks) => <strong className="font-medium text-foreground">{chunks}</strong>,
-        })}
-      </p>
-      <p>{t("ask")}</p>
-    </div>
-  );
+// The address a refused magic-link sign-in was for, carried across the page
+// load the refusal causes, so the request view can fill it in. Session
+// storage only: it never goes into the URL, where logs would keep it.
+const REFUSED_EMAIL_KEY = "flatpare.refusedEmail";
+
+function takeRefusedEmail(): string {
+  try {
+    const value = window.sessionStorage.getItem(REFUSED_EMAIL_KEY) ?? "";
+    window.sessionStorage.removeItem(REFUSED_EMAIL_KEY);
+    return value;
+  } catch {
+    return "";
+  }
 }
 
-function NoticeFor({
-  notice,
-  access,
-}: {
-  notice: SignInNotice;
-  access: PublicAccess;
-}) {
+function NoticeFor({ notice }: { notice: SignInNotice }) {
   const t = useTranslations("auth.notice");
   switch (notice) {
-    case "sign-up-refused":
-      // Only meaningful while the door is shut: a bookmarked redirect URL
-      // must not claim sign-ups are closed after the gate has been opened.
-      if (access !== "closed") return null;
-      return (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
-        >
-          <p className="font-medium text-destructive">{t("signUpRefusedTitle")}</p>
-          <p className="mt-1 text-muted-foreground">{t("signUpRefusedBody")}</p>
-        </div>
-      );
     case "beta-invalid":
       return (
         <div
@@ -124,6 +102,18 @@ export function LoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // While sign-ups are closed the card has a second view: asking for access.
+  // A refused sign-in lands straight on it; a stale refusal in the URL after
+  // the door has opened does not.
+  const closed = access === "closed";
+  const refused = closed && notice === "sign-up-refused";
+  const [view, setView] = useState<"signIn" | "request">(refused ? "request" : "signIn");
+  const [refusedEmail] = useState(() => (refused && typeof window !== "undefined" ? takeRefusedEmail() : ""));
+  const setDialogTitle = useSetSignInDialogTitle();
+  useEffect(() => {
+    setDialogTitle(view);
+  }, [view, setDialogTitle]);
+
   // Magic link (#310). `redirect: false` keeps the person on this card: the
   // card says the link was sent instead of bouncing them to Auth.js's own
   // "check your email" page. A refused sign-up still has to leave, because
@@ -135,6 +125,11 @@ export function LoginForm({
     try {
       const res = await signIn("resend", { email, redirect: false, callbackUrl: "/apartments" });
       if (res?.url && /[?&]signin=closed/.test(res.url)) {
+        try {
+          window.sessionStorage.setItem(REFUSED_EMAIL_KEY, email.trim());
+        } catch {
+          // Storage blocked: the request form just starts empty.
+        }
         window.location.assign(res.url);
         return;
       }
@@ -181,11 +176,24 @@ export function LoginForm({
     window.location.assign(res.url ?? "/apartments");
   }
 
+  if (closed && view === "request") {
+    return (
+      <div className="w-full">
+        <RequestAccess
+          refused={refused}
+          initialEmail={refusedEmail}
+          onBack={() => setView("signIn")}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       {/* Rendered inside the landing page's sign-in dialog, which draws the
-          frame; a second frame and shadow here would box it twice (#324). */}
-      <Card className="w-full border-0 shadow-none">
+          frame; a second frame, shadow or background here would box it
+          twice (#324). */}
+      <Card className="w-full border-0 bg-transparent shadow-none">
         <CardHeader className="items-center space-y-3">
           <ThemedLogo width={180} height={56} className="h-12 w-auto" priority />
           <p className="text-center text-xs text-muted-foreground">{t("tagline")}</p>
@@ -196,8 +204,7 @@ export function LoginForm({
               this too, and while it lived inside the password form the error
               was invisible on an OAuth-only deployment. */}
           {error && <ErrorDisplay headline={error} />}
-          {access === "closed" && notice !== "beta-ready" && <ClosedNotice />}
-          <NoticeFor notice={notice} access={access} />
+          <NoticeFor notice={notice} />
           {providers.includes("google") && (
             <Button
               type="button"
@@ -267,6 +274,25 @@ export function LoginForm({
                 {loading ? t("checkingPassword") : t("continue")}
               </Button>
             </form>
+          )}
+          {/* The only beta wording before anyone tries: the landing page
+              behind the dialog already says what Flatpare is. Hidden once a
+              beta link was accepted, since that person is in. */}
+          {closed && notice !== "beta-ready" && (
+            <p className="border-t pt-4 text-center text-sm text-muted-foreground">
+              {t.rich("newHere", {
+                link: (chunks) => (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto p-0 font-medium underline"
+                    onClick={() => setView("request")}
+                  >
+                    {chunks}
+                  </Button>
+                ),
+              })}
+            </p>
           )}
         </CardContent>
       </Card>

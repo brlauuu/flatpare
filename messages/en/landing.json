@@ -141,6 +141,7 @@
   },
   "signIn": {
     "title": "Sign in",
+    "requestTitle": "Request access",
     "close": "Close",
     "privacyNote": "Your search is encrypted before it is stored. The server counts how much each household has processed, never what. <link>What we can and can't see</link>"
   },

@@ -16,6 +16,16 @@ import { X } from "lucide-react";
 
 const OpenSignIn = createContext<(() => void) | null>(null);
 
+// Which title the dialog shows. The card switches to its request-access view
+// while sign-ups are closed, and the title follows it; outside the dialog
+// (no provider) the setter is a no-op.
+export type SignInDialogTitle = "signIn" | "request";
+const SetTitle = createContext<(title: SignInDialogTitle) => void>(() => {});
+
+export function useSetSignInDialogTitle() {
+  return useContext(SetTitle);
+}
+
 export function SignInProvider({
   signIn,
   defaultOpen = false,
@@ -26,44 +36,47 @@ export function SignInProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [title, setTitle] = useState<SignInDialogTitle>("signIn");
   const t = useTranslations("landing.signIn");
 
   return (
     <OpenSignIn.Provider value={() => setOpen(true)}>
-      {children}
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/60" />
-          <Dialog.Popup className="landing fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto border-[3px] border-(--lp-card-line) shadow-(--lp-card-shadow)">
-            <div className="flex items-center justify-between border-b-[3px] border-(--lp-card-line) py-1 pr-1 pl-4">
-              <Dialog.Title className="lp-head text-lg">{t("title")}</Dialog.Title>
-              <Dialog.Close
-                aria-label={t("close")}
-                className="grid size-11 cursor-pointer place-items-center text-(--lp-muted) hover:text-(--lp-ink)"
-              >
-                <X className="size-4" aria-hidden />
-              </Dialog.Close>
-            </div>
-            <div className="p-3">{signIn}</div>
-            {/* What the server sees and counts (#468), before an account
-                exists. Closing the dialog is what lets the link land on the
-                section behind it. */}
-            <p data-privacy-note className="border-t-[3px] border-(--lp-card-line) px-4 py-3 text-xs leading-relaxed text-(--lp-muted)">
-              {t.rich("privacyNote", {
-                link: (chunks) => (
-                  <a
-                    href="#privacy"
-                    onClick={() => setOpen(false)}
-                    className="text-(--lp-ink) underline underline-offset-2"
-                  >
-                    {chunks}
-                  </a>
-                ),
-              })}
-            </p>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <SetTitle.Provider value={setTitle}>
+        {children}
+        <Dialog.Root open={open} onOpenChange={setOpen}>
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/60" />
+            <Dialog.Popup className="landing fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto border-[3px] border-(--lp-card-line) shadow-(--lp-card-shadow)">
+              <div className="flex items-center justify-between border-b-[3px] border-(--lp-card-line) py-1 pr-1 pl-4">
+                <Dialog.Title className="lp-head text-lg">{title === "request" ? t("requestTitle") : t("title")}</Dialog.Title>
+                <Dialog.Close
+                  aria-label={t("close")}
+                  className="grid size-11 cursor-pointer place-items-center text-(--lp-muted) hover:text-(--lp-ink)"
+                >
+                  <X className="size-4" aria-hidden />
+                </Dialog.Close>
+              </div>
+              <div className="p-3">{signIn}</div>
+              {/* What the server sees and counts (#468), before an account
+                  exists. Closing the dialog is what lets the link land on the
+                  section behind it. */}
+              <p data-privacy-note className="border-t-[3px] border-(--lp-card-line) px-4 py-3 text-xs leading-relaxed text-(--lp-muted)">
+                {t.rich("privacyNote", {
+                  link: (chunks) => (
+                    <a
+                      href="#privacy"
+                      onClick={() => setOpen(false)}
+                      className="text-(--lp-ink) underline underline-offset-2"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </p>
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </SetTitle.Provider>
     </OpenSignIn.Provider>
   );
 }

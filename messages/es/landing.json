@@ -141,6 +141,7 @@
   },
   "signIn": {
     "title": "Iniciar sesión",
+    "requestTitle": "Solicitar acceso",
     "close": "Cerrar",
     "privacyNote": "Tu búsqueda se cifra antes de guardarse. El servidor cuenta cuánto ha procesado cada hogar, nunca qué. <link>Lo que podemos ver y lo que no</link>"
   },
