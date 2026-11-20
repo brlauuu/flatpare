@@ -141,6 +141,7 @@
   },
   "signIn": {
     "title": "Accedi",
+    "requestTitle": "Richiedi l'accesso",
     "close": "Chiudi",
     "privacyNote": "La tua ricerca viene cifrata prima di essere salvata. Il server conta quanto ha fatto elaborare ogni economia domestica, mai cosa. <link>Cosa possiamo vedere e cosa no</link>"
   },

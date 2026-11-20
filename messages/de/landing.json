@@ -141,6 +141,7 @@
   },
   "signIn": {
     "title": "Anmelden",
+    "requestTitle": "Zugang anfragen",
     "close": "Schliessen",
     "privacyNote": "Deine Suche wird verschlüsselt, bevor sie gespeichert wird. Der Server zählt, wie viel jeder Haushalt verarbeiten liess, nie was. <link>Was wir sehen können und was nicht</link>"
   },

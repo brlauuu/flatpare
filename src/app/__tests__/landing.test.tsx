@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Landing } from "../_components/landing";
+import { useSetSignInDialogTitle } from "../_components/sign-in-dialog";
 import { PRIVACY_CLAIM, RELEASES_URL, REPO_URL } from "@/lib/site";
 import type { PublicAccess } from "@/lib/public-access";
 import type { ReleaseInfo } from "@/lib/release";
@@ -352,6 +353,22 @@ describe("Landing", () => {
       await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
       const dialog = await screen.findByRole("dialog");
       expect(within(dialog).getByTestId("signin-card")).toBeInTheDocument();
+    });
+
+    // The card's request-access view renames the dialog it sits in.
+    it("takes its title from the card's view", async () => {
+      function RequestCard() {
+        const setTitle = useSetSignInDialogTitle();
+        return (
+          <button type="button" onClick={() => setTitle("request")}>
+            switch
+          </button>
+        );
+      }
+      render(<Landing signIn={<RequestCard />} access="closed" openSignIn release={null} now={NOW} />);
+      const dialog = await screen.findByRole("dialog", { name: "Sign in" });
+      await userEvent.click(within(dialog).getByRole("button", { name: "switch" }));
+      expect(screen.getByRole("dialog", { name: "Request access" })).toBeInTheDocument();
     });
 
     it("opens on load when the page has a notice to show", async () => {

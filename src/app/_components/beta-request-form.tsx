@@ -3,44 +3,19 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
-type State =
-  | { kind: "idle" }
-  | { kind: "sending" }
-  | { kind: "done" }
-  // Which fixed message to show; the server's two refusals are fixed
-  // sentences too, so they are mapped by status rather than shown in English.
-  | { kind: "error"; reason: "invalidEmail" | "tooMany" | "failed" | "unreachable" };
+import { useBetaRequest } from "./use-beta-request";
 
-// "Request a beta invite" in the hosted card (#301). Posts the address to
-// /api/beta-requests, which stores it for the owner to answer with a beta
-// pass. The answer is the same whether or not the address asked before, so
-// the confirmation is too.
+// "Request a beta invite" in the hosted card (#301). The posting is shared
+// with the sign-in dialog's request view (use-beta-request.ts).
 export function BetaRequestForm() {
   const t = useTranslations("landing.beta");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
-  const [state, setState] = useState<State>({ kind: "idle" });
+  const { state, send } = useBetaRequest();
 
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    setState({ kind: "sending" });
-    try {
-      const res = await fetch("/api/beta-requests", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, website }),
-      });
-      if (res.ok) {
-        setState({ kind: "done" });
-        return;
-      }
-      setState({
-        kind: "error",
-        reason: res.status === 400 ? "invalidEmail" : res.status === 429 ? "tooMany" : "failed",
-      });
-    } catch {
-      setState({ kind: "error", reason: "unreachable" });
-    }
+    void send(email, website);
   }
 
   if (state.kind === "done") {

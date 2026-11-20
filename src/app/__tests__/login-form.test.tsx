@@ -199,30 +199,49 @@ describe("LoginForm — under-development notice", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("when closed, says so honestly and keeps the sign-in buttons for existing accounts", () => {
+  it("when closed, offers one line to ask for access and keeps the sign-in buttons", () => {
     render(<LoginForm providers={["google"]} access="closed" />);
     const text = document.body.textContent ?? "";
-    expect(text).toMatch(/private beta/i);
-    expect(text).toMatch(/new sign-ups are closed/i);
-    // Roughly when, and a way to ask — no countdown, no invented numbers.
-    expect(text).toMatch(/later this year/i);
-    // The way to ask is the landing page's beta-invite form (#301).
-    expect(text).toMatch(/request an invite with the form on this page/i);
+    expect(text).toMatch(/new here\? flatpare is in a private beta/i);
+    // No stacked notices before anyone has tried anything.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(text).not.toMatch(/\d+\s+people/i);
     expect(text).not.toMatch(/waitlist/i);
     expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request access" })).toBeInTheDocument();
   });
 
-  it("explains a refused sign-up rather than showing a generic error", () => {
+  it("switches to the request view and back without leaving the card", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm providers={["google"]} access="closed" />);
+    await user.click(screen.getByRole("button", { name: "Request access" }));
+    expect(screen.getByRole("heading", { name: /request access to the beta/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Continue with Google/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /back to sign in/i }));
+    expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
+  });
+
+  it("lands a refused sign-up on the request view, saying it once", () => {
     render(<LoginForm providers={["google"]} access="closed" notice="sign-up-refused" />);
-    expect(screen.getByRole("alert")).toHaveTextContent(/sign-ups are closed for now/i);
-    expect(screen.getByRole("alert")).toHaveTextContent(/no account for that address/i);
+    expect(screen.getByRole("heading", { name: /no account for this address yet/i })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign-ups are closed/i)).not.toBeInTheDocument();
+    // With Google the app never learns the address, so it starts empty.
+    expect(screen.getByLabelText("Email")).toHaveValue("");
+  });
+
+  it("fills in the address a refused magic link was for, and forgets it after", () => {
+    window.sessionStorage.setItem("flatpare.refusedEmail", "ana@example.com");
+    render(<LoginForm providers={["resend"]} access="closed" notice="sign-up-refused" />);
+    expect(screen.getByLabelText("Email")).toHaveValue("ana@example.com");
+    expect(window.sessionStorage.getItem("flatpare.refusedEmail")).toBeNull();
   });
 
   it("ignores a stale refusal in the URL once access is open again", () => {
     render(<LoginForm providers={["google"]} access="open" notice="sign-up-refused" />);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.queryByText(/sign-ups are closed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/private beta/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
   });
 
   it("explains a dead beta link", () => {
@@ -236,7 +255,7 @@ describe("LoginForm — under-development notice", () => {
     // Decided on #240: beta access is permanent, and that is said up front.
     expect(screen.getByRole("status")).toHaveTextContent(/yours to keep/i);
     expect(screen.getByRole("status")).toHaveTextContent(/neither your data nor your credits are taken back/i);
-    expect(screen.queryByText(/new sign-ups are closed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/new here\?/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Continue with Google/i })).toBeInTheDocument();
   });
 });
@@ -279,6 +298,9 @@ describe("LoginForm — magic link (#310)", () => {
     await requestLink();
     await waitFor(() => expect(assign).toHaveBeenCalledWith("http://localhost/?signin=closed"));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    // Carried across the page load for the request form, never in the URL.
+    expect(window.sessionStorage.getItem("flatpare.refusedEmail")).toBe("ana@example.com");
+    window.sessionStorage.clear();
     vi.unstubAllGlobals();
   });
 

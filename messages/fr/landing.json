@@ -141,6 +141,7 @@
   },
   "signIn": {
     "title": "Se connecter",
+    "requestTitle": "Demander un accès",
     "close": "Fermer",
     "privacyNote": "Ta recherche est chiffrée avant d’être enregistrée. Le serveur compte combien chaque ménage a fait traiter, jamais quoi. <link>Ce que nous voyons et ne voyons pas</link>"
   },
